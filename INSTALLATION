@@ -1,0 +1,20 @@
+** INSTALLATION of dependencies **
+Here we provide detailed installation information for the following dependencies: 
+
+ ## ASTRA-toolbox 
+---------- can be downloaded at https://www.astra-toolbox.com/downloads/index.html and installed according to the documentation. In Matlab provide path to the package. 
+
+## Software dependencies for FISTA-Tomo: 
+ 
+* [CCPi-Regularisation Toolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit)
+---------- uncompress the content into "Supplementary/CCPi-Regularisation-Toolkit/" folder. 
+1. Start matlab and proceed to the folder "supplementary/CCPi-Regularisation-Toolkit/Wrappers/Matlab/mex_compile/"
+2. run compileCPU_mex.m to compile CPU functions
+3. open compileGPU_mex.m and edit according to your system specifications
+4. run compileGPU_mex.m to compile GPU functions
+
+* [TomoPhantom](https://github.com/dkazanc/TomoPhantom)
+---------- uncompress the content into "Supplementary/TomoPhantom/" folder. 
+1. Start matlab and proceed to the folder "supplementary/TomoPhantom/matlab/install"
+2. Run compile_mex_linux.m or compile_mex_windows.m to install the package
+
