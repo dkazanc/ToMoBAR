@@ -1,7 +1,7 @@
 % A demo script to reconstruct 2D sythetic parallel-beam data which have been produced by TomoPhantom package. 
 % The sinogram is analytic and inverse crime is avoided to a degree.
 
-% This is ordered-subset regularised iterative FISTA reconstriction with
+% This is ordered-subset regularised iterative FISTA reconstriction method with
 % Group-Huber and Students't data fidelities 
 % to reconstruct erroneous data with artifacts - zingers and stripes (rings)
 

@@ -1,7 +1,7 @@
 % A demo script to reconstruct 2D sythetic parallel-beam data which have been produced by TomoPhantom package. 
 % The sinogram is analytic and inverse crime is avoided to a degree.
 
-% This is a classical regularised iterative FISTA reconstriction with PWLS data
+% This is a classical regularised iterative FISTA reconstriction method with PWLS data
 % fidelity
 
 % Requirements: ASTRA-toolbox with GPU-enabled device, the TomoPhantom package, the CCPi-Regularisation toolkit. 
