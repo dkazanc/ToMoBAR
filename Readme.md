@@ -10,7 +10,7 @@
  * Tomographic projection data are simulated without the "inverse crime" using [TomoPhantom](https://github.com/dkazanc/TomoPhantom). Noise and artifacts (zingers, rings) can be modelled and added to data.
  * Simulated data reconstructed iteratively using FISTA-type algorithm with multiple "plug-and-play" regularisers from [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) 
  * Presented FISTA algorithm offers novel modifications: convergence acceleration with ordered-subsets method, PWLS, Group-Huber[3] and Students't data fidelities [1,2] to deal with noise and image artifacts
- * Various projection (2D/3D) geometries are supported and real data provided to demonstrate the effectivness of the method  
+ * Various projection (2D/3D) geometries are supported and real data provided to demonstrate the effectiveness of the method  
 
 ### General software prerequisites
  * [MATLAB](http://www.mathworks.com/products/matlab/) 
@@ -26,10 +26,7 @@
  must be installed in order to use the software. See INSTALLATION for detailed information.  
  
 ### Package contents:
- * DemoRec_2D_Parallel.m - demo to run regularised FISTA reconstruction for noisy data 
- * DemoRec_2D_Parallel_OS.m - demo to run ordered-subsets regularised FISTA reconstruction for noisy data 
- * DemoRec_2D_Parallel_Artifacts.m - demo to run regularised FISTA reconstruction for erroneous data 
- * DemoRec_2D_Parallel_Artifacts_OS.m - demo to run ordered-subsets regularised FISTA reconstruction for erroneous data 
+ * A number of demos for 2D/3D parallel and cone-beam geometry with 2D and 3D regularisation. Demos show how the methods deal with noise and artifacts. Also real-data example added to emphasise methods properties. Main reconstruction function *FISTA_REC.m* is controlled by various parameters, see the [details](https://github.com/dkazanc/FISTA-tomo/blob/master/main_func/FISTA_REC.m). 
 
 ### References:
  1. [D. Kazantsev et al. 2017. A Novel Tomographic Reconstruction Method Based on the Robust Student's t Function For Suppressing Data Outliers. IEEE TCI, 3(4), pp.682-693.](https://doi.org/10.1109/TCI.2017.2694607)
