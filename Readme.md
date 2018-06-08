@@ -34,9 +34,10 @@
  3. [P. Paleo and A. Mirone, 2015. Ring artifacts correction in compressed sensing tomographic reconstruction. Journal of synchrotron radiation, 22(5), pp.1268-1278.](https://doi.org/10.1107/S1600577515010176)
 
 ### Applications:
- 4. [E. Guo et al. 2017. Dendritic evolution during coarsening of Mg-Zn alloys via 4D synchrotron tomography. Acta Materialia, 123, pp.373-382.](https://doi.org/10.1016/j.actamat.2016.10.022) 
- 5. [E. Guo et al. 2018. The influence of nanoparticles on dendritic grain growth in Mg alloys. Acta Materialia.](https://doi.org/10.1016/j.actamat.2018.04.023)
- 6. [E. Guo et al. 2017. Synchrotron X-ray tomographic quantification of microstructural evolution in ice cream–a multi-phase soft solid. Rsc Advances, 7(25), pp.15561-15573.](https://doi.org/10.1039/C7RA00642J)
+ 4. [E. Guo et al. 2018. The influence of nanoparticles on dendritic grain growth in Mg alloys. Acta Materialia.](https://doi.org/10.1016/j.actamat.2018.04.023) 
+ 5. [E. Guo et al. 2018. Revealing the microstructural stability of a three-phase soft solid (ice cream) by 4D synchrotron X-ray tomography. Journal of Food Engineering, vol.237](https://www.sciencedirect.com/science/article/pii/S0260877418302309)
+ 6. [E. Guo et al. 2017. Dendritic evolution during coarsening of Mg-Zn alloys via 4D synchrotron tomography. Acta Materialia, 123, pp.373-382.](https://doi.org/10.1016/j.actamat.2016.10.022) 
+ 7. [E. Guo et al. 2017. Synchrotron X-ray tomographic quantification of microstructural evolution in ice cream–a multi-phase soft solid. Rsc Advances, 7(25), pp.15561-15573.](https://doi.org/10.1039/C7RA00642J)
  
 ### License:
 GNU GENERAL PUBLIC LICENSE v.3
