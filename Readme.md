@@ -1,6 +1,6 @@
 #  Regularised FISTA-type iterative reconstruction algorithm for X-ray tomographic reconstruction with highly inaccurate measurements
 
-**This software supports research published in the following journal papers [1,2,3] with applications in [4-6]. Software depends on several software packages and requires a GPU (Nvidia) card to operate. The current implementation is in MATLAB, and the Python implementation can be accessed with [TomoPhantom](https://github.com/dkazanc/TomoPhantom) package ** 
+**This software supports research published in the following journal papers [1,2,3] with applications in [4-6]. Software depends on several software packages and requires a GPU (Nvidia) card to operate. The current implementation is in MATLAB, and the Python implementation can be accessed with [TomoPhantom](https://github.com/dkazanc/TomoPhantom) package** 
 
 <div align="center">
   <img src="docs/images/recsFISTA_stud.png" height="216"><br>  
