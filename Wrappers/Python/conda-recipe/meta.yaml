@@ -1,0 +1,22 @@
+package:
+  name: fista-tomo
+  version: "0.1"
+
+
+build:
+  preserve_egg_dir: False
+  
+requirements:
+  build:
+    - python
+    - numpy
+    - setuptools
+    
+  run:
+    - python
+    - numpy
+	
+about:
+  home: https://github.com/dkazanc/FISTA-tomo
+  license:  GPLv3
+  summary: 'FISTA iterative reconstruction algorithm for tomography'
