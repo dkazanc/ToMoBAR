@@ -23,11 +23,10 @@
  * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) 
  * See [INSTALLATION](https://github.com/dkazanc/FISTA-tomo/blob/master/INSTALLATION) for detailed information
 
-### Installation in Python (conda-build):
-```
-	conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5 
+### Installation in Python (conda):
+Install with `conda install -c dkazanc fista-tomo` or build with:
+```	conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5 
 	conda install fista-tomo --use-local --force
-
 ```
  
 ### Package contents:
