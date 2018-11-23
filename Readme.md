@@ -1,6 +1,6 @@
 #  Regularised FISTA-type iterative reconstruction algorithm for X-ray tomographic reconstruction with highly inaccurate measurements
 
-**This software supports research published in the following journal papers [1,2,3] with applications in [4-6]. Software depends on several software packages and requires a GPU (Nvidia) card to operate. The current implementation is in MATLAB, and the Python implementation can be accessed with [TomoPhantom](https://github.com/dkazanc/TomoPhantom) package** 
+**This software supports research published in the following journal papers [1,2,3] with applications in [4-6]. Software depends on several software packages and requires a GPU (Nvidia) card to operate. FISTA-tomo is implemented in both MATLAB and Python (work in progress).** 
 
 <div align="center">
   <img src="docs/images/recsFISTA_stud.png" height="216"><br>  
@@ -13,17 +13,22 @@
  * Various projection (2D/3D) geometries are supported and real data provided to demonstrate the effectiveness of the method  
 
 ### General software prerequisites
- * [MATLAB](http://www.mathworks.com/products/matlab/) 
+ * [MATLAB](http://www.mathworks.com/products/matlab/) or
+ * Python
  * C compilers (GCC/MinGW) and nvcc [CUDA SDK](https://developer.nvidia.com/cuda-downloads) compilers
  
 ### Software dependencies: 
  * [ASTRA-toolbox](https://www.astra-toolbox.com/)  
  * [TomoPhantom](https://github.com/dkazanc/TomoPhantom)
  * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) 
+ * See [INSTALLATION](https://github.com/dkazanc/FISTA-tomo/blob/master/INSTALLATION) for detailed information
 
-### Installation:
- * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) and [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) 
- must be installed in order to use the software. See INSTALLATION for detailed information.  
+### Installation in Python (conda-build):
+```
+	conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5 
+	conda install fista-tomo --use-local --force
+
+```
  
 ### Package contents:
  * A number of demos for 2D/3D parallel and cone-beam geometry with 2D and 3D regularisation. Demos show how the methods deal with noise and artifacts. Also real-data example added to emphasise methods properties. Main reconstruction function *FISTA_REC.m* is controlled by various parameters, see the [details](https://github.com/dkazanc/FISTA-tomo/blob/master/main_func/FISTA_REC.m). 
