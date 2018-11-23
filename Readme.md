@@ -25,8 +25,9 @@
 
 ### Installation in Python (conda):
 Install with `conda install -c dkazanc fista-tomo` or build with:
-```	conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5 
-	conda install fista-tomo --use-local --force
+```	
+conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5 
+conda install fista-tomo --use-local --force
 ```
  
 ### Package contents:
