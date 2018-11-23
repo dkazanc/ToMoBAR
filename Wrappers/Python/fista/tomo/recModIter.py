@@ -29,6 +29,7 @@ class RecTools:
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
               datafidelity,# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+              OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
               tolerance, # tolerance to stop outer iterations earlier
               device):
         if ObjSize is tuple: 
@@ -38,6 +39,8 @@ class RecTools:
         
         self.tolerance = tolerance
         self.datafidelity = datafidelity
+        self.OS_number = OS_number
+        
         if device is None:
             self.device = 'gpu'
         else:
@@ -45,8 +48,16 @@ class RecTools:
         
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
-            from fista.tomo.astraOP import AstraTools
-            self.Atools = AstraTools(DetectorsDimH, AnglesVec, ObjSize, device) # initiate 2D ASTRA class object
+            if ((OS_number is None) or (OS_number == 1)):
+                # classical FISTA
+                #from fista.tomo.astraOP import AstraTools
+                from astraOP import AstraTools
+                self.Atools = AstraTools(DetectorsDimH, AnglesVec, ObjSize, device) # initiate 2D ASTRA class object
+            else:
+                # Ordered-subset FISTA
+                #from fista.tomo.astraOP import AstraToolsOS
+                from astraOP import AstraToolsOS
+                self.Atools = AstraToolsOS(DetectorsDimH, AnglesVec, ObjSize, self.OS_number, device) # initiate 2D ASTRA class OS object
             self.geom = '2D'
         else:
             # Creating Astra class specific to 3D parallel geometry

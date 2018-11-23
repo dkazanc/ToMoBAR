@@ -90,6 +90,64 @@ class AstraTools:
         astra.data2d.delete(sinogram_id)
         astra.data2d.delete(self.proj_id)
         return recSIRT
+    
+class AstraToolsOS:
+    """
+    2D ordered subset parallel beam projection/backprojection class based 
+    on ASTRA toolbox
+    """
+    def __init__(self, DetectorsDim, AnglesVec, ObjSize, OS, device):
+        self.DetectorsDim = DetectorsDim
+        self.AnglesVec = AnglesVec
+        self.ObjSize = ObjSize
+        
+        # arrange ordered-subsets
+        import random
+        import numpy as np
+        AnglesTot = np.size(AnglesVec) # total number of angles
+        NumbProjBins = round(AnglesTot/OS) # get the number of projections per bin (subset)
+        usedInd_Vec = np.zeros(AnglesTot,dtype='int') # vector of used indeces
+        newInd_Vec = np.zeros(AnglesTot,dtype='int') # vector of new indeces
+        # creating a sliding window of NumbProjBins size
+        rangeselect_min = 0
+        rangeselect_max = NumbProjBins-1
+        ind_glob = 0
+        for proj_ind in range(NumbProjBins):
+            for sub_ind in range(OS):
+                if (sub_ind > 0):
+                    rangeselect_max =  rangeselect_min + NumbProjBins-1
+                indexS = random.randrange(rangeselect_min,rangeselect_max,1) # select random index from a subset
+                if (indexS >=0 and (indexS < AnglesTot)):
+                    if (usedInd_Vec[indexS] == 0):
+                        newInd_Vec[ind_glob] = indexS # save obtained index
+                        usedInd_Vec = 1
+            ind_glob += 1
+                rangeselect_min = rangeselect_max
+        
+        
+        self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
+        self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
+        if device == 'cpu':
+            self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
+            self.device = 1
+        elif device == 'gpu':
+            self.proj_id = astra.create_projector('cuda', self.proj_geom, self.vol_geom) # for GPU
+            self.device = 0
+        else:
+            print ("Select between 'cpu' or 'gpu' for device")
+    def forwproj(self, image, no_os):
+        """Applying forward projection for a specific subset"""
+        sinogram_id, sinogram = astra.create_sino(image, self.proj_id)
+        astra.data2d.delete(sinogram_id)
+        astra.data2d.delete(self.proj_id)
+        return sinogram
+    def backproj(self, sinogram, no_os):
+        """Applying backprojection for a specific subset"""
+        rec_id, image = astra.create_backprojection(sinogram, self.proj_id)
+        astra.data2d.delete(self.proj_id)
+        astra.data2d.delete(rec_id)
+        return image
+
 class AstraTools3D:
     """3D parallel beam projection/backprojection class based on ASTRA toolbox"""
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, ObjSize):
