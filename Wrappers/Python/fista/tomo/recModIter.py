@@ -48,15 +48,14 @@ class RecTools:
         
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
-            if ((OS_number is None) or (OS_number == 1)):
+            if ((OS_number is None) or (OS_number <= 1)):
                 # classical FISTA
-                #from fista.tomo.astraOP import AstraTools
-                from astraOP import AstraTools
+                from fista.tomo.astraOP import AstraTools
                 self.Atools = AstraTools(DetectorsDimH, AnglesVec, ObjSize, device) # initiate 2D ASTRA class object
+                self.OS_number = 1
             else:
                 # Ordered-subset FISTA
-                #from fista.tomo.astraOP import AstraToolsOS
-                from astraOP import AstraToolsOS
+                from fista.tomo.astraOP import AstraToolsOS
                 self.Atools = AstraToolsOS(DetectorsDimH, AnglesVec, ObjSize, self.OS_number, device) # initiate 2D ASTRA class OS object
             self.geom = '2D'
         else:
@@ -118,6 +117,8 @@ class RecTools:
                 del InitialObject
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize,self.ObjSize), 'float32')
+        if (self.OS_number > 1):
+            regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
 
         # The dependency on the CCPi-RGL toolkit for regularisation
         if regularisation is not None:
@@ -131,45 +132,57 @@ class RecTools:
         t = 1.0
         denomN = 1.0/np.size(X)
         X_t = np.copy(X)
-        
         # Outer FISTA iterations
         for iter in range(0,iterationsFISTA):
-            X_old = X
-            t_old = t
-            if (self.datafidelity == 'LS'):
-                grad_fidelity = self.Atools.backproj(self.Atools.forwproj(X_t) - projdata) # gradient step for the LS fidelity
-            else:
-                raise ("Choose the data fidelity term: LS, PWLS")
-            X = X_t - L_const_inv*grad_fidelity
-            # stopping criteria
-            nrm = LA.norm(X - X_old)*denomN
-            if nrm > self.tolerance:
-                # The proximal operator of the chosen regulariser
-                if (regularisation == 'ROF_TV'):
-                    # Rudin - Osher - Fatemi Total variation method
-                    X = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, self.device)
-                if (regularisation == 'FGP_TV'):
-                    # Fast-Gradient-Projection Total variation method
-                    X = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, nonneg, 0, self.device)
-                if (regularisation == 'SB_TV'):
-                    # Split Bregman Total variation method
-                    X = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
-                if (regularisation == 'LLT_ROF'):
-                    # Lysaker-Lundervold-Tai + ROF Total variation method 
-                    X = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, self.device)
-                if (regularisation == 'TGV'):
-                    # Total Generalised Variation method (2D only currently)
-                    X = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, self.device)
-                if (regularisation == 'NDF'):
-                    # Nonlinear isotropic diffusion method
-                    X = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)
-                if (regularisation == 'DIFF4th'):
-                    # Anisotropic diffusion of higher order
-                    X = DIFF4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, self.device)
-                t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
-                X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
-            else:
-                #print('FISTA stopped at iteration', iter)
-                break
+            for sub_ind in range(self.OS_number):
+                # loop over subsets
+                X_old = X
+                t_old = t
+                if (self.OS_number > 1):
+                    #select a specific set of indeces for the subset (OS)
+                    indVec = self.Atools.newInd_Vec[sub_ind,:]
+                    if (indVec[self.Atools.NumbProjBins-1] == 0):
+                        indVec = indVec[:-1] #shrink vector size
+                
+                if (self.datafidelity == 'LS'):
+                    if (self.OS_number > 1):
+                        # OS-reduced gradient for LS fidelity
+                        grad_fidelity = self.Atools.backprojOS(self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:], sub_ind) 
+                    else:
+                        # full gradient for LS fidelity
+                        grad_fidelity = self.Atools.backproj(self.Atools.forwproj(X_t) - projdata) 
+                else:
+                    raise ("Choose the data fidelity term: LS, PWLS")
+                X = X_t - L_const_inv*grad_fidelity
+                # stopping criteria
+                nrm = LA.norm(X - X_old)*denomN
+                if nrm > self.tolerance:
+                    # The proximal operator of the chosen regulariser
+                    if (regularisation == 'ROF_TV'):
+                        # Rudin - Osher - Fatemi Total variation method
+                        X = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, self.device)
+                    if (regularisation == 'FGP_TV'):
+                        # Fast-Gradient-Projection Total variation method
+                        X = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, nonneg, 0, self.device)
+                    if (regularisation == 'SB_TV'):
+                        # Split Bregman Total variation method
+                        X = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
+                    if (regularisation == 'LLT_ROF'):
+                        # Lysaker-Lundervold-Tai + ROF Total variation method 
+                        X = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, self.device)
+                    if (regularisation == 'TGV'):
+                        # Total Generalised Variation method (2D only currently)
+                        X = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, self.device)
+                    if (regularisation == 'NDF'):
+                        # Nonlinear isotropic diffusion method
+                        X = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)
+                    if (regularisation == 'DIFF4th'):
+                        # Anisotropic diffusion of higher order
+                        X = DIFF4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, self.device)
+                    t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
+                    X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
+                else:
+                    #print('FISTA stopped at iteration', iter)
+                    break
 #****************************************************************************#
         return X

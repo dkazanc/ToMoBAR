@@ -101,30 +101,20 @@ class AstraToolsOS:
         self.AnglesVec = AnglesVec
         self.ObjSize = ObjSize
         
-        # arrange ordered-subsets
-        import random
+        ################ arrange ordered-subsets ################
         import numpy as np
         AnglesTot = np.size(AnglesVec) # total number of angles
-        NumbProjBins = round(AnglesTot/OS) # get the number of projections per bin (subset)
-        usedInd_Vec = np.zeros(AnglesTot,dtype='int') # vector of used indeces
-        newInd_Vec = np.zeros(AnglesTot,dtype='int') # vector of new indeces
-        # creating a sliding window of NumbProjBins size
-        rangeselect_min = 0
-        rangeselect_max = NumbProjBins-1
-        ind_glob = 0
-        for proj_ind in range(NumbProjBins):
-            for sub_ind in range(OS):
-                if (sub_ind > 0):
-                    rangeselect_max =  rangeselect_min + NumbProjBins-1
-                indexS = random.randrange(rangeselect_min,rangeselect_max,1) # select random index from a subset
-                if (indexS >=0 and (indexS < AnglesTot)):
-                    if (usedInd_Vec[indexS] == 0):
-                        newInd_Vec[ind_glob] = indexS # save obtained index
-                        usedInd_Vec = 1
-            ind_glob += 1
-                rangeselect_min = rangeselect_max
+        self.NumbProjBins = (int)(np.ceil(AnglesTot/OS)) # get the number of projections per bin (subset)
+        self.newInd_Vec = np.zeros([OS,self.NumbProjBins],dtype='int') # 2D array of OS-sorted indeces
+        for sub_ind in range(OS):
+            ind_sel = 0
+            for proj_ind in range(self.NumbProjBins):
+                indexS = ind_sel + sub_ind
+                if (indexS < AnglesTot):
+                    self.newInd_Vec[sub_ind,proj_ind] = indexS
+                    ind_sel += OS
         
-        
+        # create full ASTRA geometry (to calculate Lipshitz constant)
         self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
         self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
         if device == 'cpu':
@@ -135,14 +125,40 @@ class AstraToolsOS:
             self.device = 0
         else:
             print ("Select between 'cpu' or 'gpu' for device")
-    def forwproj(self, image, no_os):
+        # create OS-specific ASTRA geometry
+        self.proj_geom_OS = {}
+        self.proj_id_OS = {}
+        for sub_ind in range(OS):
+            indVec = self.newInd_Vec[sub_ind,:]
+            if (indVec[self.NumbProjBins-1] == 0):
+                indVec = indVec[:-1] #shrink vector size
+            anglesOS = self.AnglesVec[indVec] # OS-specific angles
+            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
+            if self.device == 1:
+                self.proj_id_OS[sub_ind] = astra.create_projector('line', self.proj_geom_OS[sub_ind], self.vol_geom) # for CPU
+            if self.device == 0:
+                self.proj_id_OS[sub_ind] = astra.create_projector('cuda', self.proj_geom_OS[sub_ind], self.vol_geom) # for GPU
+
+    def forwprojOS(self, image, no_os):
         """Applying forward projection for a specific subset"""
+        sinogram_id, sinogram = astra.create_sino(image, self.proj_id_OS[no_os])
+        astra.data2d.delete(sinogram_id)
+        astra.data2d.delete(self.proj_id_OS[no_os])
+        return sinogram
+    def backprojOS(self, sinogram, no_os):
+        """Applying backprojection for a specific subset"""
+        rec_id, image = astra.create_backprojection(sinogram, self.proj_id_OS[no_os])
+        astra.data2d.delete(rec_id)
+        astra.data2d.delete(self.proj_id_OS[no_os])
+        return image
+    def forwproj(self, image):
+        """Applying forward projection"""
         sinogram_id, sinogram = astra.create_sino(image, self.proj_id)
         astra.data2d.delete(sinogram_id)
         astra.data2d.delete(self.proj_id)
         return sinogram
-    def backproj(self, sinogram, no_os):
-        """Applying backprojection for a specific subset"""
+    def backproj(self, sinogram):
+        """Applying backprojection"""
         rec_id, image = astra.create_backprojection(sinogram, self.proj_id)
         astra.data2d.delete(self.proj_id)
         astra.data2d.delete(rec_id)

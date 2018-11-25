@@ -81,7 +81,7 @@ Rectools = RecTools(DetectorsDimH = P,  # DetectorsDimH # detector dimension (ho
                     tolerance = 1e-06, # tolerance to stop outer iterations earlier
                     device='gpu')
 
-lc = Rectools.powermethod() # calculate Lipschitz constant
+lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
 
 # Run FISTA reconstrucion algorithm without regularisation
 RecFISTA = Rectools.FISTA(noisy_sino, iterationsFISTA = 150, lipschitz_const = lc)
@@ -107,4 +107,46 @@ Qtools = QualityTools(phantom_2D, RecFISTA_reg)
 RMSE_FISTA_reg = Qtools.rmse()
 print("RMSE for FISTA is {}".format(RMSE_FISTA))
 print("RMSE for regularised FISTA is {}".format(RMSE_FISTA_reg))
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA-OS method")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from fista.tomo.recModIter import RecTools
+
+# set parameters and initiate a class object
+Rectools = RecTools(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+                    OS_number = 24, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
+                    device='gpu')
+
+lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
+
+# Run FISTA-OS reconstrucion algorithm without regularisation
+RecFISTA_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 25, lipschitz_const = lc)
+
+# Run FISTA-OS reconstrucion algorithm with regularisation
+RecFISTA_os_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 25, regularisation = 'ROF_TV', lipschitz_const = lc)
+
+plt.figure()
+plt.subplot(121)
+plt.imshow(RecFISTA_os, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA-OS reconstruction')
+plt.subplot(122)
+plt.imshow(RecFISTA_os_reg, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('Regularised FISTA-OS reconstruction')
+plt.show()
+
+# calculate errors 
+Qtools = QualityTools(phantom_2D, RecFISTA_os)
+RMSE_FISTA_os = Qtools.rmse()
+Qtools = QualityTools(phantom_2D, RecFISTA_os_reg)
+RMSE_FISTA_os_reg = Qtools.rmse()
+print("RMSE for FISTA-OS is {}".format(RMSE_FISTA_os))
+print("RMSE for regularised FISTA-OS is {}".format(RMSE_FISTA_os_reg))
 #%%
