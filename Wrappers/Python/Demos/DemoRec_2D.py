@@ -87,7 +87,11 @@ lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilis
 RecFISTA = Rectools.FISTA(noisy_sino, iterationsFISTA = 150, lipschitz_const = lc)
 
 # Run FISTA reconstrucion algorithm with regularisation 
-RecFISTA_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 150, regularisation = 'ROF_TV', lipschitz_const = lc)
+RecFISTA_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 150, \
+                              regularisation = 'ROF_TV', \
+                              regularisation_parameter = 0.05,\
+                              regularisation_iterations = 100,\
+                              lipschitz_const = lc)
 
 plt.figure()
 plt.subplot(121)
@@ -129,7 +133,11 @@ lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilis
 RecFISTA_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 25, lipschitz_const = lc)
 
 # Run FISTA-OS reconstrucion algorithm with regularisation
-RecFISTA_os_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 25, regularisation = 'ROF_TV', lipschitz_const = lc)
+RecFISTA_os_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 25, \
+                              regularisation = 'ROF_TV', \
+                              regularisation_parameter = 0.05,\
+                              regularisation_iterations = 100,\
+                              lipschitz_const = lc)
 
 plt.figure()
 plt.subplot(121)

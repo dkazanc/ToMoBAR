@@ -60,13 +60,19 @@ class RecTools:
             self.geom = '2D'
         else:
             # Creating Astra class specific to 3D parallel geometry
-            from fista.tomo.astraOP import AstraTools3D
-            self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize) # initiate 3D ASTRA class object
             self.geom = '3D'
+            if ((OS_number is None) or (OS_number <= 1)):
+                from fista.tomo.astraOP import AstraTools3D
+                self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize) # initiate 3D ASTRA class object
+                self.OS_number = 1
+            else:
+                # Ordered-subset FISTA
+                from fista.tomo.astraOP import AstraToolsOS3D
+                self.Atools = AstraToolsOS3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize, self.OS_number) # initiate 3D ASTRA class OS object
 
     def powermethod(self):
         # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
-        niter = 10
+        niter = 12
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
@@ -147,7 +153,10 @@ class RecTools:
                 if (self.datafidelity == 'LS'):
                     if (self.OS_number > 1):
                         # OS-reduced gradient for LS fidelity
-                        grad_fidelity = self.Atools.backprojOS(self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:], sub_ind) 
+                        if (self.geom == '2D'):
+                            grad_fidelity = self.Atools.backprojOS(self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:], sub_ind)
+                        else:
+                            grad_fidelity = self.Atools.backprojOS(self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:], sub_ind)
                     else:
                         # full gradient for LS fidelity
                         grad_fidelity = self.Atools.backproj(self.Atools.forwproj(X_t) - projdata) 
