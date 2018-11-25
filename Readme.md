@@ -31,7 +31,7 @@ conda install fista-tomo --use-local --force
 ```
  
 ### Package contents:
- * A number of demos for 2D/3D parallel and cone-beam geometry with 2D and 3D regularisation. Demos show how the methods deal with noise and artifacts. Also real-data example added to emphasise methods properties. Main reconstruction function *FISTA_REC.m* is controlled by various parameters, see the [details](https://github.com/dkazanc/FISTA-tomo/blob/master/main_func/FISTA_REC.m). 
+ * A number of demos for 2D/3D parallel and cone-beam geometry with 2D and 3D regularisation routines using [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit). Demos show how the methods deal with noise and artifacts. Also real-data example added to emphasise methods properties. 
 
 ### References:
  1. [D. Kazantsev et al. 2017. A Novel Tomographic Reconstruction Method Based on the Robust Student's t Function For Suppressing Data Outliers. IEEE TCI, 3(4), pp.682-693.](https://doi.org/10.1109/TCI.2017.2694607)

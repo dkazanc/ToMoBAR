@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 from distutils.core import setup
-import os
-import sys
+#import os
+#import sys
 
 setup(
     name="fista-tomo",
-    version='0.1',
+    version='0.1.1',
     packages=['fista', 'fista.tomo'],
 
     # metadata for upload to PyPI
