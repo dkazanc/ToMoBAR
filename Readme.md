@@ -1,9 +1,12 @@
 #  Regularised FISTA-type iterative reconstruction algorithm for X-ray tomographic reconstruction with highly inaccurate measurements
 
-**This software supports research published in the following journal papers [1,2,3] with applications in [4-6]. Software depends on several software packages and requires a GPU (Nvidia) card to operate. FISTA-tomo is implemented in both MATLAB and Python (work in progress).** 
+**This software supports research published in the following journal papers [1,2,3] with applications in [4-6]. Software depends on several software packages and requires a GPU (Nvidia) card to operate. FISTA-tomo is implemented in both MATLAB and Python.** 
 
 <div align="center">
   <img src="docs/images/recsFISTA_stud.png" height="216"><br>  
+</div>
+<div align="center">
+  <img src="docs/images/TV_vs_NLTV.jpg" height="300"><br>  
 </div>
 
 ## Software highlights:
@@ -18,9 +21,9 @@
  * C compilers (GCC/MinGW) and nvcc [CUDA SDK](https://developer.nvidia.com/cuda-downloads) compilers
  
 ### Software dependencies: 
- * [ASTRA-toolbox](https://www.astra-toolbox.com/)  
- * [TomoPhantom](https://github.com/dkazanc/TomoPhantom)
- * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) 
+ * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations
+ * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for simulation
+ * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation
  * See [INSTALLATION](https://github.com/dkazanc/FISTA-tomo/blob/master/INSTALLATION) for detailed information
 
 ### Installation in Python (conda):
