@@ -101,6 +101,9 @@ class RecTools:
               TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
               edge_param = 0.01, # edge (noise) threshold parameter for NDF and DIFF4th
               NDF_penalty = 1, # NDF specific penalty type: 1 - Huber, 2 - Perona-Malik, 3 - Tukey Biweight
+              NLTV_H_i = 0, # NLTV-specific penalty type, the array of i-related indices
+              NLTV_H_j = 0, # NLTV-specific penalty type, the array of j-related indices
+              NLTV_Weights = 0, # NLTV-specific penalty type, the array of Weights              
               methodTV = 0, # 0/1 - isotropic/anisotropic TV
               nonneg = 0 # 0/1 disabled/enabled nonnegativity (for FGP_TV currently)
               ):
@@ -128,10 +131,10 @@ class RecTools:
 
         # The dependency on the CCPi-RGL toolkit for regularisation
         if regularisation is not None:
-            if ((regularisation != 'ROF_TV') and (regularisation != 'FGP_TV') and (regularisation != 'SB_TV') and (regularisation != 'LLT_ROF') and (regularisation != 'TGV') and (regularisation != 'NDF') and (regularisation != 'DIFF4th')):
-                raise('Unknown regularisation method, select: ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, DIFF4th')
+            if ((regularisation != 'ROF_TV') and (regularisation != 'FGP_TV') and (regularisation != 'SB_TV') and (regularisation != 'LLT_ROF') and (regularisation != 'TGV') and (regularisation != 'NDF') and (regularisation != 'DIFF4th') and (regularisation != 'NLTV')):
+                raise('Unknown regularisation method, select: ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, DIFF4th, NLTV')
             else:
-                from ccpi.filters.regularisers import ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, DIFF4th
+                from ccpi.filters.regularisers import ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, DIFF4th, NLTV
 
 #****************************************************************************#
         # FISTA algorithm begins here:
@@ -188,6 +191,9 @@ class RecTools:
                     if (regularisation == 'DIFF4th'):
                         # Anisotropic diffusion of higher order
                         X = DIFF4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, self.device)
+                    if (regularisation == 'NLTV'):
+                        # Non-local Total Variation
+                        X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
                     t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
                     X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
                 else:
