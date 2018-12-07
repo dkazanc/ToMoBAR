@@ -17,7 +17,7 @@ pathmainFunc = sprintf(['..' fsep 'main_func'], 1i);
 addpath(pathmainFunc); 
 pathSupp = sprintf(['..' fsep 'supplementary'], 1i);
 addpath(pathSupp);
-pathtoData = sprintf(['..' fsep 'data'], 1i);
+pathtoData = sprintf(['..' fsep '..' fsep '..' fsep 'data'], 1i);
 addpath(pathtoData);
 %%
 fprintf('\n %s\n', 'Loading real data...');

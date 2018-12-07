@@ -72,17 +72,26 @@ class RecTools:
 
     def powermethod(self):
         # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
-        niter = 12
+        niter = 15
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize,self.Atools.ObjSize))
-        y = self.Atools.forwproj(x1)
-        for iter in range(0,niter):
-            x1 = self.Atools.backproj(y)
-            s = LA.norm(x1)
-            x1 = x1/s
+        s = 0
+        if (self.OS_number == 1):
             y = self.Atools.forwproj(x1)
+            for iter in range(0,niter):
+                x1 = self.Atools.backproj(y)
+                s = LA.norm(x1)
+                x1 = x1/s
+                y = self.Atools.forwproj(x1)
+        else:
+            y = self.Atools.forwprojOS(x1,0)
+            for iter in range(0,niter):
+                x1 = self.Atools.backprojOS(y,0)
+                s = LA.norm(x1)
+                x1 = x1/s
+                y = self.Atools.forwprojOS(x1,0)
         return s
     
     def FISTA(self, 
