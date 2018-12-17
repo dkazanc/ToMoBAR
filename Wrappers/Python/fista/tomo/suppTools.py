@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Some supplementary tools 
-
+@author: Daniil Kazantsev: https://github.com/dkazanc
 """
 import numpy as np
 
