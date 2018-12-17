@@ -58,7 +58,7 @@ from tomophantom.supp.artifacts import ArtifactsClass
 # adding noise
 artifacts_add = ArtifactsClass(sino_an)
 #noisy_sino = artifacts_add.noise(sigma=0.1,noisetype='Gaussian')
-noisy_sino = artifacts_add.noise(sigma=10000,noisetype='Poisson')
+noisy_sino = artifacts_add.noise(sigma=8000,noisetype='Poisson')
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -123,17 +123,17 @@ Rectools = RecTools(DetectorsDimH = P,  # DetectorsDimH # detector dimension (ho
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    OS_number = 24, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-06, # tolerance to stop outer iterations earlier
                     device='gpu')
 
 lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
 
 # Run FISTA-OS reconstrucion algorithm without regularisation
-RecFISTA_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 25, lipschitz_const = lc)
+RecFISTA_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 20, lipschitz_const = lc)
 
 # Run FISTA-OS reconstrucion algorithm with regularisation
-RecFISTA_os_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 25, \
+RecFISTA_os_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 20, \
                               regularisation = 'ROF_TV', \
                               regularisation_parameter = 0.05,\
                               regularisation_iterations = 100,\

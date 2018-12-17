@@ -7,6 +7,7 @@ data using parallel beam geometry
 - CGLS algorithm from ASTRA 
 
 GPLv3 license (ASTRA toolbox)
+@author: Daniil Kazantsev: https://github.com/dkazanc
 """
 
 import astra
@@ -129,10 +130,10 @@ class AstraToolsOS:
         self.proj_geom_OS = {}
         self.proj_id_OS = {}
         for sub_ind in range(OS):
-            indVec = self.newInd_Vec[sub_ind,:]
-            if (indVec[self.NumbProjBins-1] == 0):
-                indVec = indVec[:-1] #shrink vector size
-            anglesOS = self.AnglesVec[indVec] # OS-specific angles
+            self.indVec = self.newInd_Vec[sub_ind,:] # OS-specific indices
+            if (self.indVec[self.NumbProjBins-1] == 0):
+                self.indVec = self.indVec[:-1] #shrink vector size
+            anglesOS = self.AnglesVec[self.indVec] # OS-specific angles
             self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
             if self.device == 1:
                 self.proj_id_OS[sub_ind] = astra.create_projector('line', self.proj_geom_OS[sub_ind], self.vol_geom) # for CPU
@@ -255,10 +256,10 @@ class AstraToolsOS3D:
         # create OS-specific ASTRA geometry
         self.proj_geom_OS = {}
         for sub_ind in range(OS):
-            indVec = self.newInd_Vec[sub_ind,:]
-            if (indVec[self.NumbProjBins-1] == 0):
-                indVec = indVec[:-1] #shrink vector size
-            anglesOS = AnglesVec[indVec] # OS-specific angles
+            self.indVec = self.newInd_Vec[sub_ind,:]
+            if (self.indVec[self.NumbProjBins-1] == 0):
+                self.indVec = self.indVec[:-1] #shrink vector size
+            anglesOS = AnglesVec[self.indVec] # OS-specific angles
             self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, anglesOS)
 
     def forwproj(self, object3D):
