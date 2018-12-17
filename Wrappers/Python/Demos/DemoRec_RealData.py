@@ -3,7 +3,7 @@
 """
 GPLv3 license (ASTRA toolbox)
 
-Script to generate real tomographic X-ray data
+Script to reconstruct real tomographic X-ray data (dendrites)
 
 Dependencies: 
     * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
