@@ -3,17 +3,23 @@
 """
 GPLv3 license (ASTRA toolbox)
 
-Script to reconstruct real tomographic X-ray data (dendrites)
+Script to reconstruct tomographic X-ray data (dendritic growth process)
+obtained at Diamond Light Source (UK synchrotron), beamline I12
 
 Dependencies: 
     * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
     * CCPi-RGL toolkit (for regularisation), install with 
     conda install ccpi-regulariser -c ccpi -c conda-forge
-    or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
+    or conda build of  https://github.com/vais-ral/CCPi-Regularisation-Toolkit
     * TomoPhantom, https://github.com/dkazanc/TomoPhantom
 
+<<<
+IF THE SHARED DATA ARE USED FOR PUBLICATIONS/PRESENTATIONS etc., PLEASE CITE:
+D. Kazantsev et al. 2017. Model-based iterative reconstruction using 
+higher-order regularization of dynamic synchrotron data. 
+Measurement Science and Technology, 28(9), p.094004.
+>>>
 @author: Daniil Kazantsev: https://github.com/dkazanc
-please cite real data if used (see github page)
 """
 import numpy as np
 import matplotlib.pyplot as plt
