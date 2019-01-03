@@ -8,11 +8,13 @@ import numpy as np
 
 def normaliser(data, flats, darks, log):
     """
-    data normaliser which assumes data to be in the following format:
-    [detectorsHoriz, Projections, Slices]
+    data normaliser which assumes data/flats/darks to be in the following format:
+    [detectorsHoriz, Projections, detectorsVertical]
     """
     data_norm = np.zeros(np.shape(data),dtype='float32')
     ProjectionsNum = np.size(data,1) # get the number of projection angles
+    flats = np.average(flats,1) # average of flats
+    darks = np.average(darks,1) # average of darks
     denom = (flats-darks)
     denom[(np.where(denom == 0))] = 1 # remove zeros in the denominator if any
     
