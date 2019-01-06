@@ -105,7 +105,7 @@ class AstraToolsOS:
         ################ arrange ordered-subsets ################
         import numpy as np
         AnglesTot = np.size(AnglesVec) # total number of angles
-        self.NumbProjBins = (int)(np.ceil(AnglesTot/OS)) # get the number of projections per bin (subset)
+        self.NumbProjBins = (int)(np.ceil(float(AnglesTot)/float(OS))) # get the number of projections per bin (subset)
         self.newInd_Vec = np.zeros([OS,self.NumbProjBins],dtype='int') # 2D array of OS-sorted indeces
         for sub_ind in range(OS):
             ind_sel = 0
@@ -240,7 +240,7 @@ class AstraToolsOS3D:
         ################ arrange ordered-subsets ################
         import numpy as np
         AnglesTot = np.size(AnglesVec) # total number of angles
-        self.NumbProjBins = (int)(np.ceil(AnglesTot/OS)) # get the number of projections per bin (subset)
+        self.NumbProjBins = (int)(np.ceil(float(AnglesTot)/float(OS))) # get the number of projections per bin (subset)
         self.newInd_Vec = np.zeros([OS,self.NumbProjBins],dtype='int') # 2D array of OS-sorted indeces
         for sub_ind in range(OS):
             ind_sel = 0

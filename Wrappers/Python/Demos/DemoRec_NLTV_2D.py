@@ -184,7 +184,7 @@ Rectools = RecTools(DetectorsDimH = P,  # DetectorsDimH # detector dimension (ho
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    OS_number = 24, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-06, # tolerance to stop outer iterations earlier
                     device='gpu')
 
@@ -192,9 +192,9 @@ lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilis
 
 tic=timeit.default_timer()
 print ("Run FISTA-OS reconstrucion algorithm with TV regularisation...")
-RecFISTA_TV_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 20, \
+RecFISTA_TV_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 12, \
                               regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.00003,\
+                              regularisation_parameter = 0.001,\
                               regularisation_iterations = 70,\
                               lipschitz_const = lc)
 toc=timeit.default_timer()
@@ -203,10 +203,10 @@ print("FISTA-OS-TV completed in {} seconds".format(Run_time))
 
 tic=timeit.default_timer()
 print ("Run FISTA-OS reconstrucion algorithm with NLTV regularisation...")
-RecFISTA_NLTV_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 20, \
+RecFISTA_NLTV_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 12, \
                               regularisation = 'NLTV', \
-                              regularisation_parameter = 0.00015,\
-                              regularisation_iterations = 30,\
+                              regularisation_parameter = 0.0025,\
+                              regularisation_iterations = 25,\
                               NLTV_H_i = H_i,\
                               NLTV_H_j = H_j,\
                               NLTV_Weights = Weights,\

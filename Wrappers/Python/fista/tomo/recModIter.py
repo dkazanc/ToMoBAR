@@ -102,14 +102,14 @@ class RecTools:
             # OS approach
             y = self.Atools.forwprojOS(x1,0)
             if (self.datafidelity == 'PWLS'):
-                y = np.multiply(sqweight[self.Atools.indVec,:], y)
+                y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
             for iter in range(0,niter):
                 x1 = self.Atools.backprojOS(y,0)
                 s = LA.norm(x1)
                 x1 = x1/s
                 y = self.Atools.forwprojOS(x1,0)
                 if (self.datafidelity == 'PWLS'):
-                    y = np.multiply(sqweight[self.Atools.indVec,:], y)
+                    y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
         return s
     
     def FISTA(self, 

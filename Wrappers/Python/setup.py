@@ -5,7 +5,7 @@ from distutils.core import setup
 
 setup(
     name="fista-tomo",
-    version='0.1.1',
+    version='0.1.4',
     packages=['fista', 'fista.tomo'],
 
     # metadata for upload to PyPI
