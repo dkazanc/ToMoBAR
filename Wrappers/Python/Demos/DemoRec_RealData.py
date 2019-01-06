@@ -34,17 +34,23 @@ angles = datadict['angles']
 flats = datadict['flats_ar']
 darks=  datadict['darks_ar']
 
-# normalise the data, required format is [detectorsHoriz, Projections, Slices]
-data_norm = normaliser(dataRaw, flats, darks, log='log')
+flats2 = np.zeros((np.size(flats,0),1, np.size(flats,1)), dtype='float32')
+flats2[:,0,:] = flats[:]
+darks2 = np.zeros((np.size(darks,0),1, np.size(darks,1)), dtype='float32')
+darks2[:,0,:] = darks[:]
 
-dataRaw = np.divide(dataRaw, np.max(dataRaw).astype(float))
+# normalise the data, required format is [detectorsHoriz, Projections, Slices]
+data_norm = normaliser(dataRaw, flats2, darks2, log='log')
+
+dataRaw = np.float32(np.divide(dataRaw, np.max(dataRaw).astype(float)))
+
 detectorHoriz = np.size(data_norm,0)
 N_size = 1000
 slice_to_recon = 0 # select which slice to reconstruct
 angles_rad = angles*(np.pi/180.0)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("%%%%%%%%%%%%Reconstructing with using FBP method %%%%%%%%%%%")
+print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomophantom.supp.astraOP import AstraTools
 
