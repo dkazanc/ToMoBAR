@@ -61,47 +61,7 @@ plt.figure()
 plt.imshow(FBPrec, vmin=0, vmax=0.005, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FBP reconstruction')
-#%%
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing with FISTA OS method (ASTRA used for project)")
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from fista.tomo.recModIter import RecTools
 
-# set parameters and initiate a class object
-Rectools = RecTools(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
-                    device='gpu')
-
-lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
-
-"""
-RecFISTA_os = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
-                             iterationsFISTA = 15, \
-                             lipschitz_const = lc)
-"""
-
-# Run FISTA-OS reconstrucion algorithm with regularisation
-RecFISTA_reg = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
-                              iterationsFISTA = 15, \
-                              regularisation = 'ROF_TV', \
-                              regularisation_parameter = 0.0001,\
-                              regularisation_iterations = 100,\
-                              lipschitz_const = lc)
-
-plt.figure()
-plt.imshow(RecFISTA_reg, vmin=0, vmax=0.005, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-plt.title('Regularised FISTA-OS (LS) reconstruction')
-plt.show()
-#%%
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing with FISTA PWLS OS method")
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from fista.tomo.recModIter import RecTools
 
 # set parameters and initiate a class object
@@ -116,25 +76,98 @@ Rectools = RecTools(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector d
 
 lc = Rectools.powermethod(np.transpose(dataRaw[:,:,slice_to_recon])) # calculate Lipschitz constant (run once to initilise)
 
-"""
 RecFISTA_os_pwls = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
                              np.transpose(dataRaw[:,:,slice_to_recon]), \
                              iterationsFISTA = 15, \
                              lipschitz_const = lc)
-"""
 
+fig = plt.figure()
+plt.imshow(RecFISTA_os_pwls[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+#plt.imshow(RecFISTA_os_pwls, vmin=0, vmax=0.004, cmap="gray")
+plt.title('FISTA PWLS-OS reconstruction')
+plt.show()
+#fig.savefig('dendr_PWLS.png', dpi=200)
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-TV method %%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_reg = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
+RecFISTA_pwls_os_TV = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
                               np.transpose(dataRaw[:,:,slice_to_recon]), \
                               iterationsFISTA = 15, \
-                              regularisation = 'ROF_TV', \
-                              regularisation_parameter = 0.00005,\
-                              regularisation_iterations = 100,\
+                              regularisation = 'FGP_TV', \
+                              regularisation_parameter = 0.000001,\
+                              regularisation_iterations = 200,\
                               lipschitz_const = lc)
 
-plt.figure()
-plt.imshow(RecFISTA_pwls_os_reg, vmin=0, vmax=0.005, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-plt.title('Regularised FISTA-PWLS-OS reconstruction')
+fig = plt.figure()
+plt.imshow(RecFISTA_pwls_os_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA PWLS-OS-TV reconstruction')
 plt.show()
+#fig.savefig('dendr_TV.png', dpi=200)
 #%%
+"""
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-Diff4th method %%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
+RecFISTA_pwls_os_Diff4th = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
+                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+                              iterationsFISTA = 15, \
+                              regularisation = 'DIFF4th', \
+                              regularisation_parameter = 0.1,\
+                              time_marching_parameter = 0.001,\
+                              edge_param = 0.003,\
+                              regularisation_iterations = 600,\
+                              lipschitz_const = lc)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_pwls_os_Diff4th[150:550,150:550], vmin=0, vmax=0.004, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA PWLS-OS-Diff4th reconstruction')
+plt.show()
+#fig.savefig('dendr_Diff4th.png', dpi=200)
+"""
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-ROF_LLT method %%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
+RecFISTA_pwls_os_rofllt = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
+                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+                              iterationsFISTA = 15, \
+                              regularisation = 'LLT_ROF', \
+                              regularisation_parameter = 0.000007,\
+                              regularisation_parameter2 = 0.0004,\
+                              regularisation_iterations = 350,\
+                              lipschitz_const = lc)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_pwls_os_rofllt[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA PWLS-OS-ROF-LLT reconstruction')
+plt.show()
+#fig.savefig('dendr_ROFLLT.png', dpi=200)
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-TGV method %%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
+RecFISTA_pwls_os_tgv = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
+                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+                              iterationsFISTA = 15, \
+                              regularisation = 'TGV', \
+                              regularisation_parameter = 0.001,\
+                              TGV_alpha2 = 0.001,\
+                              TGV_alpha1 = 2.0,\
+                              TGV_LipschitzConstant = 24,\
+                              regularisation_iterations = 300,\
+                              lipschitz_const = lc)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_pwls_os_tgv[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA PWLS-OS-TGV reconstruction')
+plt.show()
+#fig.savefig('dendr_TGV.png', dpi=200)

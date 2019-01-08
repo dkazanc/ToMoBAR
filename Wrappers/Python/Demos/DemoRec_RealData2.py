@@ -39,13 +39,13 @@ print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomophantom.supp.astraOP import AstraTools
 
-N_size = 1700
+N_size = 2000
 det_y_crop = [i for i in range(0,2374)]
 Atools = AstraTools(np.size(det_y_crop), angles_rad, N_size, 'gpu') # initiate a class object
 FBPrec = Atools.fbp2D(np.transpose(data_norm[det_y_crop,:,0]))
 
 plt.figure()
-#plt.imshow(FBPrec[800:1200,800:1200], vmin=0, vmax=1, cmap="gray")
+#plt.imshow(FBPrec[500:1500,500:1500], vmin=0, vmax=1, cmap="gray")
 plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
 plt.title('FBP reconstruction')
 
@@ -70,21 +70,26 @@ RecFISTA_PWLS = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
                               np.transpose(data_raw[det_y_crop,:,0]), \
                               iterationsFISTA = 3, \
                               lipschitz_const = lc)
-
+"""
+plt.figure()
+plt.imshow(RecFISTA_PWLS, vmin=0, vmax=0.3, cmap="gray")
+plt.title('FISTA-PWLS-OS reconstruction')
+plt.show()
+"""
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TV method % %%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecFISTA_TV = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
                               np.transpose(data_raw[det_y_crop,:,0]), \
-                              iterationsFISTA = 8, \
+                              iterationsFISTA = 9, \
                               regularisation = 'FGP_TV', \
                               regularisation_parameter = 0.0009,\
                               regularisation_iterations = 200,\
                               lipschitz_const = lc)
 
 plt.figure()
-plt.imshow(RecFISTA_TV, vmin=0, vmax=0.3, cmap="gray")
+plt.imshow(RecFISTA_TV, vmin=0, vmax=0.2, cmap="gray")
 plt.title('FISTA-PWLS-OS-TV reconstruction')
 plt.show()
 #%%
@@ -93,16 +98,16 @@ print ("Reconstructing with FISTA PWLS-OS-NDF(Huber) method % %%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecFISTA_NDF_huber = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
                               np.transpose(data_raw[det_y_crop,:,0]), \
-                              iterationsFISTA = 8, \
+                              iterationsFISTA = 9, \
                               regularisation = 'NDF', \
                               NDF_penalty = 1, \
-                              edge_param = 0.025,\
-                              regularisation_parameter = 0.02,\
+                              edge_param = 0.012,\
+                              regularisation_parameter = 0.01,\
                               regularisation_iterations = 400,\
                               lipschitz_const = lc)
 
 plt.figure()
-plt.imshow(RecFISTA_NDF_huber, vmin=0, vmax=0.3, cmap="gray")
+plt.imshow(RecFISTA_NDF_huber, vmin=0, vmax=0.2, cmap="gray")
 plt.title('FISTA-PWLS-OS-NDF (Huber) reconstruction')
 plt.show()
 #%%
@@ -127,7 +132,7 @@ print ("Reconstructing with FISTA PWLS-OS-NLTV method %%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecFISTA_regNLTV = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
                               np.transpose(data_raw[det_y_crop,:,0]), \
-                              iterationsFISTA = 8, \
+                              iterationsFISTA = 9, \
                               regularisation = 'NLTV', \
                               regularisation_parameter = 0.0007,\
                               regularisation_iterations = 25,\
@@ -135,8 +140,9 @@ RecFISTA_regNLTV = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
                               NLTV_H_j = H_j,\
                               NLTV_Weights = Weights,\
                               lipschitz_const = lc)
-plt.figure()
-plt.imshow(RecFISTA_regNLTV, vmin=0, vmax=0.3, cmap="gray")
+fig = plt.figure()
+plt.imshow(RecFISTA_regNLTV, vmin=0, vmax=0.2, cmap="gray")
 plt.title('FISTA PWLS-OS-NLTV reconstruction')
 plt.show()
+#fig.savefig('ice_NLTV.png', dpi=200)
 #%%
