@@ -1,6 +1,6 @@
-#  Regularised FISTA-type iterative reconstruction algorithm for X-ray tomographic reconstruction with highly inaccurate measurements
+#  A library of direct and iterative (regularised) tomographic reconstruction algorithms in Python/MATLAB
 
-**This software supports research published in the following journal papers [1,2,3] with applications in [4-6]. Software depends on several software packages and requires a GPU (Nvidia) card to operate. FISTA-tomo is implemented in both MATLAB and Python.** 
+**Software currently includes regularised FISTA-based iterative reconstruction algorithm accelerated with ordered subsets. This software supports research published in the following journal papers [1,2,3] with applications in [4-6]. Software wraps some [ASTRA-toolbox](https://www.astra-toolbox.com/) algoithms and requires a GPU (Nvidia) card.** 
 
 <div align="center">
   <img src="docs/images/recsFISTA_stud.png" height="216"><br>  
@@ -24,17 +24,14 @@
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations
  * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for simulation
  * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation
- * See [INSTALLATION](https://github.com/dkazanc/FISTA-tomo/blob/master/INSTALLATION) for detailed information
+ * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Installation in Python (conda):
-Install with `conda install -c dkazanc fista-tomo` or build with:
+Install with `conda install -c dkazanc tomorec` or build with:
 ```	
 conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5 
-conda install fista-tomo --use-local --force
+conda install tomorec --use-local --force
 ```
- 
-### Package contents:
- * A number of demos for 2D/3D parallel and cone-beam geometry with 2D and 3D regularisation routines using [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit). Demos show how the methods deal with noise and artifacts. Also real-data example added to emphasise methods properties. 
 
 ### References:
  1. [D. Kazantsev et al. 2017. A Novel Tomographic Reconstruction Method Based on the Robust Student's t Function For Suppressing Data Outliers. IEEE TCI, 3(4), pp.682-693.](https://doi.org/10.1109/TCI.2017.2694607)
