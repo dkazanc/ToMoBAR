@@ -1,6 +1,6 @@
 package:
-  name: fista-tomo
-  version: "0.1.4"
+  name: tomorec
+  version: "0.1.0"
 
 
 build:
@@ -17,6 +17,6 @@ requirements:
     - numpy
 	
 about:
-  home: https://github.com/dkazanc/FISTA-tomo
+  home: https://github.com/dkazanc/TomoRec
   license:  GPLv3
-  summary: 'FISTA-based iterative reconstruction algorithms for tomography'
+  summary: 'MATLAB/Python library of tomographic reconstruction methods: direct and iterative'

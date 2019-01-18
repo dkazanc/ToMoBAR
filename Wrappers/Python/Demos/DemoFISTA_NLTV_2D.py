@@ -85,11 +85,11 @@ plt.title('{}''{}'.format('Analytical noisy sinogram with artifacts',model))
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA method (ASTRA used for projection)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from fista.tomo.recModIter import RecTools
+from tomorec.methodsIR import RecToolsIR
 from ccpi.filters.regularisers import PatchSelect
 
 # set parameters and initiate a class object
-Rectools = RecTools(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
@@ -100,10 +100,14 @@ Rectools = RecTools(DetectorsDimH = P,  # DetectorsDimH # detector dimension (ho
 
 lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
 
-# first reconstruct using FBP method
-from tomophantom.supp.astraOP import AstraTools
-Atools = AstraTools(P, angles_rad, N_size, 'gpu') # initiate a class object
-FBPrec = Atools.fbp2D(noisy_sino)
+from tomorec.methodsDIR import RecToolsDIR
+RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    device='gpu')
+
+FBPrec = RectoolsDIR.FBP(noisy_sino) #perform FBP
 
 plt.figure()
 plt.imshow(FBPrec, vmin=0, vmax=1, cmap="BuPu")
@@ -127,7 +131,6 @@ plt.imshow(Weights[0,:,:], vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 """
 #%%
-
 tic=timeit.default_timer()
 print ("Run FISTA reconstrucion algorithm with TV regularisation...")
 RecFISTA_regTV = Rectools.FISTA(noisy_sino, iterationsFISTA = 250, \
@@ -176,10 +179,10 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%Reconstructing with FISTA-OS method%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from fista.tomo.recModIter import RecTools
+from tomorec.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecTools(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions

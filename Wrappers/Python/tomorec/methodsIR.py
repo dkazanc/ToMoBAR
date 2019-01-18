@@ -1,10 +1,11 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-A reconstruction class for FISTA-based iterative methods:
+A reconstruction class for regularised iterative methods:
 -- Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative 
                                shrinkage-thresholding algorithm for linear inverse problems,
                                SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
+-- SIRT, CGLS algorithms from ASTRA
 
 Dependencies: 
     * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
@@ -19,7 +20,7 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 from numpy import linalg as LA
 
-class RecTools:
+class RecToolsIR:
     """ 
     A class for iterative reconstruction algorithms using ASTRA and CCPi RGL toolkit
     """
@@ -51,26 +52,46 @@ class RecTools:
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
             if ((OS_number is None) or (OS_number <= 1)):
-                # classical FISTA
-                from fista.tomo.astraOP import AstraTools
+                # classical approach
+                from tomorec.supp.astraOP import AstraTools
                 self.Atools = AstraTools(DetectorsDimH, AnglesVec, ObjSize, device) # initiate 2D ASTRA class object
                 self.OS_number = 1
             else:
-                # Ordered-subset FISTA
-                from fista.tomo.astraOP import AstraToolsOS
+                # Ordered-subset approach
+                from tomorec.supp.astraOP import AstraToolsOS
                 self.Atools = AstraToolsOS(DetectorsDimH, AnglesVec, ObjSize, self.OS_number, device) # initiate 2D ASTRA class OS object
             self.geom = '2D'
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
             if ((OS_number is None) or (OS_number <= 1)):
-                from fista.tomo.astraOP import AstraTools3D
+                from tomorec.supp.astraOP import AstraTools3D
                 self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize) # initiate 3D ASTRA class object
                 self.OS_number = 1
             else:
-                # Ordered-subset FISTA
-                from fista.tomo.astraOP import AstraToolsOS3D
+                # Ordered-subset 
+                from tomorec.supp.astraOP import AstraToolsOS3D
                 self.Atools = AstraToolsOS3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize, self.OS_number) # initiate 3D ASTRA class OS object
+    
+    def SIRT(self, sinogram, iterations):
+        if (self.OS_number > 1):
+            raise('There is no OS mode for SIRT yet, please choose OS = None')
+        #SIRT reconstruction algorithm from ASTRA
+        if (self.geom == '2D'):
+            SIRT_rec = self.Atools.sirt2D(sinogram, iterations)
+        if (self.geom == '3D'):
+            SIRT_rec = self.Atools.sirt3D(sinogram, iterations)
+        return SIRT_rec
+
+    def CGLS(self, sinogram, iterations):
+        if (self.OS_number > 1):
+            raise('There is no OS mode for CGLS yet, please choose OS = None')
+        #CGLS reconstruction algorithm from ASTRA
+        if (self.geom == '2D'):
+            CGLS_rec = self.Atools.cgls2D(sinogram, iterations)
+        if (self.geom == '3D'):
+            CGLS_rec = self.Atools.cgls3D(sinogram, iterations)
+        return CGLS_rec
 
     def powermethod(self, weights = None):
         # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
@@ -224,7 +245,7 @@ class RecTools:
                         X = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, self.device)
                     if (regularisation == 'TGV'):
                         # Total Generalised Variation method (2D only currently)
-                        X = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, self.device)
+                        X = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, 'cpu') # till gpu version is fixed
                     if (regularisation == 'NDF'):
                         # Nonlinear isotropic diffusion method
                         X = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)

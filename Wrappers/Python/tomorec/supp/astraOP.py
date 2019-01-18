@@ -91,6 +91,31 @@ class AstraTools:
         astra.data2d.delete(sinogram_id)
         astra.data2d.delete(self.proj_id)
         return recSIRT
+    def cgls2D(self, sinogram, iterations):
+        """perform CGLS reconstruction""" 
+        rec_id = astra.data2d.create( '-vol', self.vol_geom)
+        # Create a data object to hold the sinogram data
+        sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
+        
+        if self.device == 1:
+            cfg = astra.astra_dict('CGLS')
+            cfg['ProjectorId'] = self.proj_id
+        else:
+            cfg = astra.astra_dict('CGLS_CUDA')
+        cfg['ReconstructionDataId'] = rec_id
+        cfg['ProjectionDataId'] = sinogram_id
+
+        # Create and run the algorithm object from the configuration structure
+        alg_id = astra.algorithm.create(cfg)
+        astra.algorithm.run(alg_id, iterations)
+        # Get the result
+        recCGLS = astra.data2d.get(rec_id)
+
+        astra.algorithm.delete(alg_id)
+        astra.data2d.delete(rec_id)
+        astra.data2d.delete(sinogram_id)
+        astra.data2d.delete(self.proj_id)
+        return recCGLS
     
 class AstraToolsOS:
     """

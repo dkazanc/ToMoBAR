@@ -69,7 +69,7 @@ plt.title('{}''{}'.format('Analytical noisy sinogram',model))
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA method (ASTRA used for projection)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from fista.tomo.recModIter import RecTools
+from iterative.methodsIR import RecTools
 
 # set parameters and initiate a class object
 Rectools = RecTools(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)

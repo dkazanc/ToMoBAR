@@ -11,7 +11,6 @@ Dependencies:
     * CCPi-RGL toolkit (for regularisation), install with 
     conda install ccpi-regulariser -c ccpi -c conda-forge
     or conda build of  https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-    * TomoPhantom, https://github.com/dkazanc/TomoPhantom
 
 <<<
 IF THE SHARED DATA ARE USED FOR PUBLICATIONS/PRESENTATIONS etc., PLEASE CITE:
@@ -24,7 +23,7 @@ Measurement Science and Technology, 28(9), p.094004.
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io
-from fista.tomo.suppTools import normaliser
+from tomorec.supp.suppTools import normaliser
 
 # load dendritic data
 datadict = scipy.io.loadmat('../../../data/DendrRawData.mat')
@@ -52,20 +51,22 @@ angles_rad = angles*(np.pi/180.0)
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomophantom.supp.astraOP import AstraTools
+from tomorec.methodsDIR import RecToolsDIR
+RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions                   
+                    device='gpu')
 
-Atools = AstraTools(detectorHoriz, angles_rad, N_size, 'gpu') # initiate a class object
-FBPrec = Atools.fbp2D(np.transpose(data_norm[:,:,slice_to_recon]))
+FBPrec = RectoolsDIR.FBP(np.transpose(data_norm[:,:,slice_to_recon]))
 
 plt.figure()
-plt.imshow(FBPrec, vmin=0, vmax=0.005, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.imshow(FBPrec[150:550,150:550], vmin=0, vmax=0.005, cmap="gray")
 plt.title('FBP reconstruction')
 
-from fista.tomo.recModIter import RecTools
-
+from tomorec.methodsIR import RecToolsIR
 # set parameters and initiate a class object
-Rectools = RecTools(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions

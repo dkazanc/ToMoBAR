@@ -11,7 +11,6 @@ Dependencies:
     * CCPi-RGL toolkit (for regularisation), install with 
     conda install ccpi-regulariser -c ccpi -c conda-forge
     or conda build of  https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-    * TomoPhantom, https://github.com/dkazanc/TomoPhantom
 
 <<<
 IF THE SHARED DATA ARE USED FOR PUBLICATIONS/PRESENTATIONS etc., PLEASE CITE:
@@ -37,12 +36,18 @@ h5f.close()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomophantom.supp.astraOP import AstraTools
+from tomorec.methodsDIR import RecToolsDIR
 
 N_size = 2000
 det_y_crop = [i for i in range(0,2374)]
-Atools = AstraTools(np.size(det_y_crop), angles_rad, N_size, 'gpu') # initiate a class object
-FBPrec = Atools.fbp2D(np.transpose(data_norm[det_y_crop,:,0]))
+
+RectoolsDIR = RecToolsDIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions                   
+                    device='gpu')
+
+FBPrec = RectoolsDIR.FBP(np.transpose(data_norm[det_y_crop,:,0]))
 
 plt.figure()
 #plt.imshow(FBPrec[500:1500,500:1500], vmin=0, vmax=1, cmap="gray")
@@ -50,11 +55,32 @@ plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
 plt.title('FBP reconstruction')
 
 #%%
-# Initialise FISTA-type PWLS reconstruction (run once)
-from fista.tomo.recModIter import RecTools
+from tomorec.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecTools(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
+                    device='gpu')
+
+
+# Run CGLS reconstrucion algorithm 
+RecCGLS = Rectools.CGLS(np.transpose(data_norm[det_y_crop,:,0]), iterations = 7)
+
+plt.figure()
+plt.imshow(RecCGLS, vmin=0, vmax=0.3, cmap="gray")
+plt.title('CGLS reconstruction')
+plt.show()
+#%%
+# Initialise FISTA-type PWLS reconstruction (run once)
+from tomorec.methodsIR import RecToolsIR
+
+# set parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
@@ -64,18 +90,6 @@ Rectools = RecTools(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # dete
                     device='gpu')
 
 lc = Rectools.powermethod(np.transpose(data_raw[det_y_crop,:,0])) # calculate Lipschitz constant (run once to initilise)
-
-# Run FISTA-PWLS-OS reconstrucion algorithm 
-RecFISTA_PWLS = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
-                              np.transpose(data_raw[det_y_crop,:,0]), \
-                              iterationsFISTA = 3, \
-                              lipschitz_const = lc)
-"""
-plt.figure()
-plt.imshow(RecFISTA_PWLS, vmin=0, vmax=0.3, cmap="gray")
-plt.title('FISTA-PWLS-OS reconstruction')
-plt.show()
-"""
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TV method % %%%%%%%%%%%%%%")
@@ -115,7 +129,7 @@ from ccpi.filters.regularisers import PatchSelect
 print ("Pre-calculating weights for non-local patches...")
 
 pars = {'algorithm' : PatchSelect, \
-        'input' : RecFISTA_PWLS,\
+        'input' : RecCGLS,\
         'searchwindow': 7, \
         'patchwindow': 2,\
         'neighbours' : 13 ,\

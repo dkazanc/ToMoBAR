@@ -4,7 +4,7 @@ Here we provide detailed installation information for the following dependencies
  ## ASTRA-toolbox 
 ---------- can be downloaded at https://www.astra-toolbox.com/downloads/index.html and installed according to the documentation. In Matlab provide path to the package. 
 
-## Software dependencies for FISTA-Tomo (Matlab advices): 
+## Software dependencies for TomoRec (Matlab advices): 
  
 * [CCPi-Regularisation Toolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit)
 ---------- uncompress the content into "Supplementary/CCPi-Regularisation-Toolkit/" folder. 
@@ -20,9 +20,7 @@ Here we provide detailed installation information for the following dependencies
 
 
 ## Installation in Python (conda):
-Install with `conda install -c dkazanc fista-tomo` or build with:
-
-or build yourself: 
+Install with `conda install -c dkazanc tomorec` or build yourself: 
 
 conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5 
-conda install fista-tomo --use-local --force
+conda install tomorec --use-local --force
