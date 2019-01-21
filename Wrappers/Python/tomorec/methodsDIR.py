@@ -3,6 +3,7 @@
 """
 A reconstruction class for direct reconstructon methods (parallel beam geometry):
 -- Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
+-- Forward/Backward projection (ASTRA)
 -- Filtered Back Projection (ASTRA)
 
 @author: Daniil Kazantsev
@@ -129,3 +130,23 @@ class RecToolsDIR:
             for i in range(0, self.DetectorsDimV):
                 FBP_rec[i,:,:] = Atools.fbp2D(np.flipud(sinogram[i,:,:]))
         return FBP_rec
+    def FORWPROJ(self, image):
+        if (self.geom == '2D'):
+            from tomorec.supp.astraOP import AstraTools
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
+            sinogram = Atools.forwproj(image)
+        if (self.geom == '3D'):
+            from tomorec.supp.astraOP import AstraTools3D
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.ObjSize) # initiate 3D ASTRA class object
+            sinogram = Atools.forwproj(image)
+        return sinogram
+    def BACKPROJ(self, sinogram):
+        if (self.geom == '2D'):
+            from tomorec.supp.astraOP import AstraTools
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
+            image = Atools.backproj(sinogram)
+        if (self.geom == '3D'):
+            from tomorec.supp.astraOP import AstraTools3D
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.ObjSize) # initiate 3D ASTRA class object
+            image = Atools.backproj(sinogram)
+        return image
