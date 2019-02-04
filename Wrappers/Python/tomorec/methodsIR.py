@@ -277,4 +277,6 @@ class RecToolsIR:
                     #print('FISTA stopped at iteration', iter)
                     break
 #****************************************************************************#
+        if (self.nonnegativity == 1):
+            X[X < 0.0] = 0.0
         return X

@@ -63,6 +63,7 @@ Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # de
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    nonnegativity='on', # enable nonnegativity constraint (set to 'on')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-08, # tolerance to stop outer iterations earlier
                     device='gpu')
@@ -85,6 +86,7 @@ Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # de
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    nonnegativity='on', # enable nonnegativity constraint (set to 'on')
                     OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-08, # tolerance to stop outer iterations earlier
                     device='gpu')
