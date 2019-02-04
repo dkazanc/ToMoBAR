@@ -103,20 +103,19 @@ plt.subplot(133)
 plt.imshow(FBPrec[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D FBP Reconstruction, sagittal view')
 plt.show()
-
-
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA method (ASTRA used for projection)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsIR import RecTools
+from tomorec.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecTools(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    nonnegativity='on', # enable nonnegativity constraint (set to 'on')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-08, # tolerance to stop outer iterations earlier
                     device='gpu')
@@ -129,7 +128,7 @@ RecFISTA = Rectools.FISTA(projData3D_analyt, iterationsFISTA = 150, lipschitz_co
 # Run FISTA reconstrucion algorithm with 3D regularisation
 RecFISTA_reg = Rectools.FISTA(projData3D_analyt, iterationsFISTA = 150, \
                               regularisation = 'ROF_TV', \
-                              regularisation_parameter = 0.005,\
+                              regularisation_parameter = 0.002,\
                               regularisation_iterations = 100,\
                               lipschitz_const = lc)
 
@@ -176,14 +175,15 @@ print("RMSE for regularised FISTA is {}".format(RMSE_FISTA_reg))
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA-OS method")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsIR import RecTools
+from tomorec.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecTools(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    nonnegativity='on', # enable nonnegativity constraint (set to 'on')
                     OS_number = 10, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-08, # tolerance to stop outer iterations earlier
                     device='gpu')
@@ -197,7 +197,7 @@ RecFISTA_os = Rectools.FISTA(projData3D_analyt, iterationsFISTA = 15, lipschitz_
 
 RecFISTA_os_reg = Rectools.FISTA(projData3D_analyt, iterationsFISTA = 15, \
                               regularisation = 'ROF_TV', \
-                              regularisation_parameter = 0.005,\
+                              regularisation_parameter = 0.002,\
                               regularisation_iterations = 200,\
                               lipschitz_const = lc)
 

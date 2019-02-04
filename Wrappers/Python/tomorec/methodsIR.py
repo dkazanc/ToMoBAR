@@ -22,14 +22,15 @@ from numpy import linalg as LA
 
 class RecToolsIR:
     """ 
-    A class for iterative reconstruction algorithms using ASTRA and CCPi RGL toolkit
+    A class for iterative reconstruction algorithms using ASTRA and CCPi-RGL toolkit
     """
     def __init__(self, 
               DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
               DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
-              datafidelity,# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+              datafidelity, # data fidelity, choose 'LS', 'PWLS', 'GH' (wip), 'Student' (wip)
+              nonnegativity, # select 'nonnegativity' constraint (set to 'on')
               OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
               tolerance, # tolerance to stop outer iterations earlier
               device):
@@ -41,6 +42,12 @@ class RecToolsIR:
         self.tolerance = tolerance
         self.datafidelity = datafidelity
         self.OS_number = OS_number
+        
+        # enables nonnegativity constraint
+        if nonnegativity is 'on':
+            self.nonnegativity = 1
+        else:
+            self.nonnegativity = 0
         
         if device is None:
             self.device = 'gpu'
@@ -77,9 +84,9 @@ class RecToolsIR:
         if (self.OS_number > 1):
             raise('There is no OS mode for SIRT yet, please choose OS = None')
         #SIRT reconstruction algorithm from ASTRA
-        if (self.geom == '2D'):
+        if (self.geom is '2D'):
             SIRT_rec = self.Atools.sirt2D(sinogram, iterations)
-        if (self.geom == '3D'):
+        if (self.geom is '3D'):
             SIRT_rec = self.Atools.sirt3D(sinogram, iterations)
         return SIRT_rec
 
@@ -87,9 +94,9 @@ class RecToolsIR:
         if (self.OS_number > 1):
             raise('There is no OS mode for CGLS yet, please choose OS = None')
         #CGLS reconstruction algorithm from ASTRA
-        if (self.geom == '2D'):
+        if (self.geom is '2D'):
             CGLS_rec = self.Atools.cgls2D(sinogram, iterations)
-        if (self.geom == '3D'):
+        if (self.geom is '3D'):
             CGLS_rec = self.Atools.cgls3D(sinogram, iterations)
         return CGLS_rec
 
@@ -98,11 +105,11 @@ class RecToolsIR:
         # weights (raw projection data) are required for PWLS fidelity (self.datafidelity = PWLS), otherwise ignored
         niter = 15 # number of power method iterations
         s = 1.0
-        if (self.geom == '2D'):
+        if (self.geom is '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize,self.Atools.ObjSize))
-        if (self.datafidelity == 'PWLS'):
+        if (self.datafidelity is 'PWLS'):
             if weights is None: 
                 raise ValueError('The selected data fidelity is PWLS, hence the raw projection data must be provided to the function')
             else:
@@ -110,33 +117,33 @@ class RecToolsIR:
         if (self.OS_number == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
-            if (self.datafidelity == 'PWLS'):
+            if (self.datafidelity is 'PWLS'):
                 y = np.multiply(sqweight, y)
             for iter in range(0,niter):
                 x1 = self.Atools.backproj(y)
                 s = LA.norm(x1)
                 x1 = x1/s
                 y = self.Atools.forwproj(x1)
-                if (self.datafidelity == 'PWLS'):
+                if (self.datafidelity is 'PWLS'):
                     y = np.multiply(sqweight, y)
         else:
             # OS approach
             y = self.Atools.forwprojOS(x1,0)
-            if (self.datafidelity == 'PWLS'):
+            if (self.datafidelity is 'PWLS'):
                 y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
             for iter in range(0,niter):
                 x1 = self.Atools.backprojOS(y,0)
                 s = LA.norm(x1)
                 x1 = x1/s
                 y = self.Atools.forwprojOS(x1,0)
-                if (self.datafidelity == 'PWLS'):
+                if (self.datafidelity is 'PWLS'):
                     y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
         return s
     
     def FISTA(self, 
               projdata, # tomographic projection data in 2D (sinogram) or 3D array
               weights = None, # raw projection data for PWLS model
-              InitialObject = 0, # initialise reconstruction with an array
+              InitialObject = None, # initialise reconstruction with an array
               lipschitz_const = 5e+06, # can be a given value or calculated using Power method
               iterationsFISTA = 100, # the number of OUTER FISTA iterations
               regularisation = None, # enable regularisation  with CCPi - RGL toolkit
@@ -149,16 +156,15 @@ class RecToolsIR:
               TGV_alpha2 = 0.8, # TGV specific parameter for the 2st order term
               TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
               edge_param = 0.01, # edge (noise) threshold parameter for NDF and DIFF4th
-              NDF_penalty = 1, # NDF specific penalty type: 1 - Huber, 2 - Perona-Malik, 3 - Tukey Biweight
+              NDF_penalty = 'Huber', # NDF specific penalty type: Huber (default), Perona, Tukey
               NLTV_H_i = 0, # NLTV-specific penalty type, the array of i-related indices
               NLTV_H_j = 0, # NLTV-specific penalty type, the array of j-related indices
               NLTV_Weights = 0, # NLTV-specific penalty type, the array of Weights
-              methodTV = 0, # 0/1 - isotropic/anisotropic TV
-              nonneg = 0 # 0/1 disabled/enabled nonnegativity (for FGP_TV currently)
+              methodTV = 0 # 0/1 - TV specific isotropic/anisotropic choice
               ):
         
         L_const_inv = 1.0/lipschitz_const # inverted Lipschitz constant
-        if (self.geom == '2D'):
+        if (self.geom is '2D'):
             # 2D reconstruction
             # initialise the solution
             if (np.size(InitialObject) == self.ObjSize**2):
@@ -167,7 +173,7 @@ class RecToolsIR:
                 del InitialObject
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize), 'float32')
-        if (self.geom == '3D'):
+        if (self.geom is '3D'):
             # initialise the solution
             if (np.size(InitialObject) == self.ObjSize**3):
                 # the object has been initialised with an array
@@ -177,6 +183,14 @@ class RecToolsIR:
                 X = np.zeros((self.ObjSize,self.ObjSize,self.ObjSize), 'float32')
         if (self.OS_number > 1):
             regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
+        if (NDF_penalty is 'Huber'):
+            NDF_penalty = 1
+        elif (NDF_penalty is 'Perona'):
+            NDF_penalty = 2
+        elif (NDF_penalty is 'Tukey'):
+            NDF_penalty = 3
+        else:
+            raise ("For NDF_penalty choose Huber, Perona or Tukey")
 
         # The dependency on the CCPi-RGL toolkit for regularisation
         if regularisation is not None:
@@ -229,6 +243,8 @@ class RecToolsIR:
                 X = X_t - L_const_inv*grad_fidelity
                 # stopping criteria
                 nrm = LA.norm(X - X_old)*denomN
+                if (self.nonnegativity == 1):
+                    X[X < 0.0] = 0.0
                 if nrm > self.tolerance:
                     # The proximal operator of the chosen regulariser
                     if (regularisation == 'ROF_TV'):
@@ -236,7 +252,7 @@ class RecToolsIR:
                         X = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, self.device)
                     if (regularisation == 'FGP_TV'):
                         # Fast-Gradient-Projection Total variation method
-                        X = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, nonneg, 0, self.device)
+                        X = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.nonnegativity, 0, self.device)
                     if (regularisation == 'SB_TV'):
                         # Split Bregman Total variation method
                         X = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
@@ -261,4 +277,6 @@ class RecToolsIR:
                     #print('FISTA stopped at iteration', iter)
                     break
 #****************************************************************************#
+        if (self.nonnegativity == 1):
+            X[X < 0.0] = 0.0
         return X

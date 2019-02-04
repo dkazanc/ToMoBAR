@@ -57,7 +57,7 @@ from tomophantom.supp.artifacts import ArtifactsClass
 
 # adding noise
 artifacts_add = ArtifactsClass(sino_an)
-#noisy_sino = artifacts_add.noise(sigma=0.1,noisetype='Gaussian')
+#noisy_sino = artifacts_add.noise(sigma=0.1,noisetype='Gaussian')nonnegativity
 noisy_sino = artifacts_add.noise(sigma=8000,noisetype='Poisson')
 
 plt.figure()
@@ -95,8 +95,9 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+                    nonnegativity='on', # enable nonnegativity constraint (set to 'on')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
+                    tolerance = 1e-07, # tolerance to stop outer iterations earlier
                     device='gpu')
 
 lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
@@ -141,6 +142,7 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+                    nonnegativity='on', # enable nonnegativity constraint (set to 'on')
                     OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-06, # tolerance to stop outer iterations earlier
                     device='gpu')
