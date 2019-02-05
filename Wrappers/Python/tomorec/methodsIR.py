@@ -194,10 +194,10 @@ class RecToolsIR:
 
         # The dependency on the CCPi-RGL toolkit for regularisation
         if regularisation is not None:
-            if ((regularisation != 'ROF_TV') and (regularisation != 'FGP_TV') and (regularisation != 'SB_TV') and (regularisation != 'LLT_ROF') and (regularisation != 'TGV') and (regularisation != 'NDF') and (regularisation != 'DIFF4th') and (regularisation != 'NLTV')):
-                raise('Unknown regularisation method, select: ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, DIFF4th, NLTV')
+            if ((regularisation != 'ROF_TV') and (regularisation != 'FGP_TV') and (regularisation != 'SB_TV') and (regularisation != 'LLT_ROF') and (regularisation != 'TGV') and (regularisation != 'NDF') and (regularisation != 'Diff4th') and (regularisation != 'NLTV')):
+                raise('Unknown regularisation method, select: ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV')
             else:
-                from ccpi.filters.regularisers import ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, DIFF4th, NLTV
+                from ccpi.filters.regularisers import ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV
 
 #****************************************************************************#
         # FISTA algorithm begins here:
@@ -265,9 +265,9 @@ class RecToolsIR:
                     if (regularisation == 'NDF'):
                         # Nonlinear isotropic diffusion method
                         X = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)
-                    if (regularisation == 'DIFF4th'):
+                    if (regularisation == 'Diff4th'):
                         # Anisotropic diffusion of higher order
-                        X = DIFF4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, self.device)
+                        X = Diff4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, self.device)
                     if (regularisation == 'NLTV'):
                         # Non-local Total Variation
                         X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
