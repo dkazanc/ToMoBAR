@@ -115,7 +115,7 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='on', # enable nonnegativity constraint (set to 'on')
+                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-08, # tolerance to stop outer iterations earlier
                     device='gpu')
@@ -183,7 +183,7 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='on', # enable nonnegativity constraint (set to 'on')
+                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = 10, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     tolerance = 1e-08, # tolerance to stop outer iterations earlier
                     device='gpu')

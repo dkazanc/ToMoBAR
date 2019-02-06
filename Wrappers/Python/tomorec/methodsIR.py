@@ -30,7 +30,7 @@ class RecToolsIR:
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
               datafidelity, # data fidelity, choose 'LS', 'PWLS', 'GH' (wip), 'Student' (wip)
-              nonnegativity, # select 'nonnegativity' constraint (set to 'on')
+              nonnegativity, # select 'nonnegativity' constraint (set to 'ENABLE')
               OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
               tolerance, # tolerance to stop outer iterations earlier
               device):
@@ -44,7 +44,7 @@ class RecToolsIR:
         self.OS_number = OS_number
         
         # enables nonnegativity constraint
-        if nonnegativity is 'on':
+        if nonnegativity == 'ENABLE':
             self.nonnegativity = 1
         else:
             self.nonnegativity = 0
@@ -84,9 +84,9 @@ class RecToolsIR:
         if (self.OS_number > 1):
             raise('There is no OS mode for SIRT yet, please choose OS = None')
         #SIRT reconstruction algorithm from ASTRA
-        if (self.geom is '2D'):
+        if (self.geom == '2D'):
             SIRT_rec = self.Atools.sirt2D(sinogram, iterations)
-        if (self.geom is '3D'):
+        if (self.geom == '3D'):
             SIRT_rec = self.Atools.sirt3D(sinogram, iterations)
         return SIRT_rec
 
@@ -94,9 +94,9 @@ class RecToolsIR:
         if (self.OS_number > 1):
             raise('There is no OS mode for CGLS yet, please choose OS = None')
         #CGLS reconstruction algorithm from ASTRA
-        if (self.geom is '2D'):
+        if (self.geom == '2D'):
             CGLS_rec = self.Atools.cgls2D(sinogram, iterations)
-        if (self.geom is '3D'):
+        if (self.geom == '3D'):
             CGLS_rec = self.Atools.cgls3D(sinogram, iterations)
         return CGLS_rec
 
@@ -105,11 +105,11 @@ class RecToolsIR:
         # weights (raw projection data) are required for PWLS fidelity (self.datafidelity = PWLS), otherwise ignored
         niter = 15 # number of power method iterations
         s = 1.0
-        if (self.geom is '2D'):
+        if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize,self.Atools.ObjSize))
-        if (self.datafidelity is 'PWLS'):
+        if (self.datafidelity == 'PWLS'):
             if weights is None: 
                 raise ValueError('The selected data fidelity is PWLS, hence the raw projection data must be provided to the function')
             else:
@@ -117,26 +117,26 @@ class RecToolsIR:
         if (self.OS_number == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
-            if (self.datafidelity is 'PWLS'):
+            if (self.datafidelity == 'PWLS'):
                 y = np.multiply(sqweight, y)
             for iter in range(0,niter):
                 x1 = self.Atools.backproj(y)
                 s = LA.norm(x1)
                 x1 = x1/s
                 y = self.Atools.forwproj(x1)
-                if (self.datafidelity is 'PWLS'):
+                if (self.datafidelity == 'PWLS'):
                     y = np.multiply(sqweight, y)
         else:
             # OS approach
             y = self.Atools.forwprojOS(x1,0)
-            if (self.datafidelity is 'PWLS'):
+            if (self.datafidelity == 'PWLS'):
                 y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
             for iter in range(0,niter):
                 x1 = self.Atools.backprojOS(y,0)
                 s = LA.norm(x1)
                 x1 = x1/s
                 y = self.Atools.forwprojOS(x1,0)
-                if (self.datafidelity is 'PWLS'):
+                if (self.datafidelity == 'PWLS'):
                     y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
         return s
     
@@ -164,7 +164,7 @@ class RecToolsIR:
               ):
         
         L_const_inv = 1.0/lipschitz_const # inverted Lipschitz constant
-        if (self.geom is '2D'):
+        if (self.geom == '2D'):
             # 2D reconstruction
             # initialise the solution
             if (np.size(InitialObject) == self.ObjSize**2):
@@ -173,7 +173,7 @@ class RecToolsIR:
                 del InitialObject
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize), 'float32')
-        if (self.geom is '3D'):
+        if (self.geom == '3D'):
             # initialise the solution
             if (np.size(InitialObject) == self.ObjSize**3):
                 # the object has been initialised with an array
@@ -183,11 +183,11 @@ class RecToolsIR:
                 X = np.zeros((self.ObjSize,self.ObjSize,self.ObjSize), 'float32')
         if (self.OS_number > 1):
             regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
-        if (NDF_penalty is 'Huber'):
+        if (NDF_penalty == 'Huber'):
             NDF_penalty = 1
-        elif (NDF_penalty is 'Perona'):
+        elif (NDF_penalty == 'Perona'):
             NDF_penalty = 2
-        elif (NDF_penalty is 'Tukey'):
+        elif (NDF_penalty == 'Tukey'):
             NDF_penalty = 3
         else:
             raise ("For NDF_penalty choose Huber, Perona or Tukey")
