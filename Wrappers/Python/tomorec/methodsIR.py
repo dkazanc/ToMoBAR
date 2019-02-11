@@ -5,7 +5,10 @@ A reconstruction class for regularised iterative methods:
 -- Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative 
                                shrinkage-thresholding algorithm for linear inverse problems,
                                SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
--- SIRT, CGLS algorithms from ASTRA
+-- Regularised ADMM algorithm (Boyd, N. Parikh, E. Chu, B. Peleato, J. Eckstein, "Distributed optimization and 
+                               statistical learning via the alternating direction method of multipliers", Found. Trends Mach. Learn.,
+                               vol. 3, no. 1, pp. 1-122, Jan. 2011)
+-- SIRT, CGLS algorithms wrapped directly from ASTRA package
 
 Dependencies: 
     * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
@@ -19,6 +22,7 @@ GPLv3 license (ASTRA toolbox)
 
 import numpy as np
 from numpy import linalg as LA
+import scipy.sparse.linalg
 
 class RecToolsIR:
     """ 
@@ -280,3 +284,108 @@ class RecToolsIR:
         if (self.nonnegativity == 1):
             X[X < 0.0] = 0.0
         return X
+#*****************************FISTA ends here*********************************#
+
+#**********************************ADMM***************************************#
+    def ADMM(self,
+             projdata, # tomographic projection data in 2D (sinogram) or 3D array
+             InitialObject = 0, # initialise reconstruction with an array
+             iterationsADMM = 15, # the number of outer ADMM iterations
+             rho_const = 1000.0, # augmented Lagrangian parameter (ADMM)
+             alpha = 1.0, # over-relaxation parameter (ADMM)
+             regularisation = None, # enable regularisation  with CCPi - RGL toolkit
+             regularisation_parameter = 0.01, # regularisation parameter if regularisation is not None
+             regularisation_parameter2 = 0.01, # 2nd regularisation parameter (LLT_ROF method)
+             regularisation_iterations = 100, # the number of INNER iterations for regularisation
+             time_marching_parameter = 0.0025, # gradient step parameter (ROF_TV, LLT_ROF, NDF, DIFF4th) penalties
+             tolerance_regul = 1e-06,  # tolerance to stop regularisation
+             TGV_alpha1 = 1.0, # TGV specific parameter for the 1st order term
+             TGV_alpha2 = 0.8, # TGV specific parameter for the 2st order term
+             TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
+             edge_param = 0.01, # edge (noise) threshold parameter for NDF and DIFF4th
+             NDF_penalty = 1, # NDF specific penalty type: 1 - Huber, 2 - Perona-Malik, 3 - Tukey Biweight
+             NLTV_H_i = 0, # NLTV-specific penalty type, the array of i-related indices
+             NLTV_H_j = 0, # NLTV-specific penalty type, the array of j-related indices
+             NLTV_Weights = 0, # NLTV-specific penalty type, the array of Weights
+             methodTV = 0, # 0/1 - isotropic/anisotropic TV
+             nonneg = 0 # 0/1 disabled/enabled nonnegativity (for FGP_TV currently)
+             ):
+        def ADMM_Ax(x):
+            data_upd = self.Atools.A_optomo(x)
+            x_temp = self.Atools.A_optomo.transposeOpTomo(data_upd)
+            x_upd = x_temp + self.rho_const*x
+            return x_upd
+        def ADMM_Atb(b):
+            b = self.Atools.A_optomo.transposeOpTomo(b)
+            return b
+        self.rho_const = rho_const
+        (data_dim,rec_dim) = np.shape(self.Atools.A_optomo)
+        
+        # The dependency on the CCPi-RGL toolkit for regularisation
+        if regularisation is not None:
+            if ((regularisation != 'ROF_TV') and (regularisation != 'FGP_TV') and (regularisation != 'SB_TV') and (regularisation != 'LLT_ROF') and (regularisation != 'TGV') and (regularisation != 'NDF') and (regularisation != 'Diff4th') and (regularisation != 'NLTV')):
+                raise('Unknown regularisation method, select: ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV')
+            else:
+                from ccpi.filters.regularisers import ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV
+        
+        # initialise the solution and other ADMM variables
+        if (np.size(InitialObject) == rec_dim):
+            # the object has been initialised with an array
+            X = InitialObject.ravel()
+            del InitialObject
+        else:
+            X = np.zeros(rec_dim, 'float32')
+        
+        z = np.zeros(rec_dim, 'float32')
+        u = np.zeros(rec_dim, 'float32')
+        b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(projdata.ravel())
+        
+        # Outer ADMM iterations
+        for iter in range(0,iterationsADMM):
+            # solving quadratic problem using linalg solver
+            A_to_solver = scipy.sparse.linalg.LinearOperator((rec_dim,rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb)
+            b_to_solver = b_to_solver_const + self.rho_const*(z-u)
+            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, maxiter = 35)
+            X = np.float32(outputSolver[0]) # get gmres solution
+            # z-update with relaxation
+            zold = z.copy();
+            x_hat = alpha*X + (1.0 - alpha)*zold;
+            if (self.geom == '2D'):
+                x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
+            if (self.geom == '3D'):
+                x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize, self.ObjSize])
+            if (self.nonnegativity == 1):
+                x_prox_reg[x_prox_reg < 0.0] = 0.0
+            # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
+            if (regularisation == 'ROF_TV'):
+                # Rudin - Osher - Fatemi Total variation method
+                z = ROF_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, time_marching_parameter, self.device)
+            if (regularisation == 'FGP_TV'):
+                # Fast-Gradient-Projection Total variation method
+                z = FGP_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, nonneg, 0, self.device)
+            if (regularisation == 'SB_TV'):
+                # Split Bregman Total variation method
+                z = SB_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
+            if (regularisation == 'LLT_ROF'):
+                # Lysaker-Lundervold-Tai + ROF Total variation method 
+                z = LLT_ROF(x_prox_reg, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, self.device)
+            if (regularisation == 'TGV'):
+                # Total Generalised Variation method (2D only currently)
+                z = TGV(x_prox_reg, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, 'cpu') # till gpu version is fixed
+            if (regularisation == 'NDF'):
+                # Nonlinear isotropic diffusion method
+                z = NDF(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)
+            if (regularisation == 'DIFF4th'):
+                # Anisotropic diffusion of higher order
+                z = Diff4th(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, self.device)
+            if (regularisation == 'NLTV'):
+                # Non-local Total Variation / 2D only
+                z = NLTV(x_prox_reg, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
+            z = z.ravel()
+            # update u variable
+            u = u + (x_hat - z); 
+        if (self.geom == '2D'):
+            return X.reshape([self.ObjSize, self.ObjSize])
+        if (self.geom == '3D'):
+            return X.reshape([self.ObjSize, self.ObjSize, self.ObjSize])
+#*****************************ADMM ends here*********************************#
