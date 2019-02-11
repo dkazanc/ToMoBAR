@@ -28,6 +28,9 @@ class AstraTools:
             self.device = 0
         else:
             print ("Select between 'cpu' or 'gpu' for device")
+        # add optomo operator
+        self.A_optomo = astra.OpTomo(self.proj_id)
+        
     def forwproj(self, image):
         """Applying forward projection"""
         sinogram_id, sinogram = astra.create_sino(image, self.proj_id)
@@ -200,6 +203,9 @@ class AstraTools3D:
         else:
             N1 = N2 = N3 = ObjSize
         self.vol_geom = astra.create_vol_geom(N3, N2, N1)
+        self.proj_id = astra.create_projector('cuda3d', self.proj_geom, self.vol_geom) # for GPU
+        self.A_optomo = astra.OpTomo(self.proj_id)
+        
     def forwproj(self, object3D):
         """Applying forward projection"""
         proj_id, proj_data = astra.create_sino3d_gpu(object3D, self.proj_geom, self.vol_geom)
