@@ -157,7 +157,7 @@ class RecToolsIR:
               time_marching_parameter = 0.0025, # gradient step parameter (ROF_TV, LLT_ROF, NDF, DIFF4th) penalties
               tolerance_regul = 1e-06,  # tolerance to stop regularisation
               TGV_alpha1 = 1.0, # TGV specific parameter for the 1st order term
-              TGV_alpha2 = 0.8, # TGV specific parameter for the 2st order term
+              TGV_alpha2 = 2.0, # TGV specific parameter for the 2st order term
               TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
               edge_param = 0.01, # edge (noise) threshold parameter for NDF and DIFF4th
               NDF_penalty = 'Huber', # NDF specific penalty type: Huber (default), Perona, Tukey
@@ -264,8 +264,8 @@ class RecToolsIR:
                         # Lysaker-Lundervold-Tai + ROF Total variation method 
                         X = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, self.device)
                     if (regularisation == 'TGV'):
-                        # Total Generalised Variation method (2D only currently)
-                        X = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, 'cpu') # till gpu version is fixed
+                        # Total Generalised Variation method 
+                        X = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, self.device)
                     if (regularisation == 'NDF'):
                         # Nonlinear isotropic diffusion method
                         X = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)
@@ -300,7 +300,7 @@ class RecToolsIR:
              time_marching_parameter = 0.0025, # gradient step parameter (ROF_TV, LLT_ROF, NDF, DIFF4th) penalties
              tolerance_regul = 1e-06,  # tolerance to stop regularisation
              TGV_alpha1 = 1.0, # TGV specific parameter for the 1st order term
-             TGV_alpha2 = 0.8, # TGV specific parameter for the 2st order term
+             TGV_alpha2 = 2.0, # TGV specific parameter for the 2st order term
              TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
              edge_param = 0.01, # edge (noise) threshold parameter for NDF and DIFF4th
              NDF_penalty = 1, # NDF specific penalty type: 1 - Huber, 2 - Perona-Malik, 3 - Tukey Biweight
@@ -370,8 +370,8 @@ class RecToolsIR:
                 # Lysaker-Lundervold-Tai + ROF Total variation method 
                 z = LLT_ROF(x_prox_reg, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, self.device)
             if (regularisation == 'TGV'):
-                # Total Generalised Variation method (2D only currently)
-                z = TGV(x_prox_reg, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, 'cpu') # till gpu version is fixed
+                # Total Generalised Variation method 
+                z = TGV(x_prox_reg, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, self.device) 
             if (regularisation == 'NDF'):
                 # Nonlinear isotropic diffusion method
                 z = NDF(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)
