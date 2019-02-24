@@ -9,7 +9,7 @@ import numpy as np
 def normaliser(data, flats, darks, log):
     """
     data normaliser which assumes data/flats/darks to be in the following format:
-    [detectorsHoriz, Projections, detectorsVertical]
+    [detectorsVertical, Projections, detectorsHoriz]
     """
     data_norm = np.zeros(np.shape(data),dtype='float32')
     ProjectionsNum = np.size(data,1) # get the number of projection angles

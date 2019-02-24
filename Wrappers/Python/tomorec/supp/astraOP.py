@@ -197,12 +197,14 @@ class AstraTools3D:
     """3D parallel beam projection/backprojection class based on ASTRA toolbox"""
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, ObjSize):
         self.ObjSize = ObjSize
+        self.DetectorsDimV = DetRowCount
         self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
         if type(ObjSize) == tuple:
-            N1,N2,N3 = [int(i) for i in ObjSize]
+            Y,X,Z = [int(i) for i in ObjSize]
         else:
-            N1 = N2 = N3 = ObjSize
-        self.vol_geom = astra.create_vol_geom(N3, N2, N1)
+            Y=X=ObjSize
+            Z=DetRowCount
+        self.vol_geom = astra.create_vol_geom(Y,X,Z)
         self.proj_id = astra.create_projector('cuda3d', self.proj_geom, self.vol_geom) # for GPU
         self.A_optomo = astra.OpTomo(self.proj_id)
         
@@ -283,7 +285,7 @@ class AstraToolsOS3D:
         
         # create full ASTRA geometry (to calculate Lipshitz constant)
         self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
-        self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize,ObjSize)
+        self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize, ObjSize)
         # create OS-specific ASTRA geometry
         self.proj_geom_OS = {}
         for sub_ind in range(OS):

@@ -46,6 +46,7 @@ class RecToolsIR:
         self.tolerance = tolerance
         self.datafidelity = datafidelity
         self.OS_number = OS_number
+        self.DetectorsDimV = DetectorsDimV
         
         # enables nonnegativity constraint
         if nonnegativity == 'ENABLE':
@@ -112,7 +113,7 @@ class RecToolsIR:
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
-            x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize,self.Atools.ObjSize))
+            x1 = np.float32(np.random.randn(self.Atools.DetectorsDimV,self.Atools.ObjSize,self.Atools.ObjSize))
         if (self.datafidelity == 'PWLS'):
             if weights is None: 
                 raise ValueError('The selected data fidelity is PWLS, hence the raw projection data must be provided to the function')
@@ -184,7 +185,7 @@ class RecToolsIR:
                 X = InitialObject
                 del InitialObject
             else:
-                X = np.zeros((self.ObjSize,self.ObjSize,self.ObjSize), 'float32')
+                X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32')
         if (self.OS_number > 1):
             regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
         if (NDF_penalty == 'Huber'):
@@ -353,7 +354,7 @@ class RecToolsIR:
             if (self.geom == '2D'):
                 x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
             if (self.geom == '3D'):
-                x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize, self.ObjSize])
+                x_prox_reg = (x_hat + u).reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
             if (self.nonnegativity == 1):
                 x_prox_reg[x_prox_reg < 0.0] = 0.0
             # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
@@ -387,5 +388,5 @@ class RecToolsIR:
         if (self.geom == '2D'):
             return X.reshape([self.ObjSize, self.ObjSize])
         if (self.geom == '3D'):
-            return X.reshape([self.ObjSize, self.ObjSize, self.ObjSize])
+            return X.reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
 #*****************************ADMM ends here*********************************#
