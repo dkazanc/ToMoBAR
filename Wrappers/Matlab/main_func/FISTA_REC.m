@@ -33,7 +33,7 @@ function [X,  output] = FISTA_REC(params)
 %       - .Ring_Alpha (larger values (~20) can accelerate convergence but check stability, default 1)
 %-------------Regularisation (main parameters)------------------
 %       - .Regul_device (select 'cpu' or 'gpu' device, 'cpu' is default)
-%       - .Regul_tol (tolerance to terminate regul iterations, default 1.0e-05)
+%       - .Regul_tol (tolerance to terminate regul iterations, default 0.0, stopping based on iterations)
 %       - .Regul_Iterations (iterations for the selected penalty, default 25)
 %       - .Regul_time_step (some penalties require time marching parameter, default 0.01)
 %       - .Regul_Dimension ('2D' or '3D' way to apply regularisation, '2D' is the default)
@@ -192,7 +192,7 @@ end
 if (isfield(params,'Regul_tol'))
     tol = params.Regul_tol;
 else
-    tol = 1.0e-05;
+    tol = 0.0; % 1.0e-06
 end
 if (isfield(params,'Regul_Iterations'))
     IterationsRegul = params.Regul_Iterations;
@@ -244,6 +244,23 @@ if (isfield(params,'Regul_Lambda_AnisDiff4th'))
     fprintf('\n %s\n', 'Regularisation with anisotropic diffusion of 4th order is enabled...');
 else
     lambdaDiffusion4th = 0;
+end
+if (isfield(params,'Regul_Lambda_TGV'))
+    lambdaTGV = params.Regul_Lambda_TGV;
+    
+    if (isfield(params,'Regul_TGV_alpha0'))
+        alpha0 = params.Regul_TGV_alpha0;
+    else
+        alpha0 = 1.0;
+    end
+    if (isfield(params,'Regul_TGV_alpha1'))
+        alpha1 = params.Regul_TGV_alpha1;
+    else
+        alpha1 = 2.0;
+    end
+    fprintf('\n %s\n', 'Total Generilised Variation (TGV) regularisation is enabled...');
+else
+    lambdaTGV = 0;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%
 if (isfield(params,'show'))
@@ -377,19 +394,19 @@ if (subsets == 0)
                 % 2D regularisation
                 for kkk = 1:SlicesZ
                     if (device == 0)
-                        X(:,:,kkk) = ROF_TV(single(X(:,:,kkk)), lambdaROF_TV*L_const_inv, IterationsRegul, Regul_time_step);
+                        X(:,:,kkk) = ROF_TV(single(X(:,:,kkk)), lambdaROF_TV*L_const_inv, IterationsRegul, Regul_time_step, tol);
                     else
-                        X(:,:,kkk) = ROF_TV_GPU(single(X(:,:,kkk)), lambdaROF_TV*L_const_inv, IterationsRegul, Regul_time_step);
+                        X(:,:,kkk) = ROF_TV_GPU(single(X(:,:,kkk)), lambdaROF_TV*L_const_inv, IterationsRegul, Regul_time_step, tol);
                     end
                 end
             else
                 % 3D regularisation
                 if (device == 0)
                     % CPU
-                    X = ROF_TV(X, lambdaROF_TV*L_const_inv, IterationsRegul, Regul_time_step);
+                    X = ROF_TV(X, lambdaROF_TV*L_const_inv, IterationsRegul, Regul_time_step, tol);
                 else
                     % GPU
-                    X = ROF_TV_GPU(X, lambdaROF_TV*L_const_inv, IterationsRegul, Regul_time_step);
+                    X = ROF_TV_GPU(X, lambdaROF_TV*L_const_inv, IterationsRegul, Regul_time_step, tol);
                 end
             end
             f_valTV = 0.5*(TV_energy(single(X),single(X),lambdaROF_TV*L_const_inv, 2)); % get TV energy value
@@ -454,20 +471,20 @@ if (subsets == 0)
                 for kkk = 1:SlicesZ
                     if (device == 0)
                         % CPU
-                        X(:,:,kkk) = NonlDiff(X(:,:,kkk), lambdaDiffusion*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type);
+                        X(:,:,kkk) = NonlDiff(X(:,:,kkk), lambdaDiffusion*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type, tol);
                     else
                         % GPU
-                        X(:,:,kkk) = NonlDiff_GPU(X(:,:,kkk), lambdaDiffusion*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type);
+                        X(:,:,kkk) = NonlDiff_GPU(X(:,:,kkk), lambdaDiffusion*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type, tol);
                     end
                 end
             else
                 % 3D regularisation
                 if (device == 0)
                     % CPU
-                    X = NonlDiff(X, lambdaDiffusion*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type);
+                    X = NonlDiff(X, lambdaDiffusion*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type, tol);
                 else
                     % GPU
-                    X = NonlDiff(X, lambdaDiffusion*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type);
+                    X = NonlDiff(X, lambdaDiffusion*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type, tol);
                 end
             end
             objective(i) = objective(i);
@@ -479,23 +496,47 @@ if (subsets == 0)
                 for kkk = 1:SlicesZ
                     if (device == 0)
                         % CPU
-                        X(:,:,kkk) = Diffusion_4thO(X(:,:,kkk), lambdaDiffusion4th*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step);
+                        X(:,:,kkk) = Diffusion_4thO(X(:,:,kkk), lambdaDiffusion4th*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, tol);
                     else
                         % GPU
-                        X(:,:,kkk) = Diffusion_4thO_GPU(X(:,:,kkk), lambdaDiffusion4th*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step);
+                        X(:,:,kkk) = Diffusion_4thO_GPU(X(:,:,kkk), lambdaDiffusion4th*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, tol);
                     end
                 end
             else
                 % 3D regularisation
                 if (device == 0)
                     % CPU
-                    X = Diffusion_4thO(X, lambdaDiffusion4th*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step);
+                    X = Diffusion_4thO(X, lambdaDiffusion4th*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, tol);
                 else
                     % GPU
-                    X = Diffusion_4thO_GPU(X, lambdaDiffusion4th*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step);
+                    X = Diffusion_4thO_GPU(X, lambdaDiffusion4th*L_const_inv, sigmaEdge, IterationsRegul, Regul_time_step, tol);
                 end
             end
             objective(i) = objective(i);
+        end
+        if (lambdaTGV > 0)
+            % TGV
+            if ((strcmp('2D', Dimension) == 1))
+                % 2D regularisation
+                for kkk = 1:SlicesZ
+                    if (device == 0)
+                        % CPU
+                        X(:,:,kkk) = TGV(X(:,:,kkk), lambdaTGV*L_const_inv, alpha1, alpha0, IterationsRegul, 12.0, tol);
+                    else
+                        % GPU
+                        X(:,:,kkk) = TGV_GPU(X(:,:,kkk), lambdaTGV*L_const_inv, alpha1, alpha0, IterationsRegul, 12.0, tol);
+                    end
+                end
+            else
+                % 3D regularisation
+                if (device == 0)
+                    % CPU
+                    X = TGV(X, lambdaTGV*L_const_inv, alpha1, alpha0, IterationsRegul, 12.0, tol);
+                else
+                    % GPU
+                    X = TGV_GPU(X, lambdaTGV*L_const_inv, alpha1, alpha0, IterationsRegul, 12.0, tol);
+                end
+            end
         end
         
         
@@ -632,19 +673,19 @@ else
                     % 2D regularisation
                     for kkk = 1:SlicesZ
                         if (device == 0)
-                            X(:,:,kkk) = ROF_TV(single(X(:,:,kkk)), lambdaROF_TV*L_const_inv/subsets, round(IterationsRegul/subsets), Regul_time_step);
+                            X(:,:,kkk) = ROF_TV(single(X(:,:,kkk)), lambdaROF_TV*L_const_inv/subsets, round(IterationsRegul/subsets), Regul_time_step, tol);
                         else
-                            X(:,:,kkk) = ROF_TV_GPU(single(X(:,:,kkk)), lambdaROF_TV*L_const_inv/subsets, round(IterationsRegul/subsets), Regul_time_step);
+                            X(:,:,kkk) = ROF_TV_GPU(single(X(:,:,kkk)), lambdaROF_TV*L_const_inv/subsets, round(IterationsRegul/subsets), Regul_time_step, tol);
                         end
                     end
                 else
                     % 3D regularisation
                     if (device == 0)
                         % CPU
-                        X = ROF_TV(X, lambdaROF_TV*L_const_inv/subsets, round(IterationsRegul/subsets), Regul_time_step);
+                        X = ROF_TV(X, lambdaROF_TV*L_const_inv/subsets, round(IterationsRegul/subsets), Regul_time_step, tol);
                     else
                         % GPU
-                        X = ROF_TV_GPU(X, lambdaROF_TV*L_const_inv/subsets, round(IterationsRegul/subsets), Regul_time_step);
+                        X = ROF_TV_GPU(X, lambdaROF_TV*L_const_inv/subsets, round(IterationsRegul/subsets), Regul_time_step, tol);
                     end
                 end
                 f_valTV = 0.5*(TV_energy(single(X),single(X),lambdaROF_TV*L_const_inv/subsets, 2)); % get TV energy value
@@ -709,20 +750,20 @@ else
                     for kkk = 1:SlicesZ
                         if (device == 0)
                             % CPU
-                            X(:,:,kkk) = NonlDiff(X(:,:,kkk), lambdaDiffusion*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, FuncDiff_Type);
+                            X(:,:,kkk) = NonlDiff(X(:,:,kkk), lambdaDiffusion*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, FuncDiff_Type, tol);
                         else
                             % GPU
-                            X(:,:,kkk) = NonlDiff_GPU(X(:,:,kkk), lambdaDiffusion*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, FuncDiff_Type);
+                            X(:,:,kkk) = NonlDiff_GPU(X(:,:,kkk), lambdaDiffusion*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, FuncDiff_Type, tol);
                         end
                     end
                 else
                     % 3D regularisation
                     if (device == 0)
                         % CPU
-                        X = NonlDiff(X, lambdaDiffusion*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, FuncDiff_Type);
+                        X = NonlDiff(X, lambdaDiffusion*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, FuncDiff_Type, tol);
                     else
                         % GPU
-                        X = NonlDiff(X, lambdaDiffusion*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, FuncDiff_Type);
+                        X = NonlDiff(X, lambdaDiffusion*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, FuncDiff_Type, tol);
                     end
                 end
                 objective(i) = objective(i);
@@ -734,24 +775,49 @@ else
                     for kkk = 1:SlicesZ
                         if (device == 0)
                             % CPU
-                            X(:,:,kkk) = Diffusion_4thO(X(:,:,kkk), lambdaDiffusion4th*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step);
+                            X(:,:,kkk) = Diffusion_4thO(X(:,:,kkk), lambdaDiffusion4th*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, tol);
                         else
                             % GPU
-                            X(:,:,kkk) = Diffusion_4thO_GPU(X(:,:,kkk), lambdaDiffusion4th*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step);
+                            X(:,:,kkk) = Diffusion_4thO_GPU(X(:,:,kkk), lambdaDiffusion4th*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, tol);
                         end
                     end
                 else
                     % 3D regularisation
                     if (device == 0)
                         % CPU
-                        X = Diffusion_4thO(X, lambdaDiffusion4th*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step);
+                        X = Diffusion_4thO(X, lambdaDiffusion4th*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, tol);
                     else
                         % GPU
-                        X = Diffusion_4thO_GPU(X, lambdaDiffusion4th*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step);
+                        X = Diffusion_4thO_GPU(X, lambdaDiffusion4th*L_const_inv/subsets, sigmaEdge, round(IterationsRegul/subsets), Regul_time_step, tol);
                     end
                 end
                 objective(i) = objective(i);
             end
+            if (lambdaTGV > 0)
+                % TGV
+                if ((strcmp('2D', Dimension) == 1))
+                    % 2D regularisation
+                    for kkk = 1:SlicesZ
+                        if (device == 0)
+                            % CPU
+                            X(:,:,kkk) = TGV(X(:,:,kkk), lambdaTGV*L_const_inv/subsets, alpha1, alpha0, round(IterationsRegul/subsets), 12.0, tol);
+                        else
+                            % GPU
+                            X(:,:,kkk) = TGV_GPU(X(:,:,kkk), lambdaTGV*L_const_inv/subsets, alpha1, alpha0, round(IterationsRegul/subsets), 12.0, tol);
+                        end
+                    end
+                else
+                    % 3D regularisation
+                    if (device == 0)
+                        % CPU
+                        X = TGV(X, lambdaTGV*L_const_inv/subsets, alpha1, alpha0, round(IterationsRegul/subsets), 12.0, tol);
+                    else
+                        % GPU
+                        X = TGV_GPU(X, lambdaTGV*L_const_inv/subsets, alpha1, alpha0, round(IterationsRegul/subsets), 12.0, tol);
+                    end
+                end
+            end
+            
             
             t = (1 + sqrt(1 + 4*t^2))/2; % updating t
             X_t = X + ((t_old-1)/t).*(X - X_old); % updating X
