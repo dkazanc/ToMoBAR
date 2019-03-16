@@ -123,13 +123,13 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
                     nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
+                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
                     device='gpu')
 
 # Run ADMM reconstrucion algorithm with regularisation
 RecADMM_reg = Rectools.ADMM(projData3D_analyt_noise,
                               rho_const = 2000.0, \
-                              iterationsADMM = 30, \
+                              iterationsADMM = 20, \
                               regularisation = 'FGP_TV', \
                               regularisation_parameter = 0.0035,\
                               regularisation_iterations = 200)

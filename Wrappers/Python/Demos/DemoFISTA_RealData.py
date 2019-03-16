@@ -160,11 +160,11 @@ RecFISTA_pwls_os_tgv = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]
                               np.transpose(dataRaw[:,:,slice_to_recon]), \
                               iterationsFISTA = 15, \
                               regularisation = 'TGV', \
-                              regularisation_parameter = 0.0009,\
+                              regularisation_parameter = 0.001,\
                               TGV_alpha1 = 1.0,\
-                              TGV_alpha2 = 1.0,\
+                              TGV_alpha2 = 2.0,\
                               TGV_LipschitzConstant = 12,\
-                              regularisation_iterations = 600,\
+                              regularisation_iterations = 1000,\
                               lipschitz_const = lc)
 
 fig = plt.figure()
