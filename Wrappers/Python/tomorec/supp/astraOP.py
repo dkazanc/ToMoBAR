@@ -270,6 +270,14 @@ class AstraToolsOS3D:
     """
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, ObjSize, OS):
         self.ObjSize = ObjSize
+        self.DetectorsDimV = DetRowCount
+        if type(ObjSize) == tuple:
+            Y,X,Z = [int(i) for i in ObjSize]
+        else:
+            Y=X=ObjSize
+            Z=DetRowCount
+        self.vol_geom = astra.create_vol_geom(Y,X,Z)
+        
         ################ arrange ordered-subsets ################
         import numpy as np
         AnglesTot = np.size(AnglesVec) # total number of angles
@@ -285,7 +293,6 @@ class AstraToolsOS3D:
         
         # create full ASTRA geometry (to calculate Lipshitz constant)
         self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
-        self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize, ObjSize)
         # create OS-specific ASTRA geometry
         self.proj_geom_OS = {}
         for sub_ind in range(OS):

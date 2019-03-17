@@ -97,17 +97,17 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
                     nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-07, # tolerance to stop outer iterations earlier
+                    tolerance = 1e-06, # tolerance to stop OUTER iterations earlier
                     device='gpu')
 
 
 # Run ADMM reconstrucion algorithm with regularisation
 RecADMM_reg = Rectools.ADMM(noisy_sino,
                               rho_const = 4000.0, \
-                              iterationsADMM = 10, \
+                              iterationsADMM = 15, \
                               regularisation = 'SB_TV', \
                               regularisation_parameter = 0.06,\
-                              regularisation_iterations = 35)
+                              regularisation_iterations = 50)
 
 plt.figure()
 plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")

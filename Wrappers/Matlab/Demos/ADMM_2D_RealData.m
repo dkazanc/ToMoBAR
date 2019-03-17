@@ -38,7 +38,7 @@ params.sino = sinoRD(:); % vectorised sinogram
 params.iterADMM = 12; % the number of outer ADMM iterations
 params.rhoADMM = 500; % Convergence-related ADMM constant
 params.alphaADMM = 1; % ADMM variable
-params.iterKrylov = 30; % the number of iterations for Krylov method to solve SLAE
+params.iterKrylov = 15; % the number of iterations for Krylov method to solve SLAE
 params.TolKrylov = 1e-5; % tolerance parameter for Krylov updates
 
 %>>>>>>>>>>>> Regularisation block <<<<<<<<<<<<<<

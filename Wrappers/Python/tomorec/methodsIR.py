@@ -36,7 +36,7 @@ class RecToolsIR:
               datafidelity, # data fidelity, choose 'LS', 'PWLS', 'GH' (wip), 'Student' (wip)
               nonnegativity, # select 'nonnegativity' constraint (set to 'ENABLE')
               OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-              tolerance, # tolerance to stop outer iterations earlier
+              tolerance, # tolerance to stop OUTER iterations earlier
               device):
         if ObjSize is tuple: 
             raise (" Reconstruction is currently available for square or cubic objects only, provide a scalar ")
@@ -155,8 +155,8 @@ class RecToolsIR:
               regularisation_parameter = 0.01, # regularisation parameter if regularisation is not None
               regularisation_parameter2 = 0.01, # 2nd regularisation parameter (LLT_ROF method)
               regularisation_iterations = 100, # the number of INNER iterations for regularisation
+              tolerance_regul = 0.0,  # tolerance to stop inner (regularisation) iterations / e.g. 1e-06
               time_marching_parameter = 0.0025, # gradient step parameter (ROF_TV, LLT_ROF, NDF, DIFF4th) penalties
-              tolerance_regul = 1e-06,  # tolerance to stop regularisation
               TGV_alpha1 = 1.0, # TGV specific parameter for the 1st order term
               TGV_alpha2 = 2.0, # TGV specific parameter for the 2st order term
               TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
@@ -254,32 +254,32 @@ class RecToolsIR:
                     # The proximal operator of the chosen regulariser
                     if (regularisation == 'ROF_TV'):
                         # Rudin - Osher - Fatemi Total variation method
-                        X = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, self.device)
+                        (X,info_vec) = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
                     if (regularisation == 'FGP_TV'):
                         # Fast-Gradient-Projection Total variation method
-                        X = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.nonnegativity, 0, self.device)
+                        (X,info_vec) = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
                     if (regularisation == 'SB_TV'):
                         # Split Bregman Total variation method
-                        X = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
+                        (X,info_vec) = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
                     if (regularisation == 'LLT_ROF'):
                         # Lysaker-Lundervold-Tai + ROF Total variation method 
-                        X = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, self.device)
+                        (X,info_vec) = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
                     if (regularisation == 'TGV'):
                         # Total Generalised Variation method 
-                        X = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, self.device)
+                        (X,info_vec) = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device)
                     if (regularisation == 'NDF'):
                         # Nonlinear isotropic diffusion method
-                        X = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)
+                        (X,info_vec) = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
                     if (regularisation == 'Diff4th'):
                         # Anisotropic diffusion of higher order
-                        X = Diff4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, self.device)
+                        (X,info_vec) = Diff4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
                     if (regularisation == 'NLTV'):
                         # Non-local Total Variation
                         X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
                     t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
                     X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
                 else:
-                    #print('FISTA stopped at iteration', iter)
+                    print('FISTA stopped at iteration', iter)
                     break
 #****************************************************************************#
         if (self.nonnegativity == 1):
@@ -292,14 +292,14 @@ class RecToolsIR:
              projdata, # tomographic projection data in 2D (sinogram) or 3D array
              InitialObject = 0, # initialise reconstruction with an array
              iterationsADMM = 15, # the number of outer ADMM iterations
-             rho_const = 1000.0, # augmented Lagrangian parameter (ADMM)
+             rho_const = 1000.0, # augmented Lagrangian parameter
              alpha = 1.0, # over-relaxation parameter (ADMM)
              regularisation = None, # enable regularisation  with CCPi - RGL toolkit
              regularisation_parameter = 0.01, # regularisation parameter if regularisation is not None
              regularisation_parameter2 = 0.01, # 2nd regularisation parameter (LLT_ROF method)
              regularisation_iterations = 100, # the number of INNER iterations for regularisation
+             tolerance_regul = 0.0,  # tolerance to stop inner (regularisation) iterations / e.g. 1e-06
              time_marching_parameter = 0.0025, # gradient step parameter (ROF_TV, LLT_ROF, NDF, DIFF4th) penalties
-             tolerance_regul = 1e-06,  # tolerance to stop regularisation
              TGV_alpha1 = 1.0, # TGV specific parameter for the 1st order term
              TGV_alpha2 = 2.0, # TGV specific parameter for the 2st order term
              TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
@@ -308,8 +308,7 @@ class RecToolsIR:
              NLTV_H_i = 0, # NLTV-specific penalty type, the array of i-related indices
              NLTV_H_j = 0, # NLTV-specific penalty type, the array of j-related indices
              NLTV_Weights = 0, # NLTV-specific penalty type, the array of Weights
-             methodTV = 0, # 0/1 - isotropic/anisotropic TV
-             nonneg = 0 # 0/1 disabled/enabled nonnegativity (for FGP_TV currently)
+             methodTV = 0 # 0/1 - isotropic/anisotropic TV
              ):
         def ADMM_Ax(x):
             data_upd = self.Atools.A_optomo(x)
@@ -337,54 +336,62 @@ class RecToolsIR:
         else:
             X = np.zeros(rec_dim, 'float32')
         
+        denomN = 1.0/np.size(X)
         z = np.zeros(rec_dim, 'float32')
         u = np.zeros(rec_dim, 'float32')
         b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(projdata.ravel())
         
         # Outer ADMM iterations
         for iter in range(0,iterationsADMM):
+            X_old = X
             # solving quadratic problem using linalg solver
             A_to_solver = scipy.sparse.linalg.LinearOperator((rec_dim,rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb)
             b_to_solver = b_to_solver_const + self.rho_const*(z-u)
-            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, maxiter = 35)
+            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, tol = self.tolerance, maxiter = 20)
             X = np.float32(outputSolver[0]) # get gmres solution
-            # z-update with relaxation
-            zold = z.copy();
-            x_hat = alpha*X + (1.0 - alpha)*zold;
-            if (self.geom == '2D'):
-                x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
-            if (self.geom == '3D'):
-                x_prox_reg = (x_hat + u).reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
             if (self.nonnegativity == 1):
-                x_prox_reg[x_prox_reg < 0.0] = 0.0
-            # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
-            if (regularisation == 'ROF_TV'):
-                # Rudin - Osher - Fatemi Total variation method
-                z = ROF_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, time_marching_parameter, self.device)
-            if (regularisation == 'FGP_TV'):
-                # Fast-Gradient-Projection Total variation method
-                z = FGP_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, nonneg, 0, self.device)
-            if (regularisation == 'SB_TV'):
-                # Split Bregman Total variation method
-                z = SB_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
-            if (regularisation == 'LLT_ROF'):
-                # Lysaker-Lundervold-Tai + ROF Total variation method 
-                z = LLT_ROF(x_prox_reg, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, self.device)
-            if (regularisation == 'TGV'):
-                # Total Generalised Variation method 
-                z = TGV(x_prox_reg, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, self.device) 
-            if (regularisation == 'NDF'):
-                # Nonlinear isotropic diffusion method
-                z = NDF(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, self.device)
-            if (regularisation == 'DIFF4th'):
-                # Anisotropic diffusion of higher order
-                z = Diff4th(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, self.device)
-            if (regularisation == 'NLTV'):
-                # Non-local Total Variation / 2D only
-                z = NLTV(x_prox_reg, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
-            z = z.ravel()
-            # update u variable
-            u = u + (x_hat - z); 
+                X[X < 0.0] = 0.0
+            # ADMM iterations stopping criteria
+            nrm = LA.norm(X - X_old)*denomN
+            if nrm > self.tolerance:
+                # z-update with relaxation
+                zold = z.copy();
+                x_hat = alpha*X + (1.0 - alpha)*zold;
+                if (self.geom == '2D'):
+                    x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
+                if (self.geom == '3D'):
+                    x_prox_reg = (x_hat + u).reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
+                # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
+                if (regularisation == 'ROF_TV'):
+                    # Rudin - Osher - Fatemi Total variation method
+                    (z,info_vec) = ROF_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'FGP_TV'):
+                    # Fast-Gradient-Projection Total variation method
+                    (z,info_vec) = FGP_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
+                if (regularisation == 'SB_TV'):
+                    # Split Bregman Total variation method
+                    (z,info_vec) = SB_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
+                if (regularisation == 'LLT_ROF'):
+                    # Lysaker-Lundervold-Tai + ROF Total variation method 
+                    (z,info_vec) = LLT_ROF(x_prox_reg, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'TGV'):
+                    # Total Generalised Variation method 
+                    (z,info_vec) = TGV(x_prox_reg, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device) 
+                if (regularisation == 'NDF'):
+                    # Nonlinear isotropic diffusion method
+                    (z,info_vec) = NDF(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
+                if (regularisation == 'DIFF4th'):
+                    # Anisotropic diffusion of higher order
+                    (z,info_vec) = Diff4th(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'NLTV'):
+                    # Non-local Total Variation / 2D only
+                    z = NLTV(x_prox_reg, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
+                z = z.ravel()
+                # update u variable
+                u = u + (x_hat - z); 
+            else:
+                print('ADMM stopped at iteration', iter)
+                break
         if (self.geom == '2D'):
             return X.reshape([self.ObjSize, self.ObjSize])
         if (self.geom == '3D'):

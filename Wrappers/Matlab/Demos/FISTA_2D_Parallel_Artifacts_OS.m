@@ -12,11 +12,11 @@ close all;clc;clear;
 % adding paths
 fsep = '/';
 % TomoPhantom paths (TomoPhantom needs to be compiled first)
-pathtoTomoPhantom = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'matlab' fsep 'compiled' fsep], 1i);
+pathtoTomoPhantom = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'Wrappers' fsep 'MATLAB' fsep 'compiled' fsep], 1i);
 addpath(pathtoTomoPhantom);
-pathtoTomoPhantom2 = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'matlab' fsep 'supplem' fsep], 1i);
+pathtoTomoPhantom2 = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'Wrappers' fsep 'MATLAB' fsep 'supplem' fsep], 1i);
 addpath(pathtoTomoPhantom2);
-pathtoModels = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'functions' fsep 'models' fsep 'Phantom2DLibrary.dat'], 1i);
+pathtoModels = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'PhantomLibrary' fsep 'models' fsep 'Phantom2DLibrary.dat'], 1i);
 % Regularisation Toolkit path to compiled library (CCPi-RGTtk needs to be compiled first)
 pathtoRGLtk = sprintf(['..' fsep 'supplementary' fsep 'CCPi-Regularisation-Toolkit' fsep 'Wrappers' fsep 'Matlab' fsep 'mex_compile' fsep 'installed'], 1i);
 addpath(pathtoRGLtk);
@@ -91,7 +91,7 @@ clear params regulariser
 params.proj_geom = proj_geom; % pass ASTRA geometry 
 params.vol_geom = vol_geom; % pass ASTRA geometry 
 params.sino = sinoNoise'; % sinogram
-params.iterFISTA = 22; % max number of FISTA iterations
+params.iterFISTA = 30; % max number of FISTA iterations
 params.subsets = 12; % the number of subsets
 params.phantomExact = PhantomExact; % ideal phantom
 params.weights = rawdata'./max(rawdata(:)); % normalised raw data as a weight for PWLS
@@ -154,8 +154,8 @@ clear params regulariser
 params.proj_geom = proj_geom; % pass ASTRA geometry 
 params.vol_geom = vol_geom; % pass ASTRA geometry 
 params.sino = sinoNoise'; % sinogram
-params.iterFISTA = 50; % max number of FISTA iterations
-params.subsets = 12; % the number of subsets
+params.iterFISTA = 40; % max number of FISTA iterations
+params.subsets = 16; % the number of subsets
 params.phantomExact = PhantomExact; % ideal phantom
 params.weights = rawdata'./max(rawdata(:)); % normalised raw data as a weight for PWLS
 params.show = 1; % visualise reconstruction on each iteration
@@ -165,7 +165,7 @@ params.fidelity = 'students_data';
 params.L_const = 3500; % accelerate covergence with Students't
 
 %>>>>>>>>>>>> Regularisation block <<<<<<<<<<<<<<
-params.Regul_device = 'cpu'; % select 'cpu' or 'gpu' device for regularisation
+params.Regul_device = 'gpu'; % select 'cpu' or 'gpu' device for regularisation
 % Select preferable regulariser (see more information on CCPi-RGLTK):
 
 % regulariser = 'ROF_TV'; % Rudin-Osher-Fatemi Total Variation functional 

@@ -68,7 +68,7 @@ params.iterKrylov = 30; % the number of iterations for Krylov method to solve SL
 params.TolKrylov = 1e-5; % tolerance parameter for Krylov updates
 
 %>>>>>>>>>>>> Regularisation block <<<<<<<<<<<<<<
-params.Regul_device = 'gpu'; % select 'cpu' or 'gpu' device for regularisation
+params.Regul_device = 'cpu'; % select 'cpu' or 'gpu' device for regularisation
 
 % Select preferable regulariser (see more information on CCPi-RGL toolkit).
 
@@ -76,7 +76,7 @@ params.Regul_device = 'gpu'; % select 'cpu' or 'gpu' device for regularisation
 % selected, however, parameters can slightly vary with respect to different 
 % noise initialisations
 
-regulariser = 'ROF_TV'; % Rudin-Osher-Fatemi Total Variation functional 
+ regulariser = 'ROF_TV'; % Rudin-Osher-Fatemi Total Variation functional 
 % regulariser = 'FGP_TV'; % Fast-gradient-projection Total Variation method
 % regulariser = 'SB_TV'; % Split Bregman Total Variation method
 % regulariser = 'TGV'; % Total Generilised Variation method
@@ -96,8 +96,8 @@ params.Regul_Lambda_SBTV = 150; % regularisation parameter
 params.Regul_Iterations = 80; % inner iterations number for regularisation  
 elseif (strcmp(regulariser, 'TGV') == 1)
 params.Regul_Lambda_TGV = 100; % regularisation parameter
-params.Regul_TGV_alpha1 = 0.9; % parameter to control the first-order term
-params.Regul_TGV_alpha0 = 1; % parameter to control the second-order term
+params.Regul_TGV_alpha1 = 1; % parameter to control the first-order term
+params.Regul_TGV_alpha0 = 2; % parameter to control the second-order term
 params.Regul_Iterations = 350; % inner iterations number for regularisation  
 elseif (strcmp(regulariser, 'ROFLLT') == 1)
 params.Regul_Lambda_ROF_term = 150; % regularisation parameter for the ROF term

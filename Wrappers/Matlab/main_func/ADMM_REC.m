@@ -211,10 +211,10 @@ for k = 1:iterADMM
         % ROF-TV regularisation is enabled
         if (device == 0)
             % CPU
-            z = ROF_TV(reshape(single(x_hat + u), N,N), lambdaROF_TV/rho_const, IterationsRegul, Regul_time_step);
+            z = ROF_TV(reshape(single(x_hat + u), N,N), lambdaROF_TV/rho_const, IterationsRegul, Regul_time_step, tol);
         else
             % GPU
-            z = ROF_TV_GPU(reshape(single(x_hat + u), N,N), lambdaROF_TV/rho_const, IterationsRegul, Regul_time_step);
+            z = ROF_TV_GPU(reshape(single(x_hat + u), N,N), lambdaROF_TV/rho_const, IterationsRegul, Regul_time_step, tol);
         end
     end
     if (lambdaFGP_TV > 0)
@@ -241,40 +241,40 @@ for k = 1:iterADMM
         % TGV regularisation is enabled
         if (device == 0)
             % CPU
-             z = TGV(reshape(single(x_hat + u), N,N), lambdaTGV/rho_const, alpha1, alpha0, IterationsRegul);
+             z = TGV(reshape(single(x_hat + u), N,N), lambdaTGV/rho_const, alpha1, alpha0, IterationsRegul, 12.0, tol);
         else
             % GPU
-            z = TGV_GPU(reshape(single(x_hat + u), N,N), lambdaTGV/rho_const, alpha1, alpha0, IterationsRegul);
+            z = TGV_GPU(reshape(single(x_hat + u), N,N), lambdaTGV/rho_const, alpha1, alpha0, IterationsRegul, 12.0, tol);
         end
     end   
     if (lambdaROF > 0)
         % LLT-ROF regularisation is enabled
         if (device == 0)
             % CPU             
-            z = LLT_ROF(reshape(single(x_hat + u), N,N), lambdaROF/rho_const, lambdaLLT/rho_const, IterationsRegul, Regul_time_step); 
+            z = LLT_ROF(reshape(single(x_hat + u), N,N), lambdaROF/rho_const, lambdaLLT/rho_const, IterationsRegul, Regul_time_step, tol); 
         else
             % GPU
-            z = LLT_ROF_GPU(reshape(single(x_hat + u), N,N), lambdaROF/rho_const, lambdaLLT/rho_const, IterationsRegul, Regul_time_step); 
+            z = LLT_ROF_GPU(reshape(single(x_hat + u), N,N), lambdaROF/rho_const, lambdaLLT/rho_const, IterationsRegul, Regul_time_step, tol); 
         end
     end  
     if (lambdaDiffusion > 0)
         % Nonlinear diffusion regularisation is enabled
         if (device == 0)
             % CPU
-            z = NonlDiff(reshape(single(x_hat + u), N,N), lambdaDiffusion/rho_const, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type);
+            z = NonlDiff(reshape(single(x_hat + u), N,N), lambdaDiffusion/rho_const, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type, tol);
         else
             % GPU
-            z = NonlDiff_GPU(reshape(single(x_hat + u), N,N), lambdaDiffusion/rho_const, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type);
+            z = NonlDiff_GPU(reshape(single(x_hat + u), N,N), lambdaDiffusion/rho_const, sigmaEdge, IterationsRegul, Regul_time_step, FuncDiff_Type, tol);
         end
     end
     if (lambdaDiffusion4th > 0)
         % Anisotropic diffusion of 4th order regularisation is enabled
         if (device == 0)
             % CPU
-            z = Diffusion_4thO(reshape(single(x_hat + u), N,N), lambdaDiffusion4th/rho_const, sigmaEdge, IterationsRegul, Regul_time_step);
+            z = Diffusion_4thO(reshape(single(x_hat + u), N,N), lambdaDiffusion4th/rho_const, sigmaEdge, IterationsRegul, Regul_time_step, tol);
         else
             % GPU
-            z = Diffusion_4thO_GPU(reshape(single(x_hat + u), N,N), lambdaDiffusion4th/rho_const, sigmaEdge, IterationsRegul, Regul_time_step);
+            z = Diffusion_4thO_GPU(reshape(single(x_hat + u), N,N), lambdaDiffusion4th/rho_const, sigmaEdge, IterationsRegul, Regul_time_step, tol);
         end
     end
     z = reshape(z,n_vox, 1); % convert back to a vector

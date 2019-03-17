@@ -44,7 +44,7 @@ det_y_crop = [i for i in range(0,2374)]
 RectoolsDIR = RecToolsDIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions                   
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     device='gpu')
 
 FBPrec = RectoolsDIR.FBP(np.transpose(data_norm[det_y_crop,:,0]))

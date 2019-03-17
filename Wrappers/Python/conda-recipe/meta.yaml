@@ -1,21 +1,21 @@
 package:
   name: tomorec
-  version: "0.1.1"
+  version: "0.1.2"
 
 
 build:
   preserve_egg_dir: False
-  
+
 requirements:
   build:
     - python
     - numpy
     - setuptools
-    
+
   run:
     - python
     - numpy
-	
+
 about:
   home: https://github.com/dkazanc/TomoRec
   license:  GPLv3

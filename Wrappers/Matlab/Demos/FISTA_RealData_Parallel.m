@@ -53,7 +53,7 @@ params.weights = Weights3D(:,:,slice)./max(Weights3D(:,:,slice)); % statistical 
 params.show = 1; % visualize reconstruction on each iteration
 params.slice = 1; params.maxvalplot = 2.5; 
 %>>>>>>>>>>>> Regularisation block <<<<<<<<<<<<<<
-params.Regul_device = 'cpu'; % select 'cpu' or 'gpu' device for regularisation
+params.Regul_device = 'gpu'; % select 'cpu' or 'gpu' device for regularisation
 % Select preferable regulariser (see more information on CCPi-RGLTK):
 
 regulariser = 'ROF_TV'; % Rudin-Osher-Fatemi Total Variation functional 
@@ -146,14 +146,14 @@ figure; imshow(X_FISTA_GH,[0 params.maxvalplot]); title('FISTA-GH-reg reconstruc
 % params.proj_geom = proj_geom; % pass geometry to the function
 % params.vol_geom = vol_geom;
 % params.sino = Sino3D(:,:,slice); % sinogram
-% params.iterFISTA = 150; %max number of outer iterations
-% % params.subsets = 10; % the number of subsets
+% params.iterFISTA = 60; %max number of outer iterations
+% params.subsets = 16; % the number of subsets
 % params.weights = Weights3D(:,:,slice)./max(Weights3D(:,:,slice)); % statistical weights for PWLS
 % params.show = 1; % visualize reconstruction on each iteration
 % params.slice = 1; params.maxvalplot = 2.5; 
 % %>>>>>>>>>>>> Students't data fidelity <<<<<<<<<<<<<<
 % params.fidelity = 'students_data';
-% params.L_const = 500; % accelerate covergence with Students't
+% params.L_const = 1000; % accelerate covergence with Students't
 % 
 % %>>>>>>>>>>>> Regularisation block <<<<<<<<<<<<<<
 % params.Regul_device = 'gpu'; % select 'cpu' or 'gpu' device for regularisation
@@ -166,9 +166,9 @@ figure; imshow(X_FISTA_GH,[0 params.maxvalplot]); title('FISTA-GH-reg reconstruc
 % % regulariser = 'AnisoDiff4th'; % Anisotropic diffusion of 4th order 
 % 
 % if (strcmp(regulariser, 'ROF_TV') == 1)
-% params.Regul_Lambda_ROFTV = 8; % regularisation parameter
+% params.Regul_Lambda_ROFTV = 40; % regularisation parameter
 % params.Regul_time_step = 0.005; % time marching parameter (convergence)
-% params.Regul_Iterations = 50; % inner iterations number for regularisation
+% params.Regul_Iterations = 150; % inner iterations number for regularisation
 % elseif (strcmp(regulariser, 'FGP_TV') == 1)
 % params.Regul_Lambda_FGPTV = 1000; % regularisation parameter
 % params.Regul_Iterations = 80; % inner iterations number for regularisation  

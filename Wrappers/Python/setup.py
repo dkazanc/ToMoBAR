@@ -5,7 +5,7 @@ from distutils.core import setup
 
 setup(
     name="tomorec",
-    version='0.1.0',
+    version='0.1.2',
     packages=['tomorec', 'tomorec.supp'],
 
     # metadata for upload to PyPI
@@ -14,5 +14,5 @@ setup(
     description="MATLAB/Python library of tomographic reconstruction methods: direct and iterative",
     license="GPL v3",
     keywords="Python Framework",
-    url="https://github.com/dkazanc/TomoRec",  
+    url="https://github.com/dkazanc/TomoRec",
 )

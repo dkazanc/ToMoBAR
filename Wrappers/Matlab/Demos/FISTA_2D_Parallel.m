@@ -1,4 +1,4 @@
-% A demo script to reconstruct 2D sythetic parallel-beam data which have been produced by TomoPhantom package. 
+% A demo script to reconstruct 2D synthetic parallel-beam data which have been produced by TomoPhantom package. 
 % The sinogram is analytic and inverse crime is avoided to a degree.
 
 % This is a classical regularised iterative FISTA reconstriction method with PWLS data
@@ -11,11 +11,11 @@ close all;clc;clear;
 % adding paths
 fsep = '/';
 % TomoPhantom paths (TomoPhantom needs to be compiled first)
-pathtoTomoPhantom = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'matlab' fsep 'compiled' fsep], 1i);
+pathtoTomoPhantom = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'Wrappers' fsep 'MATLAB' fsep 'compiled' fsep], 1i);
 addpath(pathtoTomoPhantom);
-pathtoTomoPhantom2 = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'matlab' fsep 'supplem' fsep], 1i);
+pathtoTomoPhantom2 = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'Wrappers' fsep 'MATLAB' fsep 'supplem' fsep], 1i);
 addpath(pathtoTomoPhantom2);
-pathtoModels = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'functions' fsep 'models' fsep 'Phantom2DLibrary.dat'], 1i);
+pathtoModels = sprintf(['..' fsep 'supplementary' fsep 'TomoPhantom' fsep 'PhantomLibrary' fsep 'models' fsep 'Phantom2DLibrary.dat'], 1i);
 % Regularisation Toolkit path to compiled library (CCPi-RGTtk needs to be compiled first)
 pathtoRGLtk = sprintf(['..' fsep 'supplementary' fsep 'CCPi-Regularisation-Toolkit' fsep 'Wrappers' fsep 'Matlab' fsep 'mex_compile' fsep 'installed'], 1i);
 addpath(pathtoRGLtk);
@@ -47,7 +47,6 @@ figure;
 subplot(1,3,1); imagesc(PhantomExact, [0 1]); daspect([1 1 1]); title('Exact phantom'); colormap hot; 
 subplot(1,3,2); imshow(sinoIdeal, [ ]); title('Ideal sinogram'); colormap hot;
 subplot(1,3,3); imshow(sinoNoise, [ ]); title('Noisy sinogram'); colormap hot;
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 % using ASTRA-toolbox to set the projection geometry (parallel beam, GPU projector)
@@ -86,20 +85,21 @@ clear params regulariser
 params.proj_geom = proj_geom; % pass ASTRA geometry 
 params.vol_geom = vol_geom; % pass ASTRA geometry 
 params.sino = sinoNoise'; % sinogram
-params.iterFISTA = 100; % max number of FISTA iterations
+params.iterFISTA = 30; % max number of FISTA iterations
 params.phantomExact = PhantomExact; % ideal phantom
 params.weights = rawdata'./max(rawdata(:)); % normalised raw data as a weight for PWLS
 params.show = 1; % visualise reconstruction on each iteration
 params.maxvalplot = 1; % max intensity of recovered image
 %>>>>>>>>>>>> Regularisation block <<<<<<<<<<<<<<
-params.Regul_device = 'cpu'; % select 'cpu' or 'gpu' device for regularisation
+params.Regul_device = 'gpu'; % select 'cpu' or 'gpu' device for regularisation
 % Select preferable regulariser (see more information on CCPi-RGLTK):
 
- regulariser = 'ROF_TV'; % Rudin-Osher-Fatemi Total Variation functional 
+regulariser = 'ROF_TV'; % Rudin-Osher-Fatemi Total Variation functional 
 % regulariser = 'FGP_TV'; % Fast-gradient-projection Total Variation method
 % regulariser = 'SB_TV'; % Split Bregman Total Variation method
 % regulariser = 'NonlDiff'; % Nonlinear diffusion regulariser
 % regulariser = 'AnisoDiff4th'; % Anisotropic diffusion of 4th order 
+% regulariser = 'TGV'; % Total Generalised Variation
 
 if (strcmp(regulariser, 'ROF_TV') == 1)
 params.Regul_Lambda_ROFTV = 1000; % regularisation parameter
@@ -122,6 +122,11 @@ params.Regul_Lambda_AnisDiff4th = 10000; % regularisation parameter
 params.Regul_sigmaEdge = 0.09; % edge-preserving parameter
 params.Regul_time_step = 0.0015; % time marching parameter (convergence)
 params.Regul_Iterations = 150; % inner iterations number for regularisation  
+elseif (strcmp(regulariser, 'TGV') == 1)
+params.Regul_Lambda_TGV = 100; % regularisation parameter
+params.Regul_TGV_alpha1 = 1; % parameter to control the first-order term
+params.Regul_TGV_alpha0 = 1; % parameter to control the second-order term
+params.Regul_Iterations = 400; % inner iterations number for regularisation  
 else
    error('Regulariser is not selected');
 end
