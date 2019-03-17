@@ -35,7 +35,7 @@
 Install with `conda install -c dkazanc tomorec` or build with:
 ```
 conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5
-conda install tomorec --use-local
+conda install tomorec --use-local --force-reinstall
 ```
 
 ### References:
