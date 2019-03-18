@@ -33,7 +33,7 @@ class RecToolsIR:
               DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
-              datafidelity, # data fidelity, choose 'LS', 'PWLS', Huber, 'GH' (wip), 'Student' (wip)
+              datafidelity, # data fidelity, choose 'LS', 'PWLS', 'GH' (wip), 'Student' (wip)
               nonnegativity, # select 'nonnegativity' constraint (set to 'ENABLE')
               OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
               tolerance, # tolerance to stop OUTER iterations earlier
@@ -58,7 +58,7 @@ class RecToolsIR:
             self.device = 'gpu'
         else:
             self.device = device
-        if ((datafidelity != 'LS') and (datafidelity != 'PWLS')  and (datafidelity != 'Huber')):
+        if ((datafidelity != 'LS') and (datafidelity != 'PWLS')):
                 raise('Unknown data fidelity type, select: LS, PWLS, Huber')
         
         if DetectorsDimV is None:
@@ -148,7 +148,7 @@ class RecToolsIR:
     def FISTA(self, 
               projdata, # tomographic projection data in 2D (sinogram) or 3D array
               weights = None, # raw projection data for PWLS model
-              huber_data_threshold = 1.0, # threshold parameter for Huber data fidelity 
+              huber_data_threshold = 0.0, # threshold parameter for Huber data fidelity 
               InitialObject = None, # initialise reconstruction with an array
               lipschitz_const = 5e+06, # can be a given value or calculated using Power method
               iterationsFISTA = 100, # the number of OUTER FISTA iterations
@@ -221,49 +221,48 @@ class RecToolsIR:
                     indVec = self.Atools.newInd_Vec[sub_ind,:]
                     if (indVec[self.Atools.NumbProjBins-1] == 0):
                         indVec = indVec[:-1] #shrink vector size
-                
                 if (self.datafidelity == 'LS'):
                     # Least-squares data fidelity (linear)
                     if (self.OS_number > 1):
-                        # OS-reduced gradient for LS fidelity
+                        # OS-reduced residual for LS fidelity
                         if (self.geom == '2D'):
-                            grad_fidelity = self.Atools.backprojOS(self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:], sub_ind)
-                        else:
-                            grad_fidelity = self.Atools.backprojOS(self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:], sub_ind)
-                    else:
-                        # full gradient for LS fidelity
-                        grad_fidelity = self.Atools.backproj(self.Atools.forwproj(X_t) - projdata)
-                elif (self.datafidelity == 'PWLS'):
-                    # Penalised Weighted Least-squares data fidelity (approximately linear)
-                    if (self.OS_number > 1):
-                        # OS-reduced gradient for PWLS fidelity
-                        if (self.geom == '2D'):
-                            grad_fidelity = self.Atools.backprojOS(np.multiply(weights[indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:])), sub_ind)
-                        else:
-                            grad_fidelity = self.Atools.backprojOS(np.multiply(weights[:,indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:])), sub_ind)
-                    else:
-                        # full gradient for PWLS fidelity
-                        grad_fidelity = self.Atools.backproj(np.multiply(weights, (self.Atools.forwproj(X_t) - projdata)))
-                elif (self.datafidelity == 'Huber'):
-                    # Huber data fidelity
-                    if (self.OS_number > 1):
-                        # OS-reduced gradient for the Huber data fidelity
-                        if (self.geom == '2D'):
-                            #huber_data_threshold
                             res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
                         else:
                             res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
-                        multHuber = np.ones(np.shape(res))
-                        multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                    else:
+                        # residual for LS fidelity
+                        res = self.Atools.forwproj(X_t) - projdata
+                elif (self.datafidelity == 'PWLS'):
+                    # Penalised Weighted Least-squares data fidelity (approximately linear)
+                    if (self.OS_number > 1):
+                        # OS-reduced residual for PWLS fidelity
+                        if (self.geom == '2D'):
+                            res = np.multiply(weights[indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]))
+                        else:
+                            res = np.multiply(weights[:,indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]))
+                    else:
+                        # full gradient for the PWLS fidelity
+                        res = np.multiply(weights, (self.Atools.forwproj(X_t) - projdata))
+                else:
+                    raise ("Choose the data fidelity term: LS, PWLS")
+                if (huber_data_threshold > 0.0):
+                    # switch to Huber penalty
+                    multHuber = np.ones(np.shape(res))
+                    multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                    if (self.OS_number > 1):
+                        # OS-Huber-gradient
                         grad_fidelity = self.Atools.backprojOS(np.multiply(multHuber,res), sub_ind)
                     else:
-                        # full gradient for the Huber data fidelity
-                        res = self.Atools.forwproj(X_t) - projdata
-                        multHuber = np.zeros(np.shape(res))
-                        multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                        # full Huber gradient 
                         grad_fidelity = self.Atools.backproj(np.multiply(multHuber,res))
                 else:
-                    raise ("Choose the data fidelity term: LS, PWLS, Huber")
+                    if (self.OS_number > 1):
+                        # OS reduced gradient
+                        grad_fidelity = self.Atools.backprojOS(res, sub_ind)
+                    else:
+                        # full gradient
+                        grad_fidelity = self.Atools.backproj(res)
+
                 X = X_t - L_const_inv*grad_fidelity
                 if (self.nonnegativity == 1):
                     X[X < 0.0] = 0.0
