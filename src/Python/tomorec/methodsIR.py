@@ -33,7 +33,7 @@ class RecToolsIR:
               DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
-              datafidelity, # data fidelity, choose 'LS', 'PWLS', 'GH' (wip), 'Student' (wip)
+              datafidelity, # data fidelity, choose 'LS', 'PWLS', Huber, 'GH' (wip), 'Student' (wip)
               nonnegativity, # select 'nonnegativity' constraint (set to 'ENABLE')
               OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
               tolerance, # tolerance to stop OUTER iterations earlier
@@ -58,8 +58,8 @@ class RecToolsIR:
             self.device = 'gpu'
         else:
             self.device = device
-        if ((datafidelity != 'LS') and (datafidelity != 'PWLS')):
-                raise('Unknown data fidelity type, select: LS or PWLS')
+        if ((datafidelity != 'LS') and (datafidelity != 'PWLS')  and (datafidelity != 'Huber')):
+                raise('Unknown data fidelity type, select: LS, PWLS, Huber')
         
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
@@ -148,6 +148,7 @@ class RecToolsIR:
     def FISTA(self, 
               projdata, # tomographic projection data in 2D (sinogram) or 3D array
               weights = None, # raw projection data for PWLS model
+              huber_data_threshold = 1.0, # threshold parameter for Huber data fidelity 
               InitialObject = None, # initialise reconstruction with an array
               lipschitz_const = 5e+06, # can be a given value or calculated using Power method
               iterationsFISTA = 100, # the number of OUTER FISTA iterations
@@ -243,14 +244,29 @@ class RecToolsIR:
                     else:
                         # full gradient for PWLS fidelity
                         grad_fidelity = self.Atools.backproj(np.multiply(weights, (self.Atools.forwproj(X_t) - projdata)))
+                elif (self.datafidelity == 'Huber'):
+                    # Huber data fidelity
+                    if (self.OS_number > 1):
+                        # OS-reduced gradient for the Huber data fidelity
+                        if (self.geom == '2D'):
+                            #huber_data_threshold
+                            res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
+                        else:
+                            res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
+                        multHuber = np.zeros(np.shape(res))
+                        multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                        grad_fidelity = self.Atools.backprojOS(np.multiply(multHuber,res), sub_ind)
+                    else:
+                        # full gradient for the Huber data fidelity
+                        res = self.Atools.forwproj(X_t) - projdata
+                        multHuber = np.zeros(np.shape(res))
+                        multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                        grad_fidelity = self.Atools.backproj(np.multiply(multHuber,res))
                 else:
-                    raise ("Choose the data fidelity term: LS, PWLS")
+                    raise ("Choose the data fidelity term: LS, PWLS, Huber")
                 X = X_t - L_const_inv*grad_fidelity
-                # stopping criteria
-                nrm = LA.norm(X - X_old)*denomN
                 if (self.nonnegativity == 1):
                     X[X < 0.0] = 0.0
-                if nrm > self.tolerance:
                     # The proximal operator of the chosen regulariser
                     if (regularisation == 'ROF_TV'):
                         # Rudin - Osher - Fatemi Total variation method
@@ -278,9 +294,11 @@ class RecToolsIR:
                         X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
                     t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
                     X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
-                else:
-                    print('FISTA stopped at iteration', iter)
-                    break
+            # stopping criteria
+            nrm = LA.norm(X - X_old)*denomN
+            if nrm < self.tolerance:
+                print('FISTA stopped at iteration', iter)
+                break
 #****************************************************************************#
         if (self.nonnegativity == 1):
             X[X < 0.0] = 0.0
