@@ -98,9 +98,9 @@ print ("Reconstructing with FISTA PWLS-OS-TV method % %%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecFISTA_TV = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
                               np.transpose(data_raw[det_y_crop,:,0]), \
-                              iterationsFISTA = 9, \
+                              iterationsFISTA = 10, \
                               regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.0009,\
+                              regularisation_parameter = 0.0012,\
                               regularisation_iterations = 200,\
                               lipschitz_const = lc)
 
@@ -110,13 +110,30 @@ plt.title('FISTA-PWLS-OS-TV reconstruction')
 plt.show()
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-HUBER-OS-TV method % %%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+RecFISTA_TV_hub = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
+                              np.transpose(data_raw[det_y_crop,:,0]), \
+                               huber_data_threshold = 45.0,
+                              iterationsFISTA = 10, \
+                              regularisation = 'FGP_TV', \
+                              regularisation_parameter = 0.0012,\
+                              regularisation_iterations = 200,\
+                              lipschitz_const = lc)
+
+plt.figure()
+plt.imshow(RecFISTA_TV_hub, vmin=0, vmax=0.2, cmap="gray")
+plt.title('FISTA-PWLS-HUBER-OS-TV reconstruction')
+plt.show()
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-NDF(Huber) method % %%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecFISTA_NDF_huber = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
                               np.transpose(data_raw[det_y_crop,:,0]), \
-                              iterationsFISTA = 9, \
+                              iterationsFISTA = 10, \
                               regularisation = 'NDF', \
-                              NDF_penalty = 1, \
+                              NDF_penalty = 'Huber', \
                               edge_param = 0.012,\
                               regularisation_parameter = 0.01,\
                               regularisation_iterations = 400,\

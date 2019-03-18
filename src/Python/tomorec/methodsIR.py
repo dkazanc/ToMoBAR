@@ -33,7 +33,7 @@ class RecToolsIR:
               DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
-              datafidelity, # data fidelity, choose 'LS', 'PWLS', Huber, 'GH' (wip), 'Student' (wip)
+              datafidelity, # data fidelity, choose 'LS', 'PWLS', 'GH' (wip), 'Student' (wip)
               nonnegativity, # select 'nonnegativity' constraint (set to 'ENABLE')
               OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
               tolerance, # tolerance to stop OUTER iterations earlier
@@ -58,7 +58,7 @@ class RecToolsIR:
             self.device = 'gpu'
         else:
             self.device = device
-        if ((datafidelity != 'LS') and (datafidelity != 'PWLS')  and (datafidelity != 'Huber')):
+        if ((datafidelity != 'LS') and (datafidelity != 'PWLS')):
                 raise('Unknown data fidelity type, select: LS, PWLS, Huber')
         
         if DetectorsDimV is None:
@@ -224,29 +224,25 @@ class RecToolsIR:
                 if (self.datafidelity == 'LS'):
                     # Least-squares data fidelity (linear)
                     if (self.OS_number > 1):
-                        # OS-reduced gradient for LS fidelity
+                        # OS-reduced residual for LS fidelity
                         if (self.geom == '2D'):
                             res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
                         else:
                             res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
                     else:
-                        # full gradient for LS fidelity
+                        # residual for LS fidelity
                         res = self.Atools.forwproj(X_t) - projdata
-                        # grad_fidelity = self.Atools.backproj(self.Atools.forwproj(X_t) - projdata)
                 elif (self.datafidelity == 'PWLS'):
                     # Penalised Weighted Least-squares data fidelity (approximately linear)
                     if (self.OS_number > 1):
-                        # OS-reduced gradient for PWLS fidelity
+                        # OS-reduced residual for PWLS fidelity
                         if (self.geom == '2D'):
                             res = np.multiply(weights[indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]))
-                            #grad_fidelity = self.Atools.backprojOS(np.multiply(weights[indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:])), sub_ind)
                         else:
                             res = np.multiply(weights[:,indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]))
-                            #grad_fidelity = self.Atools.backprojOS(np.multiply(weights[:,indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:])), sub_ind)
                     else:
                         # full gradient for the PWLS fidelity
                         res = np.multiply(weights, (self.Atools.forwproj(X_t) - projdata))
-                        #grad_fidelity = self.Atools.backproj(np.multiply(weights, (self.Atools.forwproj(X_t) - projdata)))
                 else:
                     raise ("Choose the data fidelity term: LS, PWLS")
                 if (huber_data_threshold > 0.0):
@@ -261,8 +257,10 @@ class RecToolsIR:
                         grad_fidelity = self.Atools.backproj(np.multiply(multHuber,res))
                 else:
                     if (self.OS_number > 1):
+                        # OS reduced gradient
                         grad_fidelity = self.Atools.backprojOS(res, sub_ind)
                     else:
+                        # full gradient
                         grad_fidelity = self.Atools.backproj(res)
 
                 X = X_t - L_const_inv*grad_fidelity
