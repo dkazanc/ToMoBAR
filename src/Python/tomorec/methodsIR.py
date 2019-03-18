@@ -253,7 +253,7 @@ class RecToolsIR:
                             res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
                         else:
                             res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
-                        multHuber = np.zeros(np.shape(res))
+                        multHuber = np.ones(np.shape(res))
                         multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
                         grad_fidelity = self.Atools.backprojOS(np.multiply(multHuber,res), sub_ind)
                     else:
