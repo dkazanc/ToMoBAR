@@ -13,7 +13,7 @@
   <img src="docs/images/recsFISTA_stud.png" height="216"><br>  
 </div>
 <div align="center">
-  <img src="docs/images/TV_vs_NLTV.jpg" height="300"><br>  
+  <img src="docs/images/TomoRec_surf2.jpg" height="250"><br>  
 </div>
 
 ## Software highlights:
