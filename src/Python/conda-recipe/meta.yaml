@@ -1,6 +1,6 @@
 package:
-  name: tomorec
-  version: "0.1.2"
+  name: tomobar
+  version: "0.1.3"
 
 
 build:
@@ -17,6 +17,6 @@ requirements:
     - numpy
 
 about:
-  home: https://github.com/dkazanc/TomoRec
+  home: https://github.com/dkazanc/ToMoBAR
   license:  GPLv3
-  summary: 'MATLAB/Python library of tomographic reconstruction methods: direct and iterative'
+  summary: 'TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software'

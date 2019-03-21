@@ -65,24 +65,24 @@ class RecToolsIR:
             # Creating Astra class specific to 2D parallel geometry
             if ((OS_number is None) or (OS_number <= 1)):
                 # classical approach
-                from tomorec.supp.astraOP import AstraTools
+                from tomobar.supp.astraOP import AstraTools
                 self.Atools = AstraTools(DetectorsDimH, AnglesVec, ObjSize, device) # initiate 2D ASTRA class object
                 self.OS_number = 1
             else:
                 # Ordered-subset approach
-                from tomorec.supp.astraOP import AstraToolsOS
+                from tomobar.supp.astraOP import AstraToolsOS
                 self.Atools = AstraToolsOS(DetectorsDimH, AnglesVec, ObjSize, self.OS_number, device) # initiate 2D ASTRA class OS object
             self.geom = '2D'
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
             if ((OS_number is None) or (OS_number <= 1)):
-                from tomorec.supp.astraOP import AstraTools3D
+                from tomobar.supp.astraOP import AstraTools3D
                 self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize) # initiate 3D ASTRA class object
                 self.OS_number = 1
             else:
                 # Ordered-subset 
-                from tomorec.supp.astraOP import AstraToolsOS3D
+                from tomobar.supp.astraOP import AstraToolsOS3D
                 self.Atools = AstraToolsOS3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize, self.OS_number) # initiate 3D ASTRA class OS object
     
     def SIRT(self, sinogram, iterations):
@@ -135,20 +135,27 @@ class RecToolsIR:
             # OS approach
             y = self.Atools.forwprojOS(x1,0)
             if (self.datafidelity == 'PWLS'):
-                y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
+                if (self.geom == '2D'):
+                    y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
+                else:
+                    y = np.multiply(sqweight[:,self.Atools.newInd_Vec[0,:],:], y)
             for iter in range(0,niter):
                 x1 = self.Atools.backprojOS(y,0)
                 s = LA.norm(x1)
                 x1 = x1/s
                 y = self.Atools.forwprojOS(x1,0)
                 if (self.datafidelity == 'PWLS'):
-                    y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
+                    if (self.geom == '2D'):
+                        y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
+                    else:
+                        y = np.multiply(sqweight[:,self.Atools.newInd_Vec[0,:],:], y)
         return s
     
     def FISTA(self, 
               projdata, # tomographic projection data in 2D (sinogram) or 3D array
               weights = None, # raw projection data for PWLS model
               huber_data_threshold = 0.0, # threshold parameter for Huber data fidelity 
+              student_data_threshold = 0.0, # threshold parameter for Student data fidelity 
               InitialObject = None, # initialise reconstruction with an array
               lipschitz_const = 5e+06, # can be a given value or calculated using Power method
               iterationsFISTA = 100, # the number of OUTER FISTA iterations
@@ -246,7 +253,7 @@ class RecToolsIR:
                 else:
                     raise ("Choose the data fidelity term: LS, PWLS")
                 if (huber_data_threshold > 0.0):
-                    # switch to Huber penalty
+                    # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
                     multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
                     if (self.OS_number > 1):
@@ -255,6 +262,16 @@ class RecToolsIR:
                     else:
                         # full Huber gradient 
                         grad_fidelity = self.Atools.backproj(np.multiply(multHuber,res))
+                elif (student_data_threshold > 0.0):
+                    # apply Students't penalty
+                    multStudent = np.ones(np.shape(res))
+                    multStudent = np.divide(2.0, student_data_threshold**2 + res**2)
+                    if (self.OS_number > 1):
+                        # OS-Students't-gradient
+                        grad_fidelity = self.Atools.backprojOS(np.multiply(multStudent,res), sub_ind)
+                    else:
+                        # full Students't gradient 
+                        grad_fidelity = self.Atools.backproj(np.multiply(multStudent,res))
                 else:
                     if (self.OS_number > 1):
                         # OS reduced gradient

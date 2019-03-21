@@ -5,12 +5,12 @@ GPLv3 license (ASTRA toolbox)
 Note that the TomoPhantom package is released under Apache License, Version 2.0
 
 Script to generate 2D analytical phantoms and their sinograms with added noise and artifacts
-Sinograms then reconstructed using TomoRec using different data fidelities
+Sinograms then reconstructed using tomobar using different data fidelities
 
 >>>>> Dependencies (reconstruction): <<<<<
 1. ASTRA toolbox: conda install -c astra-toolbox astra-toolbox
-2. TomoRec: conda install -c dkazanc tomorec
-or install from https://github.com/dkazanc/TomoRec
+2. tomobar: conda install -c dkazanc tomobar
+or install from https://github.com/dkazanc/tomobar
 
 This demo demonstrates frequent inaccuracies which are accosiated with X-ray imaging:
 zingers, rings and noise
@@ -79,7 +79,7 @@ plt.imshow(noisy_zing_stripe,cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical noisy sinogram with artifacts.',model))
 #%%
-from tomorec.methodsDIR import RecToolsDIR
+from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
@@ -87,7 +87,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimensi
                     device='gpu')
 
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing analytical sinogram using FBP (TomoRec)...")
+print ("Reconstructing analytical sinogram using FBP (tomobar)...")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 FBPrec_ideal = RectoolsDIR.FBP(sino_an)  # ideal reconstruction
 FBPrec_error = RectoolsDIR.FBP(noisy_zing_stripe) # reconstruction with artifacts
@@ -114,9 +114,9 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FBP reconsrtuction differences')
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing using FISTA method (TomoRec)")
+print ("Reconstructing using FISTA method (tomobar)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsIR import RecToolsIR
+from tomobar.methodsIR import RecToolsIR
 RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
@@ -173,10 +173,10 @@ print("RMSE for FISTA-LS-TV reconstruction is {}".format(RMSE_FISTA_LS_TV))
 print("RMSE for FISTA-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing using FISTA-OS method (TomoRec)")
+print ("Reconstructing using FISTA-OS method (tomobar)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
-from tomorec.methodsIR import RecToolsIR
+from tomobar.methodsIR import RecToolsIR
 RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians

@@ -36,7 +36,7 @@ h5f.close()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsDIR import RecToolsDIR
+from tomobar.methodsDIR import RecToolsDIR
 
 N_size = 2000
 det_y_crop = [i for i in range(0,2374)]
@@ -55,7 +55,7 @@ plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
 plt.title('FBP reconstruction')
 
 #%%
-from tomorec.methodsIR import RecToolsIR
+from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
@@ -78,7 +78,7 @@ plt.title('CGLS reconstruction')
 plt.show()
 #%%
 # Initialise FISTA-type PWLS reconstruction (run once)
-from tomorec.methodsIR import RecToolsIR
+from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)

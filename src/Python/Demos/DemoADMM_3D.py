@@ -85,7 +85,7 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsDIR import RecToolsDIR
+from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
@@ -113,7 +113,7 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with ADMM method (ASTRA used for projection)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsIR import RecToolsIR
+from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
