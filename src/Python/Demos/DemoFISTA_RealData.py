@@ -23,7 +23,7 @@ Measurement Science and Technology, 28(9), p.094004.
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io
-from tomorec.supp.suppTools import normaliser
+from tomobar.supp.suppTools import normaliser
 
 # load dendritic data
 datadict = scipy.io.loadmat('../../../data/DendrRawData.mat')
@@ -51,7 +51,7 @@ angles_rad = angles*(np.pi/180.0)
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsDIR import RecToolsDIR
+from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
@@ -64,7 +64,7 @@ plt.figure()
 plt.imshow(FBPrec[150:550,150:550], vmin=0, vmax=0.005, cmap="gray")
 plt.title('FBP reconstruction')
 
-from tomorec.methodsIR import RecToolsIR
+from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only

@@ -120,7 +120,7 @@ class RecToolsDIR:
         image = recon[int(((self.DetectorsDimH-self.ObjSize)/2)+1):self.DetectorsDimH-int(((self.DetectorsDimH-self.ObjSize)/2)-1),int(((self.DetectorsDimH-self.ObjSize)/2)):self.DetectorsDimH-int(((self.DetectorsDimH-self.ObjSize)/2))]
         return image
     def FBP(self, sinogram):
-        from tomorec.supp.astraOP import AstraTools
+        from tomobar.supp.astraOP import AstraTools
         if (self.geom == '2D'):
             Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
             FBP_rec = Atools.fbp2D(sinogram)
@@ -132,21 +132,21 @@ class RecToolsDIR:
         return FBP_rec
     def FORWPROJ(self, image):
         if (self.geom == '2D'):
-            from tomorec.supp.astraOP import AstraTools
+            from tomobar.supp.astraOP import AstraTools
             Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
             sinogram = Atools.forwproj(image)
         if (self.geom == '3D'):
-            from tomorec.supp.astraOP import AstraTools3D
+            from tomobar.supp.astraOP import AstraTools3D
             Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.ObjSize) # initiate 3D ASTRA class object
             sinogram = Atools.forwproj(image)
         return sinogram
     def BACKPROJ(self, sinogram):
         if (self.geom == '2D'):
-            from tomorec.supp.astraOP import AstraTools
+            from tomobar.supp.astraOP import AstraTools
             Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
             image = Atools.backproj(sinogram)
         if (self.geom == '3D'):
-            from tomorec.supp.astraOP import AstraTools3D
+            from tomobar.supp.astraOP import AstraTools3D
             Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.ObjSize) # initiate 3D ASTRA class object
             image = Atools.backproj(sinogram)
         return image

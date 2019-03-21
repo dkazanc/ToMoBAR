@@ -13,14 +13,8 @@ Here we provide detailed installation information for the following dependencies
 3. open compileGPU_mex.m and edit according to your system specifications
 4. run compileGPU_mex.m to compile GPU functions
 
-* [TomoPhantom](https://github.com/dkazanc/TomoPhantom)
+* [TomoBAR](https://github.com/dkazanc/TomoPhantom)
 ---------- uncompress the content into "Supplementary/TomoPhantom/" folder. 
 1. Start matlab and proceed to the folder "supplementary/TomoPhantom/matlab/install"
 2. Run compile_mex_linux.m or compile_mex_windows.m to install the package
 
-
-## Installation in Python (conda):
-Install with `conda install -c dkazanc tomorec` or build yourself: 
-
-conda build Wrappers/Python/conda-recipe --numpy 1.12 --python 3.5 
-conda install tomorec --use-local --force

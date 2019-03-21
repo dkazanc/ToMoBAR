@@ -1,4 +1,4 @@
-#  A library of direct and model-based iterative (regularised) tomographic reconstruction algorithms in Python/MATLAB
+# TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software includes a library of direct and model-based regularised iterative reconstruction algorithms in Python/MATLAB
 
 ### Software includes:
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods
@@ -22,8 +22,7 @@
  * The FISTA algorithm offers novel modifications: convergence acceleration with ordered-subsets method, PWLS, Huber, Group-Huber[3] and Students't data fidelities [1,2] to deal with noise and image artifacts
 
 ### General software prerequisites
- * [MATLAB](http://www.mathworks.com/products/matlab/) or Python
- * C compilers (GCC/MinGW) and nvcc [CUDA SDK](https://developer.nvidia.com/cuda-downloads) compilers
+ * [MATLAB](http://www.mathworks.com/products/matlab/) or Python 
 
 ### Software dependencies:
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations
@@ -32,10 +31,10 @@
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Installation in Python (conda):
-Install with `conda install -c dkazanc tomorec` or build with:
+Install with `conda install -c dkazanc tomobar` or build with:
 ```
 conda build src/Python/conda-recipe --numpy 1.12 --python 3.5
-conda install tomorec --use-local --force-reinstall
+conda install tomobar --use-local --force-reinstall
 ```
 
 ### References:

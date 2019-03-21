@@ -65,24 +65,24 @@ class RecToolsIR:
             # Creating Astra class specific to 2D parallel geometry
             if ((OS_number is None) or (OS_number <= 1)):
                 # classical approach
-                from tomorec.supp.astraOP import AstraTools
+                from tomobar.supp.astraOP import AstraTools
                 self.Atools = AstraTools(DetectorsDimH, AnglesVec, ObjSize, device) # initiate 2D ASTRA class object
                 self.OS_number = 1
             else:
                 # Ordered-subset approach
-                from tomorec.supp.astraOP import AstraToolsOS
+                from tomobar.supp.astraOP import AstraToolsOS
                 self.Atools = AstraToolsOS(DetectorsDimH, AnglesVec, ObjSize, self.OS_number, device) # initiate 2D ASTRA class OS object
             self.geom = '2D'
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
             if ((OS_number is None) or (OS_number <= 1)):
-                from tomorec.supp.astraOP import AstraTools3D
+                from tomobar.supp.astraOP import AstraTools3D
                 self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize) # initiate 3D ASTRA class object
                 self.OS_number = 1
             else:
                 # Ordered-subset 
-                from tomorec.supp.astraOP import AstraToolsOS3D
+                from tomobar.supp.astraOP import AstraToolsOS3D
                 self.Atools = AstraToolsOS3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize, self.OS_number) # initiate 3D ASTRA class OS object
     
     def SIRT(self, sinogram, iterations):

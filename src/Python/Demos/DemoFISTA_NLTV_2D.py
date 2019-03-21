@@ -85,7 +85,7 @@ plt.title('{}''{}'.format('Analytical noisy sinogram with artifacts',model))
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA method (ASTRA used for projection)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsIR import RecToolsIR
+from tomobar.methodsIR import RecToolsIR
 from ccpi.filters.regularisers import PatchSelect
 
 # set parameters and initiate a class object
@@ -101,7 +101,7 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
 
 lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
 
-from tomorec.methodsDIR import RecToolsDIR
+from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
@@ -180,7 +180,7 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%Reconstructing with FISTA-OS method%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomorec.methodsIR import RecToolsIR
+from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
