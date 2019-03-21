@@ -1,4 +1,4 @@
-# TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software
+# TOmographic MOdel-BAsed Reconstruction (ToMoBAR)
 
 ## ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms
 
