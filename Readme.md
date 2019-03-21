@@ -1,6 +1,6 @@
 # TOmographic MOdel-BAsed Reconstruction (ToMoBAR)
 
-## ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms
+## ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms with a *plug-and-play* capability
 
 ### Software includes:
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods
