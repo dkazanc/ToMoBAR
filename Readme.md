@@ -1,4 +1,4 @@
-# TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software includes a library of direct and model-based regularised iterative reconstruction algorithms in Python/MATLAB
+# TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software is a library of direct and model-based regularised iterative reconstruction algorithms
 
 ### Software includes:
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods
