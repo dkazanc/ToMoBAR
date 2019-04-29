@@ -16,7 +16,7 @@ def normaliser(data, flats, darks, log):
     flats = np.average(flats,1) # average of flats
     darks = np.average(darks,1) # average of darks
     denom = (flats-darks)
-    denom[(np.where(denom == 0))] = 1 # remove zeros in the denominator if any
+    denom[(np.where(denom == 0))] = 1.0 # remove zeros in the denominator if any
     
     for i in range(0,ProjectionsNum):
         sliceS = data[:,i,:] # select a stack [detector x slices]
@@ -25,9 +25,10 @@ def normaliser(data, flats, darks, log):
         data_norm[:,i,:] = fraction.astype(float)
     
     if log is not None:
-        # calculate negative log (avoiding of log(0))
+        # calculate negative log (avoiding of log(0) and > 1.0)
         nonzeroInd = np.where(data_norm != 0) # nonzero data
         zeroInd = np.where(data_norm == 0) # zero data
+        data_norm[(np.where(data_norm > 1.0))] = 1.0
         data_norm[nonzeroInd] = -np.log(data_norm[nonzeroInd])
         data_norm[zeroInd] = 1e-13
         
