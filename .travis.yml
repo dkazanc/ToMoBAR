@@ -29,3 +29,7 @@ install:
 
 after_success:
   - test $TRAVIS_BRANCH = "master" && conda install conda-build && conda install anaconda-client && bash src/Python/conda-recipe/conda_upload.sh
+
+script:
+  - python tests/test.py
+
