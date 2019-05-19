@@ -5,8 +5,8 @@ from tomobar.methodsIR import RecToolsIR
 
 ###############################################################################
 
-class TestRegularisers(unittest.TestCase):
-
+class TestTomobar(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    unittest.main()
