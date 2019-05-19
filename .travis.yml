@@ -9,10 +9,10 @@ matrix:
     # add/remove environment variables, and use them below during the install.
 
     - python: 2.7
-      env: NUMPY=1.4 
+      env: NUMPY=1.14 
 
     - python: 3.5
-      env: NUMPY=1.5 
+      env: NUMPY=1.15 
 
 install:
   # Install Anaconda
