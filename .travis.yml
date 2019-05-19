@@ -26,6 +26,10 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
+  - conda info -a
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION 
+  - source activate test-environment
+  - conda install --yes numpy=$NUMPY pytest
 
 after_success:
   - test $TRAVIS_BRANCH = "master" && conda install conda-build && conda install anaconda-client && bash src/Python/conda-recipe/conda_upload.sh
