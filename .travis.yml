@@ -28,6 +28,7 @@ install:
   - conda install --yes numpy=$NUMPY pytest conda-build anaconda-client 
   - conda install -c conda-forge sparse
   - conda config --set anaconda_upload no
+  - export VERSION=0.1.4
   - conda build src/Python/conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION 
   - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
 
