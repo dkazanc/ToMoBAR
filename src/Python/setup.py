@@ -5,7 +5,6 @@ from distutils.core import setup
 
 setup(
     name="tomobar",
-    version='0.1.3',
     packages=['tomobar', 'tomobar.supp'],
 
     # metadata for upload to PyPI

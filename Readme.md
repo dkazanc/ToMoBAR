@@ -1,3 +1,7 @@
+| Master | Anaconda binaries |
+|--------|-------------------|
+| [![Build Status](https://travis-ci.org/dkazanc/ToMoBAR.svg?branch=master)](https://travis-ci.org/dkazanc/ToMoBAR.svg?branch=master) | ![conda version](https://anaconda.org/dkazanc/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/dkazanc/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/dkazanc/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/dkazanc/tomobar/badges/downloads.svg)](https://anaconda.org/dkazanc/tomobar/) |
+
 # TOmographic MOdel-BAsed Reconstruction (ToMoBAR)
 
 ## ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms with a *plug-and-play* capability
@@ -33,9 +37,9 @@
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Installation in Python (conda):
-Install with `conda install -c dkazanc tomobar` or build with:
+Install from the channel with `conda install -c dkazanc/label/nightly tomobar` or build with:
 ```
-export VERSION=0.1.4
+export VERSION=`date +%Y.%m`
 conda build src/Python/conda-recipe --numpy 1.12 --python 3.5
 conda install tomobar --use-local --force-reinstall
 ```

@@ -5,8 +5,17 @@ matrix:
     - python: 2.7
       env: NUMPY=1.14 
 
+    - python: 2.7
+      env: NUMPY=1.15 
+
     - python: 3.5
       env: NUMPY=1.15 
+
+    - python: 3.6
+      env: NUMPY=1.15
+
+    - python: 3.7
+      env: NUMPY=1.15
 os:
   - linux
 
@@ -28,8 +37,7 @@ install:
   - conda install --yes numpy=$NUMPY pytest conda-build anaconda-client 
   - conda install -c conda-forge sparse
   - conda config --set anaconda_upload no
-#  - export VERSION=0.1.4
-  - export VERSION=`date +%Y.%m.%d`	
+  - export VERSION=`date +%Y.%m`	
   - conda build src/Python/conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION 
   - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
 
