@@ -13,6 +13,10 @@ matrix:
 
     - python: 3.5
       env: NUMPY=1.15 
+os:
+  - linux
+
+sudo: false
 
 install:
   # Install Anaconda
@@ -35,8 +39,10 @@ install:
   - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
 
 after_success:
-  - test $TRAVIS_BRANCH = "master" && conda install conda-build && conda install anaconda-client && bash src/Python/conda-recipe/conda_upload.sh
-
+  - source activate test-environment
+  - conda config --set anaconda_upload yes
+  - conda build src/Python/conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION
+  
 script:
   - python tests/test.py
 
