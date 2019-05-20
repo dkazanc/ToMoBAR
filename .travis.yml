@@ -39,10 +39,16 @@ install:
   - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
 
 after_success:
-  - source activate test-environment
-  - conda config --set anaconda_upload yes
-  - conda build src/Python/conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION
+# Change permissions for Anaconda deployment script
+  - chmod +x /src/Python/conda-recipe/conda_upload_2.sh
+
+deploy:
+ # Deploy to Anaconda.org
+  - provider: script
+    script: /src/Python/conda-recipe/conda_upload_2.sh
+    on:
+      tags: true
+skip_cleanup: true  
   
 script:
   - python tests/test.py
-
