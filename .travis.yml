@@ -35,6 +35,13 @@ install:
 after_success:
 # Change permissions for Anaconda deployment script
   - chmod +x ./deploy_anaconda.sh
+  
+before_deploy:
+      # Set up git user name and tag this commit
+      - git config --local user.name dkazanc
+      - git config --local user.email dkazanc@hotmail.com
+      - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
+      - git tag $TRAVIS_TAG
 
 deploy:
  # Deploy to Anaconda.org
