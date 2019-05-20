@@ -35,6 +35,7 @@
 ### Installation in Python (conda):
 Install with `conda install -c dkazanc tomobar` or build with:
 ```
+export VERSION=0.1.4
 conda build src/Python/conda-recipe --numpy 1.12 --python 3.5
 conda install tomobar --use-local --force-reinstall
 ```

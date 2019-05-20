@@ -14,7 +14,8 @@ conda convert --platform all /home/travis/miniconda/envs/test-environment/conda-
 echo "Deploying to Anaconda.org..."
 #anaconda -t $CONDA_UPLOAD_TOKEN upload conda-bld/**/tomobar-*.tar.bz2
 export CONDA_BLD_PATH=~/conda-bld
-anaconda -t $CONDA_UPLOAD_TOKEN upload -u $USER -l nightly $CONDA_BLD_PATH/$OS/$PKG_NAME-`date +%Y.%m.%d`-0.tar.bz2 --force
+#export VERSION=`date +%Y.%m.%d`
+anaconda -t $CONDA_UPLOAD_TOKEN upload -u $USER -l nightly $CONDA_BLD_PATH/$OS/$PKG_NAME-$VERSION-0.tar.bz2 --force
 
 echo "Successfully deployed to Anaconda.org."
 exit 0

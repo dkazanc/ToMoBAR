@@ -1,16 +1,18 @@
 package:
   name: tomobar
-  version: "0.1.3"
-
+  version: {{ environ['VERSION'] }}
 
 build:
   preserve_egg_dir: False
+  script_env:
+   - VERSION
 
 requirements:
   build:
     - python
     - numpy
     - setuptools
+    
 
   run:
     - python
