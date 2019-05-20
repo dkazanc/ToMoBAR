@@ -31,7 +31,7 @@ install:
   - source activate test-environment
   - conda install --yes numpy=$NUMPY pytest conda-build
   - conda build src/Python/conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION 
-  - conda install -y tomobar --force-reinstall
+  - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
 
 after_success:
   - test $TRAVIS_BRANCH = "master" && conda install conda-build && conda install anaconda-client && bash src/Python/conda-recipe/conda_upload.sh
