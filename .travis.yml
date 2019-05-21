@@ -16,6 +16,7 @@ matrix:
       
 os:
   - linux
+  - windows
 
 install:
   # Install Anaconda
