@@ -16,8 +16,7 @@ matrix:
       
 os:
   - linux
-  - windows
-
+  
 install:
   # Install Anaconda
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
