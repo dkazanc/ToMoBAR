@@ -39,27 +39,9 @@ install:
   - conda build src/Python/conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION 
   - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
 
-#after_success:
-# Change permissions for Anaconda deployment script
-#  - chmod +x ./deploy_anaconda.sh
 after_success:
   - chmod +x src/Python/conda-recipe/conda_upload.sh
-  - test $TRAVIS_BRANCH = "master" && conda install conda-build && conda install anaconda-client && bash src/Python/conda-recipe/conda_upload.sh
-  
-#before_deploy:
-#      # Set up git user name and tag this commit
-#      - git config --local user.name dkazanc
-#      - git config --local user.email dkazanc@hotmail.com
-#      - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
-#      - git tag $TRAVIS_TAG
+  - test $TRAVIS_BRANCH = "master" && bash src/Python/conda-recipe/conda_upload.sh
 
-#deploy:
-# # Deploy to Anaconda.org
-#  - provider: script
-#    script: ./deploy_anaconda.sh
-#    on:
-#      tags: true
-#skip_cleanup: true  
-  
 script:
   - python tests/test.py

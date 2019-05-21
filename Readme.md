@@ -37,7 +37,7 @@
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Installation in Python (conda):
-Install from the channel with `conda install -c dkazanc/label/nightly tomobar` or build with:
+Install from the channel with `conda install -c dkazanc tomobar` or build with:
 ```
 export VERSION=`date +%Y.%m`
 conda build src/Python/conda-recipe --numpy 1.12 --python 3.5
