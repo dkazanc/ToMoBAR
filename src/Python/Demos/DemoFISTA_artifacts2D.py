@@ -131,10 +131,15 @@ lc = RectoolsIR.powermethod() # calculate Lipschitz constant
 
 # Run FISTA reconstrucion algorithm with regularisation 
 RecFISTA_LS_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
+                                   lambdaR_L1 = 0.01,
                                    iterationsFISTA = 350, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.003,
                                    lipschitz_const = lc)
+plt.figure()
+plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA-LS-TV reconstruction')
 #%%
 RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only

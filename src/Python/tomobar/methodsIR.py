@@ -47,6 +47,7 @@ class RecToolsIR:
         self.datafidelity = datafidelity
         self.OS_number = OS_number
         self.DetectorsDimV = DetectorsDimV
+        self.DetectorsDimH = DetectorsDimH
         
         # enables nonnegativity constraint
         if nonnegativity == 'ENABLE':
@@ -59,7 +60,7 @@ class RecToolsIR:
         else:
             self.device = device
         if ((datafidelity != 'LS') and (datafidelity != 'PWLS')):
-                raise('Unknown data fidelity type, select: LS, PWLS, Huber')
+                raise('Unknown data fidelity type, select: LS, PWLS')
         
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
@@ -154,8 +155,10 @@ class RecToolsIR:
     def FISTA(self, 
               projdata, # tomographic projection data in 2D (sinogram) or 3D array
               weights = None, # raw projection data for PWLS model
-              huber_data_threshold = 0.0, # threshold parameter for Huber data fidelity 
-              student_data_threshold = 0.0, # threshold parameter for Student data fidelity 
+              lambdaR_L1 = 0.1,
+              alpha_ring = 20,
+              huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity 
+              student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity 
               InitialObject = None, # initialise reconstruction with an array
               lipschitz_const = 5e+06, # can be a given value or calculated using Power method
               iterationsFISTA = 100, # the number of OUTER FISTA iterations
@@ -181,11 +184,12 @@ class RecToolsIR:
             # 2D reconstruction
             # initialise the solution
             if (np.size(InitialObject) == self.ObjSize**2):
-                # the object has been initialised with an array
+                # the object has been initialised with an array 
                 X = InitialObject
                 del InitialObject
             else:
-                X = np.zeros((self.ObjSize,self.ObjSize), 'float32')
+                X = np.zeros((self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
+                r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
         if (self.geom == '3D'):
             # initialise the solution
             if (np.size(InitialObject) == self.ObjSize**3):
@@ -193,7 +197,8 @@ class RecToolsIR:
                 X = InitialObject
                 del InitialObject
             else:
-                X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32')
+                X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
+                r = np.zeros((self.DetectorsDimH,self.DetectorsDimV), 'float32') # 2D array of sparse "ring" variables (GH)
         if (self.OS_number > 1):
             regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
         if (NDF_penalty == 'Huber'):
@@ -217,12 +222,14 @@ class RecToolsIR:
         t = 1.0
         denomN = 1.0/np.size(X)
         X_t = np.copy(X)
+        r_x = r.copy()
         # Outer FISTA iterations
         for iter in range(0,iterationsFISTA):
             for sub_ind in range(self.OS_number):
                 # loop over subsets
                 X_old = X
                 t_old = t
+                r_old = r
                 if (self.OS_number > 1):
                     #select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind,:]
@@ -239,6 +246,11 @@ class RecToolsIR:
                     else:
                         # residual for LS fidelity
                         res = self.Atools.forwproj(X_t) - projdata
+                        # ring removal part for Group-Huber fidelity
+                        if (lambdaR_L1 > 0.0):
+                            res[0:None,:] = res[0:None,:] + alpha_ring*r_x[:,0]
+                            vec = res.sum(axis = 0)
+                            r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
                 elif (self.datafidelity == 'PWLS'):
                     # Penalised Weighted Least-squares data fidelity (approximately linear)
                     if (self.OS_number > 1):
@@ -310,6 +322,13 @@ class RecToolsIR:
                         X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
                     t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
                     X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
+                    if (lambdaR_L1 > 0.0):
+                        import matplotlib.pyplot as plt
+                        r = np.maximum((np.abs(r) - lambdaR_L1), 0.0)*np.sign(r) # soft-thresholding operator for ring vector
+                        r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
+                        plt.figure(10)
+                        plt.plot(r)
+                        plt.pause(0.05)
             # stopping criteria
             nrm = LA.norm(X - X_old)*denomN
             if nrm < self.tolerance:
