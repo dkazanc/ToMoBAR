@@ -48,6 +48,7 @@ class RecToolsIR:
         self.OS_number = OS_number
         self.DetectorsDimV = DetectorsDimV
         self.DetectorsDimH = DetectorsDimH
+        self.angles_number = len(AnglesVec)
         
         # enables nonnegativity constraint
         if nonnegativity == 'ENABLE':
@@ -155,8 +156,8 @@ class RecToolsIR:
     def FISTA(self, 
               projdata, # tomographic projection data in 2D (sinogram) or 3D array
               weights = None, # raw projection data for PWLS model
-              lambdaR_L1 = 0.1,
-              alpha_ring = 20,
+              lambdaR_L1 = 0.0, # regularisation parameter for GH data model
+              alpha_ring = 50, # GH data model convergence accelerator (!)
               huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity 
               student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity 
               InitialObject = None, # initialise reconstruction with an array
@@ -189,7 +190,7 @@ class RecToolsIR:
                 del InitialObject
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
-                r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
+                r = np.zeros((self.DetectorsDimH,self.OS_number),'float32') # 1D array of sparse "ring" variables (GH)
         if (self.geom == '3D'):
             # initialise the solution
             if (np.size(InitialObject) == self.ObjSize**3):
@@ -198,7 +199,7 @@ class RecToolsIR:
                 del InitialObject
             else:
                 X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
-                r = np.zeros((self.DetectorsDimH,self.DetectorsDimV), 'float32') # 2D array of sparse "ring" variables (GH)
+                r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
         if (self.OS_number > 1):
             regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
         if (NDF_penalty == 'Huber'):
@@ -241,6 +242,10 @@ class RecToolsIR:
                         # OS-reduced residual for LS fidelity
                         if (self.geom == '2D'):
                             res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
+                            if (lambdaR_L1 > 0.0):
+                                res[sub_ind,0:None] = res[sub_ind,0:None] + alpha_ring*r_x[:,sub_ind]
+                                vec = (1.0/self.OS_number)*res.sum(axis = 0)
+                                r[:,sub_ind] = r_x[:,sub_ind] - np.multiply(L_const_inv,vec)
                         else:
                             res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
                     else:
@@ -248,9 +253,15 @@ class RecToolsIR:
                         res = self.Atools.forwproj(X_t) - projdata
                         # ring removal part for Group-Huber fidelity
                         if (lambdaR_L1 > 0.0):
-                            res[0:None,:] = res[0:None,:] + alpha_ring*r_x[:,0]
-                            vec = res.sum(axis = 0)
-                            r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
+                            if (self.geom == '2D'):
+                                res[0:None,:] = res[0:None,:] + alpha_ring*r_x[:,0]
+                                vec = res.sum(axis = 0)
+                                r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
+                            else:
+                                for ang_index in range(self.angles_number):
+                                    res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x
+                                vec = res.sum(axis = 1)
+                                r = r_x - np.multiply(L_const_inv,vec)
                 elif (self.datafidelity == 'PWLS'):
                     # Penalised Weighted Least-squares data fidelity (approximately linear)
                     if (self.OS_number > 1):
@@ -326,9 +337,9 @@ class RecToolsIR:
                         import matplotlib.pyplot as plt
                         r = np.maximum((np.abs(r) - lambdaR_L1), 0.0)*np.sign(r) # soft-thresholding operator for ring vector
                         r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
-                        plt.figure(10)
-                        plt.plot(r)
-                        plt.pause(0.05)
+                        #plt.figure(10)
+                        #plt.plot(r)
+                        #plt.pause(0.05)
             # stopping criteria
             nrm = LA.norm(X - X_old)*denomN
             if nrm < self.tolerance:
