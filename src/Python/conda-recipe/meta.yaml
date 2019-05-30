@@ -1,6 +1,6 @@
 package:
   name: tomobar
-  version: {{ environ['VERSION'] }}
+  version: {{VERSION}}
 
 build:
   preserve_egg_dir: False
