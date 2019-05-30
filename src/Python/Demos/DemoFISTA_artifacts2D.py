@@ -130,8 +130,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
 lc = RectoolsIR.powermethod() # calculate Lipschitz constant
 
 # Run FISTA reconstrucion algorithm with regularisation 
-RecFISTA_LS_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   lambdaR_L1 = 0.01,
+RecFISTA_LS_reg = RectoolsIR.FISTA(noisy_zing_stripe,                                    
                                    iterationsFISTA = 350, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.003,
@@ -239,4 +238,43 @@ Qtools = QualityTools(phantom_2D, RecFISTA_Huber_reg)
 RMSE_FISTA_HUBER_TV = Qtools.rmse()
 print("RMSE for FISTA-OS-LS-TV reconstruction is {}".format(RMSE_FISTA_LS_TV))
 print("RMSE for FISTA-OS-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing using FISTA-Group-Huber method (tomobar)")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+
+from tomobar.methodsIR import RecToolsIR
+
+RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    datafidelity='LS', #data fidelity, choose LS, PWLS, Huber, GH (wip), Student (wip)
+                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
+                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
+                    device='gpu')
+
+lc = RectoolsIR.powermethod() # calculate Lipschitz constant
+
+# Run FISTA reconstrucion algorithm with regularisation 
+RecFISTA_LS_GH_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
+                                   lambdaR_L1 = 0.0065,
+                                   alpha_ring = 150,
+                                   iterationsFISTA = 350, 
+                                   regularisation = 'ROF_TV', 
+                                   regularisation_parameter = 0.01,
+                                   regularisation_iterations = 80,
+                                   lipschitz_const = lc)
+
+plt.figure()
+plt.imshow(RecFISTA_LS_GH_reg, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA-OS-GH-TV reconstruction')
+plt.show()
+
+# calculate errors 
+Qtools = QualityTools(phantom_2D, RecFISTA_LS_GH_reg)
+RMSE_FISTA_LS_GH_TV = Qtools.rmse()
+print("RMSE for FISTA-LS-GH-TV reconstruction is {}".format(RMSE_FISTA_LS_GH_TV))
 #%%
