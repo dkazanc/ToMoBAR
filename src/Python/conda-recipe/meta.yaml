@@ -1,6 +1,6 @@
 package:
   name: tomobar
-  version: {{VERSION}}
+  version: {{ environ.get('VERSION', '') }}
 
 build:
   preserve_egg_dir: False
@@ -12,7 +12,6 @@ requirements:
     - python
     - numpy
     - setuptools
-    
 
   run:
     - python

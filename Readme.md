@@ -25,10 +25,10 @@
 ## Software highlights:
  * Tomographic projection data can be simulated without the "inverse crime" using [TomoPhantom](https://github.com/dkazanc/TomoPhantom). Noise and artifacts (zingers, rings) can be modelled and added to the data.
  * Simulated data reconstructed iteratively using FISTA or ADMM algorithms with multiple "plug-and-play" regularisers from [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit).
- * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method, PWLS, Huber, Group-Huber[3] and Students't data fidelities [1,2] to deal with noise and imaging artifacts. 
+ * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method, PWLS, Huber, Group-Huber[3] and Students't data fidelities [1,2] to deal with noise and imaging artifacts.
 
 ### General software prerequisites
- * [MATLAB](http://www.mathworks.com/products/matlab/) or Python 
+ * [MATLAB](http://www.mathworks.com/products/matlab/) or Python
 
 ### Software dependencies:
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations
@@ -43,7 +43,7 @@ conda install -c dkazanc tomobar
 ```
  or build with:
 ```
-export VERSION=`date +%Y.%m` (unix) / set VERSION=`2019.06` (Windows)
+export VERSION=`date +%Y.%m` (unix) / set VERSION=2019.06 (Windows)
 conda build src/Python/conda-recipe --numpy 1.12 --python 3.5
 conda install tomobar --use-local --force-reinstall
 ```
