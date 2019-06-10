@@ -24,6 +24,12 @@ import numpy as np
 from numpy import linalg as LA
 import scipy.sparse.linalg
 
+# function to smooth 1D signal
+def smooth(y, box_pts):
+    box = np.ones(box_pts)/box_pts
+    y_smooth = np.convolve(y, box, mode='same')
+    return y_smooth
+
 class RecToolsIR:
     """ 
     A class for iterative reconstruction algorithms using ASTRA and CCPi-RGL toolkit
@@ -336,44 +342,41 @@ class RecToolsIR:
                 X = X_t - L_const_inv*grad_fidelity
                 if (self.nonnegativity == 1):
                     X[X < 0.0] = 0.0
-                    # The proximal operator of the chosen regulariser
-                    if (regularisation == 'ROF_TV'):
-                        # Rudin - Osher - Fatemi Total variation method
-                        (X,info_vec) = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                    if (regularisation == 'FGP_TV'):
-                        # Fast-Gradient-Projection Total variation method
-                        (X,info_vec) = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
-                    if (regularisation == 'SB_TV'):
-                        # Split Bregman Total variation method
-                        (X,info_vec) = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
-                    if (regularisation == 'LLT_ROF'):
-                        # Lysaker-Lundervold-Tai + ROF Total variation method 
-                        (X,info_vec) = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                    if (regularisation == 'TGV'):
-                        # Total Generalised Variation method 
-                        (X,info_vec) = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device)
-                    if (regularisation == 'NDF'):
-                        # Nonlinear isotropic diffusion method
-                        (X,info_vec) = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
-                    if (regularisation == 'Diff4th'):
-                        # Anisotropic diffusion of higher order
-                        (X,info_vec) = Diff4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                    if (regularisation == 'NLTV'):
-                        # Non-local Total Variation
-                        X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
-                    t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
-                    X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
+                # The proximal operator of the chosen regulariser
+                if (regularisation == 'ROF_TV'):
+                    # Rudin - Osher - Fatemi Total variation method
+                    (X,info_vec) = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'FGP_TV'):
+                    # Fast-Gradient-Projection Total variation method
+                    (X,info_vec) = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
+                if (regularisation == 'SB_TV'):
+                    # Split Bregman Total variation method
+                    (X,info_vec) = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
+                if (regularisation == 'LLT_ROF'):
+                    # Lysaker-Lundervold-Tai + ROF Total variation method 
+                    (X,info_vec) = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'TGV'):
+                    # Total Generalised Variation method 
+                    (X,info_vec) = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device)
+                if (regularisation == 'NDF'):
+                    # Nonlinear isotropic diffusion method
+                    (X,info_vec) = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
+                if (regularisation == 'Diff4th'):
+                    # Anisotropic diffusion of higher order
+                    (X,info_vec) = Diff4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'NLTV'):
+                    # Non-local Total Variation
+                    X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
+                t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
+                X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
             if ((lambdaR_L1 > 0.0) and (iter > 0)):
                 r = np.maximum((np.abs(r) - lambdaR_L1), 0.0)*np.sign(r) # soft-thresholding operator for ring vector
                 r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
-                  # stopping criteria
+            # stopping criteria
             nrm = LA.norm(X - X_old)*denomN
             if nrm < self.tolerance:
                 print('FISTA stopped at iteration', iter)
                 break
-#****************************************************************************#
-        if (self.nonnegativity == 1):
-            X[X < 0.0] = 0.0
         return X
 #*****************************FISTA ends here*********************************#
 

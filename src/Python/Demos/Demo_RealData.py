@@ -192,7 +192,7 @@ Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector
 lc = Rectools.powermethod(np.transpose(dataRaw[:,:,slice_to_recon]))
 
 #%%
-# Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
+# Run FISTA-PWLS-Group-Huber-OS reconstrucion algorithm with regularisation
 RecFISTA_pwls_GH_TV = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
                               np.transpose(dataRaw[:,:,slice_to_recon]), \
                               lambdaR_L1 = 0.000001,\

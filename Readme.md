@@ -43,7 +43,7 @@ conda install -c dkazanc tomobar
 ```
  or build with:
 ```
-export VERSION=`date +%Y.%m` (unix) / set VERSION=`2019.06` (Windows)
+export VERSION=`date +%Y.%m` (unix) / set VERSION=2019.06 (Windows)
 conda build src/Python/conda-recipe --numpy 1.12 --python 3.5
 conda install tomobar --use-local --force-reinstall
 ```
