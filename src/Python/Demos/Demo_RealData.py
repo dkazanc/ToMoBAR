@@ -45,7 +45,7 @@ dataRaw = np.float32(np.divide(dataRaw, np.max(dataRaw).astype(float)))
 
 detectorHoriz = np.size(data_norm,0)
 N_size = 1000
-slice_to_recon = 0 # select which slice to reconstruct
+slice_to_recon = 19 # select which slice to reconstruct
 angles_rad = angles*(np.pi/180.0)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -173,3 +173,68 @@ plt.imshow(RecFISTA_pwls_os_tgv[150:550,150:550], vmin=0, vmax=0.003, cmap="gray
 plt.title('FISTA PWLS-OS-TGV reconstruction')
 plt.show()
 #fig.savefig('dendr_TGV.png', dpi=200)
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-TV method %%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+# set parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
+                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    tolerance = 1e-09, # tolerance to stop outer iterations earlier
+                    device='gpu')
+
+lc = Rectools.powermethod(np.transpose(dataRaw[:,:,slice_to_recon]))
+
+#%%
+# Run FISTA-PWLS-Group-Huber-OS reconstrucion algorithm with regularisation
+RecFISTA_pwls_GH_TV = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
+                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+                              lambdaR_L1 = 0.000001,\
+                              alpha_ring = 150,\
+                              iterationsFISTA = 200, \
+                              regularisation = 'FGP_TV', \
+                              regularisation_parameter = 0.000001,\
+                              regularisation_iterations = 100,\
+                              lipschitz_const = lc)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_pwls_GH_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA PWLS-OS-TV reconstruction')
+plt.show()
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("%%%%%%Reconstructing with ADMM LS-TV method %%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+# set parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
+                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
+                    device='gpu')
+
+# Run ADMM-LS-TV reconstrucion algorithm
+RecADMM_LS_TV = Rectools.ADMM(np.transpose(data_norm[:,:,slice_to_recon]), \
+                              rho_const = 500.0, \
+                              iterationsADMM = 5,\
+                              regularisation = 'FGP_TV', \
+                              regularisation_parameter = 0.005,\
+                              regularisation_iterations = 100)
+
+fig = plt.figure()
+plt.imshow(RecADMM_LS_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('ADMM LS-TV reconstruction')
+plt.show()
+#fig.savefig('dendr_TV.png', dpi=200)

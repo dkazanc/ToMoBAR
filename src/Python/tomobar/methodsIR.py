@@ -24,6 +24,12 @@ import numpy as np
 from numpy import linalg as LA
 import scipy.sparse.linalg
 
+# function to smooth 1D signal
+def smooth(y, box_pts):
+    box = np.ones(box_pts)/box_pts
+    y_smooth = np.convolve(y, box, mode='same')
+    return y_smooth
+
 class RecToolsIR:
     """ 
     A class for iterative reconstruction algorithms using ASTRA and CCPi-RGL toolkit
@@ -228,9 +234,9 @@ class RecToolsIR:
         for iter in range(0,iterationsFISTA):
             r_old = r
             # Do G-H fidelity pre-calculations using the full projections dataset for OS version
-            if ((self.OS_number > 1) and  (lambdaR_L1 > 0.0) and (iter > 0)):                
+            if ((self.OS_number > 1) and  (lambdaR_L1 > 0.0) and (iter > 0)):
                 if (self.geom == '2D'): 
-                    vec = np.zeros((self.DetectorsDimH))                
+                    vec = np.zeros((self.DetectorsDimH))
                 else:
                     vec = np.zeros((self.DetectorsDimV, self.DetectorsDimH))
                 for sub_ind in range(self.OS_number):
@@ -238,21 +244,21 @@ class RecToolsIR:
                     indVec = self.Atools.newInd_Vec[sub_ind,:]
                     if (indVec[self.Atools.NumbProjBins-1] == 0):
                         indVec = indVec[:-1] #shrink vector size
-                    if (self.geom == '2D'):                         
+                    if (self.geom == '2D'):
                          res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
-                         res[:,0:None] = res[:,0:None] + alpha_ring*r_x[:,0]                         
+                         res[:,0:None] = res[:,0:None] + alpha_ring*r_x[:,0]
                          vec = vec + (1.0/self.OS_number)*res.sum(axis = 0)
                     else:
                         res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
-                        for ang_index in range(len(indVec)):                    
-                            res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x                                                
+                        for ang_index in range(len(indVec)):
+                            res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x
                         vec = res.sum(axis = 1)
                 if (self.geom == '2D'):
                     r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
                 else:
-                    r = r_x - np.multiply(L_const_inv,vec)                    
+                    r = r_x - np.multiply(L_const_inv,vec)
             # loop over subsets (OS)
-            for sub_ind in range(self.OS_number):                
+            for sub_ind in range(self.OS_number):
                 X_old = X
                 t_old = t
                 if (self.OS_number > 1): 
@@ -266,27 +272,27 @@ class RecToolsIR:
                             if (self.datafidelity == 'LS'):
                                 # 2D Least-squares (LS) data fidelity - OS (linear)
                                 res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
-                            elif (self.datafidelity == 'PWLS'):   
+                            elif (self.datafidelity == 'PWLS'):
                                 # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(weights[indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]))
                             else:
                                 raise ("Choose the data fidelity term: LS, PWLS")
                             # ring removal part for Group-Huber (GH) fidelity (2D)
                             if ((lambdaR_L1 > 0.0) and (iter > 0)):
-                                res[:,0:None] = res[:,0:None] + alpha_ring*r_x[:,0]            
+                                res[:,0:None] = res[:,0:None] + alpha_ring*r_x[:,0]
                         else: # 3D
                             if (self.datafidelity == 'LS'):
                                 # 3D Least-squares (LS) data fidelity - OS (linear)
                                 res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
                             elif (self.datafidelity == 'PWLS'):   
-                                # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)                            
+                                # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(weights[:,indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]))
                             else:
                                 raise ("Choose the data fidelity term: LS, PWLS")
                             # GH - fidelity part (3D)
                             if ((lambdaR_L1 > 0.0) and (iter > 0)):
                                 for ang_index in range(len(indVec)):
-                                    res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x                                                                         
+                                    res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x
                 else: # non-OS (classical all-data approach)
                         if (self.datafidelity == 'LS'):
                             # full residual for LS fidelity
@@ -304,7 +310,7 @@ class RecToolsIR:
                             for ang_index in range(self.angles_number):
                                 res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x
                                 vec = res.sum(axis = 1)
-                                r = r_x - np.multiply(L_const_inv,vec)                                        
+                                r = r_x - np.multiply(L_const_inv,vec)
                 if (huber_data_threshold > 0.0):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
@@ -336,44 +342,41 @@ class RecToolsIR:
                 X = X_t - L_const_inv*grad_fidelity
                 if (self.nonnegativity == 1):
                     X[X < 0.0] = 0.0
-                    # The proximal operator of the chosen regulariser
-                    if (regularisation == 'ROF_TV'):
-                        # Rudin - Osher - Fatemi Total variation method
-                        (X,info_vec) = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                    if (regularisation == 'FGP_TV'):
-                        # Fast-Gradient-Projection Total variation method
-                        (X,info_vec) = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
-                    if (regularisation == 'SB_TV'):
-                        # Split Bregman Total variation method
-                        (X,info_vec) = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
-                    if (regularisation == 'LLT_ROF'):
-                        # Lysaker-Lundervold-Tai + ROF Total variation method 
-                        (X,info_vec) = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                    if (regularisation == 'TGV'):
-                        # Total Generalised Variation method 
-                        (X,info_vec) = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device)
-                    if (regularisation == 'NDF'):
-                        # Nonlinear isotropic diffusion method
-                        (X,info_vec) = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
-                    if (regularisation == 'Diff4th'):
-                        # Anisotropic diffusion of higher order
-                        (X,info_vec) = Diff4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                    if (regularisation == 'NLTV'):
-                        # Non-local Total Variation
-                        X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
-                    t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
-                    X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
+                # The proximal operator of the chosen regulariser
+                if (regularisation == 'ROF_TV'):
+                    # Rudin - Osher - Fatemi Total variation method
+                    (X,info_vec) = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'FGP_TV'):
+                    # Fast-Gradient-Projection Total variation method
+                    (X,info_vec) = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
+                if (regularisation == 'SB_TV'):
+                    # Split Bregman Total variation method
+                    (X,info_vec) = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
+                if (regularisation == 'LLT_ROF'):
+                    # Lysaker-Lundervold-Tai + ROF Total variation method 
+                    (X,info_vec) = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'TGV'):
+                    # Total Generalised Variation method 
+                    (X,info_vec) = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device)
+                if (regularisation == 'NDF'):
+                    # Nonlinear isotropic diffusion method
+                    (X,info_vec) = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
+                if (regularisation == 'Diff4th'):
+                    # Anisotropic diffusion of higher order
+                    (X,info_vec) = Diff4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+                if (regularisation == 'NLTV'):
+                    # Non-local Total Variation
+                    X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
+                t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
+                X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
             if ((lambdaR_L1 > 0.0) and (iter > 0)):
                 r = np.maximum((np.abs(r) - lambdaR_L1), 0.0)*np.sign(r) # soft-thresholding operator for ring vector
                 r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
-                  # stopping criteria
+            # stopping criteria
             nrm = LA.norm(X - X_old)*denomN
             if nrm < self.tolerance:
                 print('FISTA stopped at iteration', iter)
                 break
-#****************************************************************************#
-        if (self.nonnegativity == 1):
-            X[X < 0.0] = 0.0
         return X
 #*****************************FISTA ends here*********************************#
 

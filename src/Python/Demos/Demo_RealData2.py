@@ -179,3 +179,33 @@ plt.title('FISTA PWLS-OS-NLTV reconstruction')
 plt.show()
 #fig.savefig('ice_NLTV.png', dpi=200)
 #%%
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("%%%%%%Reconstructing with ADMM LS-TV method %%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+# set parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
+                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
+                    device='gpu')
+
+# Run ADMM-LS-TV reconstrucion algorithm
+RecADMM_LS_TV = Rectools.ADMM(np.transpose(data_norm[det_y_crop,:,0]), \
+                              rho_const = 500.0, \
+                              iterationsADMM = 3,\
+                              regularisation = 'FGP_TV', \
+                              regularisation_parameter = 0.05,\
+                              regularisation_iterations = 100)
+
+fig = plt.figure()
+plt.imshow(RecADMM_LS_TV, vmin=0, vmax=0.2, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('ADMM LS-TV reconstruction')
+plt.show()
+#%%
