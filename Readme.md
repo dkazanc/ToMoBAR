@@ -9,7 +9,7 @@
 ### Software includes:
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods
 
- ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Regularised iterative ordered-subsets [FISTA](https://people.rennes.inria.fr/Cedric.Herzet/Cedric.Herzet/Sparse_Seminar/Entrees/2012/11/12_A_Fast_Iterative_Shrinkage-Thresholding_Algorithmfor_Linear_Inverse_Problems_(A._Beck,_M._Teboulle)_files/Breck_2009.pdf) reconstruction algorithm with linear and non-linear data fidelities
+ ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Regularised iterative ordered-subsets [FISTA](https://people.rennes.inria.fr/Cedric.Herzet/Cedric.Herzet/Sparse_Seminar/Entrees/2012/11/12_A_Fast_Iterative_Shrinkage-Thresholding_Algorithmfor_Linear_Inverse_Problems_A._Beck,_M._Teboulle_files/Breck_2009.pdf) reconstruction algorithm with linear and non-linear data fidelities
 
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
 
@@ -25,10 +25,10 @@
 ## Software highlights:
  * Tomographic projection data can be simulated without the "inverse crime" using [TomoPhantom](https://github.com/dkazanc/TomoPhantom). Noise and artifacts (zingers, rings) can be modelled and added to the data.
  * Simulated data reconstructed iteratively using FISTA or ADMM algorithms with multiple "plug-and-play" regularisers from [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit).
- * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method, PWLS, Huber, Group-Huber[3] and Students't data fidelities [1,2] to deal with noise and imaging artifacts. 
+ * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method, PWLS, Huber, Group-Huber[3] and Students't data fidelities [1,2] to deal with noise and imaging artifacts.
 
 ### General software prerequisites
- * [MATLAB](http://www.mathworks.com/products/matlab/) or Python 
+ * [MATLAB](http://www.mathworks.com/products/matlab/) or Python
 
 ### Software dependencies:
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations

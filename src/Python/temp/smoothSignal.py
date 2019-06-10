@@ -1,3 +1,26 @@
+#%%
+from scipy.signal import savgol_filter
+
+window_size=51 
+polynomial_order=3
+yhat = savgol_filter(x, window_size, polynomial_order)
+
+#%%
+import numpy as np
+x = np.linspace(0,2*np.pi,100)
+y = np.sin(x) + np.random.random(100) * 0.8
+
+def smooth(y, box_pts):
+    box = np.ones(box_pts)/box_pts
+    y_smooth = np.convolve(y, box, mode='same')
+    return y_smooth
+
+import matplotlib.pyplot as plt
+plt.figure()
+plt.plot(x, y,'o')
+plt.plot(x, smooth(y,3), 'r-', lw=2)
+plt.plot(x, smooth(y,19), 'g-', lw=2)
+#%%
 import numpy
 
 def smooth(x,window_len=11,window='hanning'):
@@ -32,11 +55,11 @@ def smooth(x,window_len=11,window='hanning'):
     NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
     """
 
-    if x.ndim != 1:
-        raise ValueError, "smooth only accepts 1 dimension arrays."
+    if (x.ndim != 1):
+        raise (ValueError, "smooth only accepts 1 dimension arrays.")
 
     if x.size < window_len:
-        raise ValueError, "Input vector needs to be bigger than window size."
+        raise (ValueError, "Input vector needs to be bigger than window size.")
 
 
     if window_len<3:
@@ -44,7 +67,7 @@ def smooth(x,window_len=11,window='hanning'):
 
 
     if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-        raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+        raise (ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
 
 
     s=numpy.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
