@@ -79,19 +79,24 @@ import astra
 #import math
 vol_geom = astra.create_vol_geom(N_size,N_size,N_size)
 proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, Horiz_det, Vert_det, angles_rad)
-proj_geom_vec = astra.functions.geom_2vec(proj_geom) 
+proj_geom_vec2 = astra.functions.geom_2vec(proj_geom) 
 #%%
 def rotation_matrix(theta):
     return np.array([[np.cos(theta), -np.sin(theta), 0.0],
                      [np.sin(theta), np.cos(theta), 0.0],
                      [.0 , 0.0 , 1.0]])
 
-center_offset = 0.0
+center_offset = 0.5
+DetectorSpacingX = 1.0
+DetectorSpacingY = 1.0
 # print(np.dot(rotation_matrix(theta), v))
-s0 = [center_offset, -1.0, 0.0] # source
-d0 = [center_offset,  0.0, 0.0] # detector
-u0 = [proj_geom.get("DetectorSpacingX"), 0.0, 0.0]
-v0 = [0.0, 0.0, proj_geom.get("DetectorSpacingY")]
+s0 = [-center_offset, -1.0, 0.0] # source
+d0 = [center_offset, 0.0, 0.0] # detector
+
+u0 = [DetectorSpacingX, 0.0, 0.0]
+v0 = [0.0, 0.0, DetectorSpacingY]
+#u0 = [proj_geom.get("DetectorSpacingX"), 0.0, 0.0]
+#v0 = [0.0, 0.0, proj_geom.get("DetectorSpacingY")]
 
 vectors = np.zeros([angles_rad.size,12])
 
@@ -105,4 +110,79 @@ for i in range(0,angles_rad.size):
     vectors[i,6:9] = vec_temp[:] # detector pixel (0,0) to (0,1).
     vec_temp = np.dot(rotation_matrix(theta),v0)
     vectors[i,9:12] = vec_temp[:] # Vector from detector pixel (0,0) to (1,0)
+
+import astra
+#import math
+vol_geom = astra.create_vol_geom(N_size,N_size,N_size)
+proj_geom_vec = astra.create_proj_geom('parallel3d_vec', Horiz_det, Vert_det, vectors)
+
+proj_id, proj_data = astra.create_sino3d_gpu(phantom_tm, proj_geom_vec, vol_geom)
+astra.data3d.delete(proj_id)
+
+proj_data = np.swapaxes(proj_data,2,0)
+
+intens_max = 40
+sliceSel = int(0.5*N_size)
+plt.figure() 
+plt.subplot(131)
+plt.imshow(proj_data[:,sliceSel,:],vmin=0, vmax=intens_max)
+plt.title('2D Projection (analytical)')
+plt.subplot(132)
+plt.imshow(proj_data[sliceSel,:,:],vmin=0, vmax=intens_max)
+plt.title('Sinogram view')
+plt.subplot(133)
+plt.imshow(proj_data[:,:,sliceSel],vmin=0, vmax=intens_max)
+plt.title('Tangentogram view')
+plt.show()
+
 #%%
+from tomobar.methodsDIR import RecToolsDIR
+RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    device='gpu')
+FBPrec = RectoolsDIR.FBP(proj_data) #perform FBP
+
+sliceSel = int(0.5*N_size)
+max_val = 1
+plt.figure() 
+plt.subplot(131)
+plt.imshow(FBPrec[sliceSel,:,:],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, axial view')
+
+plt.subplot(132)
+plt.imshow(FBPrec[:,sliceSel,:],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, coronal view')
+
+plt.subplot(133)
+plt.imshow(FBPrec[:,:,sliceSel],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, sagittal view')
+plt.show()
+#%%
+det_y_crop = [i for i in range(6,Horiz_det)]
+
+from tomobar.methodsDIR import RecToolsDIR
+RectoolsDIR = RecToolsDIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    device='gpu')
+FBPrec = RectoolsDIR.FBP(proj_data[:,:,det_y_crop]) #perform FBP
+
+sliceSel = int(0.5*N_size)
+max_val = 1
+plt.figure() 
+plt.subplot(131)
+plt.imshow(FBPrec[sliceSel,:,:],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, axial view')
+
+plt.subplot(132)
+plt.imshow(FBPrec[:,sliceSel,:],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, coronal view')
+
+plt.subplot(133)
+plt.imshow(FBPrec[:,:,sliceSel],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, sagittal view')
+plt.show()
+
