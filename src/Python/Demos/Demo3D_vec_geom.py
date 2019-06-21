@@ -86,11 +86,11 @@ def rotation_matrix(theta):
                      [np.sin(theta), np.cos(theta), 0.0],
                      [.0 , 0.0 , 1.0]])
 
-center_offset = 0.5
+center_offset = -10.5
 DetectorSpacingX = 1.0
 DetectorSpacingY = 1.0
 # print(np.dot(rotation_matrix(theta), v))
-s0 = [-center_offset, -1.0, 0.0] # source
+s0 = [0.0, -1.0, 0.0] # source
 d0 = [center_offset, 0.0, 0.0] # detector
 
 u0 = [DetectorSpacingX, 0.0, 0.0]
@@ -114,12 +114,12 @@ for i in range(0,angles_rad.size):
 import astra
 #import math
 vol_geom = astra.create_vol_geom(N_size,N_size,N_size)
-proj_geom_vec = astra.create_proj_geom('parallel3d_vec', Horiz_det, Vert_det, vectors)
+proj_geom_vec = astra.create_proj_geom('parallel3d_vec', Vert_det, Horiz_det, vectors)
 
 proj_id, proj_data = astra.create_sino3d_gpu(phantom_tm, proj_geom_vec, vol_geom)
 astra.data3d.delete(proj_id)
 
-proj_data = np.swapaxes(proj_data,2,0)
+#proj_data = np.swapaxes(proj_data,2,0)
 
 intens_max = 40
 sliceSel = int(0.5*N_size)
