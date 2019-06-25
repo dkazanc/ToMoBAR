@@ -37,6 +37,7 @@ class RecToolsIR:
     def __init__(self, 
               DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
               DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+              CenterRotOffset,  # Center of Rotation (CoR) scalar (for 3D case only)
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
               datafidelity, # data fidelity, choose 'LS', 'PWLS', 'GH' (wip), 'Student' (wip)
@@ -55,6 +56,10 @@ class RecToolsIR:
         self.DetectorsDimV = DetectorsDimV
         self.DetectorsDimH = DetectorsDimH
         self.angles_number = len(AnglesVec)
+        if CenterRotOffset is None:
+            self.CenterRotOffset = 0.0
+        else:
+            self.CenterRotOffset = CenterRotOffset
         
         # enables nonnegativity constraint
         if nonnegativity == 'ENABLE':
@@ -86,12 +91,12 @@ class RecToolsIR:
             self.geom = '3D'
             if ((OS_number is None) or (OS_number <= 1)):
                 from tomobar.supp.astraOP import AstraTools3D
-                self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize) # initiate 3D ASTRA class object
+                self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, self.CenterRotOffset, ObjSize) # initiate 3D ASTRA class object
                 self.OS_number = 1
             else:
                 # Ordered-subset 
                 from tomobar.supp.astraOP import AstraToolsOS3D
-                self.Atools = AstraToolsOS3D(DetectorsDimH, DetectorsDimV, AnglesVec, ObjSize, self.OS_number) # initiate 3D ASTRA class OS object
+                self.Atools = AstraToolsOS3D(DetectorsDimH, DetectorsDimV, AnglesVec, self.CenterRotOffset, ObjSize, self.OS_number) # initiate 3D ASTRA class OS object
     
     def SIRT(self, sinogram, iterations):
         if (self.OS_number > 1):
