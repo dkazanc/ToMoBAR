@@ -22,6 +22,7 @@ import numpy as np
 import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.supp.qualitymetrics import QualityTools
+from tomophantom.supp.artifacts import _Artifacts_
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
@@ -61,17 +62,22 @@ angles_rad = angles*(np.pi/180.0)
 print ("Generate 3D analytical projection data with TomoPhantom")
 projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
+# adding noise
+projData3D_analyt_noise = _Artifacts_(sinogram = projData3D_analyt, \
+                                  noise_type='Poisson', noise_sigma=8000, noise_seed = 0)
+
+
 intens_max = 45
 sliceSel = int(0.5*N_size)
 plt.figure() 
 plt.subplot(131)
-plt.imshow(projData3D_analyt[:,sliceSel,:],vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise[:,sliceSel,:],vmin=0, vmax=intens_max)
 plt.title('2D Projection (analytical)')
 plt.subplot(132)
-plt.imshow(projData3D_analyt[sliceSel,:,:],vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise[sliceSel,:,:],vmin=0, vmax=intens_max)
 plt.title('Sinogram view')
 plt.subplot(133)
-plt.imshow(projData3D_analyt[:,:,sliceSel],vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise[:,:,sliceSel],vmin=0, vmax=intens_max)
 plt.title('Tangentogram view')
 plt.show()
 
@@ -86,7 +92,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     device='gpu')
 
-FBPrec = RectoolsDIR.FBP(projData3D_analyt) #perform FBP
+FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise) #perform FBP
 
 sliceSel = int(0.5*N_size)
 max_val = 1
@@ -124,10 +130,10 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
 lc = Rectools.powermethod() # calculate Lipschitz constant 
 
 # Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(projData3D_analyt, iterationsFISTA = 150, lipschitz_const = lc)
+RecFISTA = Rectools.FISTA(projData3D_analyt_noise, iterationsFISTA = 150, lipschitz_const = lc)
 
 # Run FISTA reconstrucion algorithm with 3D regularisation
-RecFISTA_reg = Rectools.FISTA(projData3D_analyt, iterationsFISTA = 150, \
+RecFISTA_reg = Rectools.FISTA(projData3D_analyt_noise, iterationsFISTA = 150, \
                               regularisation = 'ROF_TV', \
                               regularisation_parameter = 0.002,\
                               regularisation_iterations = 100,\
@@ -193,11 +199,11 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
 lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
 
 # Run FISTA-OS reconstrucion algorithm without regularisation
-RecFISTA_os = Rectools.FISTA(projData3D_analyt, iterationsFISTA = 15, lipschitz_const = lc)
+RecFISTA_os = Rectools.FISTA(projData3D_analyt_noise, iterationsFISTA = 15, lipschitz_const = lc)
 
 # Run FISTA-OS reconstrucion algorithm with regularisation
 
-RecFISTA_os_reg = Rectools.FISTA(projData3D_analyt, iterationsFISTA = 15, \
+RecFISTA_os_reg = Rectools.FISTA(projData3D_analyt_noise, iterationsFISTA = 15, \
                               regularisation = 'ROF_TV', \
                               regularisation_parameter = 0.002,\
                               regularisation_iterations = 200,\

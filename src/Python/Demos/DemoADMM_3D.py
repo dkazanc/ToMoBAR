@@ -22,7 +22,7 @@ import numpy as np
 import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.supp.qualitymetrics import QualityTools
-from tomophantom.supp.artifacts import ArtifactsClass
+from tomophantom.supp.artifacts import _Artifacts_
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
@@ -62,11 +62,9 @@ angles_rad = angles*(np.pi/180.0)
 print ("Generate 3D analytical projection data with TomoPhantom")
 projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
-
 # adding noise
-artifacts_add = ArtifactsClass(projData3D_analyt)
-#noisy_sino = artifacts_add.noise(sigma=0.1,noisetype='Gaussian')nonnegativity
-projData3D_analyt_noise = artifacts_add.noise(sigma=8000,noisetype='Poisson')
+projData3D_analyt_noise = _Artifacts_(sinogram = projData3D_analyt, \
+                                  noise_type='Poisson', noise_sigma=8000, noise_seed = 0)
 
 intens_max = 45
 sliceSel = int(0.5*N_size)

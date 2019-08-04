@@ -53,12 +53,11 @@ plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
 #%%
 # Adding artifacts and noise
-from tomophantom.supp.artifacts import ArtifactsClass
+from tomophantom.supp.artifacts import _Artifacts_
 
 # adding noise
-artifacts_add = ArtifactsClass(sino_an)
-#noisy_sino = artifacts_add.noise(sigma=0.1,noisetype='Gaussian')nonnegativity
-noisy_sino = artifacts_add.noise(sigma=8000,noisetype='Poisson')
+noisy_sino = _Artifacts_(sinogram = sino_an, \
+                                  noise_type='Poisson', noise_sigma=8000, noise_seed = 0)
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -66,6 +65,7 @@ plt.imshow(noisy_sino,cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical noisy sinogram',model))
 
+#%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
