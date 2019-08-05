@@ -40,7 +40,7 @@ class RecToolsIR:
               CenterRotOffset,  # Center of Rotation (CoR) scalar (for 3D case only)
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
-              datafidelity, # data fidelity, choose 'LS', 'PWLS', 'GH' (wip), 'Student' (wip)
+              datafidelity, # data fidelity, choose 'LS', 'PWLS'
               nonnegativity, # select 'nonnegativity' constraint (set to 'ENABLE')
               OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
               tolerance, # tolerance to stop OUTER iterations earlier
@@ -71,8 +71,9 @@ class RecToolsIR:
             self.device = 'gpu'
         else:
             self.device = device
-        if ((datafidelity != 'LS') and (datafidelity != 'PWLS')):
-                raise('Unknown data fidelity type, select: LS, PWLS')
+            
+        if datafidelity not in ['LS','PWLS']:
+            raise ValueError('Unknown data fidelity type, select: LS, PWLS')
         
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
@@ -277,11 +278,9 @@ class RecToolsIR:
                             if (self.datafidelity == 'LS'):
                                 # 2D Least-squares (LS) data fidelity - OS (linear)
                                 res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
-                            elif (self.datafidelity == 'PWLS'):
+                            if (self.datafidelity == 'PWLS'):
                                 # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(weights[indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]))
-                            else:
-                                raise ("Choose the data fidelity term: LS, PWLS")
                             # ring removal part for Group-Huber (GH) fidelity (2D)
                             if ((lambdaR_L1 > 0.0) and (iter > 0)):
                                 res[:,0:None] = res[:,0:None] + alpha_ring*r_x[:,0]
@@ -289,11 +288,9 @@ class RecToolsIR:
                             if (self.datafidelity == 'LS'):
                                 # 3D Least-squares (LS) data fidelity - OS (linear)
                                 res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
-                            elif (self.datafidelity == 'PWLS'):   
+                            if (self.datafidelity == 'PWLS'):
                                 # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(weights[:,indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]))
-                            else:
-                                raise ("Choose the data fidelity term: LS, PWLS")
                             # GH - fidelity part (3D)
                             if ((lambdaR_L1 > 0.0) and (iter > 0)):
                                 for ang_index in range(len(indVec)):
@@ -302,11 +299,9 @@ class RecToolsIR:
                         if (self.datafidelity == 'LS'):
                             # full residual for LS fidelity
                             res = self.Atools.forwproj(X_t) - projdata
-                        elif (self.datafidelity == 'PWLS'):
+                        if (self.datafidelity == 'PWLS'):
                             # full gradient for the PWLS fidelity
                             res = np.multiply(weights, (self.Atools.forwproj(X_t) - projdata))
-                        else:
-                            raise ("Choose the data fidelity term: LS, PWLS")
                         if ((self.geom == '2D') and (lambdaR_L1 > 0.0) and (iter > 0)):  # GH 2D part
                             res[0:None,:] = res[0:None,:] + alpha_ring*r_x[:,0]
                             vec = res.sum(axis = 0)
@@ -377,11 +372,12 @@ class RecToolsIR:
             if ((lambdaR_L1 > 0.0) and (iter > 0)):
                 r = np.maximum((np.abs(r) - lambdaR_L1), 0.0)*np.sign(r) # soft-thresholding operator for ring vector
                 r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
-            # stopping criteria
-            nrm = LA.norm(X - X_old)*denomN
-            if nrm < self.tolerance:
-                print('FISTA stopped at iteration', iter)
-                break
+            # stopping criteria (checked after reasonable number of iterations)
+            if (((iter > 8) and (self.OS_number > 1)) or ((iter > 150) and (self.OS_number == 1))):
+                nrm = LA.norm(X - X_old)*denomN
+                if nrm < self.tolerance:
+                    print('FISTA stopped at iteration', iter)
+                    break
         return X
 #*****************************FISTA ends here*********************************#
 
@@ -449,47 +445,47 @@ class RecToolsIR:
             X = np.float32(outputSolver[0]) # get gmres solution
             if (self.nonnegativity == 1):
                 X[X < 0.0] = 0.0
-            # ADMM iterations stopping criteria
-            nrm = LA.norm(X - X_old)*denomN
-            if nrm > self.tolerance:
-                # z-update with relaxation
-                zold = z.copy();
-                x_hat = alpha*X + (1.0 - alpha)*zold;
-                if (self.geom == '2D'):
-                    x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
-                if (self.geom == '3D'):
-                    x_prox_reg = (x_hat + u).reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
-                # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
-                if (regularisation == 'ROF_TV'):
-                    # Rudin - Osher - Fatemi Total variation method
-                    (z,info_vec) = ROF_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                if (regularisation == 'FGP_TV'):
-                    # Fast-Gradient-Projection Total variation method
-                    (z,info_vec) = FGP_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
-                if (regularisation == 'SB_TV'):
-                    # Split Bregman Total variation method
-                    (z,info_vec) = SB_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
-                if (regularisation == 'LLT_ROF'):
-                    # Lysaker-Lundervold-Tai + ROF Total variation method 
-                    (z,info_vec) = LLT_ROF(x_prox_reg, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                if (regularisation == 'TGV'):
-                    # Total Generalised Variation method 
-                    (z,info_vec) = TGV(x_prox_reg, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device) 
-                if (regularisation == 'NDF'):
-                    # Nonlinear isotropic diffusion method
-                    (z,info_vec) = NDF(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
-                if (regularisation == 'DIFF4th'):
-                    # Anisotropic diffusion of higher order
-                    (z,info_vec) = Diff4th(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                if (regularisation == 'NLTV'):
-                    # Non-local Total Variation / 2D only
-                    z = NLTV(x_prox_reg, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
-                z = z.ravel()
-                # update u variable
-                u = u + (x_hat - z); 
-            else:
-                print('ADMM stopped at iteration', iter)
-                break
+            # z-update with relaxation
+            zold = z.copy();
+            x_hat = alpha*X + (1.0 - alpha)*zold;
+            if (self.geom == '2D'):
+                x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
+            if (self.geom == '3D'):
+                x_prox_reg = (x_hat + u).reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
+            # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
+            if (regularisation == 'ROF_TV'):
+                # Rudin - Osher - Fatemi Total variation method
+                (z,info_vec) = ROF_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+            if (regularisation == 'FGP_TV'):
+                # Fast-Gradient-Projection Total variation method
+                (z,info_vec) = FGP_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
+            if (regularisation == 'SB_TV'):
+                # Split Bregman Total variation method
+                (z,info_vec) = SB_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
+            if (regularisation == 'LLT_ROF'):
+                # Lysaker-Lundervold-Tai + ROF Total variation method 
+                (z,info_vec) = LLT_ROF(x_prox_reg, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+            if (regularisation == 'TGV'):
+                # Total Generalised Variation method 
+                (z,info_vec) = TGV(x_prox_reg, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device) 
+            if (regularisation == 'NDF'):
+                # Nonlinear isotropic diffusion method
+                (z,info_vec) = NDF(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
+            if (regularisation == 'DIFF4th'):
+                # Anisotropic diffusion of higher order
+                (z,info_vec) = Diff4th(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
+            if (regularisation == 'NLTV'):
+                # Non-local Total Variation / 2D only
+                z = NLTV(x_prox_reg, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
+            z = z.ravel()
+            # update u variable
+            u = u + (x_hat - z)
+            # stopping criteria (checked after reasonable number of iterations)
+            if (iter > 5):
+                nrm = LA.norm(X - X_old)*denomN
+                if nrm < self.tolerance:
+                    print('ADMM stopped at iteration', iter)
+                    break
         if (self.geom == '2D'):
             return X.reshape([self.ObjSize, self.ObjSize])
         if (self.geom == '3D'):

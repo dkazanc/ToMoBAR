@@ -22,7 +22,6 @@ import os
 import tomophantom
 from tomophantom.supp.qualitymetrics import QualityTools
 
-
 model = 4 # select a model
 N_size = 512 # set dimension of the phantom
 # one can specify an exact path to the parameters file
@@ -104,10 +103,10 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
 lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
 
 # Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(noisy_sino, iterationsFISTA = 150, lipschitz_const = lc)
+RecFISTA = Rectools.FISTA(noisy_sino, iterationsFISTA = 200, lipschitz_const = lc)
 
 # Run FISTA reconstrucion algorithm with regularisation 
-RecFISTA_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 150, \
+RecFISTA_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 200, \
                               regularisation = 'ROF_TV', \
                               regularisation_parameter = 0.05,\
                               regularisation_iterations = 100,\
