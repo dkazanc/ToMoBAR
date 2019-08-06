@@ -9,21 +9,22 @@ import numpy as np
 def normaliser(data, flats, darks, log):
     """
     data normaliser which assumes data/flats/darks to be in the following format:
-    [detectorsVertical, Projections, detectorsHoriz]
+    [Projections, detectorsVertical, detectorsHoriz] or 
+    [Projections, detectorsHoriz, detectorsVertical]
     """
     data_norm = np.zeros(np.shape(data),dtype='float32')
-    ProjectionsNum = np.size(data,1) # get the number of projection angles
-    flats = np.average(flats,1) # average of flats
-    darks = np.average(darks,1) # average of darks
+    ProjectionsNum = np.size(data,0) # get the number of projection angles
+    flats = np.average(flats,0) # average of flats
+    darks = np.average(darks,0) # average of darks
     denom = (flats-darks)
     denom[(np.where(denom <= 0.0))] = 1.0 # remove zeros/negatives in the denominator if any
     
     for i in range(0,ProjectionsNum):
-        sliceS = data[:,i,:] # select a stack [detector x slices]
+        sliceS = data[i,:,:] # select a stack [detector x slices]
         nomin = sliceS - darks # get nominator
         nomin[(np.where(nomin < 0.0))] = 1.0 # remove negatives
         fraction = np.true_divide(nomin,denom)
-        data_norm[:,i,:] = fraction.astype(float)
+        data_norm[i,:,:] = fraction.astype(float)
     
     if log is not None:
         # calculate negative log (avoiding of log(0) (= inf) and > 1.0 (negative val))
@@ -35,13 +36,17 @@ def normaliser(data, flats, darks, log):
         
     return data_norm
 
-def cropper(data):
+def cropper(data,addbox):
     """
-    The method crops 3D projection data (detectorsVertical and detectorsHoriz) in 
-    order to reduce total data sizes.
-    "backgr_pix" parameter defines the trusted ROI for background in pixels of 
-    each 2D projection to calculate statistics. 
+    The method crops 3D projection data in order to reduce total data size.
+    Method assumes that the object is positioned vertically normally around the central
+    point of the horizaontal detector
+    addbox (in int pixels) to add additional pixels in addition to automatically found cropped values,
+    i.e. increasing the cropping region (safety option)
     """
+    backgr_pix1 = 10 # usually enough to collect noise statistics
+    backgr_pix2 = int(2*backgr_pix1) # usually enough to collect noise statistics
+    
     backgr_pix = 50
     [detectorX, Projections, detectorY] = np.shape(data)
     # ! here we assume that the largest detector dimension is HORIZONTAL and
