@@ -11,6 +11,33 @@ A reconstruction class for direct reconstructon methods (parallel beam geometry)
 
 import numpy as np
 
+
+def filtersinc(projection):
+    # adopted from Matlabs code by  Waqas Akram
+    #
+    #"a":	This parameter varies the filter magnitude response.
+    #When "a" is very small (a<<1), the response approximates |w|
+    #As "a" is increased, the filter response starts to 
+    #roll off at high frequencies.
+    a = 1.0
+    [Length, Count] = np.shape(projection)
+    w =  np.linspace(-np.pi,np.pi-(2*np.pi)/Length,Length,dtype='float32')
+    
+    rn1 = np.abs(2.0/a*np.sin(a*w/2.0))
+    rn2 = np.sin(a*w/2.0)
+    rd = (a*w)/2.0
+    r = rn1*(rn2/rd)**2
+    r = rn1*(rn2/rd)^2;
+    
+    f = fftshift(r);
+    for i = 1:Count
+            IMG = fft(projection(:,i));
+            fimg = IMG.*f';
+            g(:,i) = ifft(fimg);
+    end
+    g = real(g);
+
+
 class RecToolsDIR:
     """ Class for reconstruction using DIRect methods (FBP and Fourier)"""
     def __init__(self, 
