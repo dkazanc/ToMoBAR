@@ -71,15 +71,28 @@ def autocropper(data, addbox, backgr_pix1):
         largest_vert_index = (vert_sum==max(vert_sum)).argmax(axis=0)
         largest_horiz_index = (horiz_sum==max(horiz_sum)).argmax(axis=0)
         # now we need to find the dips of the "gaussian" moving down from the top
-        min_vert_index = (vert_sum[largest_vert_index::-1]<=ValMean).argmax(axis=0)
-        max_vert_index = (vert_sum[largest_vert_index:-1]<=ValMean).argmax(axis=0)
-        min_horiz_index = (horiz_sum[largest_horiz_index::-1]<=ValMean).argmax(axis=0)
-        max_horiz_index = (horiz_sum[largest_horiz_index:-1]<=ValMean).argmax(axis=0)
+        if (largest_vert_index == 0):
+            min_vert_index = 0
+        else:
+            min_vert_index = (vert_sum[largest_vert_index::-1]<=ValMean).argmax(axis=0)
+        if (largest_vert_index == (detectorsVertical-1)):
+            max_vert_index = largest_vert_index+1
+        else:
+            max_vert_index = (vert_sum[largest_vert_index:-1]<=ValMean).argmax(axis=0)
+        if (largest_horiz_index == 0):
+            min_horiz_index = 0
+        else:
+            min_horiz_index = (horiz_sum[largest_horiz_index::-1]<=ValMean).argmax(axis=0)
+        if (largest_horiz_index == (detectorsHoriz-1)):
+            max_horiz_index = largest_horiz_index+1
+        else:
+            max_horiz_index = (horiz_sum[largest_horiz_index:-1]<=ValMean).argmax(axis=0)
+        #checking the boudaries of the selected indices
         if (min_vert_index != 0):
             min_vert_index = largest_vert_index-min_vert_index
             if ((min_vert_index-addbox) >= 0):
                 min_vert_index -= addbox
-        if (max_vert_index != 0):
+        if (max_vert_index != (detectorsVertical)):
             max_vert_index = largest_vert_index+max_vert_index
             if ((max_vert_index+addbox) < detectorsVertical):
                 max_vert_index += addbox
@@ -87,7 +100,7 @@ def autocropper(data, addbox, backgr_pix1):
             min_horiz_index = largest_horiz_index-min_horiz_index
             if ((min_horiz_index-addbox) >= 0):
                 min_horiz_index -= addbox
-        if (max_horiz_index != 0):
+        if (max_horiz_index != (detectorsHoriz)):
             max_horiz_index = largest_horiz_index+max_horiz_index
             if ((max_horiz_index+addbox) < detectorsHoriz):
                 max_horiz_index += addbox
