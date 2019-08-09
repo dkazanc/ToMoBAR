@@ -32,6 +32,8 @@ data_norm = h5f['icecream_normalised'][:]
 data_raw = h5f['icecream_raw'][:]
 angles_rad = h5f['angles'][:]
 h5f.close()
+data_norm = np.swapaxes(data_norm[:,:,0],0,1)
+data_raw = np.swapaxes(data_raw[:,:,0],0,1)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
@@ -47,7 +49,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH 
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     device='gpu')
 
-FBPrec = RectoolsDIR.FBP(np.transpose(data_norm[det_y_crop,:,0]))
+FBPrec = RectoolsDIR.FBP(data_norm[:,det_y_crop])
 
 plt.figure()
 #plt.imshow(FBPrec[500:1500,500:1500], vmin=0, vmax=1, cmap="gray")
@@ -71,7 +73,7 @@ Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # de
 
 
 # Run CGLS reconstrucion algorithm 
-RecCGLS = Rectools.CGLS(np.transpose(data_norm[det_y_crop,:,0]), iterations = 7)
+RecCGLS = Rectools.CGLS(data_norm[:,det_y_crop], iterations = 7)
 
 plt.figure()
 plt.imshow(RecCGLS, vmin=0, vmax=0.3, cmap="gray")
@@ -93,13 +95,13 @@ Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # de
                     tolerance = 1e-08, # tolerance to stop outer iterations earlier
                     device='gpu')
 
-lc = Rectools.powermethod(np.transpose(data_raw[det_y_crop,:,0])) # calculate Lipschitz constant (run once to initilise)
+lc = Rectools.powermethod(data_raw[:,det_y_crop]) # calculate Lipschitz constant (run once to initilise)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TV method % %%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecFISTA_TV = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
-                              np.transpose(data_raw[det_y_crop,:,0]), \
+RecFISTA_TV = Rectools.FISTA(data_norm[:,det_y_crop], \
+                              data_raw[:,det_y_crop], \
                               iterationsFISTA = 10, \
                               regularisation = 'FGP_TV', \
                               regularisation_parameter = 0.0012,\
@@ -114,9 +116,9 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-HUBER-OS-TV method % %%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecFISTA_TV_hub = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
-                              np.transpose(data_raw[det_y_crop,:,0]), \
-                               huber_data_threshold = 45.0,
+RecFISTA_TV_hub = Rectools.FISTA(data_norm[:,det_y_crop], \
+                              data_raw[:,det_y_crop], \
+                              huber_data_threshold = 45.0,
                               iterationsFISTA = 10, \
                               regularisation = 'FGP_TV', \
                               regularisation_parameter = 0.0012,\
@@ -131,8 +133,8 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-NDF(Huber) method % %%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecFISTA_NDF_huber = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
-                              np.transpose(data_raw[det_y_crop,:,0]), \
+RecFISTA_NDF_huber = Rectools.FISTA(data_norm[:,det_y_crop], \
+                              data_raw[:,det_y_crop], \
                               iterationsFISTA = 10, \
                               regularisation = 'NDF', \
                               NDF_penalty = 'Huber', \
@@ -165,8 +167,8 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-NLTV method %%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecFISTA_regNLTV = Rectools.FISTA(np.transpose(data_norm[det_y_crop,:,0]), \
-                              np.transpose(data_raw[det_y_crop,:,0]), \
+RecFISTA_regNLTV = Rectools.FISTA(data_norm[:,det_y_crop], \
+                              data_raw[:,det_y_crop], \
                               iterationsFISTA = 9, \
                               regularisation = 'NLTV', \
                               regularisation_parameter = 0.0007,\
@@ -199,7 +201,7 @@ Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # de
                     device='gpu')
 
 # Run ADMM-LS-TV reconstrucion algorithm
-RecADMM_LS_TV = Rectools.ADMM(np.transpose(data_norm[det_y_crop,:,0]), \
+RecADMM_LS_TV = Rectools.ADMM(data_norm[:,det_y_crop], \
                               rho_const = 500.0, \
                               iterationsADMM = 3,\
                               regularisation = 'FGP_TV', \

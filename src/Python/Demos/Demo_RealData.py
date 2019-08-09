@@ -33,17 +33,19 @@ angles = datadict['angles']
 flats = datadict['flats_ar']
 darks=  datadict['darks_ar']
 
-flats2 = np.zeros((np.size(flats,0),1, np.size(flats,1)), dtype='float32')
-flats2[:,0,:] = flats[:]
-darks2 = np.zeros((np.size(darks,0),1, np.size(darks,1)), dtype='float32')
-darks2[:,0,:] = darks[:]
+flats2 = np.zeros((1,np.size(flats,0), np.size(flats,1)), dtype='float32')
+flats2[0,:,:] = flats[:]
+darks2 = np.zeros((1, np.size(darks,0), np.size(darks,1)), dtype='float32')
+darks2[0,:,:] = darks[:]
 
-# normalise the data, required format is [detectorsHoriz, Projections, Slices]
+dataRaw = np.swapaxes(dataRaw,0,1)
+
+# normalise the data, required format is [Projections, detectorsHoriz, Slices]
 data_norm = normaliser(dataRaw, flats2, darks2, log='log')
 
 dataRaw = np.float32(np.divide(dataRaw, np.max(dataRaw).astype(float)))
 
-detectorHoriz = np.size(data_norm,0)
+detectorHoriz = np.size(data_norm,1)
 N_size = 1000
 slice_to_recon = 19 # select which slice to reconstruct
 angles_rad = angles*(np.pi/180.0)
@@ -55,10 +57,10 @@ from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions                   
+                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     device='gpu')
 
-FBPrec = RectoolsDIR.FBP(np.transpose(data_norm[:,:,slice_to_recon]))
+FBPrec = RectoolsDIR.FBP(data_norm[:,:,slice_to_recon])
 
 plt.figure()
 plt.imshow(FBPrec[150:550,150:550], vmin=0, vmax=0.005, cmap="gray")
@@ -77,10 +79,10 @@ Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector
                     tolerance = 1e-08, # tolerance to stop outer iterations earlier
                     device='gpu')
 
-lc = Rectools.powermethod(np.transpose(dataRaw[:,:,slice_to_recon])) # calculate Lipschitz constant (run once to initilise)
+lc = Rectools.powermethod(dataRaw[:,:,slice_to_recon]) # calculate Lipschitz constant (run once to initilise)
 
-RecFISTA_os_pwls = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
-                             np.transpose(dataRaw[:,:,slice_to_recon]), \
+RecFISTA_os_pwls = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
+                             dataRaw[:,:,slice_to_recon], \
                              iterationsFISTA = 15, \
                              lipschitz_const = lc)
 
@@ -95,8 +97,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TV method %%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_TV = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
-                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+RecFISTA_pwls_os_TV = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
+                              dataRaw[:,:,slice_to_recon], \
                               iterationsFISTA = 15, \
                               regularisation = 'FGP_TV', \
                               regularisation_parameter = 0.000001,\
@@ -115,8 +117,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-Diff4th method %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_Diff4th = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
-                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+RecFISTA_pwls_os_Diff4th = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
+                              dataRaw[:,:,slice_to_recon], \
                               iterationsFISTA = 15, \
                               regularisation = 'DIFF4th', \
                               regularisation_parameter = 0.1,\
@@ -137,8 +139,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-ROF_LLT method %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_rofllt = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
-                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+RecFISTA_pwls_os_rofllt = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
+                              dataRaw[:,:,slice_to_recon], \
                               iterationsFISTA = 15, \
                               regularisation = 'LLT_ROF', \
                               regularisation_parameter = 0.000007,\
@@ -157,8 +159,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TGV method %%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_tgv = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
-                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+RecFISTA_pwls_os_tgv = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
+                              dataRaw[:,:,slice_to_recon], \
                               iterationsFISTA = 15, \
                               regularisation = 'TGV', \
                               regularisation_parameter = 0.001,\
@@ -191,12 +193,12 @@ Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector
                     tolerance = 1e-09, # tolerance to stop outer iterations earlier
                     device='gpu')
 
-lc = Rectools.powermethod(np.transpose(dataRaw[:,:,slice_to_recon]))
+lc = Rectools.powermethod(dataRaw[:,:,slice_to_recon])
 
 #%%
 # Run FISTA-PWLS-Group-Huber-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_GH_TV = Rectools.FISTA(np.transpose(data_norm[:,:,slice_to_recon]), \
-                              np.transpose(dataRaw[:,:,slice_to_recon]), \
+RecFISTA_pwls_GH_TV = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
+                              dataRaw[:,:,slice_to_recon], \
                               lambdaR_L1 = 0.000001,\
                               alpha_ring = 150,\
                               iterationsFISTA = 200, \
@@ -228,7 +230,7 @@ Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector
                     device='gpu')
 
 # Run ADMM-LS-TV reconstrucion algorithm
-RecADMM_LS_TV = Rectools.ADMM(np.transpose(data_norm[:,:,slice_to_recon]), \
+RecADMM_LS_TV = Rectools.ADMM(data_norm[:,:,slice_to_recon], \
                               rho_const = 500.0, \
                               iterationsADMM = 5,\
                               regularisation = 'FGP_TV', \
