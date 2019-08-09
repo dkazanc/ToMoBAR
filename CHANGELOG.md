@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2019.08]
+### Added
+- Autocropper to automatically crop the 3D projection data to reduce its size
+
+### Changed
+- normalisation script has been optimised
+
 ## [2019.06]
 ### Added
 - Vector geometry added to 3D case replacing the scalar aproach
