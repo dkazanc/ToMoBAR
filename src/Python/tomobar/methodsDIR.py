@@ -11,11 +11,43 @@ A reconstruction class for direct reconstructon methods (parallel beam geometry)
 
 import numpy as np
 
+def filtersinc(projection3D):
+    import scipy.fftpack
+    # applies filters to __3D projection data__ in order to achieve FBP
+    # Data format [DetectorVert, Projections, DetectorHoriz]
+    # adopted from Matlabs code by  Waqas Akram
+    #"a":	This parameter varies the filter magnitude response.
+    #When "a" is very small (a<<1), the response approximates |w|
+    #As "a" is increased, the filter response starts to 
+    #roll off at high frequencies.
+    a = 1.1
+    [DetectorsLengthV, projectionsNum, DetectorsLengthH] = np.shape(projection3D)
+    w =  np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
+    
+    rn1 = np.abs(2.0/a*np.sin(a*w/2.0))
+    rn2 = np.sin(a*w/2.0)
+    rd = (a*w)/2.0
+    rd_c = np.zeros([1,DetectorsLengthH])
+    rd_c[0,:] = rd
+    r = rn1*(np.dot(rn2, np.linalg.pinv(rd_c)))**2
+    multiplier = (1.0/projectionsNum)
+    f = scipy.fftpack.fftshift(r)
+    filtered = np.zeros(np.shape(projection3D))
+    
+    for j in range(0,DetectorsLengthV):
+        for i in range(0,projectionsNum):
+            IMG = scipy.fftpack.fft(projection3D[j,i,:])
+            fimg = IMG*f
+            filtered[j,i,:] = multiplier*np.real(scipy.fftpack.ifft(fimg))
+    return np.float32(filtered)
+
+
 class RecToolsDIR:
     """ Class for reconstruction using DIRect methods (FBP and Fourier)"""
     def __init__(self, 
               DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
               DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+              CenterRotOffset,  # Center of Rotation (CoR) scalar (for 3D case only)
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
               device):
@@ -26,6 +58,7 @@ class RecToolsDIR:
         self.DetectorsDimH = DetectorsDimH
         self.DetectorsDimV = DetectorsDimV
         self.AnglesVec = AnglesVec
+        self.CenterRotOffset = CenterRotOffset
         
         if device is None:
             self.device = 'gpu'
@@ -124,11 +157,17 @@ class RecToolsDIR:
         if (self.geom == '2D'):
             Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
             FBP_rec = Atools.fbp2D(sinogram)
-        if (self.geom == '3D'):
+        if ((self.geom == '3D') and (self.CenterRotOffset is None)):
             FBP_rec = np.zeros((self.DetectorsDimV, self.ObjSize, self.ObjSize), dtype='float32')
             Atools = AstraTools(self.DetectorsDimH, self.AnglesVec-np.pi, self.ObjSize, self.device) # initiate 2D ASTRA class object
             for i in range(0, self.DetectorsDimV):
                 FBP_rec[i,:,:] = Atools.fbp2D(np.flipud(sinogram[i,:,:]))
+        if ((self.geom == '3D') and (self.CenterRotOffset is not None)):
+            # perform FBP using custom filtration
+            from tomobar.supp.astraOP import AstraTools3D
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
+            filtered_sino = filtersinc(sinogram) # filtering sinogram
+            FBP_rec = Atools.backproj(filtered_sino) # backproject
         return FBP_rec
     def FORWPROJ(self, image):
         if (self.geom == '2D'):
@@ -147,6 +186,6 @@ class RecToolsDIR:
             image = Atools.backproj(sinogram)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.ObjSize) # initiate 3D ASTRA class object
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
             image = Atools.backproj(sinogram)
         return image
