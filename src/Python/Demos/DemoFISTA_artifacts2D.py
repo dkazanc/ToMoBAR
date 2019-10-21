@@ -41,7 +41,7 @@ plt.title('{}''{}'.format('2D Phantom using model no.',model))
 angles_num = int(0.5*np.pi*N_size); # angles number
 angles = np.linspace(0.0,179.9,angles_num,dtype='float32')
 angles_rad = angles*(np.pi/180.0)
-P = int(np.sqrt(2)*N_size) #detectors
+P = N_size #int(np.sqrt(2)*N_size) #detectors
 
 sino_an = TomoP2D.ModelSino(model, N_size, P, angles, path_library2D)
 
@@ -75,8 +75,9 @@ plt.title('{}''{}'.format('Analytical noisy sinogram with artifacts.',model))
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    ObjSize = P, # a scalar to define reconstructed object dimensions
                     device='gpu')
 
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -114,7 +115,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    ObjSize = P, # a scalar to define reconstructed object dimensions
                     datafidelity='LS', #data fidelity, choose LS, PWLS, GH (wip), Student (wip)
                     nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
@@ -138,7 +139,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    ObjSize = P, # a scalar to define reconstructed object dimensions
                     datafidelity='LS', #data fidelity, choose LS, PWLS, GH (wip), Student (wip)
                     nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
@@ -146,7 +147,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device='gpu')
 
 RecFISTA_Huber_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   huber_data_threshold = 4.0,
+                                   huber_data_threshold = 3.0,
                                    iterationsFISTA = 350, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.003,
@@ -154,11 +155,11 @@ RecFISTA_Huber_reg = RectoolsIR.FISTA(noisy_zing_stripe,
 
 plt.figure()
 plt.subplot(121)
-plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=1, cmap="gray")
+plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=3, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-LS-TV reconstruction')
 plt.subplot(122)
-plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=1, cmap="gray")
+plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=3, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-Huber-TV reconstruction')
 plt.show()
@@ -180,7 +181,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    ObjSize = P, # a scalar to define reconstructed object dimensions
                     datafidelity='LS', #data fidelity, choose LS, PWLS, Huber, GH (wip), Student (wip)
                     nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
@@ -191,7 +192,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
 lc = RectoolsIR.powermethod() # calculate Lipschitz constant
 
 # Run FISTA reconstrucion algorithm with regularisation 
-RecFISTA_LS_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
+RecFISTA_LS_reg = RectoolsIR.FISTA(noisy_zing_stripe,
                                    iterationsFISTA = 15, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.01,
@@ -202,7 +203,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    ObjSize = P, # a scalar to define reconstructed object dimensions
                     datafidelity='LS', #data fidelity, choose LS, PWLS, GH (wip), Student (wip)
                     nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
@@ -210,7 +211,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device='gpu')
 
 RecFISTA_Huber_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   huber_data_threshold = 4.0,
+                                   huber_data_threshold=5,
                                    iterationsFISTA = 15, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.01,
@@ -219,22 +220,24 @@ RecFISTA_Huber_reg = RectoolsIR.FISTA(noisy_zing_stripe,
 
 plt.figure()
 plt.subplot(121)
-plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=1, cmap="gray")
+plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=3, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-LS-TV reconstruction')
 plt.subplot(122)
-plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=1, cmap="gray")
+plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=3, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-Huber-TV reconstruction')
 plt.show()
 
 # calculate errors 
+
 Qtools = QualityTools(phantom_2D, RecFISTA_LS_reg)
 RMSE_FISTA_LS_TV = Qtools.rmse()
 Qtools = QualityTools(phantom_2D, RecFISTA_Huber_reg)
 RMSE_FISTA_HUBER_TV = Qtools.rmse()
 print("RMSE for FISTA-OS-LS-TV reconstruction is {}".format(RMSE_FISTA_LS_TV))
 print("RMSE for FISTA-OS-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
+
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing using FISTA-Group-Huber method (tomobar)")
@@ -246,7 +249,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+                    ObjSize = P, # a scalar to define reconstructed object dimensions
                     datafidelity='LS', #data fidelity, choose LS, PWLS, Huber, GH (wip), Student (wip)
                     nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
@@ -266,7 +269,7 @@ RecFISTA_LS_GH_reg = RectoolsIR.FISTA(noisy_zing_stripe,
                                    lipschitz_const = lc)
 
 plt.figure()
-plt.imshow(RecFISTA_LS_GH_reg, vmin=0, vmax=1, cmap="gray")
+plt.imshow(RecFISTA_LS_GH_reg, vmin=0, vmax=3, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-GH-TV reconstruction')
 plt.show()

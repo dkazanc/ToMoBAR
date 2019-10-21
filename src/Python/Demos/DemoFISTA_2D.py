@@ -71,6 +71,7 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     device='gpu')
@@ -106,8 +107,9 @@ lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilis
 RecFISTA = Rectools.FISTA(noisy_sino, iterationsFISTA = 200, lipschitz_const = lc)
 
 # Run FISTA reconstrucion algorithm with regularisation 
-RecFISTA_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 200, \
+RecFISTA_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 30, \
                               regularisation = 'ROF_TV', \
+                              initialise = FBPrec,\
                               regularisation_parameter = 0.05,\
                               regularisation_iterations = 100,\
                               lipschitz_const = lc)
@@ -154,8 +156,9 @@ lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilis
 RecFISTA_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 20, lipschitz_const = lc)
 
 # Run FISTA-OS reconstrucion algorithm with regularisation
-RecFISTA_os_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 20, \
+RecFISTA_os_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 5, \
                               regularisation = 'ROF_TV', \
+                              initialise = FBPrec,\
                               regularisation_parameter = 0.05,\
                               regularisation_iterations = 100,\
                               lipschitz_const = lc)

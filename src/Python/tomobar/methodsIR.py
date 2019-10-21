@@ -172,7 +172,7 @@ class RecToolsIR:
               alpha_ring = 50, # GH data model convergence accelerator (use carefully !)
               huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity 
               student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity 
-              InitialObject = None, # initialise reconstruction with an array
+              initialise = None, # initialise reconstruction with an array
               lipschitz_const = 5e+06, # can be a given value or calculated using Power method
               iterationsFISTA = 100, # the number of OUTER FISTA iterations
               regularisation = None, # enable regularisation  with CCPi - RGL toolkit
@@ -196,19 +196,19 @@ class RecToolsIR:
         if (self.geom == '2D'):
             # 2D reconstruction
             # initialise the solution
-            if (np.size(InitialObject) == self.ObjSize**2):
+            if (np.size(initialise) == self.ObjSize**2):
                 # the object has been initialised with an array 
-                X = InitialObject
-                del InitialObject
+                X = initialise
+                del initialise
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
                 r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
         if (self.geom == '3D'):
             # initialise the solution
-            if (np.size(InitialObject) == self.ObjSize**3):
+            if (np.size(initialise) == self.ObjSize**3):
                 # the object has been initialised with an array
-                X = InitialObject
-                del InitialObject
+                X = initialise
+                del initialise
             else:
                 X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
                 r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
@@ -384,7 +384,7 @@ class RecToolsIR:
 #**********************************ADMM***************************************#
     def ADMM(self,
              projdata, # tomographic projection data in 2D (sinogram) or 3D array
-             InitialObject = 0, # initialise reconstruction with an array
+             initialise = 0, # initialise reconstruction with an array
              iterationsADMM = 15, # the number of outer ADMM iterations
              rho_const = 1000.0, # augmented Lagrangian parameter
              alpha = 1.0, # over-relaxation parameter (ADMM)
@@ -423,10 +423,10 @@ class RecToolsIR:
                 from ccpi.filters.regularisers import ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV
         
         # initialise the solution and other ADMM variables
-        if (np.size(InitialObject) == rec_dim):
+        if (np.size(initialise) == rec_dim):
             # the object has been initialised with an array
-            X = InitialObject.ravel()
-            del InitialObject
+            X = initialise.ravel()
+            del initialise
         else:
             X = np.zeros(rec_dim, 'float32')
         
