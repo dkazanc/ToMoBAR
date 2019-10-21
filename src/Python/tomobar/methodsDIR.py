@@ -70,8 +70,27 @@ class RecToolsDIR:
             self.geom = '2D'
         else:
             self.geom = '3D'
-        
-    def fourier(self, sinogram, method='linear'):
+    def FORWPROJ(self, image):
+        if (self.geom == '2D'):
+            from tomobar.supp.astraOP import AstraTools
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
+            sinogram = Atools.forwproj(image)
+        if (self.geom == '3D'):
+            from tomobar.supp.astraOP import AstraTools3D
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.ObjSize) # initiate 3D ASTRA class object
+            sinogram = Atools.forwproj(image)
+        return sinogram
+    def BACKPROJ(self, sinogram):
+        if (self.geom == '2D'):
+            from tomobar.supp.astraOP import AstraTools
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
+            image = Atools.backproj(sinogram)
+        if (self.geom == '3D'):
+            from tomobar.supp.astraOP import AstraTools3D
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
+            image = Atools.backproj(sinogram)
+        return image
+    def FOURIER(self, sinogram, method='linear'):
         """ 
         2D Reconstruction using Fourier slice theorem (scipy required) 
         for griddata interpolation module choose nearest, linear or cubic
@@ -169,23 +188,3 @@ class RecToolsDIR:
             filtered_sino = filtersinc(sinogram) # filtering sinogram
             FBP_rec = Atools.backproj(filtered_sino) # backproject
         return FBP_rec
-    def FORWPROJ(self, image):
-        if (self.geom == '2D'):
-            from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
-            sinogram = Atools.forwproj(image)
-        if (self.geom == '3D'):
-            from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.ObjSize) # initiate 3D ASTRA class object
-            sinogram = Atools.forwproj(image)
-        return sinogram
-    def BACKPROJ(self, sinogram):
-        if (self.geom == '2D'):
-            from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
-            image = Atools.backproj(sinogram)
-        if (self.geom == '3D'):
-            from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
-            image = Atools.backproj(sinogram)
-        return image
