@@ -30,6 +30,76 @@ def smooth(y, box_pts):
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
 
+
+def AdaptiveRing(residual, angle_average_window, det_window, threshold):
+    
+    [angles_tot, Detectors_tot] = np.shape(residual)
+    weights = np.zeros(np.shape(residual))
+    sumResid_t = np.zeros(np.shape(residual))
+    
+    for i in range(0,angles_tot):
+        #loop over angles
+#        for j in range(-angle_average_window,angle_average_window):
+        minwin_index = i - angle_average_window
+        maxwin_index = i + angle_average_window
+        if (minwin_index < 0):
+            maxwin_index = angle_average_window + i
+            minwin_index = 0
+        if (maxwin_index > angles_tot-1):
+            maxwin_index = angles_tot-1
+            minwin_index = minwin_index - np.abs((i + angle_average_window) - (angles_tot-1))
+
+        # now summing residual projections in the selected angle range 
+        Resid_window = residual[minwin_index:maxwin_index,:]
+        sumResid = np.sum(Resid_window,0) # get 1D profile
+        sumResid_t[i,:] = sumResid
+
+    for i in range(0,angles_tot):
+        for j in range(0,Detectors_tot):
+            D_left_max = 0.0
+            D_right_max = 0.0
+            for k in range(-det_window, 0):
+                index = j + k
+                if (index >= 0):
+                    D_left = np.abs(sumResid_t[i,j] - sumResid_t[i,index])
+                    if (D_left > D_left_max):
+                        D_left_max = D_left
+            for k in range(0,det_window):
+                index = j + k
+                if (index < Detectors_tot):
+                    D_right = np.abs(sumResid_t[i,j] - sumResid_t[i,index])
+                    if (D_right > D_right_max):
+                        D_right_max = D_right
+            if ((D_right_max >= D_left_max) and (D_left_max != 0.0)):
+                weight = 2.718*(0.3678 - np.exp(-(D_right_max/D_left_max)))
+            elif ((D_left_max > D_right_max) and (D_right_max != 0.0)):
+                weight = 2.718*(0.3678 - np.exp(-(D_left_max/D_right_max)))
+            else:
+                weight = 1.0
+            weights[i,j] = weight
+
+    [ImY, ImX] = np.gradient(weights)
+    ImY = np.abs(ImY)
+    
+    weights_corr = np.ones(np.shape(residual))
+    #processing the obtained ImY gradient
+    for i in range(0,angles_tot):
+        for j in range(0,Detectors_tot):
+            curr_value = ImY[i,j]
+            #check that all values in the vertical window are within the acceptable_deviation range
+            counter = 0
+            for k in range(-angle_average_window, angle_average_window): 
+                index_slide = i + k
+                if ((index_slide >= 0) and (index_slide < angles_tot)):
+                    newval = np.abs(curr_value - ImY[index_slide,j])
+                    if (newval > threshold):
+                        counter += 1
+                        break
+            if (counter == 0):
+                weights_corr[i,j] = np.abs(weights[i,j])
+    return weights_corr
+
+
 class RecToolsIR:
     """ 
     A class for iterative reconstruction algorithms using ASTRA and CCPi-RGL toolkit
@@ -202,7 +272,7 @@ class RecToolsIR:
                 del initialise
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
-                r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
+            r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
         if (self.geom == '3D'):
             # initialise the solution
             if (np.size(initialise) == self.ObjSize**3):
@@ -211,7 +281,7 @@ class RecToolsIR:
                 del initialise
             else:
                 X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
-                r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
+            r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
         if (self.OS_number > 1):
             regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
         if (NDF_penalty == 'Huber'):
@@ -299,6 +369,8 @@ class RecToolsIR:
                         if (self.datafidelity == 'LS'):
                             # full residual for LS fidelity
                             res = self.Atools.forwproj(X_t) - projdata
+                            #weights_rings = AdaptiveRing(res, angle_average_window = 5, det_window = 5, threshold = 0.04)
+                            #res = np.multiply(np.float32(weights_rings), res)
                         if (self.datafidelity == 'PWLS'):
                             # full gradient for the PWLS fidelity
                             res = np.multiply(weights, (self.Atools.forwproj(X_t) - projdata))
