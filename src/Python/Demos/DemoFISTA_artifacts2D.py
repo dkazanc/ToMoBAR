@@ -22,7 +22,7 @@ import os
 import tomophantom
 from tomophantom.supp.qualitymetrics import QualityTools
 
-model = 4 # select a model
+model = 12 # select a model
 N_size = 512 # set dimension of the phantom
 # one can specify an exact path to the parameters file
 # path_library2D = '../../../PhantomLibrary/models/Phantom2DLibrary.dat'
@@ -64,7 +64,7 @@ noisy_sino_misalign = _Artifacts_(sinogram = sino_an, \
 noisy_zing_stripe = _Artifacts_(sinogram = sino_an, \
                                   noise_type='Poisson', noise_sigma=10000, noise_seed = 0, \
                                   zingers_percentage=0.25, zingers_modulus = 10,
-                                  stripes_percentage = 1.0, stripes_maxthickness = 1.0)
+                                  stripes_percentage = 2.0, stripes_maxthickness = 1.0)
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -73,7 +73,7 @@ plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical noisy sinogram with artifacts.',model))
 #%%
 from tomobar.methodsDIR import RecToolsDIR
-RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
@@ -83,9 +83,9 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimensi
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing analytical sinogram using FBP (tomobar)...")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-FBPrec_ideal = RectoolsDIR.FBP(sino_an)  # ideal reconstruction
-FBPrec_error = RectoolsDIR.FBP(noisy_zing_stripe) # reconstruction with artifacts
-FBPrec_misalign = RectoolsDIR.FBP(noisy_sino_misalign) # reconstruction with misalignment
+FBPrec_ideal = Rectools.FBP(sino_an)  # ideal reconstruction
+FBPrec_error = Rectools.FBP(noisy_zing_stripe) # reconstruction with artifacts
+FBPrec_misalign = Rectools.FBP(noisy_sino_misalign) # reconstruction with misalignment
 
 plt.figure()
 plt.subplot(131)
@@ -147,7 +147,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device='gpu')
 
 RecFISTA_Huber_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   huber_data_threshold = 3.0,
+                                   huber_data_threshold = 5,
                                    iterationsFISTA = 350, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.003,
@@ -211,8 +211,8 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device='gpu')
 
 RecFISTA_Huber_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   huber_data_threshold=5,
-                                   iterationsFISTA = 15, 
+                                   huber_data_threshold=6.0,
+                                   iterationsFISTA = 20, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.01,
                                    regularisation_iterations = 300,

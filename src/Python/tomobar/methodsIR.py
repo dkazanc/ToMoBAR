@@ -23,6 +23,7 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 from numpy import linalg as LA
 import scipy.sparse.linalg
+from numba import jit
 
 # function to smooth 1D signal
 def smooth(y, box_pts):
@@ -31,73 +32,26 @@ def smooth(y, box_pts):
     return y_smooth
 
 
-def AdaptiveRing(residual, angle_average_window, det_window, threshold):
-    
-    [angles_tot, Detectors_tot] = np.shape(residual)
-    weights = np.zeros(np.shape(residual))
-    sumResid_t = np.zeros(np.shape(residual))
-    
-    for i in range(0,angles_tot):
-        #loop over angles
-#        for j in range(-angle_average_window,angle_average_window):
-        minwin_index = i - angle_average_window
-        maxwin_index = i + angle_average_window
-        if (minwin_index < 0):
-            maxwin_index = angle_average_window + i
-            minwin_index = 0
-        if (maxwin_index > angles_tot-1):
-            maxwin_index = angles_tot-1
-            minwin_index = minwin_index - np.abs((i + angle_average_window) - (angles_tot-1))
-
-        # now summing residual projections in the selected angle range 
-        Resid_window = residual[minwin_index:maxwin_index,:]
-        sumResid = np.sum(Resid_window,0) # get 1D profile
-        sumResid_t[i,:] = sumResid
-
-    for i in range(0,angles_tot):
-        for j in range(0,Detectors_tot):
-            D_left_max = 0.0
-            D_right_max = 0.0
-            for k in range(-det_window, 0):
-                index = j + k
-                if (index >= 0):
-                    D_left = np.abs(sumResid_t[i,j] - sumResid_t[i,index])
-                    if (D_left > D_left_max):
-                        D_left_max = D_left
-            for k in range(0,det_window):
-                index = j + k
-                if (index < Detectors_tot):
-                    D_right = np.abs(sumResid_t[i,j] - sumResid_t[i,index])
-                    if (D_right > D_right_max):
-                        D_right_max = D_right
-            if ((D_right_max >= D_left_max) and (D_left_max != 0.0)):
-                weight = 2.718*(0.3678 - np.exp(-(D_right_max/D_left_max)))
-            elif ((D_left_max > D_right_max) and (D_right_max != 0.0)):
-                weight = 2.718*(0.3678 - np.exp(-(D_left_max/D_right_max)))
-            else:
-                weight = 1.0
-            weights[i,j] = weight
-
-    [ImY, ImX] = np.gradient(weights)
-    ImY = np.abs(ImY)
-    
-    weights_corr = np.ones(np.shape(residual))
-    #processing the obtained ImY gradient
-    for i in range(0,angles_tot):
-        for j in range(0,Detectors_tot):
-            curr_value = ImY[i,j]
-            #check that all values in the vertical window are within the acceptable_deviation range
-            counter = 0
-            for k in range(-angle_average_window, angle_average_window): 
-                index_slide = i + k
-                if ((index_slide >= 0) and (index_slide < angles_tot)):
-                    newval = np.abs(curr_value - ImY[index_slide,j])
-                    if (newval > threshold):
-                        counter += 1
-                        break
-            if (counter == 0):
-                weights_corr[i,j] = np.abs(weights[i,j])
-    return weights_corr
+@jit(nopython=True,parallel = True)
+def AdaptiveRing(residual, det_window, angles_tot, Detectors_tot):
+    sumResid_t = np.zeros((angles_tot,Detectors_tot))
+    #sumResid_t = np.ones(np.shape(residual))
+    #[angles_tot, Detectors_tot] = np.shape(residual)
+    for j in range(0,angles_tot):
+        for i in range(0,Detectors_tot):
+            minwin_index = i - det_window
+            maxwin_index = i + det_window
+            if (minwin_index < 0):
+                maxwin_index = det_window + i
+                minwin_index = 0
+            if (maxwin_index > Detectors_tot-1):
+                maxwin_index = Detectors_tot-1
+                minwin_index = minwin_index - np.abs((i + det_window) - (Detectors_tot-1))
+            
+            vector_t = residual[j, minwin_index:maxwin_index]
+            vector_t_med = np.median(vector_t) # get 1D profile
+            sumResid_t[j,i] = residual[j,i] - vector_t_med
+    return sumResid_t
 
 
 class RecToolsIR:
@@ -369,8 +323,6 @@ class RecToolsIR:
                         if (self.datafidelity == 'LS'):
                             # full residual for LS fidelity
                             res = self.Atools.forwproj(X_t) - projdata
-                            #weights_rings = AdaptiveRing(res, angle_average_window = 5, det_window = 5, threshold = 0.04)
-                            #res = np.multiply(np.float32(weights_rings), res)
                         if (self.datafidelity == 'PWLS'):
                             # full gradient for the PWLS fidelity
                             res = np.multiply(weights, (self.Atools.forwproj(X_t) - projdata))
@@ -387,6 +339,9 @@ class RecToolsIR:
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
                     multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                    #offset_rings = AdaptiveRing(res, det_window = 7, angles_tot = np.size(res,0), Detectors_tot = np.size(res,1))
+                    #tempRes = res+offset_rings
+                    #multHuber[(np.where(np.abs(tempRes) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(tempRes[(np.where(np.abs(tempRes) > huber_data_threshold))]))
                     if (self.OS_number > 1):
                         # OS-Huber-gradient
                         grad_fidelity = self.Atools.backprojOS(np.multiply(multHuber,res), sub_ind)
