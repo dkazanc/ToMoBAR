@@ -32,7 +32,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-float RingWeights_main(float *residual, float *weights, int angles_half_window, int detectors_half_window, float threshold, long anglesDim, long detectorsDim);
+float RingWeights_main(float *residual, float *weights, int half_window_size, long anglesDim, long detectorsDim, long slices);
 /************2D functions ***********/
 #ifdef __cplusplus
 }

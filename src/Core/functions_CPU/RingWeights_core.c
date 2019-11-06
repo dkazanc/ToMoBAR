@@ -28,13 +28,13 @@
 #endif
 
 
-float RingWeights_main(float *residual, float *weights, int angles_half_window, int detectors_half_window, float threshold, long anglesDim, long detectorsDim)
+float RingWeights_main(float *residual, float *weights, int half_window_size, long anglesDim, long detectorsDim, long slices)
 {
     long i,j,k;
     long DimTotal;
     DimTotal = (long)(anglesDim*detectorsDim);
 
-    copyIm(residual, weights, long anglesDim, long detectorsDim, 1l);
+    copyIm(residual, weights, anglesDim, detectorsDim, slices);
  
     return *weights;
 }

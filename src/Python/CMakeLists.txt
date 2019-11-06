@@ -32,7 +32,7 @@ elseif(UNIX)
 		)
 endif()
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/setup-i23seg.py.in" "${CMAKE_CURRENT_BINARY_DIR}/setup-i23seg.py")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/setup-tomobar.py.in" "${CMAKE_CURRENT_BINARY_DIR}/setup-tomobar.py.in")
 
 find_package(PythonInterp)
 find_package(PythonLibs)
@@ -47,8 +47,8 @@ endif()
 
 if (PYTHONINTERP_FOUND)
     message("Python found " ${PYTHON_EXECUTABLE})
-    set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-i23seg.py.in")
-    set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-i23seg.py")
+    set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup-tomobar.py.in")
+    set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup-tomobar.py")
     set (DEPS       "${CMAKE_BINARY_DIR}/src/Core/")
     set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
 
@@ -59,40 +59,40 @@ if (PYTHONINTERP_FOUND)
     if (CONDA_BUILD)
       add_custom_command(OUTPUT ${OUTPUT}
                        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/src
-                       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/i23 ${CMAKE_CURRENT_BINARY_DIR}/i23
-                       COMMAND ${CMAKE_COMMAND} -E env i23seg_VERSION=${i23seg_VERSION}
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tomobar ${CMAKE_CURRENT_BINARY_DIR}/tomobar
+                       COMMAND ${CMAKE_COMMAND} -E env tomobar_VERSION=${tomobar_VERSION}
                                                        PREFIX=${CMAKE_SOURCE_DIR}/src/Core
                                                        LIBRARY_INC=${CMAKE_SOURCE_DIR}/src/Core
                                                        LIBRARY_LIB=${CMAKE_BINARY_DIR}/src/Core
                                                        ${PYTHON_EXECUTABLE} ${SETUP_PY} install
                        COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
-                       DEPENDS i23seg)
+                       DEPENDS tomobar)
 
     else()
       if (WIN32)
         add_custom_command(OUTPUT ${OUTPUT}
                        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/src
-                       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/i23 ${CMAKE_CURRENT_BINARY_DIR}/i23
-                       COMMAND ${CMAKE_COMMAND} -E env i23seg_VERSION=${i23seg_VERSION}
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tomobar ${CMAKE_CURRENT_BINARY_DIR}/tomobar
+                       COMMAND ${CMAKE_COMMAND} -E env tomobar_VERSION=${tomobar_VERSION}
                                                        PREFIX=${CMAKE_SOURCE_DIR}/src/Core
                                                        LIBRARY_INC=${CMAKE_SOURCE_DIR}/src/Core
                                                        LIBRARY_LIB=${CMAKE_BINARY_DIR}/src/Core/${CMAKE_BUILD_TYPE}
                                                        ${PYTHON_EXECUTABLE} ${SETUP_PY} build_ext --inplace
                        COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
-                       DEPENDS i23seg)
+                       DEPENDS tomobar)
       else()
         add_custom_command(OUTPUT ${OUTPUT}
                        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/src
-                       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/i23 ${CMAKE_CURRENT_BINARY_DIR}/i23
-                       COMMAND ${CMAKE_COMMAND} -E env i23seg_VERSION=${i23seg_VERSION}
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tomobar ${CMAKE_CURRENT_BINARY_DIR}/tomobar
+                       COMMAND ${CMAKE_COMMAND} -E env tomobar_VERSION=${tomobar_VERSION}
                                                        PREFIX=${CMAKE_SOURCE_DIR}/src/Core
                                                        LIBRARY_INC=${CMAKE_SOURCE_DIR}/src/Core
                                                        LIBRARY_LIB=${CMAKE_BINARY_DIR}/src/Core
                                                        ${PYTHON_EXECUTABLE} ${SETUP_PY} build_ext --inplace
                        COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
-                       DEPENDS i23seg)
+                       DEPENDS tomobar)
       endif()
-      install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/i23 
+      install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tomobar 
               DESTINATION ${PYTHON_DEST})
     endif()
     
