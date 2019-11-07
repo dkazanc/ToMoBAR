@@ -251,7 +251,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
 
 RecFISTA_Huber_RingModel = RectoolsIR.FISTA(noisy_zing_stripe, 
                                    huber_data_threshold=3.5,
-                                   ring_model_window_size=9,
+                                   ring_model_horiz_size=9,
                                    iterationsFISTA = 20, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.01,

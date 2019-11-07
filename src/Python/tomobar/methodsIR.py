@@ -172,7 +172,8 @@ class RecToolsIR:
               weights = None, # raw projection data for PWLS model
               lambdaR_L1 = 0.0, # regularisation parameter for GH data model
               alpha_ring = 50, # GH data model convergence accelerator (use carefully -> can generate artifacts)
-              ring_model_window_size = None, # enable better model to supress ring artifacts, size of window defines a possible thickness of ring artifacts
+              ring_model_horiz_size = None, # enable better model to supress ring artifacts, size of window defines a possible thickness of ring artifacts
+              ring_model_vert_size = 2, # for 3D case only define a vertical window
               huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity 
               student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity 
               initialise = None, # initialise reconstruction with an array
@@ -317,10 +318,11 @@ class RecToolsIR:
                 if (huber_data_threshold > 0.0):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
-                    if (ring_model_window_size is None):
+                    if (ring_model_horiz_size is None):
                         multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
                     else:
-                        offset_rings = RING_WEIGHTS(res, ring_model_window_size)
+                        # Apply smarter Huber model to supress ring artifacts
+                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_size, ring_model_vert_size)
                         tempRes = res+offset_rings
                         multHuber[(np.where(np.abs(tempRes) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(tempRes[(np.where(np.abs(tempRes) > huber_data_threshold))]))
                     if (self.OS_number > 1):
@@ -332,7 +334,13 @@ class RecToolsIR:
                 elif (student_data_threshold > 0.0):
                     # apply Students't penalty
                     multStudent = np.ones(np.shape(res))
-                    multStudent = np.divide(2.0, student_data_threshold**2 + res**2)
+                    if (ring_model_horiz_size is None):
+                        multStudent = np.divide(2.0, student_data_threshold**2 + res**2)
+                    else:
+                        # Apply smarter Students't model to supress ring artifacts
+                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_size, ring_model_vert_size)
+                        tempRes = res+offset_rings
+                        multStudent = np.divide(2.0, student_data_threshold**2 + tempRes**2)
                     if (self.OS_number > 1):
                         # OS-Students't-gradient
                         grad_fidelity = self.Atools.backprojOS(np.multiply(multStudent,res), sub_ind)

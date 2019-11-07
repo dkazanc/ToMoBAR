@@ -21,20 +21,29 @@
 
 
 /*
- *
- * Input Parameters (from Python):
- *
- * Output:
- * 1. MASK_upd - the UPDATED MASK where some regions have been corrected (merged) or removed
- */
+* C function to establish a better model for supressing ring artifacts.
+* It should work for full and partial artifacts as well with changing intensity
+*
+* Input parameters:
+* 1. horiz_window_halfsize - int parameter which defines the approximate thickness of
+* rings present in the reconstruction / stripes in the sinogram
+* 2. vert_window_halfsize - ONLY for 3D when a stack of sinograms is being considered
+*
+* Output:
+* 1. Weights - estimated weights which must be added to residual in order to
+* calculate non-linear response of Huber function or something else in application to
+* data residual
+*/
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-float RingWeights_main(float *residual, float *weights, int half_window_size, long anglesDim, long detectorsDim, long slices);
-float RingWeights2D(float *residual, float *weights, int half_window_size, int full_window, long anglesDim, long detectorsDim, long i, long j);
+float RingWeights_main(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, long anglesDim, long detectorsDim, long slices);
 /************2D functions ***********/
+float RingWeights2D(float *residual, float *weights, int horiz_window_halfsize, int full_window, long anglesDim, long detectorsDim, long i, long j);
+/************3D functions ***********/
+float RingWeights3D(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, int full_window, long anglesDim, long detectorsDim, long slices, long i, long j, long k);
 #ifdef __cplusplus
 }
 #endif

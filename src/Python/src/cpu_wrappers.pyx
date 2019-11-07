@@ -15,17 +15,17 @@ import cython
 import numpy as np
 cimport numpy as np
 
-cdef extern float RingWeights_main(float *residual, float *weights, int half_window_size, long anglesDim, long detectorsDim, long slices);
+cdef extern float RingWeights_main(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, long anglesDim, long detectorsDim, long slices);
 
 ##############################################################################
-def RING_WEIGHTS(residual, half_window_size):
+def RING_WEIGHTS(residual, horiz_window_halfsize, vert_window_halfsize):
     if residual.ndim == 2:
-        return RING_WEIGHTS_2D(residual, half_window_size)
+        return RING_WEIGHTS_2D(residual, horiz_window_halfsize)
     elif residual.ndim == 3:
-        return 0
+        return RING_WEIGHTS_3D(residual, horiz_window_halfsize, vert_window_halfsize)
 
-def RING_WEIGHTS_2D(np.ndarray[np.float32_t, ndim=2, mode="c"] residual,                    
-                     int half_window_size):
+def RING_WEIGHTS_2D(np.ndarray[np.float32_t, ndim=2, mode="c"] residual,
+                     int horiz_window_halfsize):
 
     cdef long dims[2]
     dims[0] = residual.shape[0]
@@ -34,60 +34,22 @@ def RING_WEIGHTS_2D(np.ndarray[np.float32_t, ndim=2, mode="c"] residual,
     cdef np.ndarray[np.float32_t, ndim=2, mode="c"] weights = \
             np.zeros([dims[0],dims[1]], dtype='float32')
 
-    RingWeights_main(&residual[0,0], &weights[0,0], half_window_size, dims[1], dims[0], 1);
-    
+    RingWeights_main(&residual[0,0], &weights[0,0], horiz_window_halfsize, 0,  dims[1], dims[0], 1);
+
     return weights
-"""
-def MASK_CORR_2D(np.ndarray[np.uint8_t, ndim=2, mode="c"] maskData,
-                    np.ndarray[np.uint8_t, ndim=1, mode="c"] select_classes_ar,
-                    np.ndarray[np.uint8_t, ndim=1, mode="c"] combo_classes_ar,
-                     int total_classesNum,
-                     int CorrectionWindow,
-                     int iterationsNumb):
 
-    cdef long dims[2]
-    dims[0] = maskData.shape[0]
-    dims[1] = maskData.shape[1]
-
-    select_classes_length = select_classes_ar.shape[0]
-    tot_combinations = (int)(combo_classes_ar.shape[0]/int(4))
-
-    cdef np.ndarray[np.uint8_t, ndim=2, mode="c"] mask_upd = \
-            np.zeros([dims[0],dims[1]], dtype='uint8')
-    cdef np.ndarray[np.uint8_t, ndim=2, mode="c"] corr_regions = \
-            np.zeros([dims[0],dims[1]], dtype='uint8')
-
-    # Run the function to process given MASK
-    Mask_merge_main(&maskData[0,0], &mask_upd[0,0],
-                    &corr_regions[0,0], &select_classes_ar[0], &combo_classes_ar[0], tot_combinations, select_classes_length,
-                    total_classesNum, CorrectionWindow,
-                    iterationsNumb, dims[1], dims[0], 1)
-    return mask_upd
-
-def MASK_CORR_3D(np.ndarray[np.uint8_t, ndim=3, mode="c"] maskData,
-                    np.ndarray[np.uint8_t, ndim=1, mode="c"] select_classes_ar,
-                    np.ndarray[np.uint8_t, ndim=1, mode="c"] combo_classes_ar,
-                     int total_classesNum,
-                     int CorrectionWindow,
-                     int iterationsNumb):
+def RING_WEIGHTS_3D(np.ndarray[np.float32_t, ndim=3, mode="c"] residual,
+                     int horiz_window_halfsize,
+                     int vert_window_halfsize):
 
     cdef long dims[3]
-    dims[0] = maskData.shape[0]
-    dims[1] = maskData.shape[1]
-    dims[2] = maskData.shape[2]
+    dims[0] = residual.shape[0]
+    dims[1] = residual.shape[1]
+    dims[2] = residual.shape[2]
 
-    select_classes_length = select_classes_ar.shape[0]
-    tot_combinations = (int)(combo_classes_ar.shape[0]/int(4))
+    cdef np.ndarray[np.float32_t, ndim=3, mode="c"] weights = \
+            np.zeros([dims[0],dims[1],dims[2]], dtype='float32')
 
-    cdef np.ndarray[np.uint8_t, ndim=3, mode="c"] mask_upd = \
-            np.zeros([dims[0],dims[1],dims[2]], dtype='uint8')
-    cdef np.ndarray[np.uint8_t, ndim=3, mode="c"] corr_regions = \
-            np.zeros([dims[0],dims[1],dims[2]], dtype='uint8')
+    RingWeights_main(&residual[0,0,0], &weights[0,0,0], horiz_window_halfsize, vert_window_halfsize, dims[2], dims[1], dims[0]);
 
-   # Run the function to process given MASK
-    Mask_merge_main(&maskData[0,0,0], &mask_upd[0,0,0],
-                    &corr_regions[0,0,0], &select_classes_ar[0], &combo_classes_ar[0], tot_combinations, select_classes_length,
-                    total_classesNum, CorrectionWindow,
-                    iterationsNumb, dims[2], dims[1], dims[0])
-    return mask_upd
-"""
+    return weights
