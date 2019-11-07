@@ -49,7 +49,7 @@ conda install -c dkazanc tomobar
  or build with:
 ```
 export VERSION=`date +%Y.%m` (unix) / set VERSION=2019.11 (Windows)
-conda build src/Python/conda-recipe --numpy 1.16 --python 3.6
+conda build conda-recipe/ --numpy 1.16 --python 3.6
 conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar
 ```
 #### Matlab:
