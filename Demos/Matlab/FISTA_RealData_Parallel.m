@@ -7,18 +7,7 @@
 % See ReadMe for more information and links
 
 close all;clc;clear;
-% adding paths
-fsep = '/';
-% Regularisation Toolkit path to compiled library (CCPi-RGTtk needs to be compiled first)
-pathtoRGLtk = sprintf(['..' fsep 'supplementary' fsep 'CCPi-Regularisation-Toolkit' fsep 'Wrappers' fsep 'Matlab' fsep 'mex_compile' fsep 'installed'], 1i);
-addpath(pathtoRGLtk);
-
-pathmainFunc = sprintf(['..' fsep 'main_func'], 1i);
-addpath(pathmainFunc); 
-pathSupp = sprintf(['..' fsep 'supplementary'], 1i);
-addpath(pathSupp);
-pathtoData = sprintf(['..' fsep '..' fsep '..' fsep 'data'], 1i);
-addpath(pathtoData);
+adding_paths % ading all required paths (modify if required)
 %%
 fprintf('\n %s\n', 'Loading real data...');
 [Sino3D,  Weights3D, anglesRad, Detectors] = exportDemoRD2Data();
