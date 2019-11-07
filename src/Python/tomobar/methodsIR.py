@@ -23,35 +23,13 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 from numpy import linalg as LA
 import scipy.sparse.linalg
-from numba import jit
+from tomobar.supp.addmodules import RING_WEIGHTS
 
 # function to smooth 1D signal
 def smooth(y, box_pts):
     box = np.ones(box_pts)/box_pts
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
-
-
-@jit(nopython=True,parallel = True)
-def AdaptiveRing(residual, det_window, angles_tot, Detectors_tot):
-    sumResid_t = np.zeros((angles_tot,Detectors_tot))
-    #sumResid_t = np.ones(np.shape(residual))
-    #[angles_tot, Detectors_tot] = np.shape(residual)
-    for j in range(0,angles_tot):
-        for i in range(0,Detectors_tot):
-            minwin_index = i - det_window
-            maxwin_index = i + det_window
-            if (minwin_index < 0):
-                maxwin_index = det_window + i
-                minwin_index = 0
-            if (maxwin_index > Detectors_tot-1):
-                maxwin_index = Detectors_tot-1
-                minwin_index = minwin_index - np.abs((i + det_window) - (Detectors_tot-1))
-            
-            vector_t = residual[j, minwin_index:maxwin_index]
-            vector_t_med = np.median(vector_t) # get 1D profile
-            sumResid_t[j,i] = residual[j,i] - vector_t_med
-    return sumResid_t
 
 
 class RecToolsIR:
@@ -193,7 +171,8 @@ class RecToolsIR:
               projdata, # tomographic projection data in 2D (sinogram) or 3D array
               weights = None, # raw projection data for PWLS model
               lambdaR_L1 = 0.0, # regularisation parameter for GH data model
-              alpha_ring = 50, # GH data model convergence accelerator (use carefully !)
+              alpha_ring = 50, # GH data model convergence accelerator (use carefully -> can generate artifacts)
+              ring_model_window_size = None, # enable better model to supress ring artifacts, size of window defines a possible thickness of ring artifacts
               huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity 
               student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity 
               initialise = None, # initialise reconstruction with an array
@@ -338,10 +317,12 @@ class RecToolsIR:
                 if (huber_data_threshold > 0.0):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
-                    multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
-                    #offset_rings = AdaptiveRing(res, det_window = 7, angles_tot = np.size(res,0), Detectors_tot = np.size(res,1))
-                    #tempRes = res+offset_rings
-                    #multHuber[(np.where(np.abs(tempRes) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(tempRes[(np.where(np.abs(tempRes) > huber_data_threshold))]))
+                    if (ring_model_window_size is None):
+                        multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                    else:
+                        offset_rings = RING_WEIGHTS(res, ring_model_window_size)
+                        tempRes = res+offset_rings
+                        multHuber[(np.where(np.abs(tempRes) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(tempRes[(np.where(np.abs(tempRes) > huber_data_threshold))]))
                     if (self.OS_number > 1):
                         # OS-Huber-gradient
                         grad_fidelity = self.Atools.backprojOS(np.multiply(multHuber,res), sub_ind)

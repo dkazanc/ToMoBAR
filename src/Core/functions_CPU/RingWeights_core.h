@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Daniil Kazantsev / Diamond Light Source Ltd. 
+ * Copyright 2019 Daniil Kazantsev / Diamond Light Source Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@
 #include "omp.h"
 #include "utils.h"
 
- 
-/* 
+
+/*
  *
  * Input Parameters (from Python):
- * 
+ *
  * Output:
  * 1. MASK_upd - the UPDATED MASK where some regions have been corrected (merged) or removed
  */
@@ -33,6 +33,7 @@
 extern "C" {
 #endif
 float RingWeights_main(float *residual, float *weights, int half_window_size, long anglesDim, long detectorsDim, long slices);
+float RingWeights2D(float *residual, float *weights, int half_window_size, int full_window, long anglesDim, long detectorsDim, long i, long j);
 /************2D functions ***********/
 #ifdef __cplusplus
 }
