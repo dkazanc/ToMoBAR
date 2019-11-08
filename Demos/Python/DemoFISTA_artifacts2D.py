@@ -278,6 +278,45 @@ RMSE_FISTA_HUBER_RING_TV = Qtools.rmse()
 print("RMSE for FISTA-OS-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
 print("RMSE for FISTA-OS-Huber-RingModel-TV is {}".format(RMSE_FISTA_HUBER_RING_TV))
 #%%
+RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
+                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
+                    AnglesVec = angles_rad, # array of angles in radians
+                    ObjSize = P, # a scalar to define reconstructed object dimensions
+                    datafidelity='LS', #data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
+                    OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+                    tolerance = 1e-10, # tolerance to stop outer iterations earlier
+                    device='gpu')
+
+RecFISTA_Sudentst = RectoolsIR.FISTA(noisy_zing_stripe, 
+                                   student_data_threshold = 4.5,
+                                   iterationsFISTA = 150, 
+                                   regularisation = 'ROF_TV', 
+                                   regularisation_parameter = 0.0008,
+                                   regularisation_iterations = 350,
+                                   lipschitz_const = lc)
+
+plt.figure()
+plt.subplot(121)
+plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=3, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA-OS-Huber-TV reconstruction')
+plt.subplot(122)
+plt.imshow(RecFISTA_Sudentst, vmin=0, vmax=3, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA-OS-Studentst-TV reconstruction')
+plt.show()
+
+# calculate errors 
+Qtools = QualityTools(phantom_2D, RecFISTA_Huber_reg)
+RMSE_FISTA_HUBER_TV = Qtools.rmse()
+Qtools = QualityTools(phantom_2D, RecFISTA_Sudentst)
+RMSE_FISTA_STUDENT_TV = Qtools.rmse()
+
+print("RMSE for FISTA-OS-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
+print("RMSE for FISTA-OS-Studentst-TV is {}".format(RMSE_FISTA_STUDENT_TV))
+#%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing using FISTA-Group-Huber method (tomobar)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
