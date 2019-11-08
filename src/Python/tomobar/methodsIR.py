@@ -31,7 +31,6 @@ def smooth(y, box_pts):
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
 
-
 class RecToolsIR:
     """ 
     A class for iterative reconstruction algorithms using ASTRA and CCPi-RGL toolkit
@@ -172,8 +171,8 @@ class RecToolsIR:
               weights = None, # raw projection data for PWLS model
               lambdaR_L1 = 0.0, # regularisation parameter for GH data model
               alpha_ring = 50, # GH data model convergence accelerator (use carefully -> can generate artifacts)
-              ring_model_horiz_size = None, # enable better model to supress ring artifacts, size of window defines a possible thickness of ring artifacts
-              ring_model_vert_size = 2, # for 3D case only define a vertical window
+              ring_model_horiz_size = None, # enable a better model to supress ring artifacts, size of the window defines a possible thickness of ring artifacts
+              ring_model_vert_size = 1, # for 3D case only define a vertical window
               huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity 
               student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity 
               initialise = None, # initialise reconstruction with an array
@@ -457,7 +456,7 @@ class RecToolsIR:
             # solving quadratic problem using linalg solver
             A_to_solver = scipy.sparse.linalg.LinearOperator((rec_dim,rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb)
             b_to_solver = b_to_solver_const + self.rho_const*(z-u)
-            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, tol = self.tolerance, maxiter = 20)
+            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, tol = self.tolerance, maxiter = 15)
             X = np.float32(outputSolver[0]) # get gmres solution
             if (self.nonnegativity == 1):
                 X[X < 0.0] = 0.0
