@@ -15,17 +15,18 @@ import cython
 import numpy as np
 cimport numpy as np
 
-cdef extern float RingWeights_main(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, long anglesDim, long detectorsDim, long slices);
+cdef extern float RingWeights_main(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, int slices_window_halfsize, long anglesDim, long detectorsDim, long slices);
 
 ##############################################################################
-def RING_WEIGHTS(residual, horiz_window_halfsize, vert_window_halfsize):
+def RING_WEIGHTS(residual, horiz_window_halfsize, vert_window_halfsize, slices_window_halfsize):
     if residual.ndim == 2:
-        return RING_WEIGHTS_2D(residual, horiz_window_halfsize)
+        return RING_WEIGHTS_2D(residual, horiz_window_halfsize, vert_window_halfsize)
     elif residual.ndim == 3:
-        return RING_WEIGHTS_3D(residual, horiz_window_halfsize, vert_window_halfsize)
+        return RING_WEIGHTS_3D(residual, horiz_window_halfsize, vert_window_halfsize, slices_window_halfsize)
 
 def RING_WEIGHTS_2D(np.ndarray[np.float32_t, ndim=2, mode="c"] residual,
-                     int horiz_window_halfsize):
+                     int horiz_window_halfsize,
+                     int vert_window_halfsize):
 
     cdef long dims[2]
     dims[0] = residual.shape[0]
@@ -34,13 +35,13 @@ def RING_WEIGHTS_2D(np.ndarray[np.float32_t, ndim=2, mode="c"] residual,
     cdef np.ndarray[np.float32_t, ndim=2, mode="c"] weights = \
             np.zeros([dims[0],dims[1]], dtype='float32')
 
-    RingWeights_main(&residual[0,0], &weights[0,0], horiz_window_halfsize, 0,  dims[1], dims[0], 1);
-
+    RingWeights_main(&residual[0,0], &weights[0,0], horiz_window_halfsize, vert_window_halfsize, 0, dims[1], dims[0], 1);
     return weights
 
 def RING_WEIGHTS_3D(np.ndarray[np.float32_t, ndim=3, mode="c"] residual,
                      int horiz_window_halfsize,
-                     int vert_window_halfsize):
+                     int vert_window_halfsize,
+                     int slices_window_halfsize):
 
     cdef long dims[3]
     dims[0] = residual.shape[0]
@@ -50,6 +51,5 @@ def RING_WEIGHTS_3D(np.ndarray[np.float32_t, ndim=3, mode="c"] residual,
     cdef np.ndarray[np.float32_t, ndim=3, mode="c"] weights = \
             np.zeros([dims[0],dims[1],dims[2]], dtype='float32')
 
-    RingWeights_main(&residual[0,0,0], &weights[0,0,0], horiz_window_halfsize, vert_window_halfsize, dims[2], dims[1], dims[0]);
-
+    RingWeights_main(&residual[0,0,0], &weights[0,0,0], horiz_window_halfsize, vert_window_halfsize, slices_window_halfsize, dims[1], dims[2], dims[0]);
     return weights

@@ -26,8 +26,8 @@ from tomophantom.supp.normraw import normaliser_sim
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
-model = 9 # select a model number from the library
-N_size = 256 # Define phantom dimensions using a scalar value (cubic phantom)
+model = 13 # select a model number from the library
+N_size = 150 # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
 #This will generate a N_size x N_size x N_size phantom (3D)
@@ -63,7 +63,7 @@ print ("Building 3D analytical projection data with TomoPhantom")
 projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
 intens_max = 70
-sliceSel = 150
+sliceSel = 100
 plt.figure() 
 plt.subplot(131)
 plt.imshow(projData3D_analyt[:,sliceSel,:],vmin=0, vmax=intens_max)
@@ -105,15 +105,41 @@ plt.show()
 #%%
 # initialise tomobar DIRECT reconstruction class ONCE
 from tomobar.methodsDIR import RecToolsDIR
-RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
+                    CenterRotOffset = 0.0, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     device = 'gpu')
 #%%
+# testing RING
+Forwproj = Rectools.FORWPROJ(phantom_tm)
+residual = Forwproj - projData3D_norm
+#residual = np.swapaxes(residual,0,1)
+#%%
+from tomobar.supp.addmodules import RING_WEIGHTS
+ring_model_horiz_size = 13
+ring_model_vert_size=0
+ring_model_slices_size=0
+
+offset_rings = RING_WEIGHTS(residual, ring_model_horiz_size, ring_model_vert_size, ring_model_slices_size)
+
+intens_max = 70
+sliceSel = 120
+plt.figure() 
+plt.subplot(131)
+plt.imshow(offset_rings[:,sliceSel,:])
+plt.title('2D Projection (erroneous)')
+plt.subplot(132)
+plt.imshow(offset_rings[sliceSel,:,:])
+plt.title('Sinogram view')
+plt.subplot(133)
+plt.imshow(offset_rings[:,:,sliceSel])
+plt.title('Tangentogram view')
+plt.show()
+#%%
 print ("Reconstruction using FBP from tomobar")
-recNumerical= RectoolsDIR.FBP(projData3D_norm) # FBP reconstruction
+recNumerical= Rectools.FBP(projData3D_norm) # FBP reconstruction
 
 sliceSel = int(0.5*N_size)
 max_val = 1
@@ -150,7 +176,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector d
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
                     nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = 10, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
+                    tolerance = 1e-10, # tolerance to stop outer iterations earlier
                     device='gpu')
 lc = RectoolsIR.powermethod() # calculate Lipschitz constant
 #%%
@@ -164,6 +190,11 @@ RecFISTA_reg = RectoolsIR.FISTA(projData3D_norm,
                                 regularisation_parameter = 0.00015, 
                                 regularisation_iterations = 300,
                                 lipschitz_const = lc)
+
+
+Qtools = QualityTools(phantom_tm, RecFISTA_reg)
+RMSE_FISTA_TV = Qtools.rmse()
+print("RMSE for FISTA-OS-TV is {}".format(RMSE_FISTA_TV))
 
 sliceSel = int(0.5*N_size)
 max_val = 1
@@ -190,6 +221,10 @@ RecFISTA_Huber_TV = RectoolsIR.FISTA(projData3D_norm,
                                 regularisation_iterations = 300,
                                 lipschitz_const = lc)
 
+Qtools = QualityTools(phantom_tm, RecFISTA_Huber_TV)
+RMSE_FISTA_HUBER_TV = Qtools.rmse()
+print("RMSE for FISTA-OS-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
+
 sliceSel = int(0.5*N_size)
 max_val = 1
 plt.figure() 
@@ -206,17 +241,19 @@ plt.imshow(RecFISTA_Huber_TV[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D Huber Rec, sagittal')
 plt.show()
 #%%
-#%%
 # Run FISTA reconstrucion algorithm with 3D regularisation
 RecFISTA_HuberRING_TV = RectoolsIR.FISTA(projData3D_norm, 
                                 iterationsFISTA = 20, 
                                 huber_data_threshold = 1.0,
                                 ring_model_horiz_size= 7,
-                                ring_model_vert_size = 1,
                                 regularisation = 'FGP_TV', 
                                 regularisation_parameter = 0.00015, 
                                 regularisation_iterations = 300,
                                 lipschitz_const = lc)
+
+Qtools = QualityTools(phantom_tm, RecFISTA_HuberRING_TV)
+RMSE_FISTA_HUBER_RING_TV = Qtools.rmse()
+print("RMSE for FISTA-OS-Huber-Ring-TV is {}".format(RMSE_FISTA_HUBER_RING_TV))
 
 sliceSel = int(0.5*N_size)
 max_val = 1

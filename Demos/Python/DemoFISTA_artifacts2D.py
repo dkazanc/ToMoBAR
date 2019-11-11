@@ -210,7 +210,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device='gpu')
 
 RecFISTA_Huber_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   huber_data_threshold=3.5,
+                                   huber_data_threshold=4.0,
                                    iterationsFISTA = 20, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.01,
@@ -250,7 +250,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device='gpu')
 
 RecFISTA_Huber_RingModel = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   huber_data_threshold=3.5,
+                                   huber_data_threshold=4.0,
                                    ring_model_horiz_size=9,
                                    iterationsFISTA = 20, 
                                    regularisation = 'ROF_TV', 

@@ -172,7 +172,8 @@ class RecToolsIR:
               lambdaR_L1 = 0.0, # regularisation parameter for GH data model
               alpha_ring = 50, # GH data model convergence accelerator (use carefully -> can generate artifacts)
               ring_model_horiz_size = None, # enable a better model to supress ring artifacts, size of the window defines a possible thickness of ring artifacts
-              ring_model_vert_size = 1, # for 3D case only define a vertical window
+              ring_model_vert_size = 0, # define a vertical window
+              ring_model_slices_size = 0, # 3D case only, define a slices window
               huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity 
               student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity 
               initialise = None, # initialise reconstruction with an array
@@ -321,7 +322,7 @@ class RecToolsIR:
                         multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
                     else:
                         # Apply smarter Huber model to supress ring artifacts
-                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_size, ring_model_vert_size)
+                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_size, ring_model_vert_size, ring_model_slices_size)
                         tempRes = res+offset_rings
                         multHuber[(np.where(np.abs(tempRes) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(tempRes[(np.where(np.abs(tempRes) > huber_data_threshold))]))
                     if (self.OS_number > 1):
@@ -337,7 +338,7 @@ class RecToolsIR:
                         multStudent = np.divide(2.0, student_data_threshold**2 + res**2)
                     else:
                         # Apply smarter Students't model to supress ring artifacts
-                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_size, ring_model_vert_size)
+                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_size, ring_model_vert_size, ring_model_slices_size)
                         tempRes = res+offset_rings
                         multStudent = np.divide(2.0, student_data_threshold**2 + tempRes**2)
                     if (self.OS_number > 1):
