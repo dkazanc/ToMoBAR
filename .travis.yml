@@ -3,7 +3,7 @@ language: python
 matrix:
   include:
     - python: 2.7
-      env: NUMPY=1.14      
+      env: NUMPY=1.16      
     
     - python: 2.7
       env: NUMPY=1.15 
@@ -12,7 +12,7 @@ matrix:
       env: NUMPY=1.15 
 
     - python: 3.6
-      env: NUMPY=1.15
+      env: NUMPY=1.16
       
 os:
   - linux
