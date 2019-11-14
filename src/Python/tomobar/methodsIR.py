@@ -23,6 +23,7 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 from numpy import linalg as LA
 import scipy.sparse.linalg
+from tomobar.supp.addmodules import RING_WEIGHTS
 
 # function to smooth 1D signal
 def smooth(y, box_pts):
@@ -169,7 +170,10 @@ class RecToolsIR:
               projdata, # tomographic projection data in 2D (sinogram) or 3D array
               weights = None, # raw projection data for PWLS model
               lambdaR_L1 = 0.0, # regularisation parameter for GH data model
-              alpha_ring = 50, # GH data model convergence accelerator (use carefully !)
+              alpha_ring = 50, # GH data model convergence accelerator (use carefully -> can generate artifacts)
+              ring_model_horiz_size = None, # enable a better model to supress ring artifacts, size of the window defines a possible thickness of ring artifacts
+              ring_model_vert_size = 0, # define a vertical window
+              ring_model_slices_size = 0, # 3D case only, define a slices window
               huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity 
               student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity 
               initialise = None, # initialise reconstruction with an array
@@ -202,7 +206,7 @@ class RecToolsIR:
                 del initialise
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
-                r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
+            r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
         if (self.geom == '3D'):
             # initialise the solution
             if (np.size(initialise) == self.ObjSize**3):
@@ -211,7 +215,7 @@ class RecToolsIR:
                 del initialise
             else:
                 X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
-                r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
+            r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
         if (self.OS_number > 1):
             regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
         if (NDF_penalty == 'Huber'):
@@ -314,7 +318,13 @@ class RecToolsIR:
                 if (huber_data_threshold > 0.0):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
-                    multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                    if (ring_model_horiz_size is None):
+                        multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
+                    else:
+                        # Apply smarter Huber model to supress ring artifacts
+                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_size, ring_model_vert_size, ring_model_slices_size)
+                        tempRes = res+offset_rings
+                        multHuber[(np.where(np.abs(tempRes) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(tempRes[(np.where(np.abs(tempRes) > huber_data_threshold))]))
                     if (self.OS_number > 1):
                         # OS-Huber-gradient
                         grad_fidelity = self.Atools.backprojOS(np.multiply(multHuber,res), sub_ind)
@@ -324,7 +334,13 @@ class RecToolsIR:
                 elif (student_data_threshold > 0.0):
                     # apply Students't penalty
                     multStudent = np.ones(np.shape(res))
-                    multStudent = np.divide(2.0, student_data_threshold**2 + res**2)
+                    if (ring_model_horiz_size is None):
+                        multStudent = np.divide(2.0, student_data_threshold**2 + res**2)
+                    else:
+                        # Apply smarter Students't model to supress ring artifacts
+                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_size, ring_model_vert_size, ring_model_slices_size)
+                        tempRes = res+offset_rings
+                        multStudent = np.divide(2.0, student_data_threshold**2 + tempRes**2)
                     if (self.OS_number > 1):
                         # OS-Students't-gradient
                         grad_fidelity = self.Atools.backprojOS(np.multiply(multStudent,res), sub_ind)
@@ -441,7 +457,7 @@ class RecToolsIR:
             # solving quadratic problem using linalg solver
             A_to_solver = scipy.sparse.linalg.LinearOperator((rec_dim,rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb)
             b_to_solver = b_to_solver_const + self.rho_const*(z-u)
-            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, tol = self.tolerance, maxiter = 20)
+            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, tol = self.tolerance, maxiter = 15)
             X = np.float32(outputSolver[0]) # get gmres solution
             if (self.nonnegativity == 1):
                 X[X < 0.0] = 0.0

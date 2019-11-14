@@ -3,8 +3,8 @@ language: python
 matrix:
   include:
     - python: 2.7
-      env: NUMPY=1.14 
-
+      env: NUMPY=1.14      
+    
     - python: 2.7
       env: NUMPY=1.15 
 
@@ -28,20 +28,20 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
-  #- conda update -q conda
+  - conda update -q conda
   - conda info -a
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION 
   - source activate test-environment
   - conda install --yes numpy=$NUMPY pytest conda-build anaconda-client 
   - conda install -c conda-forge sparse
   - conda config --set anaconda_upload no
-  - export VERSION=`date +%Y.%m`	
-  - conda build src/Python/conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION 
+  - export VERSION=`date +%Y.%m`
+  - conda build conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION
   - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
 
 after_success:
   - chmod +x src/Python/conda-recipe/conda_upload.sh
-  - test $TRAVIS_BRANCH = "master" && bash src/Python/conda-recipe/conda_upload.sh
+  - test $TRAVIS_BRANCH = "master" && bash conda-recipe/conda_upload.sh
 
 script:
   - python tests/test.py

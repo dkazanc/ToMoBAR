@@ -7,19 +7,9 @@
 % See ReadMe for more information and references
 
 close all;clc;clear;
-% adding paths
-fsep = '/';
-
-% Regularisation Toolkit path to compiled library (CCPi-RGTtk needs to be compiled first)
-pathtoRGLtk = sprintf(['..' fsep 'supplementary' fsep 'CCPi-Regularisation-Toolkit' fsep 'Wrappers' fsep 'Matlab' fsep 'mex_compile' fsep 'installed'], 1i);
-addpath(pathtoRGLtk);
-
-pathmainFunc = sprintf(['..' fsep 'main_func'], 1i);
-addpath(pathmainFunc); 
-pathSupp = sprintf(['..' fsep 'supplementary'], 1i);
-addpath(pathSupp);
+adding_paths % ading all required paths (modify if required)
 %%
-load ../../../data/RealDataDend.mat
+load ../../data/RealDataDend.mat
 sinoRD = sinoRD';
 figure; imshow(sinoRD, [ ]); colormap hot; title('Sinogram');
 %%

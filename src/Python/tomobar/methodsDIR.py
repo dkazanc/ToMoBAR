@@ -77,7 +77,7 @@ class RecToolsDIR:
             sinogram = Atools.forwproj(image)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.ObjSize) # initiate 3D ASTRA class object
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
             sinogram = Atools.forwproj(image)
         return sinogram
     def BACKPROJ(self, sinogram):

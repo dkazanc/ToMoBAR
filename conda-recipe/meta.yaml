@@ -1,21 +1,25 @@
 package:
   name: tomobar
-  version: {{ environ.get('VERSION', '') }}
-
+  version: {{ environ['VERSION'] }}
+  
 build:
   preserve_egg_dir: False
+  number: 0
   script_env:
-   - VERSION
+    - VERSION
 
 requirements:
   build:
     - python
     - numpy
     - setuptools
+    - cython
+    - cmake
 
   run:
     - python
     - numpy
+    - libgcc-ng # [unix]
 
 about:
   home: https://github.com/dkazanc/ToMoBAR

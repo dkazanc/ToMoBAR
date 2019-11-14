@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2019.11]
+
+### Added
+- RING_WEIGHTS module in C which calculates a better ring model to use in non-quadratic data penalties
+- Cmake and Cython wrappers
+- run.sh to run Cmake based installation of Python wrappers
+
+### Changed
+- Installation process to use Cmake and Cython to wrap Python modules
+- Demos and conda-build files moved to the main directory
+
 ## [2019.08]
 ### Added
 - Autocropper to automatically crop the 3D projection data to reduce its size
