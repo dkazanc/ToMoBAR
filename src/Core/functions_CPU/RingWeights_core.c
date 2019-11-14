@@ -62,12 +62,12 @@ float RingWeights_main(float *residual, float *weights, int horiz_window_halfsiz
     }
     else {
     /****************3D INPUT ***************/
-    printf("%i %i %i \n", slices, anglesDim, detectorsDim);
+    /*printf("%i %i %i \n", slices, anglesDim, detectorsDim);*/
     #pragma omp parallel for shared(residual, weights) private(k, j, i)
     for(i = 0; i<anglesDim; i++) {
       for(j = 0; j<detectorsDim; j++) {
         for(k = 0; k<slices; k++) {
-          RingWeights3D(residual, weights, horiz_window_halfsize, vert_window_halfsize, slices_window_halfsize, full_window, anglesDim, detectorsDim, slices, i, j, k);
+          RingWeights3D(residual, weights, (long)(horiz_window_halfsize), (long)(vert_window_halfsize), (long)(slices_window_halfsize), full_window, anglesDim, detectorsDim, slices, i, j, k);
         }}}
     }
   return *weights;
@@ -78,7 +78,7 @@ float RingWeights_main(float *residual, float *weights, int horiz_window_halfsiz
 float RingWeights2D(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, int full_window, long anglesDim, long detectorsDim, long i, long j)
 {
             float *Values_Vec;
-            long k, j1, index;
+            long k, j1, i1, m, index;
             int counter, x, y, midval;
 
             index = i*detectorsDim+j;
@@ -87,16 +87,14 @@ float RingWeights2D(float *residual, float *weights, int horiz_window_halfsize, 
 
             /* intiate the estimation of the backround using strictly horizontal values */
             counter = 0;
-            long l, i1;
-            for(k=-horiz_window_halfsize; k < horiz_window_halfsize; k++) {
+            for (k=-horiz_window_halfsize; k <= horiz_window_halfsize; k++) {
                 j1 = j + k;
-                for(l=-vert_window_halfsize; l < vert_window_halfsize; l++) {
-                  i1 = i + l;
+                for (m = -vert_window_halfsize; m <=vert_window_halfsize; m++) {
+                  i1 = i + m;
                 if ((j1 >= 0) && (j1 < detectorsDim) && (i1 >= 0) && (i1 < anglesDim)) {
-                  Values_Vec[counter] = residual[i1*detectorsDim+j1];
-                }
+                  Values_Vec[counter] = residual[i1*detectorsDim+j1]; }
                 else Values_Vec[counter] = residual[index];
-                counter ++;
+                counter++;
             }}
 
             /* perform sorting of the vector array */
@@ -107,14 +105,12 @@ float RingWeights2D(float *residual, float *weights, int horiz_window_halfsize, 
                     }
                 }
             }
-
             weights[index] = residual[index] - Values_Vec[midval];
-
       free(Values_Vec);
       return *weights;
 }
 
-float RingWeights3D(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, int slices_window_halfsize, int full_window, long anglesDim, long detectorsDim, long slices, long i, long j, long k)
+float RingWeights3D(float *residual, float *weights, long horiz_window_halfsize, long vert_window_halfsize, long slices_window_halfsize, int full_window, long anglesDim, long detectorsDim, long slices, long i, long j, long k)
 {
   float *Values_Vec;
   long k1, j1, i1, l, v, m, index;
@@ -123,23 +119,21 @@ float RingWeights3D(float *residual, float *weights, int horiz_window_halfsize, 
   midval = (int)(0.5f*full_window) - 1;
   index = (detectorsDim*anglesDim*k) + i*detectorsDim+j;
   Values_Vec = (float*) calloc (full_window, sizeof(float));
-/*
-  counter = 0;
-  for(l=-horiz_window_halfsize; l < horiz_window_halfsize; l++) {
-    j1 = j + l;
-    for(m=-vert_window_halfsize; m < vert_window_halfsize; m++) {
-      i1 = i + m;
-      for(v=-slices_window_halfsize; v < slices_window_halfsize; v++) {
-        k1 = k + v;
-      if ((j1 >= 0) && (j1 < detectorsDim) && (k1 >= 0) && (k1 < slices) &&  (i1 >= 0) && (i1 < anglesDim)) {
-        Values_Vec[counter] = residual[(detectorsDim*anglesDim*k1) + i1*detectorsDim+j1];
-      }
-      else Values_Vec[counter] = residual[index];
-      counter ++;
-  }}}
-*/
+
+    counter = 0;
+    for (l = -horiz_window_halfsize; l <=horiz_window_halfsize; l++) {
+      j1 = j + l;
+     for (m = -vert_window_halfsize; m <=vert_window_halfsize; m++) {
+       i1 = i + m;
+      for (v = -slices_window_halfsize; v <=slices_window_halfsize; v++) {
+          k1 = k + v;
+        if ((j1 >= 0) && (j1 < detectorsDim) && (k1 >= 0) && (k1 < slices) && (i1 >= 0) && (i1 < anglesDim)) {
+        Values_Vec[counter] = residual[(detectorsDim*anglesDim*k1) + i1*detectorsDim+j1]; }
+        else Values_Vec[counter] = residual[index];
+        counter++;
+      }}}
+
   /* perform sorting of the vector array */
-  /*
   for (x = 0; x < counter-1; x++)  {
       for (y = 0; y < counter-x-1; y++)  {
           if (Values_Vec[y] > Values_Vec[y+1]) {
@@ -147,10 +141,8 @@ float RingWeights3D(float *residual, float *weights, int horiz_window_halfsize, 
           }
       }
   }
+
   weights[index] = residual[index] - Values_Vec[midval];
-  */
-  j1 = j + 15;
-  if ((j1 > 0) && (j1 < detectorsDim)) weights[index] = residual[(detectorsDim*anglesDim*k) + i*detectorsDim+j1];
 
   free(Values_Vec);
   return *weights;

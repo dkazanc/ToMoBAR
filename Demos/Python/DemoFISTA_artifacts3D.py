@@ -112,32 +112,6 @@ Rectools = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector di
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     device = 'gpu')
 #%%
-# testing RING
-Forwproj = Rectools.FORWPROJ(phantom_tm)
-residual = Forwproj - projData3D_norm
-#residual = np.swapaxes(residual,0,1)
-#%%
-from tomobar.supp.addmodules import RING_WEIGHTS
-ring_model_horiz_size = 13
-ring_model_vert_size=0
-ring_model_slices_size=0
-
-offset_rings = RING_WEIGHTS(residual, ring_model_horiz_size, ring_model_vert_size, ring_model_slices_size)
-
-intens_max = 70
-sliceSel = 120
-plt.figure() 
-plt.subplot(131)
-plt.imshow(offset_rings[:,sliceSel,:])
-plt.title('2D Projection (erroneous)')
-plt.subplot(132)
-plt.imshow(offset_rings[sliceSel,:,:])
-plt.title('Sinogram view')
-plt.subplot(133)
-plt.imshow(offset_rings[:,:,sliceSel])
-plt.title('Tangentogram view')
-plt.show()
-#%%
 print ("Reconstruction using FBP from tomobar")
 recNumerical= Rectools.FBP(projData3D_norm) # FBP reconstruction
 
@@ -241,7 +215,7 @@ plt.imshow(RecFISTA_Huber_TV[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D Huber Rec, sagittal')
 plt.show()
 #%%
-# Run FISTA reconstrucion algorithm with 3D regularisation
+# Run FISTA reconstrucion algorithm with 3D regularisation and a better ring model
 RecFISTA_HuberRING_TV = RectoolsIR.FISTA(projData3D_norm, 
                                 iterationsFISTA = 20, 
                                 huber_data_threshold = 1.0,
