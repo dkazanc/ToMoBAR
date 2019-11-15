@@ -27,7 +27,7 @@ from tomophantom.supp.normraw import normaliser_sim
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
 model = 13 # select a model number from the library
-N_size = 150 # Define phantom dimensions using a scalar value (cubic phantom)
+N_size = 256 # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
 #This will generate a N_size x N_size x N_size phantom (3D)
@@ -219,7 +219,7 @@ plt.show()
 RecFISTA_HuberRING_TV = RectoolsIR.FISTA(projData3D_norm, 
                                 iterationsFISTA = 20, 
                                 huber_data_threshold = 1.0,
-                                ring_model_horiz_size= 7,
+                                ring_model_slices_window= 8,
                                 regularisation = 'FGP_TV', 
                                 regularisation_parameter = 0.00015, 
                                 regularisation_iterations = 300,

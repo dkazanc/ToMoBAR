@@ -39,11 +39,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-float RingWeights_main(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, int slices_window_halfsize, long anglesDim, long detectorsDim, long slices);
+float RingWeights_main(float *residual, float *weights, int window_halfsize, int slices_window_halfsize, long anglesDim, long detectorsDim, long slices);
 /************2D functions ***********/
-float RingWeights2D(float *residual, float *weights, int horiz_window_halfsize, int vert_window_halfsize, int full_window, long anglesDim, long detectorsDim, long i, long j);
+float RingWeights2D(float *residual, float *weights, int window_halfsize, int full_window, long anglesDim, long detectorsDim, long i, long j);
 /************3D functions ***********/
-float RingWeights3D(float *residual, float *weights, long horiz_window_halfsize, long vert_window_halfsize, long slices_window_halfsize, int full_window, long anglesDim, long detectorsDim, long slices, long i, long j, long k);
+float RingWeights3D(float *residual, float *weights, int window_halfsize, int slices_window_halfsize, int horiz_full_window, int slice_full_window, long anglesDim, long detectorsDim, long slices, long i, long j, long k);
 #ifdef __cplusplus
 }
 #endif

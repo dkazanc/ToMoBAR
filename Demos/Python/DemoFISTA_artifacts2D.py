@@ -64,7 +64,7 @@ noisy_sino_misalign = _Artifacts_(sinogram = sino_an, \
 noisy_zing_stripe = _Artifacts_(sinogram = sino_an, \
                                   noise_type='Poisson', noise_sigma=10000, noise_seed = 0, \
                                   zingers_percentage=0.25, zingers_modulus = 10,
-                                  stripes_percentage = 2.0, stripes_maxthickness = 1.0)
+                                  stripes_percentage = 2.0, stripes_maxthickness = 2.0)
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -210,7 +210,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device='gpu')
 
 RecFISTA_Huber_reg = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   huber_data_threshold=4.0,
+                                   huber_data_threshold=3.0,
                                    iterationsFISTA = 20, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.01,
@@ -250,9 +250,8 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device='gpu')
 
 RecFISTA_Huber_RingModel = RectoolsIR.FISTA(noisy_zing_stripe, 
-                                   huber_data_threshold=4.0,
-                                   ring_model_horiz_size = 9,
-                                   ring_model_vert_size = 1,
+                                   huber_data_threshold=3.0,
+                                   ring_model_horiz_window = 11,
                                    iterationsFISTA = 20, 
                                    regularisation = 'ROF_TV', 
                                    regularisation_parameter = 0.01,
