@@ -175,15 +175,15 @@ max_val = 1
 plt.figure() 
 plt.subplot(131)
 plt.imshow(RecFISTA_reg[sliceSel,:,:],vmin=0, vmax=max_val)
-plt.title('3D FISTA-TV Reconstruction, axial view')
+plt.title('3D FISTA-TV Recon, axial view')
 
 plt.subplot(132)
 plt.imshow(RecFISTA_reg[:,sliceSel,:],vmin=0, vmax=max_val)
-plt.title('3D FISTA-TV Reconstruction, coronal view')
+plt.title('3D FISTA-TV Recon, coronal view')
 
 plt.subplot(133)
 plt.imshow(RecFISTA_reg[:,:,sliceSel],vmin=0, vmax=max_val)
-plt.title('3D FISTA-TV Reconstruction, sagittal view')
+plt.title('3D FISTA-TV Recon, sagittal view')
 plt.show()
 #%%
 # Run FISTA reconstrucion algorithm with 3D regularisation
