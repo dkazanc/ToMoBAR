@@ -107,6 +107,15 @@ plt.imshow(abs(FBPrec_ideal-FBPrec_error), vmin=0, vmax=3, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 3], orientation='vertical')
 plt.title('FBP reconsrtuction differences')
 #%%
+# %TESTING
+forwproj = Rectools.FORWPROJ(FBPrec_error)
+residual = noisy_zing_stripe - forwproj
+
+from tomobar.supp.addmodules import RING_WEIGHTS
+
+ring_weights2 = RING_WEIGHTS(residual,  window_halfsize_detectors = 9, window_halfsize_angles = 5, window_halfsize_projections = 0)
+
+#%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing using FISTA method (tomobar)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
