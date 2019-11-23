@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2019.12]
+### Changed
+- Due to model-based structure of algorithms, the amount of parameters increases. It has been 
+decided to restructure class function and make it simpler to operate. See demos.
+- Added HELP, one can use - help(RecToolsIR) or help(RecToolsDIR) to get information about parameters
+- Demos modified to adapt a new structure
+
 ## [2019.11]
 
 ### Added

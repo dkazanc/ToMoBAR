@@ -13,6 +13,8 @@ Dependencies:
     or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
     * TomoPhantom, https://github.com/dkazanc/TomoPhantom
 
+
+! USE - help(RecToolsIR) or help(RecToolsDIR) to get information about parameters !
 @author: Daniil Kazantsev
 """
 import numpy as np
@@ -64,7 +66,6 @@ plt.imshow(noisy_sino,cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical noisy sinogram',model))
 #%%
-
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -74,7 +75,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimensi
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device='gpu')
+                    device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(noisy_sino) #perform FBP
 
@@ -95,24 +96,25 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
+                    datafidelity='LS',# data fidelity, choose LS, PWLS
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
-                    device='gpu')
+                    device_projector='gpu')
 
-lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
-
+# prepare dictionaries with parameters:
+data = {'projection_norm_data' : noisy_sino} # data dictionary
+lc = Rectools.powermethod(data) # calculate Lipschitz constant (run once to initialise)
+algorithm_params = {'iterations' : 350,
+                    'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(noisy_sino, iterationsFISTA = 200, lipschitz_const = lc)
+RecFISTA = Rectools.FISTA(data, algorithm_params, regularisation_params={})
 
-# Run FISTA reconstrucion algorithm with regularisation 
-RecFISTA_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 30, \
-                              regularisation = 'ROF_TV', \
-                              initialise = FBPrec,\
-                              regularisation_parameter = 0.05,\
-                              regularisation_iterations = 100,\
-                              lipschitz_const = lc)
+# adding regularisation using the CCPi regularisation toolkit
+regularisation_params = {'method' : 'ROF_TV',
+                         'regul_param' : 0.05,
+                         'iterations' : 250,
+                         'device_regulariser': 'gpu'}
+
+RecFISTA_reg = Rectools.FISTA(data, algorithm_params, regularisation_params)
 
 plt.figure()
 plt.subplot(121)
@@ -145,23 +147,24 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
                     OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
-                    device='gpu')
+                    device_projector='gpu')
 
-lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
+lc = Rectools.powermethod(data) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA-OS reconstrucion algorithm without regularisation
-RecFISTA_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 20, lipschitz_const = lc)
+algorithm_params = {'iterations' : 15,
+                    'lipschitz_const' : lc}
+RecFISTA_os = Rectools.FISTA(data, algorithm_params, regularisation_params={})
 
-# Run FISTA-OS reconstrucion algorithm with regularisation
-RecFISTA_os_reg = Rectools.FISTA(noisy_sino, iterationsFISTA = 5, \
-                              regularisation = 'ROF_TV', \
-                              initialise = FBPrec,\
-                              regularisation_parameter = 0.05,\
-                              regularisation_iterations = 100,\
-                              lipschitz_const = lc)
+# adding regularisation
+regularisation_params = {'method' : 'ROF_TV',
+                         'regul_param' : 0.05,
+                         'iterations' : 250,
+                         'device_regulariser': 'gpu'}
+
+# adding regularisation using the CCPi regularisation toolkit
+RecFISTA_os_reg = Rectools.FISTA(data, algorithm_params, regularisation_params)
 
 plt.figure()
 plt.subplot(121)

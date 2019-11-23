@@ -91,7 +91,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det, # DetectorsDimH # detector 
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device='gpu')
+                    device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise) #perform FBP
 
@@ -122,23 +122,28 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
+                    datafidelity='LS',# data fidelity, choose LS or PWLS
                     OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
-                    device='gpu')
+                    device_projector='gpu')
 
-lc = Rectools.powermethod() # calculate Lipschitz constant 
+data = {'projection_norm_data' : projData3D_analyt_noise} # data dictionary
+
+lc = Rectools.powermethod(data) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(projData3D_analyt_noise, iterationsFISTA = 150, lipschitz_const = lc)
+algorithm_params = {'iterations' : 200,
+                    'lipschitz_const' : lc}
+# Run FISTA reconstrucion algorithm without regularisation
+RecFISTA = Rectools.FISTA(data, algorithm_params, regularisation_params={})
+
+# adding regularisation using the CCPi regularisation toolkit
+regularisation_params = {'method' : 'SB_TV',
+                         'regul_param' :0.0008,
+                         'iterations' : 100,
+                         'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with 3D regularisation
-RecFISTA_reg = Rectools.FISTA(projData3D_analyt_noise, iterationsFISTA = 150, \
-                              regularisation = 'ROF_TV', \
-                              regularisation_parameter = 0.002,\
-                              regularisation_iterations = 100,\
-                              lipschitz_const = lc)
+RecFISTA_reg = Rectools.FISTA(data, algorithm_params, regularisation_params)
 
 sliceSel = int(0.5*N_size)
 max_val = 1

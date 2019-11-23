@@ -133,6 +133,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
 
 lc = RectoolsIR.powermethod() # calculate Lipschitz constant
 
+
 # Run FISTA reconstrucion algorithm with regularisation 
 RecFISTA_LS_reg = RectoolsIR.FISTA(noisy_zing_stripe,
                                    iterationsFISTA = 350, 
