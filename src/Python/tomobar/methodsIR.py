@@ -27,8 +27,8 @@ from tomobar.supp.addmodules import RING_WEIGHTS
 
 try:
     from ccpi.filters.regularisers import ROF_TV,FGP_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
-except ImportError:
-    raise ImportError('CCPi regularisation package is missing')
+except:
+    print('CCPi regularisation package is missing, please install')
 
 # function to smooth 1D signal
 def smooth(y, box_pts):
