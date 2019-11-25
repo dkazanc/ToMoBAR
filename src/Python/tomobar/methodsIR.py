@@ -28,7 +28,7 @@ from tomobar.supp.addmodules import RING_WEIGHTS
 try:
     from ccpi.filters.regularisers import ROF_TV,FGP_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
 except:
-    print('CCPi regularisation package is missing, please install')
+    print('____! CCPi regularisation package is missing, please install !____')
 
 # function to smooth 1D signal
 def smooth(y, box_pts):
@@ -62,7 +62,7 @@ def dict_check(self, data, algorithm_params, regularisation_params):
         data['ring_weights_threshold'] = None
     # a tuple for half window sizes as [detector, angles, number of projections]
     if ('ring_tuple_halfsizes' not in data):
-        data['ring_tuple_halfsizes'] = (9,5,9)
+        data['ring_tuple_halfsizes'] = (9,7,9)
     # Group-Huber data model to supress full rings of the same intensity
     if ('ringGH_lambda' not in data):
         data['ringGH_lambda'] = None
@@ -76,7 +76,7 @@ def dict_check(self, data, algorithm_params, regularisation_params):
     # iterations number for the selected reconstruction algorithm
     if ('iterations' not in algorithm_params):
         if ((self.OS_number is None) or (self.OS_number <= 1)):
-            algorithm_params['iterations'] = 400 #classical 
+            algorithm_params['iterations'] = 400 #classical
         else:
             algorithm_params['iterations'] = 20 # Ordered - Subsets
     # ADMM -algorithm  augmented Lagrangian parameter
@@ -97,7 +97,7 @@ def dict_check(self, data, algorithm_params, regularisation_params):
     if ('verbose' not in algorithm_params):
         algorithm_params['verbose'] = 'on'
     # ----------  deal with regularisation_params  --------------
-    # choose your regularisation algorithm 
+    # choose your regularisation algorithm
     # The dependency on the CCPi-RGL toolkit for regularisation
     if ('method' not in regularisation_params):
         regularisation_params['method'] = None
@@ -205,7 +205,7 @@ class RecToolsIR:
         *datafidelity # data fidelity, choose 'LS', 'PWLS'
         *OS_number # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
         *device_projector # choose projector between 'cpu' and 'gpu'
-    
+
     Parameters for reconstruction algorithms extracted from 3 dictionaries:
         ***data***:
             projection_norm_data # the flat/dark field normalised -log projection data: sinogram or 3D data
@@ -224,7 +224,7 @@ class RecToolsIR:
             --ADMM_rho_const # only for ADMM algorithm augmented Lagrangian parameter
             --ADMM_relax_par # ADMM-specific over relaxation parameter for convergence speed
             --tolerance # tolerance to terminate reconstruction algorithm iterations earlier, default 0.0
-            --verbose # mode to print iterations number and other messages ('on' by default, 'off' to suppress) 
+            --verbose # mode to print iterations number and other messages ('on' by default, 'off' to suppress)
         ***regularisation_params***:
             --method # select a regularisation method: ROF_TV,FGP_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
             --regul_param # main regularisation parameter for all methods
@@ -377,7 +377,7 @@ class RecToolsIR:
         # parameters check and initialisation
         dict_check(self, data, algorithm_params, regularisation_params)
         ######################################################################
-        
+
         L_const_inv = 1.0/algorithm_params['lipschitz_const'] # inverted Lipschitz constant
         if (self.geom == '2D'):
             # 2D reconstruction
@@ -398,6 +398,7 @@ class RecToolsIR:
             else:
                 X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
             r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
+        info_vec = (0,1)
         #****************************************************************************#
         # FISTA (model-based modification) algorithm begins here:
         t = 1.0
@@ -407,7 +408,7 @@ class RecToolsIR:
         # Outer FISTA iterations
         for iter in range(0,algorithm_params['iterations']):
             r_old = r
-            # Do G-H fidelity pre-calculations using the full projections dataset for OS version
+            # Do GH fidelity pre-calculations using the full projections dataset for OS version
             if ((self.OS_number > 1) and  (data['ringGH_lambda'] is not None) and (iter > 0)):
                 if (self.geom == '2D'):
                     vec = np.zeros((self.DetectorsDimH))
@@ -460,7 +461,7 @@ class RecToolsIR:
                                 # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(data['projection_raw_data'][:,indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - data['projection_norm_data'][:,indVec,:]))
                             # GH - fidelity part (3D)
-                            if ((data['ringGH_lambda'] > 0.0) and (iter > 0)):
+                            if ((data['ringGH_lambda'] is not None) and (iter > 0)):
                                 for ang_index in range(len(indVec)):
                                     res[:,ang_index,:] = res[:,ang_index,:] + data['ringGH_accelerate']*r_x
                 else: # non-OS (classical all-data approach)
@@ -514,7 +515,7 @@ class RecToolsIR:
                         grad_fidelity = self.Atools.backproj(res)
 
                 X = X_t - L_const_inv*grad_fidelity
-                if (algorithm_params['nonnegativity'] is 'ENABLE'):
+                if (algorithm_params['nonnegativity'] == 'ENABLE'):
                     X[X < 0.0] = 0.0
                 if (regularisation_params['method'] is not None):
                     ##### The proximal operator of the chosen regulariser #####
@@ -527,15 +528,15 @@ class RecToolsIR:
                 r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
             if (algorithm_params['verbose'] == 'on'):
                 if (np.mod(iter,(round)(algorithm_params['iterations']/5)+1) == 0):
-                    print('FISTA iteration number:', iter+1) 
+                    print('FISTA iteration number:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
                 if (iter == algorithm_params['iterations']-1):
-                    print('FISTA stopped at iteration:', iter+1) 
+                    print('FISTA stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
             # stopping criteria (checked only after a reasonable number of iterations)
             if (((iter > 10) and (self.OS_number > 1)) or ((iter > 150) and (self.OS_number == 1))):
                 nrm = LA.norm(X - X_old)*denomN
                 if (nrm < algorithm_params['tolerance']):
                     if (algorithm_params['verbose'] == 'on'):
-                        print('FISTA stopped at iteration:', iter+1) 
+                        print('FISTA stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
                     break
         return X
 #*****************************FISTA ends here*********************************#
@@ -564,6 +565,7 @@ class RecToolsIR:
         else:
             X = np.zeros(rec_dim, 'float32')
 
+        info_vec = (0,2)
         denomN = 1.0/np.size(X)
         z = np.zeros(rec_dim, 'float32')
         u = np.zeros(rec_dim, 'float32')
@@ -577,7 +579,7 @@ class RecToolsIR:
             b_to_solver = b_to_solver_const + algorithm_params['ADMM_rho_const']*(z-u)
             outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, tol = 1e-05, maxiter = 15)
             X = np.float32(outputSolver[0]) # get gmres solution
-            if (algorithm_params['nonnegativity'] is 'ENABLE'):
+            if (algorithm_params['nonnegativity'] == 'ENABLE'):
                 X[X < 0.0] = 0.0
             # z-update with relaxation
             zold = z.copy();
@@ -593,11 +595,17 @@ class RecToolsIR:
             z = z.ravel()
             # update u variable
             u = u + (x_hat - z)
+            if (algorithm_params['verbose'] == 'on'):
+                if (np.mod(iter,(round)(algorithm_params['iterations']/5)+1) == 0):
+                    print('ADMM iteration number:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+            if (iter == algorithm_params['iterations']-1):
+                print('ADMM stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+
             # stopping criteria (checked after reasonable number of iterations)
             if (iter > 5):
                 nrm = LA.norm(X - X_old)*denomN
                 if nrm < algorithm_params['tolerance']:
-                    print('ADMM stopped at iteration', iter)
+                    print('ADMM stopped at iteration:', iter, 'with regularisation iterations:', (int)(info_vec[0]))
                     break
         if (self.geom == '2D'):
             return X.reshape([self.ObjSize, self.ObjSize])

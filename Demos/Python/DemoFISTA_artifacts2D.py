@@ -129,7 +129,7 @@ algorithm_params = {'iterations' : 350,
 # adding regularisation using the CCPi regularisation toolkit
 regularisation_params = {'method' : 'FGP_TV',
                          'regul_param' : 0.001,
-                         'iterations' : 250,
+                         'iterations' : 150,
                          'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with regularisation
@@ -140,15 +140,23 @@ data.update({'huber_threshold' : 4.5})
 # Run FISTA reconstrucion algorithm with regularisation and HUber data
 RecFISTA_Huber_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
 
+#  adding RING minimisation component (better model for data with rings - different from GH!)
+data.update({'ring_weights_threshold' : 4.5})
+RecFISTA_HuberRing_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
+
 plt.figure()
-plt.subplot(121)
+plt.subplot(131)
 plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=3, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 3], orientation='vertical')
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-LS-TV reconstruction')
-plt.subplot(122)
+plt.subplot(132)
 plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=3, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 3], orientation='vertical')
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-Huber-TV reconstruction')
+plt.subplot(133)
+plt.imshow(RecFISTA_HuberRing_reg, vmin=0, vmax=3, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA-HuberRing-TV reconstruction')
 plt.show()
 
 # calculate errors 
@@ -156,8 +164,11 @@ Qtools = QualityTools(phantom_2D, RecFISTA_LS_reg)
 RMSE_FISTA_LS_TV = Qtools.rmse()
 Qtools = QualityTools(phantom_2D, RecFISTA_Huber_reg)
 RMSE_FISTA_HUBER_TV = Qtools.rmse()
+Qtools = QualityTools(phantom_2D, RecFISTA_HuberRing_reg)
+RMSE_FISTA_HUBERRING_TV = Qtools.rmse()
 print("RMSE for FISTA-LS-TV reconstruction is {}".format(RMSE_FISTA_LS_TV))
 print("RMSE for FISTA-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
+print("RMSE for FISTA-OS-HuberRing-TV is {}".format(RMSE_FISTA_HUBERRING_TV))
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing using FISTA-OS method (tomobar)")
@@ -171,7 +182,6 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     datafidelity='LS', #data fidelity, choose LS
                     OS_number = 8, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
-
 
 # prepare dictionaries with parameters:
 data = {'projection_norm_data' : noisy_zing_stripe} # data dictionary
@@ -196,6 +206,7 @@ RecFISTA_Huber_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_par
 
 #  adding RING minimisation component (better model for data with rings - different from GH!)
 data.update({'ring_weights_threshold' : 4.5})
+data.update({'ring_tuple_halfsizes' : (6,5,0)}) #window for (detectors,angles,slices)
 RecFISTA_HuberRing_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
 
 plt.figure()

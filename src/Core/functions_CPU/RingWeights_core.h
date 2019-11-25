@@ -44,7 +44,8 @@ float RingWeights_main(float *residual, float *weights, int window_halfsize_dete
 float RingWeights_det2D(float *residual, float *weights_temp, int window_halfsize_detectors, int detectors_full_window, long anglesDim, long detectorsDim, long i, long j);
 float RingWeights_angles2D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long i, long j);
 /************3D functions ***********/
-float RingWeights3D(float *residual, float *weights, int window_halfsize, int slices_window_halfsize, int horiz_full_window, int slice_full_window, long anglesDim, long detectorsDim, long slices, long i, long j, long k);
+float RingWeights_proj3D(float *residual, float *weights_temp, int window_halfsize_projections, int projections_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k);
+float RingWeights_angles3D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k);
 #ifdef __cplusplus
 }
 #endif
