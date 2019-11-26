@@ -101,20 +101,21 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
-data = {'projection_norm_data' : noisy_sino} # data dictionary
-lc = Rectools.powermethod(data) # calculate Lipschitz constant (run once to initialise)
-algorithm_params = {'iterations' : 350,
-                    'lipschitz_const' : lc}
+_data_ = {'projection_norm_data' : noisy_sino} # data dictionary
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+_algorithm_ = {'iterations' : 350,
+               'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(data, algorithm_params, regularisation_params={})
+RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
 
 # adding regularisation using the CCPi regularisation toolkit
-regularisation_params = {'method' : 'ROF_TV',
-                         'regul_param' : 0.05,
-                         'iterations' : 250,
-                         'device_regulariser': 'gpu'}
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.001,
+                    'iterations' : 250,
+                    'PD_LipschitzConstant' : 2.0,
+                    'device_regulariser': 'cpu'}
 
-RecFISTA_reg = Rectools.FISTA(data, algorithm_params, regularisation_params)
+RecFISTA_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.subplot(121)
@@ -150,21 +151,25 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
 
-lc = Rectools.powermethod(data) # calculate Lipschitz constant (run once to initialise)
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : noisy_sino} # data dictionary
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA-OS reconstrucion algorithm without regularisation
-algorithm_params = {'iterations' : 15,
-                    'lipschitz_const' : lc}
-RecFISTA_os = Rectools.FISTA(data, algorithm_params, regularisation_params={})
+_algorithm_ = {'iterations' : 20,
+               'lipschitz_const' : lc}
+RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
 
 # adding regularisation
-regularisation_params = {'method' : 'ROF_TV',
-                         'regul_param' : 0.05,
-                         'iterations' : 250,
-                         'device_regulariser': 'gpu'}
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.001,
+                    'iterations' : 150,
+                    'PD_LipschitzConstant': 2.0,
+                    'methodTV' : 1,
+                    'device_regulariser': 'cpu'}
 
 # adding regularisation using the CCPi regularisation toolkit
-RecFISTA_os_reg = Rectools.FISTA(data, algorithm_params, regularisation_params)
+RecFISTA_os_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.subplot(121)
