@@ -58,6 +58,9 @@ float RingWeights_main(float *residual, float *weights, int window_halfsize_dete
     
     if (slices == 1) {
     /****************2D INPUT ***************/
+    /* 1 case is when window_halfsize_angles = 0, meaning that we work solely
+    with detectors dimensionality of the sinogram 
+    2 case - get median across angles dimension as well */    
     #pragma omp parallel for shared(residual, weights_temp) private(j, i)
     for(i=0; i<anglesDim; i++) {
         for(j=0; j<detectorsDim; j++) {
@@ -74,6 +77,25 @@ float RingWeights_main(float *residual, float *weights, int window_halfsize_dete
     }    
     else {
     /****************3D INPUT ***************/     
+    /*consider the case when we would like to work detectors dimension */
+    if ((window_halfsize_projections == 0) && (window_halfsize_detectors) != 0) {
+    #pragma omp parallel for shared(residual, weights_temp) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_det3D(residual, weights_temp, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}        
+    if (window_halfsize_angles != 0) {
+    #pragma omp parallel for shared(weights_temp, weights) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_angles3D(weights_temp, weights, window_halfsize_angles, angles_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+    }
+    else copyIm(weights_temp, weights, anglesDim, detectorsDim, slices);
+    }
+    else {
     #pragma omp parallel for shared(residual, weights_temp) private(k, j, i)
     for(k = 0; k<slices; k++) {
         for(i=0; i<anglesDim; i++) {
@@ -89,7 +111,8 @@ float RingWeights_main(float *residual, float *weights, int window_halfsize_dete
         }}}
     }
     else copyIm(weights_temp, weights, anglesDim, detectorsDim, slices);
-  }
+   }
+   }
   free(weights_temp);
   return *weights;
 }
@@ -197,6 +220,41 @@ float RingWeights_proj3D(float *residual, float *weights_temp, int window_halfsi
       free(Values_Vec); 
       return *weights_temp;
 }
+
+float RingWeights_det3D(float *residual, float *weights_temp, int window_halfsize_detectors, int detectors_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k)
+{
+        float *Values_Vec;
+        long m, j1, index;
+        int counter, x, y, midval;
+
+        index = detectorsDim*anglesDim*k + i*detectorsDim+j;
+       
+        Values_Vec = (float*) calloc (detectors_full_window, sizeof(float));
+        midval = (int)(0.5f*detectors_full_window) - 1;
+        
+        /* intiate the estimation of the backround using strictly horizontal values (detectors dimension) */
+        counter = 0;
+        for (m=-window_halfsize_detectors; m <= window_halfsize_detectors; m++) {
+            j1 = j + m;
+            if ((j1 >= 0) && (j1 < detectorsDim)) {
+              Values_Vec[counter] = residual[detectorsDim*anglesDim*k + i*detectorsDim+j1]; }
+            else Values_Vec[counter] = residual[index];
+            counter++;
+        }
+        /* perform sorting of the vector array */
+        for (x = 0; x < counter-1; x++)  {
+            for (y = 0; y < counter-x-1; y++)  {
+                if (Values_Vec[y] > Values_Vec[y+1]) {
+                    swap(&Values_Vec[y], &Values_Vec[y+1]);
+                }
+            }
+        }
+        weights_temp[index] = residual[index] - Values_Vec[midval];
+
+      free(Values_Vec);
+      return *weights_temp;
+}
+
 float RingWeights_angles3D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k)
 {
     long m, i1, index;

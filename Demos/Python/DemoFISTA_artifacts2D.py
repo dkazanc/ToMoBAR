@@ -121,28 +121,30 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
-data = {'projection_norm_data' : noisy_zing_stripe} # data dictionary
-lc = RectoolsIR.powermethod(data) # calculate Lipschitz constant (run once to initialise)
-algorithm_params = {'iterations' : 350,
-                    'lipschitz_const' : lc}
+_data_ = {'projection_norm_data' : noisy_zing_stripe} # data dictionary
+lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+_algorithm_ = {'iterations' : 350,
+               'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
-regularisation_params = {'method' : 'FGP_TV',
-                         'regul_param' : 0.001,
-                         'iterations' : 150,
-                         'device_regulariser': 'gpu'}
+_regularisation_ = {'method' : 'FGP_TV',
+                    'regul_param' : 0.001,
+                    'iterations' : 150,
+                    'device_regulariser': 'gpu'}
 
-# Run FISTA reconstrucion algorithm with regularisation
-RecFISTA_LS_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
+print("Run FISTA reconstrucion algorithm with regularisation...")
+RecFISTA_LS_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 # adding Huber data fidelity threshold 
-data.update({'huber_threshold' : 4.5})
-# Run FISTA reconstrucion algorithm with regularisation and HUber data
-RecFISTA_Huber_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
+_data_.update({'huber_threshold' : 4.5})
+print(" Run FISTA reconstrucion algorithm with regularisation and Huber data...")
+RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
-#  adding RING minimisation component (better model for data with rings - different from GH!)
-data.update({'ring_weights_threshold' : 4.5})
-RecFISTA_HuberRing_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
+print("adding a better model for data with rings...")
+_data_.update({'ring_weights_threshold' : 4.5,
+               'ring_tuple_halfsizes': (9,5,0)})
+
+RecFISTA_HuberRing_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.subplot(131)
@@ -184,30 +186,29 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
-data = {'projection_norm_data' : noisy_zing_stripe} # data dictionary
-lc = RectoolsIR.powermethod(data) # calculate Lipschitz constant (run once to initialise)
-algorithm_params = {'iterations' : 20,
-                    'lipschitz_const' : lc}
+_data_ = {'projection_norm_data' : noisy_zing_stripe} # data dictionary
+lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+_algorithm_ = {'iterations' : 20,
+               'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
-regularisation_params = {'method' : 'FGP_TV',
-                         'regul_param' : 0.001,
-                         'iterations' : 100,
-                         'device_regulariser': 'gpu'}
+_regularisation_= {'method' : 'FGP_TV',
+                   'regul_param' : 0.001,
+                   'iterations' : 150,
+                   'device_regulariser': 'gpu'}
 
 
-# Run FISTA reconstrucion algorithm with regularisation 
-RecFISTA_LS_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
+print("Run FISTA-OS reconstrucion algorithm with regularisation...")
+RecFISTA_LS_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
-# adding Huber data fidelity threhsold
-data.update({'huber_threshold' : 4.5})
-# Run FISTA reconstrucion algorithm with regularisation and HUber data
-RecFISTA_Huber_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
+print(" Run FISTA-OS reconstrucion algorithm with regularisation and Huber data...")
+_data_.update({'huber_threshold' : 4.5})
+RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
-#  adding RING minimisation component (better model for data with rings - different from GH!)
-data.update({'ring_weights_threshold' : 4.5})
-data.update({'ring_tuple_halfsizes' : (6,5,0)}) #window for (detectors,angles,slices)
-RecFISTA_HuberRing_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
+print("adding a better model for data with rings...")
+_data_.update({'ring_weights_threshold' : 4.5,
+               'ring_tuple_halfsizes': (9,5,0)}) #window sizes for (detectors,angles,slices)
+RecFISTA_HuberRing_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.subplot(131)
@@ -250,22 +251,22 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
 
 
 # prepare dictionaries with parameters:
-data = {'projection_norm_data' : noisy_zing_stripe,
-        'ringGH_lambda' : 0.0025,
-        'ringGH_accelerate': 100,
-        } # data dictionary
-lc = RectoolsIR.powermethod(data) # calculate Lipschitz constant (run once to initialise)
-algorithm_params = {'iterations' : 350,
+_data_ = {'projection_norm_data' : noisy_zing_stripe,
+         'ringGH_lambda' : 0.0025,
+         'ringGH_accelerate': 100,
+          } 
+lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+_algorithm_ = {'iterations' : 350,
                     'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
-regularisation_params = {'method' : 'FGP_TV',
+_regularisation_ = {'method' : 'FGP_TV',
                          'regul_param' : 0.001,
                          'iterations' : 100,
                          'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with regularisation 
-RecFISTA_LS_GH_reg = RectoolsIR.FISTA(data, algorithm_params, regularisation_params)
+RecFISTA_LS_GH_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.imshow(RecFISTA_LS_GH_reg, vmin=0, vmax=3, cmap="gray")

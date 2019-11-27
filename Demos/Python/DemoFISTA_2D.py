@@ -112,7 +112,6 @@ RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.001,
                     'iterations' : 250,
-                    'PD_LipschitzConstant' : 2.0,
                     'device_regulariser': 'cpu'}
 
 RecFISTA_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
@@ -164,8 +163,6 @@ RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.001,
                     'iterations' : 150,
-                    'PD_LipschitzConstant': 2.0,
-                    'methodTV' : 1,
                     'device_regulariser': 'cpu'}
 
 # adding regularisation using the CCPi regularisation toolkit
