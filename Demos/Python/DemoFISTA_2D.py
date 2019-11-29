@@ -97,7 +97,6 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
@@ -111,8 +110,8 @@ RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.001,
-                    'iterations' : 250,
-                    'device_regulariser': 'cpu'}
+                    'iterations' : 150,
+                    'device_regulariser': 'gpu'}
 
 RecFISTA_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
@@ -147,11 +146,11 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
-_data_ = {'projection_norm_data' : noisy_sino} # data dictionary
+_data_ = {'projection_norm_data' : noisy_sino,
+          'OS_number' : 10} # data dictionary
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA-OS reconstrucion algorithm without regularisation
@@ -162,8 +161,8 @@ RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
 # adding regularisation
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.001,
-                    'iterations' : 150,
-                    'device_regulariser': 'cpu'}
+                    'iterations' : 80,
+                    'device_regulariser': 'gpu'}
 
 # adding regularisation using the CCPi regularisation toolkit
 RecFISTA_os_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)

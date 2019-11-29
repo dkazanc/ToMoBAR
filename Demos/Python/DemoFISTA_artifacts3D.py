@@ -27,7 +27,7 @@ from tomophantom.supp.normraw import normaliser_sim
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
 model = 13 # select a model number from the library
-N_size = 160 # Define phantom dimensions using a scalar value (cubic phantom)
+N_size = 128 # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
 #This will generate a N_size x N_size x N_size phantom (3D)
@@ -149,9 +149,9 @@ Rectools = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector di
 from tomobar.supp.addmodules import RING_WEIGHTS
 forwproj = Rectools.FORWPROJ(phantom_tm)
 residual = forwproj - projData3D_norm
-rings_weights = RING_WEIGHTS(residual, 9, 7, 9)
+rings_weights = RING_WEIGHTS(residual, 0, 3, 7)
 
-hub_par = 2.0
+hub_par = 1.5
 multHuber_ring = np.ones(np.shape(rings_weights))
 multHuber_ring[(np.where(np.abs(rings_weights) > hub_par))] = np.divide(hub_par, np.abs(rings_weights[(np.where(np.abs(rings_weights) > hub_par))])**2.0)
 
@@ -181,27 +181,26 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
 
-data = {'projection_norm_data' : projData3D_norm} # data dictionary
+_data_ = {'projection_norm_data' : projData3D_norm} # data dictionary
 
-lc = Rectools.powermethod(data) # calculate Lipschitz constant (run once to initialise)
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA reconstrucion algorithm without regularisation
-algorithm_params = {'iterations' : 150,
+_algorithm_ = {'iterations' : 150,
                     'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(data, algorithm_params, regularisation_params={})
+RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
 #%%
 # adding regularisation using the CCPi regularisation toolkit
-regularisation_params = {'method' : 'FGP_TV',
-                         'regul_param' :0.0003,
-                         'iterations' : 100,
-                         'device_regulariser': 'gpu'}
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' :0.0003,
+                    'iterations' : 150,
+                    'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with 3D regularisation
-RecFISTA_reg = Rectools.FISTA(data, algorithm_params, regularisation_params)
+RecFISTA_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 
 Qtools = QualityTools(phantom_tm, RecFISTA_reg)
@@ -226,9 +225,9 @@ plt.show()
 #%%
 # Run FISTA reconstrucion algorithm with 3D regularisation and Huber data penalty
 # adding Huber data fidelity threhsold
-data.update({'huber_threshold' : 1.5})
+_data_.update({'huber_threshold' : 1.5})
 
-RecFISTA_Huber_TV = Rectools.FISTA(data, algorithm_params, regularisation_params)
+RecFISTA_Huber_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 Qtools = QualityTools(phantom_tm, RecFISTA_Huber_TV)
 RMSE_FISTA_HUBER_TV = Qtools.rmse()
@@ -249,14 +248,14 @@ plt.subplot(133)
 plt.imshow(RecFISTA_Huber_TV[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D Huber Rec, sagittal')
 plt.show()
-#%%
+
 # adding RING minimisation component (better model for data with rings - different from GH!)
-data.update({'huber_threshold' : None})
-data.update({'ring_weights_threshold' : 1.5})
-data.update({'ring_tuple_halfsizes' : (9,5,5)})
+#data.update({'huber_threshold' : None})
+_data_.update({'ring_weights_threshold' : 1.5})
+_data_.update({'ring_tuple_halfsizes' : (0,0,7)})
 
 # Run FISTA reconstrucion algorithm with 3D regularisation and a better ring model
-RecFISTA_HuberRING_TV = Rectools.FISTA(data, algorithm_params, regularisation_params)
+RecFISTA_HuberRING_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 Qtools = QualityTools(phantom_tm, RecFISTA_HuberRING_TV)
 RMSE_FISTA_HUBER_RING_TV = Qtools.rmse()

@@ -117,7 +117,6 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = P, # a scalar to define reconstructed object dimensions
                     datafidelity='LS', #data fidelity, choose LS
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
@@ -127,7 +126,7 @@ _algorithm_ = {'iterations' : 350,
                'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {'method' : 'FGP_TV',
+_regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.001,
                     'iterations' : 150,
                     'device_regulariser': 'gpu'}
@@ -140,9 +139,9 @@ _data_.update({'huber_threshold' : 4.5})
 print(" Run FISTA reconstrucion algorithm with regularisation and Huber data...")
 RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
-print("adding a better model for data with rings...")
-_data_.update({'ring_weights_threshold' : 4.5,
-               'ring_tuple_halfsizes': (9,5,0)})
+print("Adding a better model for data with rings...")
+_data_.update({'ring_weights_threshold' : 10.0,
+               'ring_tuple_halfsizes': (9,7,0)})
 
 RecFISTA_HuberRing_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 

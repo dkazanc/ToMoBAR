@@ -123,27 +123,26 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS or PWLS
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
 
-data = {'projection_norm_data' : projData3D_analyt_noise} # data dictionary
+_data_ = {'projection_norm_data' : projData3D_analyt_noise} # data dictionary
 
-lc = Rectools.powermethod(data) # calculate Lipschitz constant (run once to initialise)
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA reconstrucion algorithm without regularisation
-algorithm_params = {'iterations' : 200,
-                    'lipschitz_const' : lc}
+_algorithm_ = {'iterations' : 200,
+               'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(data, algorithm_params, regularisation_params={})
+RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
 
 # adding regularisation using the CCPi regularisation toolkit
-regularisation_params = {'method' : 'SB_TV',
-                         'regul_param' :0.0008,
-                         'iterations' : 100,
+_regularisation_ = {'method' : 'PD_TV',
+                         'regul_param' :0.0005,
+                         'iterations' : 150,
                          'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with 3D regularisation
-RecFISTA_reg = Rectools.FISTA(data, algorithm_params, regularisation_params)
+RecFISTA_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 sliceSel = int(0.5*N_size)
 max_val = 1
@@ -197,24 +196,27 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = 10, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-07, # tolerance to stop outer iterations earlier
-                    device='gpu')
+                    device_projector='gpu')
 
-lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
+_data_ = {'projection_norm_data' : projData3D_analyt_noise,
+          'OS_number' : 8} # data dictionary
 
-# Run FISTA-OS reconstrucion algorithm without regularisation
-RecFISTA_os = Rectools.FISTA(projData3D_analyt_noise, iterationsFISTA = 15, lipschitz_const = lc)
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
-# Run FISTA-OS reconstrucion algorithm with regularisation
+# Run FISTA reconstrucion algorithm without regularisation
+_algorithm_ = {'iterations' : 20,
+               'lipschitz_const' : lc}
+# Run FISTA reconstrucion algorithm without regularisation
+RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
 
-RecFISTA_os_reg = Rectools.FISTA(projData3D_analyt_noise, iterationsFISTA = 15, \
-                              regularisation = 'ROF_TV', \
-                              regularisation_parameter = 0.002,\
-                              regularisation_iterations = 200,\
-                              lipschitz_const = lc)
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' :0.0005,
+                    'iterations' : 60,
+                    'device_regulariser': 'gpu'}
 
+# Run FISTA reconstrucion algorithm with 3D regularisation
+RecFISTA_os_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 sliceSel = int(0.5*N_size)
 max_val = 1

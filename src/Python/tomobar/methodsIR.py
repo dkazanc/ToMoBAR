@@ -51,6 +51,17 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     # projection nomnalised raw data as PWLS-model weights
     if (('projection_raw_data' not in _data_) and (self.datafidelity == 'PWLS')):
           raise NameError("No input 'projection_raw_data' have been provided")
+    if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
+        # Ordered Subsets OR classical approach (default)
+        _data_['OS_number'] = 1
+    else:
+        #initialise OS ASTRA-related modules
+        if self.geom == '2D':
+            from tomobar.supp.astraOP import AstraToolsOS
+            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
+        else:
+            from tomobar.supp.astraOP import AstraToolsOS3D
+            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
     # Huber data model to supress artifacts
     if ('huber_threshold' not in _data_):
         _data_['huber_threshold'] = None
@@ -70,23 +81,12 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if ('ringGH_accelerate' not in _data_):
         _data_['ringGH_accelerate'] = 50
     # ----------  deal with _algorithm_  --------------
-    if (('OS_number' not in _algorithm_) or (_algorithm_['OS_number'] == 1)):
-        # Ordered Subsets OR classical approach (default)
-        _algorithm_['OS_number'] = None
-    else:
-        #initialise OS ASTRA-related modules
-        if self.geom == '2D':
-            from tomobar.supp.astraOP import AstraToolsOS
-            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.ObjSize, _algorithm_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object            
-        else:
-            from tomobar.supp.astraOP import AstraToolsOS3D
-            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _algorithm_['OS_number']) # initiate 3D ASTRA class OS object
     if ('lipschitz_const' not in _algorithm_):
         # if not provided calculate Lipschitz constant automatically
         _algorithm_['lipschitz_const'] = RecToolsIR.powermethod(self, _data_)
     # iterations number for the selected reconstruction algorithm
     if ('iterations' not in _algorithm_):
-        if ((self.OS_number is None) or (self.OS_number <= 1)):
+        if (_data_['OS_number'] == 1):
             _algorithm_['iterations'] = 400 #classical
         else:
             _algorithm_['iterations'] = 20 # Ordered - Subsets
@@ -223,8 +223,9 @@ class RecToolsIR:
 
     Parameters for reconstruction algorithms extracted from 3 dictionaries:
       _data_ :
-            projection_norm_data # the flat/dark field normalised -log projection data: sinogram or 3D data
+            --projection_norm_data # the flat/dark field normalised -log projection data: sinogram or 3D data
             --projection_raw_data # for PWLS model you also need to provide the raw data
+            --OS_number # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
             --huber_threshold # threshold for Huber function to apply to data model (supress outliers)
             --studentst_threshold # threshold for Students't function to apply to data model (supress outliers)
             --ring_weights_threshold # threshold to produce additional weights to supress ring artifacts
@@ -232,7 +233,6 @@ class RecToolsIR:
             --ringGH_lambda # a parameter for Group-Huber data model to supress full rings of the same intensity
             --ringGH_accelerate # Group-Huber data model acceleration factor (use carefully to avoid divergence, 50 default)
      _algorithm_ :
-            --OS_number # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
             --iterations # the number of reconstruction algorithm iterations
             --initialise # initialise an algorithm with an array
             --nonnegativity # ENABLE (default) or DISABLE the nonnegativity for algorithms
@@ -266,7 +266,7 @@ class RecToolsIR:
               CenterRotOffset,  # Center of Rotation (CoR) scalar (for 3D case only)
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
-              datafidelity, # data fidelity, choose 'LS', 'PWLS'              
+              datafidelity, # data fidelity, choose 'LS', 'PWLS'
               device_projector # choose projector between 'cpu' and 'gpu'
               ):
         if ObjSize is tuple:
@@ -277,6 +277,7 @@ class RecToolsIR:
         self.datafidelity = datafidelity
         self.DetectorsDimV = DetectorsDimV
         self.DetectorsDimH = DetectorsDimH
+        self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
         if CenterRotOffset is None:
             self.CenterRotOffset = 0.0
@@ -296,14 +297,14 @@ class RecToolsIR:
             self.geom = '2D'
             # classical approach
             from tomobar.supp.astraOP import AstraTools
-            self.Atools = AstraTools(DetectorsDimH, AnglesVec, ObjSize, self.device_projector) # initiate 2D ASTRA class object		    
+            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
             # classical approach
             from tomobar.supp.astraOP import AstraTools3D
-            self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, self.CenterRotOffset, ObjSize) # initiate 3D ASTRA class object
-        return self
+            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
+        return None
             
 
     def SIRT(self, _data_, _algorithm_):
@@ -333,8 +334,20 @@ class RecToolsIR:
     def powermethod(self, _data_):
         # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
         # projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored
+        if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
+            # Ordered Subsets OR classical approach (default)
+            _data_['OS_number'] = 1
+        else:
+            #initialise OS ASTRA-related modules
+            if self.geom == '2D':
+                from tomobar.supp.astraOP import AstraToolsOS
+                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
+            else:
+                from tomobar.supp.astraOP import AstraToolsOS3D
+                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
         niter = 15 # number of power method iterations
         s = 1.0
+        
         # classical approach 
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
@@ -342,7 +355,7 @@ class RecToolsIR:
             x1 = np.float32(np.random.randn(self.Atools.DetectorsDimV,self.Atools.ObjSize,self.Atools.ObjSize))
         if (self.datafidelity == 'PWLS'):
                 sqweight = np.sqrt(_data_['projection_raw_data'])
-        if (self.OS_number == 1):
+        if (_data_['OS_number'] == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
             if (self.datafidelity == 'PWLS'):
@@ -411,12 +424,12 @@ class RecToolsIR:
         for iter in range(0,_algorithm_['iterations']):
             r_old = r
             # Do GH fidelity pre-calculations using the full projections dataset for OS version
-            if ((self.OS_number is not None) and  (_data_['ringGH_lambda'] is not None) and (iter > 0)):
+            if ((_data_['OS_number'] != 1) and (_data_['ringGH_lambda'] is not None) and (iter > 0)):
                 if (self.geom == '2D'):
                     vec = np.zeros((self.DetectorsDimH))
                 else:
                     vec = np.zeros((self.DetectorsDimV, self.DetectorsDimH))
-                for sub_ind in range(self.OS_number):
+                for sub_ind in range(_data_['OS_number']):
                     #select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind,:]
                     if (indVec[self.Atools.NumbProjBins-1] == 0):
@@ -424,7 +437,7 @@ class RecToolsIR:
                     if (self.geom == '2D'):
                          res = self.Atools.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]
                          res[:,0:None] = res[:,0:None] + _data_['ringGH_accelerate']*r_x[:,0]
-                         vec = vec + (1.0/self.OS_number)*res.sum(axis = 0)
+                         vec = vec + (1.0/(_data_['OS_number']))*res.sum(axis = 0)
                     else:
                         res = self.Atools.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]
                         for ang_index in range(len(indVec)):
@@ -435,15 +448,15 @@ class RecToolsIR:
                 else:
                     r = r_x - np.multiply(L_const_inv,vec)
             # loop over subsets (OS)
-            for sub_ind in range(self.OS_number):
+            for sub_ind in range(_data_['OS_number']):
                 X_old = X
                 t_old = t
-                if (self.OS_number > 1):
+                if (_data_['OS_number'] > 1):
                     #select a specific set of indeces for the subset (OS)
                     indVec = self.AtoolsOS.newInd_Vec[sub_ind,:]
                     if (indVec[self.AtoolsOS.NumbProjBins-1] == 0):
                         indVec = indVec[:-1] #shrink vector size
-                    if (self.OS_number is not None):
+                    if (_data_['OS_number'] != 1):
                         # OS-reduced residuals
                         if (self.geom == '2D'):
                             if (self.datafidelity == 'LS'):
@@ -492,7 +505,7 @@ class RecToolsIR:
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
                     multHuber[(np.where(np.abs(res) > _data_['huber_threshold']))] = np.divide(_data_['huber_threshold'], np.abs(res[(np.where(np.abs(res) > _data_['huber_threshold']))]))
-                    if (self.OS_number is not None):
+                    if (_data_['OS_number'] != 1):
                         # OS-Huber-gradient
                         grad_fidelity = self.AtoolsOS.backprojOS(np.multiply(multHuber,res), sub_ind)
                     else:
@@ -502,14 +515,14 @@ class RecToolsIR:
                     # apply Students't penalty
                     multStudent = np.ones(np.shape(res))
                     multStudent = np.divide(2.0, _data_['studentst_threshold']**2 + res**2)
-                    if (self.OS_number is not None):
+                    if (_data_['OS_number'] != 1):
                         # OS-Students't-gradient
                         grad_fidelity = self.AtoolsOS.backprojOS(np.multiply(multStudent,res), sub_ind)
                     else:
                         # full Students't gradient
                         grad_fidelity = self.Atools.backproj(np.multiply(multStudent,res))
                 else:
-                    if (self.OS_number is not None):
+                    if (_data_['OS_number'] != 1):
                         # OS reduced gradient
                         grad_fidelity = self.AtoolsOS.backprojOS(res, sub_ind)
                     else:
@@ -534,7 +547,7 @@ class RecToolsIR:
                 if (iter == _algorithm_['iterations']-1):
                     print('FISTA stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
             # stopping criteria (checked only after a reasonable number of iterations)
-            if (((iter > 10) and (self.OS_number is not None)) or ((iter > 150) and (self.OS_number is None))):
+            if (((iter > 10) and (_data_['OS_number'] > 1)) or ((iter > 150) and (_data_['OS_number'] == 1))):
                 nrm = LA.norm(X - X_old)*denomN
                 if (nrm < _algorithm_['tolerance']):
                     if (_algorithm_['verbose'] == 'on'):
