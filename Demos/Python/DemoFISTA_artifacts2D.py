@@ -53,18 +53,27 @@ plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
 
 #%%
 # Adding artifacts and noise
+# Adding artifacts and noise
 from tomophantom.supp.artifacts import _Artifacts_
 
-# adding noise and data misalignment
-noisy_sino_misalign = _Artifacts_(sinogram = sino_an, \
-                                  noise_type='Poisson', noise_sigma=10000, noise_seed = 0, \
-                                  sinoshifts_maxamplitude = 10)
+# forming dictionaries with artifact types
+_noise_ =  {'type' : 'Poisson',
+            'sigma' : 10000, # noise amplitude
+            'seed' : 0}
+# misalignment dictionary
+_sinoshifts_ = {'maxamplitude' : 10}
+noisy_sino_misalign = _Artifacts_(sino_an, _noise_, {}, {}, _sinoshifts_)
 
-# adding zingers, stripes and noise
-noisy_zing_stripe = _Artifacts_(sinogram = sino_an, \
-                                  noise_type='Poisson', noise_sigma=10000, noise_seed = 0, \
-                                  zingers_percentage=0.25, zingers_modulus = 10,
-                                  stripes_percentage = 2.0, stripes_maxthickness = 2.0)
+# adding zingers and stripes
+_zingers_ = {'percentage' : 0.25,
+             'modulus' : 10}
+
+_stripes_ = {'percentage' : 1.5,
+             'maxthickness' : 2.0,
+             'type' : 'full',
+             'variability' : 0.03}
+
+noisy_zing_stripe = _Artifacts_(sino_an, _noise_, _zingers_, _stripes_, _sinoshifts_= {})
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -245,9 +254,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = P, # a scalar to define reconstructed object dimensions
                     datafidelity='LS', #data fidelity, choose LS
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
-
 
 # prepare dictionaries with parameters:
 _data_ = {'projection_norm_data' : noisy_zing_stripe,
@@ -259,7 +266,7 @@ _algorithm_ = {'iterations' : 350,
                     'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {'method' : 'FGP_TV',
+_regularisation_ = {'method' : 'PD_TV',
                          'regul_param' : 0.001,
                          'iterations' : 100,
                          'device_regulariser': 'gpu'}
