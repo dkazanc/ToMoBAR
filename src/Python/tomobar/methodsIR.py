@@ -431,15 +431,15 @@ class RecToolsIR:
                     vec = np.zeros((self.DetectorsDimV, self.DetectorsDimH))
                 for sub_ind in range(_data_['OS_number']):
                     #select a specific set of indeces for the subset (OS)
-                    indVec = self.Atools.newInd_Vec[sub_ind,:]
-                    if (indVec[self.Atools.NumbProjBins-1] == 0):
+                    indVec = self.AtoolsOS.newInd_Vec[sub_ind,:]
+                    if (indVec[self.AtoolsOS.NumbProjBins-1] == 0):
                         indVec = indVec[:-1] #shrink vector size
                     if (self.geom == '2D'):
-                         res = self.Atools.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]
+                         res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]
                          res[:,0:None] = res[:,0:None] + _data_['ringGH_accelerate']*r_x[:,0]
                          vec = vec + (1.0/(_data_['OS_number']))*res.sum(axis = 0)
                     else:
-                        res = self.Atools.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]
+                        res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]
                         for ang_index in range(len(indVec)):
                             res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
                         vec = res.sum(axis = 1)
@@ -447,6 +447,13 @@ class RecToolsIR:
                     r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
                 else:
                     r = r_x - np.multiply(L_const_inv,vec)
+            
+            if ((_data_['OS_number'] != 1) and (_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                # Ordered subset approach for a better ring model 
+                res_full = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
+                rings_weights = RING_WEIGHTS(res_full, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
+                multHuber_ring = np.ones(np.shape(res_full))
+                multHuber_ring[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**2.0)
             # loop over subsets (OS)
             for sub_ind in range(_data_['OS_number']):
                 X_old = X
@@ -479,6 +486,11 @@ class RecToolsIR:
                             if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
                                 for ang_index in range(len(indVec)):
                                     res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
+                        if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                            if (self.geom == '2D'):
+                                res = np.multiply(multHuber_ring[indVec,:],res)
+                            else:
+                                res = np.multiply(multHuber_ring[:,indVec,:],res)
                 else: # non-OS (classical all-data approach)
                         if (self.datafidelity == 'LS'):
                             # full residual for LS fidelity
@@ -495,12 +507,12 @@ class RecToolsIR:
                                 res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
                                 vec = res.sum(axis = 1)
                                 r = r_x - np.multiply(L_const_inv,vec)
-                if (_data_['ring_weights_threshold'] is not None):
-                    # deal with ring model here using Huber:
-                    rings_weights = RING_WEIGHTS(res, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
-                    multHuber_ring = np.ones(np.shape(res))
-                    multHuber_ring[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**2.0)
-                    res = np.multiply(multHuber_ring,res)
+                        if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                            # Approach for a better ring model
+                            rings_weights = RING_WEIGHTS(res, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
+                            multHuber_ring = np.ones(np.shape(res))
+                            multHuber_ring[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**2.0)
+                            res = np.multiply(multHuber_ring,res)
                 if (_data_['huber_threshold'] is not None):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))

@@ -68,10 +68,11 @@ noisy_sino_misalign = _Artifacts_(sino_an, _noise_, {}, {}, _sinoshifts_)
 _zingers_ = {'percentage' : 0.25,
              'modulus' : 10}
 
-_stripes_ = {'percentage' : 1.5,
-             'maxthickness' : 2.0,
+_stripes_ = {'percentage' : 1.0,
+             'maxthickness' : 3.0,
+             'intensity' : 0.3,
              'type' : 'full',
-             'variability' : 0.03}
+             'variability' : 0.005}
 
 noisy_zing_stripe = _Artifacts_(sino_an, _noise_, _zingers_, _stripes_, _sinoshifts_= {})
 
@@ -144,27 +145,27 @@ print("Run FISTA reconstrucion algorithm with regularisation...")
 RecFISTA_LS_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 # adding Huber data fidelity threshold 
-_data_.update({'huber_threshold' : 4.5})
+_data_.update({'huber_threshold' : 7.0})
 print(" Run FISTA reconstrucion algorithm with regularisation and Huber data...")
 RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 print("Adding a better model for data with rings...")
-_data_.update({'ring_weights_threshold' : 10.0,
+_data_.update({'ring_weights_threshold' : 7.0,
                'ring_tuple_halfsizes': (9,7,0)})
 
 RecFISTA_HuberRing_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.subplot(131)
-plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=3, cmap="gray")
+plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-LS-TV reconstruction')
 plt.subplot(132)
-plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=3, cmap="gray")
+plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-Huber-TV reconstruction')
 plt.subplot(133)
-plt.imshow(RecFISTA_HuberRing_reg, vmin=0, vmax=3, cmap="gray")
+plt.imshow(RecFISTA_HuberRing_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-HuberRing-TV reconstruction')
 plt.show()
@@ -190,45 +191,45 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = P, # a scalar to define reconstructed object dimensions
                     datafidelity='LS', #data fidelity, choose LS
-                    OS_number = 8, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
-_data_ = {'projection_norm_data' : noisy_zing_stripe} # data dictionary
+_data_ = {'projection_norm_data' : noisy_zing_stripe,
+          'OS_number' : 10} # data dictionary
 lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+
 _algorithm_ = {'iterations' : 20,
                'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
-_regularisation_= {'method' : 'FGP_TV',
-                   'regul_param' : 0.001,
-                   'iterations' : 150,
-                   'device_regulariser': 'gpu'}
-
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.001,
+                    'iterations' : 80,
+                    'device_regulariser': 'gpu'}
 
 print("Run FISTA-OS reconstrucion algorithm with regularisation...")
 RecFISTA_LS_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 print(" Run FISTA-OS reconstrucion algorithm with regularisation and Huber data...")
-_data_.update({'huber_threshold' : 4.5})
+_data_.update({'huber_threshold' : 7.0})
 RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 print("adding a better model for data with rings...")
-_data_.update({'ring_weights_threshold' : 4.5,
-               'ring_tuple_halfsizes': (9,5,0)}) #window sizes for (detectors,angles,slices)
+_data_.update({'ring_weights_threshold' : 7.0,
+               'ring_tuple_halfsizes': (9,7,0)}) #window sizes for (detectors,angles,slices)
 RecFISTA_HuberRing_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.subplot(131)
-plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=3, cmap="gray")
+plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-LS-TV reconstruction')
 plt.subplot(132)
-plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=3, cmap="gray")
+plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-Huber-TV reconstruction')
 plt.subplot(133)
-plt.imshow(RecFISTA_HuberRing_reg, vmin=0, vmax=3, cmap="gray")
+plt.imshow(RecFISTA_HuberRing_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-HuberRing-TV reconstruction')
 plt.show()
