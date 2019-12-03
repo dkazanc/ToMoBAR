@@ -53,7 +53,6 @@ plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
 
 #%%
 # Adding artifacts and noise
-# Adding artifacts and noise
 from tomophantom.supp.artifacts import _Artifacts_
 
 # forming dictionaries with artifact types
@@ -264,19 +263,19 @@ _data_ = {'projection_norm_data' : noisy_zing_stripe,
           } 
 lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 _algorithm_ = {'iterations' : 350,
-                    'lipschitz_const' : lc}
+               'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
-                         'regul_param' : 0.001,
-                         'iterations' : 100,
-                         'device_regulariser': 'gpu'}
+                    'regul_param' : 0.001,
+                    'iterations' : 150,
+                    'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with regularisation 
 RecFISTA_LS_GH_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
-plt.imshow(RecFISTA_LS_GH_reg, vmin=0, vmax=3, cmap="gray")
+plt.imshow(RecFISTA_LS_GH_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-GH-TV reconstruction')
 plt.show()
