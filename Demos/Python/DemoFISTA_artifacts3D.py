@@ -23,7 +23,7 @@ from tomophantom.supp.qualitymetrics import QualityTools
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
 model = 14 # select a model number from the library
-N_size = 256 # Define phantom dimensions using a scalar value (cubic phantom)
+N_size = 128 # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
 #This will generate a N_size x N_size x N_size phantom (3D)
@@ -195,7 +195,7 @@ plt.show()
 #%%
 # Run FISTA reconstrucion algorithm with 3D regularisation and Huber data penalty
 # adding Huber data fidelity threhsold
-_data_.update({'huber_threshold' : 2.8})
+_data_.update({'huber_threshold' : 2.0})
 
 RecFISTA_Huber_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
@@ -221,8 +221,8 @@ plt.show()
 
 # adding RING minimisation component (better model for data with rings - different from GH!)
 #data.update({'huber_threshold' : None})
-_data_.update({'ring_weights_threshold' : 2.8})
-_data_.update({'ring_tuple_halfsizes' : (9,7,0)})
+_data_.update({'ring_weights_threshold' : 2.0})
+_data_.update({'ring_tuple_halfsizes' : (9,7,9)})
 
 # Run FISTA reconstrucion algorithm with 3D regularisation and a better ring model
 RecFISTA_HuberRING_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)

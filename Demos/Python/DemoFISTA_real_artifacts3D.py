@@ -26,7 +26,7 @@ from tomophantom.supp.normraw import normaliser_sim
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
-model = 13 # select a model number from the library
+model = 14 # select a model number from the library
 N_size = 128 # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
@@ -137,39 +137,6 @@ Qtools = QualityTools(phantom_tm, recNumerical)
 RMSE = Qtools.rmse()
 print("Root Mean Square Error is {}".format(RMSE))
 #%%
-# testing ring weights
-from tomobar.methodsDIR import RecToolsDIR
-Rectools = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = 0.0, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device_projector = 'gpu')
-
-from tomobar.supp.addmodules import RING_WEIGHTS
-forwproj = Rectools.FORWPROJ(phantom_tm)
-residual = forwproj - projData3D_norm
-rings_weights = RING_WEIGHTS(residual, 0, 3, 7)
-
-hub_par = 1.5
-multHuber_ring = np.ones(np.shape(rings_weights))
-multHuber_ring[(np.where(np.abs(rings_weights) > hub_par))] = np.divide(hub_par, np.abs(rings_weights[(np.where(np.abs(rings_weights) > hub_par))])**2.0)
-
-intens_max = 1
-sliceSel = 100
-plt.figure() 
-plt.subplot(131)
-plt.imshow(multHuber_ring[:,sliceSel,:],vmin=-intens_max, vmax=intens_max)
-plt.title('2D Projection (erroneous)')
-plt.subplot(132)
-plt.imshow(multHuber_ring[sliceSel,:,:],vmin=-intens_max, vmax=intens_max)
-plt.title('Sinogram view')
-plt.subplot(133)
-plt.imshow(multHuber_ring[:,:,sliceSel],vmin=-intens_max, vmax=intens_max)
-plt.title('Tangentogram view')
-plt.show()
-
-#%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA-OS method using tomobar")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -183,20 +150,19 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
                     device_projector='gpu')
 
-_data_ = {'projection_norm_data' : projData3D_norm} # data dictionary
+_data_ = {'projection_norm_data' : projData3D_norm,
+          'OS_number' : 10} # data dictionary
 
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA reconstrucion algorithm without regularisation
-_algorithm_ = {'iterations' : 150,
-                    'lipschitz_const' : lc}
-# Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
-#%%
+_algorithm_ = {'iterations' : 20,
+               'lipschitz_const' : lc}
+
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' :0.0003,
-                    'iterations' : 150,
+                    'iterations' : 80,
                     'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with 3D regularisation
@@ -225,7 +191,7 @@ plt.show()
 #%%
 # Run FISTA reconstrucion algorithm with 3D regularisation and Huber data penalty
 # adding Huber data fidelity threhsold
-_data_.update({'huber_threshold' : 1.5})
+_data_.update({'huber_threshold' : 0.8})
 
 RecFISTA_Huber_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
@@ -251,8 +217,8 @@ plt.show()
 
 # adding RING minimisation component (better model for data with rings - different from GH!)
 #data.update({'huber_threshold' : None})
-_data_.update({'ring_weights_threshold' : 1.5})
-_data_.update({'ring_tuple_halfsizes' : (0,0,7)})
+_data_.update({'ring_weights_threshold' : 0.7})
+_data_.update({'ring_tuple_halfsizes' : (9,7,9)})
 
 # Run FISTA reconstrucion algorithm with 3D regularisation and a better ring model
 RecFISTA_HuberRING_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)

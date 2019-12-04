@@ -50,8 +50,8 @@ conda install -c dkazanc tomobar
 ```
 export VERSION=`date +%Y.%m` (unix) / set VERSION=2019.11 (Windows)
 conda build conda-recipe/ --numpy 1.16 --python 3.6
-conda install tomobar --use-local --force-reinstall # if this doesn't work
-conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar # try this one
+conda install tomobar --use-local --force-reinstall # if this don't work (probably you're on Python 3*)
+conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall # try this one
 ```
 #### Matlab:
 Simply use available m-functions, see Demos

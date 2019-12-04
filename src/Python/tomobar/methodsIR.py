@@ -177,6 +177,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
 
 
 def prox_regul(self, X, _regularisation_):
+    info_vec = (0,1)
     # The proximal operator of the chosen regulariser
     if (_regularisation_['method'] == 'ROF_TV'):
         # Rudin - Osher - Fatemi Total variation method

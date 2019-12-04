@@ -26,7 +26,7 @@ import scipy.io
 from tomobar.supp.suppTools import normaliser
 
 # load dendritic data
-datadict = scipy.io.loadmat('../../../data/DendrRawData.mat')
+datadict = scipy.io.loadmat('../../data/DendrRawData.mat')
 # extract data (print(datadict.keys()))
 dataRaw = datadict['data_raw3D']
 angles = datadict['angles']
@@ -59,14 +59,17 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # dete
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device='gpu')
+                    device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(data_norm[:,:,slice_to_recon])
 
 plt.figure()
 plt.imshow(FBPrec[150:550,150:550], vmin=0, vmax=0.005, cmap="gray")
 plt.title('FBP reconstruction')
-
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-TV method %%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
@@ -74,29 +77,33 @@ Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
-                    device='gpu')
+                    datafidelity='PWLS',# data fidelity, choose LS, PWLS
+                    device_projector='gpu')
 
-lc = Rectools.powermethod(dataRaw[:,:,slice_to_recon]) # calculate Lipschitz constant (run once to initilise)
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : data_norm[:,:,slice_to_recon],
+          'projection_raw_data' : dataRaw[:,:,slice_to_recon],
+          'OS_number' : 6} # data dictionary
 
-RecFISTA_os_pwls = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
-                             dataRaw[:,:,slice_to_recon], \
-                             iterationsFISTA = 15, \
-                             lipschitz_const = lc)
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+_algorithm_ = {'iterations' : 20,
+               'lipschitz_const' : lc}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.000001,
+                    'iterations' : 80,                    
+                    'device_regulariser': 'gpu'}
+
+RecFISTA_os_pwls = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
 plt.imshow(RecFISTA_os_pwls[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
-#plt.imshow(RecFISTA_os_pwls, vmin=0, vmax=0.004, cmap="gray")
 plt.title('FISTA PWLS-OS reconstruction')
 plt.show()
 #fig.savefig('dendr_PWLS.png', dpi=200)
 #%%
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing with FISTA PWLS-OS-TV method %%%%%%%%%%%%%%%%")
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+
 # Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
 RecFISTA_pwls_os_TV = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
                               dataRaw[:,:,slice_to_recon], \
@@ -112,29 +119,6 @@ plt.imshow(RecFISTA_pwls_os_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray"
 plt.title('FISTA PWLS-OS-TV reconstruction')
 plt.show()
 #fig.savefig('dendr_TV.png', dpi=200)
-#%%
-"""
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing with FISTA PWLS-OS-Diff4th method %%%%%%%%%%%")
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_Diff4th = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
-                              dataRaw[:,:,slice_to_recon], \
-                              iterationsFISTA = 15, \
-                              regularisation = 'DIFF4th', \
-                              regularisation_parameter = 0.1,\
-                              time_marching_parameter = 0.001,\
-                              edge_param = 0.003,\
-                              regularisation_iterations = 600,\
-                              lipschitz_const = lc)
-
-fig = plt.figure()
-plt.imshow(RecFISTA_pwls_os_Diff4th[150:550,150:550], vmin=0, vmax=0.004, cmap="gray")
-#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-plt.title('FISTA PWLS-OS-Diff4th reconstruction')
-plt.show()
-#fig.savefig('dendr_Diff4th.png', dpi=200)
-"""
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-ROF_LLT method %%%%%%%%%%%")

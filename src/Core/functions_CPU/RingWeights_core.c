@@ -30,13 +30,6 @@
 * data residual
 */
 
-#ifndef max
-    #define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
-#endif
-
-#ifndef min
-    #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
-#endif
 
 void swap(float *xp, float *yp)
 {
@@ -108,6 +101,7 @@ float RingWeights_main(float *residual, float *weights, int window_halfsize_dete
         }}}
     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = residual[i] - weights_temp[i];
     }
+    /*all windows not equal to zero*/    
      if ((window_halfsize_angles != 0) && (window_halfsize_projections != 0) && (window_halfsize_detectors != 0)) {
     #pragma omp parallel for shared(weights_temp, residual) private(k, j, i)
     for(k = 0; k<slices; k++) {
@@ -127,7 +121,7 @@ float RingWeights_main(float *residual, float *weights, int window_halfsize_dete
           for(j=0; j<detectorsDim; j++) {
           RingWeights_det3D(residual, weights, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, slices, j, i, k);
         }}}
-     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = weights_temp[i] - 0.5f*(weights_temp2[i] - weights[i]);
+     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = weights_temp[i] - 0.5f*(weights_temp2[i] + weights[i]);
      }
 
     if ((window_halfsize_angles != 0) && (window_halfsize_projections != 0) && (window_halfsize_detectors == 0)) {
@@ -174,7 +168,7 @@ float RingWeights_main(float *residual, float *weights, int window_halfsize_dete
           for(j=0; j<detectorsDim; j++) {
           RingWeights_det3D(residual, weights_temp2, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, slices, j, i, k);
         }}}
-     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = residual[i] - 0.5f*(weights_temp[i] - weights_temp2[i]);
+     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = residual[i] - 0.5f*(weights_temp[i] + weights_temp2[i]);
      }
       free(weights_temp2);
    }

@@ -52,12 +52,15 @@ plt.imshow(sino_an,  cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
 #%%
-# Adding artifacts and noise
+# Adding noise
 from tomophantom.supp.artifacts import _Artifacts_
 
-# adding noise
-noisy_sino = _Artifacts_(sinogram = sino_an, \
-                                  noise_type='Poisson', noise_sigma=8000, noise_seed = 0)
+# forming dictionaries with artifact types
+_noise_ =  {'type' : 'Poisson',
+            'sigma' : 8000, # noise amplitude
+            'seed' : 0}
+
+noisy_sino = _Artifacts_(sino_an, _noise_, {}, {}, {})
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -97,23 +100,21 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
-data = {'projection_norm_data' : noisy_sino} # data dictionary
-algorithm_params = {'iterations' : 15,
-                    'ADMM_rho_const' : 4000.0
-                    }
+_data_ = {'projection_norm_data' : noisy_sino} # data dictionary
+_algorithm_ = {'iterations' : 15,
+               'ADMM_rho_const' : 4000.0}
 
 # adding regularisation using the CCPi regularisation toolkit
-regularisation_params = {'method' : 'FGP_TV',
-                         'regul_param' : 0.06,
-                         'iterations' : 100,
-                         'device_regulariser': 'gpu'}
+_regularisation_ = {'method' : 'FGP_TV',
+                    'regul_param' : 0.06,
+                    'iterations' : 100,
+                    'device_regulariser': 'gpu'}
 
 # Run ADMM reconstrucion algorithm with regularisation
-RecADMM_reg = Rectools.ADMM(data, algorithm_params, regularisation_params)
+RecADMM_reg = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")

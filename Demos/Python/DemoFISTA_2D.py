@@ -53,12 +53,16 @@ plt.imshow(sino_an,  cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
 #%%
-# Adding artifacts and noise
+# Adding noise
 from tomophantom.supp.artifacts import _Artifacts_
 
-# adding noise
-noisy_sino = _Artifacts_(sinogram = sino_an, \
-                                  noise_type='Poisson', noise_sigma=10000, noise_seed = 0)
+# forming dictionaries with artifact types
+_noise_ =  {'type' : 'Poisson',
+            'sigma' : 10000, # noise amplitude
+            'seed' : 0}
+
+noisy_sino = _Artifacts_(sino_an, _noise_, {}, {}, {})
+
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
