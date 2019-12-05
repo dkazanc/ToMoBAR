@@ -50,7 +50,7 @@ class RecToolsDIR:
               CenterRotOffset,  # Center of Rotation (CoR) scalar (for 3D case only)
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
-              device):
+              device_projector):
         if ObjSize is tuple: 
             raise (" Reconstruction is currently available for square or cubic objects only, provide a scalar ")
         else:
@@ -60,10 +60,10 @@ class RecToolsDIR:
         self.AnglesVec = AnglesVec
         self.CenterRotOffset = CenterRotOffset
         
-        if device is None:
-            self.device = 'gpu'
+        if device_projector is None:
+            self.device_projector = 'gpu'
         else:
-            self.device = device
+            self.device_projector = device_projector
         
         if DetectorsDimV is None:
             #2D geometry 
@@ -73,7 +73,7 @@ class RecToolsDIR:
     def FORWPROJ(self, image):
         if (self.geom == '2D'):
             from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
             sinogram = Atools.forwproj(image)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
@@ -83,7 +83,7 @@ class RecToolsDIR:
     def BACKPROJ(self, sinogram):
         if (self.geom == '2D'):
             from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
             image = Atools.backproj(sinogram)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
@@ -174,11 +174,11 @@ class RecToolsDIR:
     def FBP(self, sinogram):
         from tomobar.supp.astraOP import AstraTools
         if (self.geom == '2D'):
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
             FBP_rec = Atools.fbp2D(sinogram)
         if ((self.geom == '3D') and (self.CenterRotOffset is None)):
             FBP_rec = np.zeros((self.DetectorsDimV, self.ObjSize, self.ObjSize), dtype='float32')
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec-np.pi, self.ObjSize, self.device) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec-np.pi, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
             for i in range(0, self.DetectorsDimV):
                 FBP_rec[i,:,:] = Atools.fbp2D(np.flipud(sinogram[i,:,:]))
         if ((self.geom == '3D') and (self.CenterRotOffset is not None)):

@@ -26,7 +26,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # loading data 
-datapathfile = '../../../data/data_icecream.h5'
+datapathfile = '../../data/data_icecream.h5'
 h5f = h5py.File(datapathfile, 'r')
 data_norm = h5f['icecream_normalised'][:]
 data_raw = h5f['icecream_raw'][:]
@@ -48,7 +48,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH 
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device='gpu')
+                    device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(data_norm[:,det_y_crop])
 
@@ -67,47 +67,36 @@ Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # de
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
-                    device='gpu')
+                    device_projector='gpu')
 
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : data_norm[:,det_y_crop],
+          'projection_raw_data' :data_raw[:,det_y_crop],
+          'OS_number' : 6} # data dictionary
+
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+
+_algorithm_ = {'iterations' : 20,
+               'lipschitz_const' : lc}
 
 # Run CGLS reconstrucion algorithm 
-RecCGLS = Rectools.CGLS(data_norm[:,det_y_crop], iterations = 7)
+RecCGLS = Rectools.CGLS(_data_, _algorithm_)
 
 plt.figure()
 plt.imshow(RecCGLS, vmin=0, vmax=0.3, cmap="gray")
 plt.title('CGLS reconstruction')
 plt.show()
 #%%
-# Initialise FISTA-type PWLS reconstruction (run once)
-from tomobar.methodsIR import RecToolsIR
-
-# set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
-                    device='gpu')
-
-lc = Rectools.powermethod(data_raw[:,det_y_crop]) # calculate Lipschitz constant (run once to initilise)
-#%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TV method % %%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecFISTA_TV = Rectools.FISTA(data_norm[:,det_y_crop], \
-                              data_raw[:,det_y_crop], \
-                              iterationsFISTA = 10, \
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.0012,\
-                              regularisation_iterations = 200,\
-                              lipschitz_const = lc)
+# adding regularisation
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.0012,
+                    'iterations' : 80,                    
+                    'device_regulariser': 'gpu'}
+
+RecFISTA_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.imshow(RecFISTA_TV, vmin=0, vmax=0.2, cmap="gray")
@@ -117,36 +106,13 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-HUBER-OS-TV method % %%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecFISTA_TV_hub = Rectools.FISTA(data_norm[:,det_y_crop], \
-                              data_raw[:,det_y_crop], \
-                              huber_data_threshold = 45.0,
-                              iterationsFISTA = 10, \
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.0012,\
-                              regularisation_iterations = 200,\
-                              lipschitz_const = lc)
+_data_.update({'huber_threshold' : 40.0})
+
+RecFISTA_TV_hub = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.imshow(RecFISTA_TV_hub, vmin=0, vmax=0.2, cmap="gray")
 plt.title('FISTA-PWLS-HUBER-OS-TV reconstruction')
-plt.show()
-#%%
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing with FISTA PWLS-OS-NDF(Huber) method % %%%%%%")
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecFISTA_NDF_huber = Rectools.FISTA(data_norm[:,det_y_crop], \
-                              data_raw[:,det_y_crop], \
-                              iterationsFISTA = 10, \
-                              regularisation = 'NDF', \
-                              NDF_penalty = 'Huber', \
-                              edge_param = 0.012,\
-                              regularisation_parameter = 0.01,\
-                              regularisation_iterations = 400,\
-                              lipschitz_const = lc)
-
-plt.figure()
-plt.imshow(RecFISTA_NDF_huber, vmin=0, vmax=0.2, cmap="gray")
-plt.title('FISTA-PWLS-OS-NDF (Huber) reconstruction')
 plt.show()
 #%%
 from ccpi.filters.regularisers import PatchSelect
@@ -157,9 +123,9 @@ pars = {'algorithm' : PatchSelect, \
         'searchwindow': 7, \
         'patchwindow': 2,\
         'neighbours' : 13 ,\
-        'edge_parameter':0.3}
+        'edge_parameter':0.8}
 H_i, H_j, Weights = PatchSelect(pars['input'], pars['searchwindow'],pars['patchwindow'],pars['neighbours'],
-              pars['edge_parameter'],'gpu')
+              pars['edge_parameter'], 'gpu')
 
 plt.figure()
 plt.imshow(Weights[0,:,:], vmin=0, vmax=1, cmap="gray")
@@ -168,16 +134,15 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-NLTV method %%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecFISTA_regNLTV = Rectools.FISTA(data_norm[:,det_y_crop], \
-                              data_raw[:,det_y_crop], \
-                              iterationsFISTA = 9, \
-                              regularisation = 'NLTV', \
-                              regularisation_parameter = 0.0007,\
-                              regularisation_iterations = 25,\
-                              NLTV_H_i = H_i,\
-                              NLTV_H_j = H_j,\
-                              NLTV_Weights = Weights,\
-                              lipschitz_const = lc)
+_regularisation_ = {'method' : 'NLTV',
+                    'regul_param' :0.0005,
+                    'iterations' : 5,
+                    'NLTV_H_i'  : H_i,\
+                    'NLTV_H_j'  : H_j,\
+                    'NLTV_Weights'  : Weights,\
+                    'device_regulariser': 'gpu'}
+
+RecFISTA_regNLTV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 fig = plt.figure()
 plt.imshow(RecFISTA_regNLTV, vmin=0, vmax=0.2, cmap="gray")
 plt.title('FISTA PWLS-OS-NLTV reconstruction')
@@ -186,28 +151,18 @@ plt.show()
 #%%
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("%%%%%%Reconstructing with ADMM LS-TV method %%%%%%%%%%%%%%%%")
+print ("%%%%%%Reconstructing with ADMM LS-NLTV method %%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-# set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
-                    device='gpu')
+_algorithm_ = {'iterations' : 5,
+               'ADMM_rho_const' : 500.0}
+
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.015,
+                    'iterations' : 80,                    
+                    'device_regulariser': 'gpu'}
 
 # Run ADMM-LS-TV reconstrucion algorithm
-RecADMM_LS_TV = Rectools.ADMM(data_norm[:,det_y_crop], \
-                              rho_const = 500.0, \
-                              iterationsADMM = 3,\
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.05,\
-                              regularisation_iterations = 100)
+RecADMM_LS_TV = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
 plt.imshow(RecADMM_LS_TV, vmin=0, vmax=0.2, cmap="gray")

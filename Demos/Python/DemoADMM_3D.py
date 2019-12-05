@@ -63,8 +63,13 @@ print ("Generate 3D analytical projection data with TomoPhantom")
 projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
 # adding noise
-projData3D_analyt_noise = _Artifacts_(sinogram = projData3D_analyt, \
-                                  noise_type='Poisson', noise_sigma=8000, noise_seed = 0)
+# forming dictionaries with artifact types
+_noise_ =  {'type' : 'Poisson',
+            'sigma' : 8000, # noise amplitude
+            'seed' : 0}
+
+projData3D_analyt_noise = _Artifacts_(projData3D_analyt, _noise_, {}, {}, {})
+
 
 intens_max = 45
 sliceSel = int(0.5*N_size)
@@ -89,7 +94,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device='gpu')
+                    device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise) #perform FBP
 
@@ -121,18 +126,22 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dim
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
-                    device='gpu')
+                    device_projector='gpu')
+
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : projData3D_analyt_noise} # data dictionary
+_algorithm_ = {'iterations' : 15,
+                    'ADMM_rho_const' : 2000.0}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'FGP_TV',
+                         'regul_param' : 0.001,
+                         'iterations' : 200,
+                         'device_regulariser': 'gpu'}
+
 
 # Run ADMM reconstrucion algorithm with regularisation
-RecADMM_reg = Rectools.ADMM(projData3D_analyt_noise,
-                              rho_const = 2000.0, \
-                              iterationsADMM = 20, \
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.0035,\
-                              regularisation_iterations = 200)
+RecADMM_reg = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
 
 
 sliceSel = int(0.5*N_size)

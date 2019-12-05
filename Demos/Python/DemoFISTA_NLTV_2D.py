@@ -56,12 +56,15 @@ plt.imshow(sino_an,  cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
 #%%
-# Adding artifacts and noise
+# Adding noise
 from tomophantom.supp.artifacts import _Artifacts_
 
-# adding noise
-noisy_sino = _Artifacts_(sinogram = sino_an, \
-                                  noise_type='Poisson', noise_sigma=5000, noise_seed = 0)
+# forming dictionaries with artifact types
+_noise_ =  {'type' : 'Poisson',
+            'sigma' : 5000, # noise amplitude
+            'seed' : 0}
+
+noisy_sino = _Artifacts_(sino_an, _noise_, {}, {}, {})
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -73,7 +76,6 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA method (ASTRA used for projection)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
-from ccpi.filters.regularisers import PatchSelect
 
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
@@ -82,12 +84,7 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
-                    device='gpu')
-
-lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
+                    device_projector='gpu')
 
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
@@ -95,7 +92,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimensi
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device='gpu')
+                    device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(noisy_sino) #perform FBP
 
@@ -105,6 +102,7 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FBP reconstruction')
 
 #%%
+from ccpi.filters.regularisers import PatchSelect
 print ("Pre-calculating weights for non-local patches using FBP image...")
 
 pars = {'algorithm' : PatchSelect, \
@@ -121,91 +119,44 @@ plt.imshow(Weights[0,:,:], vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 """
 #%%
-tic=timeit.default_timer()
-print ("Run FISTA reconstrucion algorithm with TV regularisation...")
-RecFISTA_regTV = Rectools.FISTA(noisy_sino, iterationsFISTA = 250, \
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.0009,\
-                              regularisation_iterations = 60,\
-                              lipschitz_const = lc)
-toc=timeit.default_timer()
-Run_time = toc - tic
-print("FISTA-TV completed in {} seconds".format(Run_time))
-
-tic=timeit.default_timer()
-print ("Run FISTA reconstrucion algorithm with NLTV regularisation...")
-RecFISTA_regNLTV = Rectools.FISTA(noisy_sino, iterationsFISTA = 250, \
-                              regularisation = 'NLTV', \
-                              regularisation_parameter = 0.002,\
-                              regularisation_iterations = 3,\
-                              NLTV_H_i = H_i,\
-                              NLTV_H_j = H_j,\
-                              NLTV_Weights = Weights,\
-                              lipschitz_const = lc)
-toc=timeit.default_timer()
-Run_time = toc - tic
-print("FISTA-NLTV completed in {} seconds".format(Run_time))
-
-# calculate errors 
-Qtools = QualityTools(phantom_2D, RecFISTA_regTV)
-RMSE_FISTA_TV = Qtools.rmse()
-Qtools = QualityTools(phantom_2D, RecFISTA_regNLTV)
-RMSE_FISTA_NLTV = Qtools.rmse()
-print("RMSE for TV-regularised FISTA is {}".format(RMSE_FISTA_TV))
-print("RMSE for NLTV-regularised FISTA is {}".format(RMSE_FISTA_NLTV))
-
-plt.figure()
-plt.subplot(121)
-plt.imshow(RecFISTA_regTV, vmin=0, vmax=1, cmap="BuPu")
-plt.text(0.0, 550, 'RMSE is %s\n' %(round(RMSE_FISTA_TV, 3)), {'color': 'b', 'fontsize': 20})
-plt.title('TV Regularised FISTA reconstruction')
-plt.subplot(122)
-plt.imshow(RecFISTA_regNLTV, vmin=0, vmax=1, cmap="BuPu")
-plt.text(0.0, 550, 'RMSE is %s\n' %(round(RMSE_FISTA_NLTV, 3)), {'color': 'b', 'fontsize': 20})
-plt.title('NLTV-Regularised FISTA reconstruction')
-plt.show()
-
-#%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%Reconstructing with FISTA-OS method%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
+_data_ = {'projection_norm_data' : noisy_sino,
+          'OS_number' : 10} # data dictionary
 
-# set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = 12, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-06, # tolerance to stop outer iterations earlier
-                    device='gpu')
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
-lc = Rectools.powermethod() # calculate Lipschitz constant (run once to initilise)
+# Run FISTA reconstrucion algorithm without regularisation
+_algorithm_ = {'iterations' : 20,
+               'lipschitz_const' : lc}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' :0.0003,
+                    'iterations' : 80,
+                    'device_regulariser': 'gpu'}
 
 tic=timeit.default_timer()
 print ("Run FISTA-OS reconstrucion algorithm with TV regularisation...")
-RecFISTA_TV_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 12, \
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.001,\
-                              regularisation_iterations = 70,\
-                              lipschitz_const = lc)
+RecFISTA_TV_os = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 toc=timeit.default_timer()
 Run_time = toc - tic
 print("FISTA-OS-TV completed in {} seconds".format(Run_time))
 
 tic=timeit.default_timer()
 print ("Run FISTA-OS reconstrucion algorithm with NLTV regularisation...")
-RecFISTA_NLTV_os = Rectools.FISTA(noisy_sino, iterationsFISTA = 12, \
-                              regularisation = 'NLTV', \
-                              regularisation_parameter = 0.0025,\
-                              regularisation_iterations = 25,\
-                              NLTV_H_i = H_i,\
-                              NLTV_H_j = H_j,\
-                              NLTV_Weights = Weights,\
-                              lipschitz_const = lc)
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'NLTV',
+                    'regul_param' :0.0025,
+                    'iterations' : 5,
+                    'NLTV_H_i'  : H_i,\
+                    'NLTV_H_j'  : H_j,\
+                    'NLTV_Weights'  : Weights,\
+                    'device_regulariser': 'gpu'}
+
+
+RecFISTA_NLTV_os = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 toc=timeit.default_timer()
 Run_time = toc - tic

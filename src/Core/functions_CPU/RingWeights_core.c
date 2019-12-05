@@ -30,13 +30,6 @@
 * data residual
 */
 
-#ifndef max
-    #define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
-#endif
-
-#ifndef min
-    #define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
-#endif
 
 void swap(float *xp, float *yp)
 {
@@ -46,130 +39,309 @@ void swap(float *xp, float *yp)
 }
 
 
-float RingWeights_main(float *residual, float *weights, int window_halfsize, int slices_window_halfsize, long anglesDim, long detectorsDim, long slices)
+float RingWeights_main(float *residual, float *weights, int window_halfsize_detectors, int window_halfsize_angles, int window_halfsize_projections, long anglesDim, long detectorsDim, long slices)
 {
     long i, j, k;
-    int horiz_full_window, slice_full_window;
-    horiz_full_window = (int)(2*window_halfsize+1);
-    slice_full_window = (int)(2*slices_window_halfsize+1);
-
+    int detectors_full_window, angles_full_window, projections_full_window;
+    detectors_full_window = (int)(2*window_halfsize_detectors+1);
+    angles_full_window = (int)(2*window_halfsize_angles+1);
+    projections_full_window = (int)(2*window_halfsize_projections+1);
+    float *weights_temp;
+    weights_temp = (float*) calloc (anglesDim*detectorsDim*slices, sizeof(float));
+    
     if (slices == 1) {
     /****************2D INPUT ***************/
-    #pragma omp parallel for shared(residual, weights) private(j, i)
-    for(j=0; j<detectorsDim; j++) {
-        for(i=0; i<anglesDim; i++) {
-          RingWeights2D(residual, weights, window_halfsize, horiz_full_window, anglesDim, detectorsDim, i, j);
+    /* 1 case is when window_halfsize_angles = 0, meaning that we work solely
+    with detectors dimensionality of the sinogram 
+    2 case - get median across angles dimension as well */
+    if (window_halfsize_angles == 0) {
+    #pragma omp parallel for shared(residual, weights_temp) private(j, i)
+    for(i=0; i<anglesDim; i++) {
+        for(j=0; j<detectorsDim; j++) {
+          RingWeights_det2D(residual, weights_temp, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, j, i);
         }}
+    for(i=0; i<anglesDim*detectorsDim; i++) weights[i] = residual[i] - weights_temp[i];
+    }
+    else {
+    /* take the median value of the residual in angles dimmension */
+    #pragma omp parallel for shared(weights_temp, residual) private(j, i)
+    for(i=0; i<anglesDim; i++) {
+        for(j=0; j<detectorsDim; j++) {
+          RingWeights_angles2D(residual, weights_temp, window_halfsize_angles, angles_full_window, anglesDim, detectorsDim, j, i);
+        }}
+    #pragma omp parallel for shared(weights, residual) private(j, i)
+    for(i=0; i<anglesDim; i++) {
+        for(j=0; j<detectorsDim; j++) {
+          RingWeights_det2D(residual, weights, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, j, i);
+        }}
+    for(i=0; i<anglesDim*detectorsDim; i++) weights[i] = weights_temp[i] - weights[i];
+        }
     }
     else {
     /****************3D INPUT ***************/
-    #pragma omp parallel for shared(residual, weights) private(k, j, i)
-    for(i = 0; i<anglesDim; i++) {
-      for(j = 0; j<detectorsDim; j++) {
-        for(k = 0; k<slices; k++) {
-          RingWeights3D(residual, weights, window_halfsize, slices_window_halfsize, horiz_full_window, slice_full_window, anglesDim, detectorsDim, slices, i, j, k);
+    float *weights_temp2;
+    weights_temp2 = (float*) calloc (anglesDim*detectorsDim*slices, sizeof(float));
+    if ((window_halfsize_angles == 0) && (window_halfsize_detectors == 0)) {
+    /* working with slices (projections) only */
+    #pragma omp parallel for shared(residual, weights_temp) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_proj3D(residual, weights_temp, window_halfsize_projections, projections_full_window, anglesDim, detectorsDim, slices, j, i, k);
         }}}
+    for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = residual[i] - weights_temp[i];
     }
+    if ((window_halfsize_angles == 0) && (window_halfsize_projections == 0)) {
+    /* working with detectors dimension */
+    #pragma omp parallel for shared(residual, weights_temp) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_det3D(residual, weights_temp, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+    for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = residual[i] - weights_temp[i];
+    }
+    /*all windows not equal to zero*/    
+     if ((window_halfsize_angles != 0) && (window_halfsize_projections != 0) && (window_halfsize_detectors != 0)) {
+    #pragma omp parallel for shared(weights_temp, residual) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_angles3D(residual, weights_temp, window_halfsize_angles, angles_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+    #pragma omp parallel for shared(residual, weights_temp2) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_proj3D(residual, weights_temp2, window_halfsize_projections, projections_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+    #pragma omp parallel for shared(residual, weights) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_det3D(residual, weights, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = weights_temp[i] - 0.5f*(weights_temp2[i] + weights[i]);
+     }
+
+    if ((window_halfsize_angles != 0) && (window_halfsize_projections != 0) && (window_halfsize_detectors == 0)) {
+    #pragma omp parallel for shared(weights_temp, residual) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_angles3D(residual, weights_temp, window_halfsize_angles, angles_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+    #pragma omp parallel for shared(residual, weights_temp2) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_proj3D(residual, weights_temp2, window_halfsize_projections, projections_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = weights_temp[i] - weights_temp2[i];
+     }
+    
+    if ((window_halfsize_angles != 0) && (window_halfsize_projections == 0) && (window_halfsize_detectors != 0)) {
+    #pragma omp parallel for shared(weights_temp, residual) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_angles3D(residual, weights_temp, window_halfsize_angles, angles_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+    #pragma omp parallel for shared(residual, weights_temp2) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_det3D(residual, weights_temp2, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = weights_temp[i] - weights_temp2[i];
+     }
+     if ((window_halfsize_angles == 0) && (window_halfsize_projections != 0) && (window_halfsize_detectors != 0)) {
+     #pragma omp parallel for shared(residual, weights_temp) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_proj3D(residual, weights_temp, window_halfsize_projections, projections_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+    #pragma omp parallel for shared(residual, weights_temp2) private(k, j, i)
+    for(k = 0; k<slices; k++) {
+        for(i=0; i<anglesDim; i++) {
+          for(j=0; j<detectorsDim; j++) {
+          RingWeights_det3D(residual, weights_temp2, window_halfsize_detectors, detectors_full_window, anglesDim, detectorsDim, slices, j, i, k);
+        }}}
+     for(i=0; i<anglesDim*detectorsDim*slices; i++) weights[i] = residual[i] - 0.5f*(weights_temp[i] + weights_temp2[i]);
+     }
+      free(weights_temp2);
+   }
+  free(weights_temp);
   return *weights;
 }
 /********************************************************************/
 /***************************2D Functions*****************************/
 /********************************************************************/
-float RingWeights2D(float *residual, float *weights, int window_halfsize, int full_window, long anglesDim, long detectorsDim, long i, long j)
+float RingWeights_det2D(float *residual, float *weights_temp, int window_halfsize_detectors, int detectors_full_window, long anglesDim, long detectorsDim, long j, long i)
 {
-            float *Values_Vec;
-            long k, j1, index;
-            int counter, x, y, midval;
+        float *Values_Vec;
+        long k, j1, index;
+        int counter, x, y, midval;
 
-            index = i*detectorsDim+j;
-            Values_Vec = (float*) calloc (full_window, sizeof(float));
-            midval = (int)(0.5f*full_window) - 1;
-
-            /* intiate the estimation of the backround using strictly horizontal values */
-            counter = 0;
-            for (k=-window_halfsize; k <= window_halfsize; k++) {
-                j1 = j + k;
-                if ((j1 >= 0) && (j1 < detectorsDim)) {
-                  Values_Vec[counter] = residual[i*detectorsDim+j1]; }
-                else Values_Vec[counter] = residual[index];
-                counter++;
-            }
-
-            /* perform sorting of the vector array */
-            for (x = 0; x < counter-1; x++)  {
-                for (y = 0; y < counter-x-1; y++)  {
-                    if (Values_Vec[y] > Values_Vec[y+1]) {
-                        swap(&Values_Vec[y], &Values_Vec[y+1]);
-                    }
+        index = i*detectorsDim+j;
+       
+        Values_Vec = (float*) calloc (detectors_full_window, sizeof(float));
+        midval = (int)(0.5f*detectors_full_window) - 1;
+        
+        /* intiate the estimation of the backround using strictly horizontal values (detectors dimension) */
+        counter = 0;
+        for (k=-window_halfsize_detectors; k <= window_halfsize_detectors; k++) {
+            j1 = j + k;
+            if ((j1 >= 0) && (j1 < detectorsDim)) {
+              Values_Vec[counter] = residual[i*detectorsDim+j1]; }
+            else Values_Vec[counter] = residual[index];
+            counter++;
+        }
+        /* perform sorting of the vector array */
+        for (x = 0; x < counter-1; x++)  {
+            for (y = 0; y < counter-x-1; y++)  {
+                if (Values_Vec[y] > Values_Vec[y+1]) {
+                    swap(&Values_Vec[y], &Values_Vec[y+1]);
                 }
             }
-            weights[index] = residual[index] - Values_Vec[midval];
+        }
+        weights_temp[index] = Values_Vec[midval];
 
       free(Values_Vec);
-      return *weights;
+      return *weights_temp;
 }
 
-float RingWeights3D(float *residual, float *weights, int window_halfsize, int slices_window_halfsize, int horiz_full_window, int slice_full_window, long anglesDim, long detectorsDim, long slices, long i, long j, long k)
+float RingWeights_angles2D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long j, long i)
 {
-  float *Values_Vec_horiz, *Values_Vec_slices, backround_horiz_value, backround_slice_value;
-  long k1, j1, l, v, index;
-  int counter, x, y, midval_horiz, midval_slices;
-  backround_horiz_value = 0.0f;
-  backround_slice_value = 0.0f;
-
-  midval_horiz = (int)(0.5f*horiz_full_window) - 1;
-  midval_slices = (int)(0.5f*slice_full_window) - 1;
-
-  index = (detectorsDim*anglesDim*k) + i*detectorsDim+j;
-
-  /* processing horizontal values in sinogram space of 3D data */
-  if (window_halfsize != 0) {
-  Values_Vec_horiz = (float*) calloc (horiz_full_window, sizeof(float));
-  counter = 0;
-    for (l = -window_halfsize; l <=window_halfsize; l++) {
-      j1 = j + l;
-        if ((j1 >= 0) && (j1 < detectorsDim)) Values_Vec_horiz[counter] = residual[(detectorsDim*anglesDim*k) + i*detectorsDim+j1];
-        else Values_Vec_horiz[counter] = residual[index];
+    long k, i1, index;
+    int counter, x, y, midval;
+    float *Values_Vec;
+    
+    index = i*detectorsDim+j;
+    Values_Vec = (float*) calloc (angles_full_window, sizeof(float));
+    midval = (int)(0.5f*angles_full_window) - 1;
+    
+    counter = 0;
+    for (k=-window_halfsize_angles; k <= window_halfsize_angles; k++) {
+        i1 = i + k;
+        if ((i1 >= 0) && (i1 < anglesDim)) {
+            Values_Vec[counter] = weights_temp[i1*detectorsDim+j]; }
+        else Values_Vec[counter] = weights_temp[index];
         counter++;
-  }
-  /* perform sorting of the vector array */
-  for (x = 0; x < counter-1; x++)  {
-      for (y = 0; y < counter-x-1; y++)  {
-          if (Values_Vec_horiz[y] > Values_Vec_horiz[y+1]) {
-              swap(&Values_Vec_horiz[y], &Values_Vec_horiz[y+1]);
-          }
-      }
-  }
-  backround_horiz_value = Values_Vec_horiz[midval_horiz];
-  free(Values_Vec_horiz);
-  }
+    }
+    /* perform sorting of the vector array */
+    for (x = 0; x < counter-1; x++)  {
+        for (y = 0; y < counter-x-1; y++)  {
+            if (Values_Vec[y] > Values_Vec[y+1]) {
+                swap(&Values_Vec[y], &Values_Vec[y+1]);
+            }
+        }
+    }
+    weights[index] = Values_Vec[midval];
+    
+    free(Values_Vec);
+    return *weights;
+}
+/********************************************************************/
+/***************************3D Functions*****************************/
+/********************************************************************/
+float RingWeights_proj3D(float *residual, float *weights_temp, int window_halfsize_projections, int projections_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k)
+{
+        float *Values_Vec;
+        long z, k1, index;
+        int counter, x, y, midval;
 
-  /* processing slice values in sinogram space of 3D data */
-  if (slices_window_halfsize != 0) {
-  Values_Vec_slices = (float*) calloc (slice_full_window, sizeof(float));
+        index = detectorsDim*anglesDim*k + i*detectorsDim+j;
+       
+        Values_Vec = (float*) calloc (projections_full_window, sizeof(float));
+        midval = (int)(0.5f*projections_full_window) - 1;
+        
+        /* intiate the estimation of the backround using strictly slice values */
+        counter = 0;
+        for (z=-window_halfsize_projections; z <= window_halfsize_projections; z++) {
+            k1 = z + k;
+            if ((k1 >= 0) && (k1 < slices)) {
+              Values_Vec[counter] = residual[detectorsDim*anglesDim*k1 + i*detectorsDim+j]; }
+            else Values_Vec[counter] = residual[index];
+            counter++;
+        }
+        
+        /* perform sorting of the vector array */
+        for (x = 0; x < counter-1; x++)  {
+            for (y = 0; y < counter-x-1; y++)  {
+                if (Values_Vec[y] > Values_Vec[y+1]) {
+                    swap(&Values_Vec[y], &Values_Vec[y+1]);
+                }
+            }
+        }        
+      weights_temp[index] = Values_Vec[midval];
+      free(Values_Vec); 
+      return *weights_temp;
+}
 
-  counter = 0;
-  for (v = -slices_window_halfsize; v <=slices_window_halfsize; v++) {
-  k1 = k + v;
-  if ((k1 >= 0) && (k1 < slices)) Values_Vec_slices[counter] = residual[(detectorsDim*anglesDim*k1) + i*detectorsDim+j];
-  else Values_Vec_slices[counter] = residual[index];
-  counter++;
-  }
-  /* perform sorting of the vector array */
-  for (x = 0; x < counter-1; x++)  {
-      for (y = 0; y < counter-x-1; y++)  {
-          if (Values_Vec_slices[y] > Values_Vec_slices[y+1]) {
-              swap(&Values_Vec_slices[y], &Values_Vec_slices[y+1]);
-          }
-      }
-  }
-  backround_slice_value = Values_Vec_slices[midval_slices];
-  free(Values_Vec_slices);
-  }
+float RingWeights_det3D(float *residual, float *weights_temp, int window_halfsize_detectors, int detectors_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k)
+{
+        float *Values_Vec;
+        long m, j1, index;
+        int counter, x, y, midval;
 
-  if (backround_horiz_value == 0.0) weights[index] = residual[index] - backround_slice_value;
-  else if (backround_slice_value == 0.0) weights[index] = residual[index] - backround_horiz_value;
-  else weights[index] = residual[index] - 0.5f*(backround_slice_value + backround_horiz_value);
+        index = detectorsDim*anglesDim*k + i*detectorsDim+j;
+       
+        Values_Vec = (float*) calloc (detectors_full_window, sizeof(float));
+        midval = (int)(0.5f*detectors_full_window) - 1;
+        
+        /* intiate the estimation of the backround using strictly horizontal values (detectors dimension) */
+        counter = 0;
+        for (m=-window_halfsize_detectors; m <= window_halfsize_detectors; m++) {
+            j1 = j + m;
+            if ((j1 >= 0) && (j1 < detectorsDim)) {
+              Values_Vec[counter] = residual[detectorsDim*anglesDim*k + i*detectorsDim+j1]; }
+            else Values_Vec[counter] = residual[index];
+            counter++;
+        }
+        /* perform sorting of the vector array */
+        for (x = 0; x < counter-1; x++)  {
+            for (y = 0; y < counter-x-1; y++)  {
+                if (Values_Vec[y] > Values_Vec[y+1]) {
+                    swap(&Values_Vec[y], &Values_Vec[y+1]);
+                }
+            }
+        }
+        weights_temp[index] = Values_Vec[midval];
 
-  return *weights;
+      free(Values_Vec);
+      return *weights_temp;
+}
+
+float RingWeights_angles3D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k)
+{
+    long m, i1, index;
+    int counter, x, y, midval;
+    float *Values_Vec;
+    
+    index = detectorsDim*anglesDim*k + i*detectorsDim+j;
+    Values_Vec = (float*) calloc (angles_full_window, sizeof(float));
+    midval = (int)(0.5f*angles_full_window) - 1;
+    
+    counter = 0;
+    for (m=-window_halfsize_angles; m <= window_halfsize_angles; m++) {
+        i1 = i + m;
+        if ((i1 >= 0) && (i1 < anglesDim)) {
+            Values_Vec[counter] = weights_temp[detectorsDim*anglesDim*k + i1*detectorsDim+j];}
+        else Values_Vec[counter] = weights_temp[index];
+        counter++;
+    }
+    /* perform sorting of the vector array */
+    for (x = 0; x < counter-1; x++)  {
+        for (y = 0; y < counter-x-1; y++)  {
+            if (Values_Vec[y] > Values_Vec[y+1]) {
+                swap(&Values_Vec[y], &Values_Vec[y+1]);
+            }
+        }
+    }
+    weights[index] = Values_Vec[midval];
+    
+    free(Values_Vec);
+    return *weights;
 }

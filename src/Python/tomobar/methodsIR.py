@@ -23,7 +23,16 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 from numpy import linalg as LA
 import scipy.sparse.linalg
-from tomobar.supp.addmodules import RING_WEIGHTS
+
+try:
+    from tomobar.supp.addmodules import RING_WEIGHTS
+except:    
+    print('____! RING_WEIGHTS C-module failed on import !____')
+
+try:
+    from ccpi.filters.regularisers import ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
+except:
+    print('____! CCPi regularisation package is missing, please install !____')
 
 # function to smooth 1D signal
 def smooth(y, box_pts):
@@ -31,9 +40,230 @@ def smooth(y, box_pts):
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
 
+def merge_3_dicts(x, y, z):
+    merg = x.copy()
+    merg.update(y)
+    merg.update(z)
+    return merg
+
+def dict_check(self, _data_, _algorithm_, _regularisation_):
+    # checking and initialisaing all required parameters
+    # ---------- deal with _data_ dictionary first --------------
+    # projection nomnalised _data_
+    if ('projection_norm_data' not in _data_):
+          raise NameError("No input 'projection_norm_data' have been provided")
+    # projection nomnalised raw data as PWLS-model weights
+    if (('projection_raw_data' not in _data_) and (self.datafidelity == 'PWLS')):
+          raise NameError("No input 'projection_raw_data' have been provided")
+    if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
+        # Ordered Subsets OR classical approach (default)
+        _data_['OS_number'] = 1
+    else:
+        #initialise OS ASTRA-related modules
+        if self.geom == '2D':
+            from tomobar.supp.astraOP import AstraToolsOS
+            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
+        else:
+            from tomobar.supp.astraOP import AstraToolsOS3D
+            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
+    # Huber data model to supress artifacts
+    if ('huber_threshold' not in _data_):
+        _data_['huber_threshold'] = None
+    # Students#t data model to supress artifacts
+    if ('studentst_threshold' not in _data_):
+        _data_['studentst_threshold'] = None
+    # threshold to produce additional weights to supress ring artifacts
+    if ('ring_weights_threshold' not in _data_):
+        _data_['ring_weights_threshold'] = None
+    # a tuple for half window sizes as [detector, angles, number of projections]
+    if ('ring_tuple_halfsizes' not in _data_):
+        _data_['ring_tuple_halfsizes'] = (7,5,7)
+    # Group-Huber data model to supress full rings of the same intensity
+    if ('ringGH_lambda' not in _data_):
+        _data_['ringGH_lambda'] = None
+    # Group-Huber data model acceleration factor (use carefully to avoid divergence)
+    if ('ringGH_accelerate' not in _data_):
+        _data_['ringGH_accelerate'] = 50
+    # ----------  deal with _algorithm_  --------------
+    if ('lipschitz_const' not in _algorithm_):
+        # if not provided calculate Lipschitz constant automatically
+        _algorithm_['lipschitz_const'] = RecToolsIR.powermethod(self, _data_)
+    # iterations number for the selected reconstruction algorithm
+    if ('iterations' not in _algorithm_):
+        if (_data_['OS_number'] == 1):
+            _algorithm_['iterations'] = 400 #classical
+        else:
+            _algorithm_['iterations'] = 20 # Ordered - Subsets
+    # ADMM -algorithm  augmented Lagrangian parameter
+    if ('ADMM_rho_const' not in _algorithm_):
+        _algorithm_['ADMM_rho_const'] = 1000.0
+    # ADMM over-relaxation parameter to accelerate convergence
+    if ('ADMM_relax_par' not in _algorithm_):
+        _algorithm_['ADMM_relax_par'] = 1.0
+    # initialise an algorithm with an array
+    if ('initialise' not in _algorithm_):
+        _algorithm_['initialise'] = None
+    # ENABLE or DISABLE the nonnegativity for algorithm
+    if ('nonnegativity' not in _algorithm_):
+        _algorithm_['nonnegativity'] = 'ENABLE'
+    if (_algorithm_['nonnegativity'] == 'ENABLE'):
+        self.nonneg_regul = 1 # enable nonnegativity for regularisers
+    # tolerance to stop OUTER algorithm iterations earlier
+    if ('tolerance' not in _algorithm_):
+        _algorithm_['tolerance'] = 0.0
+    if ('verbose' not in _algorithm_):
+        _algorithm_['verbose'] = 'on'
+    # ----------  deal with _regularisation_  --------------
+    # choose your regularisation algorithm
+    # The dependency on the CCPi-RGL toolkit for regularisation
+    if ('method' not in _regularisation_):
+        _regularisation_['method'] = None
+    else:
+        if (_regularisation_['method'] not in ['ROF_TV','FGP_TV','PD_TV','SB_TV','LLT_ROF','TGV','NDF','Diff4th','NLTV']):
+            raise NameError('Unknown regularisation method, select: ROF_TV, FGP_TV, PD_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV')
+    # regularisation parameter  (main)
+    if ('regul_param' not in _regularisation_):
+        _regularisation_['regul_param'] = 0.001
+    # regularisation parameter second (LLT_ROF)
+    if ('regul_param2' not in _regularisation_):
+        _regularisation_['regul_param2'] = 0.001
+    # set the number of inner (regularisation) iterations
+    if ('iterations' not in _regularisation_):
+        _regularisation_['iterations'] = 150
+    # tolerance to stop inner regularisation iterations prematurely
+    if ('tolerance' not in _regularisation_):
+        _regularisation_['tolerance'] = 0.0
+    # time marching step to ensure convergence for gradient based methods: ROF_TV, LLT_ROF,  NDF, Diff4th
+    if ('time_marching_step' not in _regularisation_):
+        _regularisation_['time_marching_step'] = 0.001
+    #  TGV specific parameter for the 1st order term
+    if ('TGV_alpha1' not in _regularisation_):
+        _regularisation_['TGV_alpha1'] = 1.0
+    #  TGV specific parameter for the 2тв order term
+    if ('TGV_alpha2' not in _regularisation_):
+        _regularisation_['TGV_alpha2'] = 2.0
+    # Primal-dual parameter for convergence (TGV specific)
+    if ('PD_LipschitzConstant' not in _regularisation_):
+        _regularisation_['PD_LipschitzConstant'] = 12.0
+    # edge (noise) threshold parameter for NDF and DIFF4th models
+    if ('edge_threhsold' not in _regularisation_):
+        _regularisation_['edge_threhsold'] = 0.001
+     # NDF specific penalty type: Huber (default), Perona, Tukey
+    if ('NDF_penalty' not in _regularisation_):
+        _regularisation_['NDF_penalty'] = 'Huber'
+        self.NDF_method = 1
+    else:
+        if (_regularisation_['NDF_penalty'] == 'Huber'):
+            self.NDF_method = 1
+        elif (_regularisation_['NDF_penalty'] == 'Perona'):
+            self.NDF_method = 2
+        elif (_regularisation_['NDF_penalty'] == 'Tukey'):
+            self.NDF_method = 3
+        else:
+            raise ("For NDF_penalty choose Huber, Perona or Tukey")
+    # NLTV penalty related weights, , the array of i-related indices
+    if ('NLTV_H_i' not in _regularisation_):
+        _regularisation_['NLTV_H_i'] = 0
+    # NLTV penalty related weights, , the array of i-related indices
+    if ('NLTV_H_j' not in _regularisation_):
+        _regularisation_['NLTV_H_j'] = 0
+     # NLTV-specific penalty type, the array of Weights
+    if ('NLTV_Weights' not in _regularisation_):
+        _regularisation_['NLTV_Weights'] = 0
+    # 0/1 - TV specific isotropic/anisotropic choice
+    if ('methodTV' not in _regularisation_):
+        _regularisation_['methodTV'] = 0
+    # choose the type of the device for the regulariser
+    if ('device_regulariser' not in _regularisation_):
+        _regularisation_['device_regulariser'] = 'gpu'
+    if (_algorithm_['verbose'] == 'on'):
+        print('Parameters check has been succesfull, running the algorithm...')
+
+
+def prox_regul(self, X, _regularisation_):
+    info_vec = (_regularisation_['iterations'],0)
+    # The proximal operator of the chosen regulariser
+    if (_regularisation_['method'] == 'ROF_TV'):
+        # Rudin - Osher - Fatemi Total variation method
+        (X,info_vec) = ROF_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['time_marching_step'], _regularisation_['tolerance'], _regularisation_['device_regulariser'])
+    if (_regularisation_['method'] == 'FGP_TV'):
+        # Fast-Gradient-Projection Total variation method
+        (X,info_vec) = FGP_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul, _regularisation_['device_regulariser'])
+    if (_regularisation_['method'] == 'PD_TV'):
+        # Primal-Dual (PD) Total variation method by Chambolle-Pock
+        (X,info_vec) = PD_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul,  _regularisation_['PD_LipschitzConstant'], 0.2*_regularisation_['time_marching_step'], _regularisation_['device_regulariser'])
+    if (_regularisation_['method'] == 'SB_TV'):
+        # Split Bregman Total variation method
+        (X,info_vec) = SB_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], _regularisation_['device_regulariser'])
+    if (_regularisation_['method'] == 'LLT_ROF'):
+        # Lysaker-Lundervold-Tai + ROF Total variation method
+        (X,info_vec) = LLT_ROF(X, _regularisation_['regul_param'], _regularisation_['regul_param2'], _regularisation_['iterations'], _regularisation_['time_marching_step'], _regularisation_['tolerance'], _regularisation_['device_regulariser'])
+    if (_regularisation_['method'] == 'TGV'):
+        # Total Generalised Variation method
+        (X,info_vec) = TGV(X, _regularisation_['regul_param'], _regularisation_['TGV_alpha1'], _regularisation_['TGV_alpha2'], _regularisation_['iterations'], _regularisation_['PD_LipschitzConstant'], _regularisation_['tolerance'], _regularisation_['device_regulariser'])
+    if (_regularisation_['method'] == 'NDF'):
+        # Nonlinear isotropic diffusion method
+        (X,info_vec) = NDF(X, _regularisation_['regul_param'], _regularisation_['edge_threhsold'], _regularisation_['iterations'], _regularisation_['time_marching_step'], self.NDF_method, _regularisation_['tolerance'], _regularisation_['device_regulariser'])
+    if (_regularisation_['method'] == 'Diff4th'):
+        # Anisotropic diffusion of higher order
+        (X,info_vec) = Diff4th(X, _regularisation_['regul_param'], _regularisation_['edge_threhsold'], _regularisation_['iterations'], _regularisation_['time_marching_step'], _regularisation_['tolerance'], _regularisation_['device_regulariser'])
+    if (_regularisation_['method'] == 'NLTV'):
+        # Non-local Total Variation
+        X = NLTV(X, _regularisation_['NLTV_H_i'], _regularisation_['NLTV_H_j'], _regularisation_['NLTV_H_j'],_regularisation_['NLTV_Weights'], _regularisation_['regul_param'], _regularisation_['iterations'])
+    return (X,info_vec)
+
 class RecToolsIR:
     """
-    A class for iterative reconstruction algorithms using ASTRA and CCPi-RGL toolkit
+    -------------------------------------------------------------------------------------------------
+    A class for iterative reconstruction algorithms (FISTA and ADMM) using ASTRA and CCPi-RGL toolkit
+    -------------------------------------------------------------------------------------------------
+    Parameters of the class function mainly describing geometry:
+        *DetectorsDimH  # detector dimension (horizontal)
+        *DetectorsDimV  # detector dimension (vertical) for 3D case only
+        *CenterRotOffset  # Center of Rotation (CoR) scalar (for 3D case only)
+        *AnglesVec # array of angles in radians
+        *ObjSize # a scalar to define reconstructed object dimensions
+        *datafidelity # data fidelity, choose 'LS', 'PWLS'
+        *device_projector # choose projector between 'cpu' and 'gpu'
+
+    Parameters for reconstruction algorithms extracted from 3 dictionaries:
+      _data_ :
+            --projection_norm_data # the flat/dark field normalised -log projection data: sinogram or 3D data
+            --projection_raw_data # for PWLS model you also need to provide the raw data
+            --OS_number # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+            --huber_threshold # threshold for Huber function to apply to data model (supress outliers)
+            --studentst_threshold # threshold for Students't function to apply to data model (supress outliers)
+            --ring_weights_threshold # threshold to produce additional weights to supress ring artifacts
+            --ring_tuple_halfsizes # a tuple for half window sizes as [detector, angles, num of projections]
+            --ringGH_lambda # a parameter for Group-Huber data model to supress full rings of the same intensity
+            --ringGH_accelerate # Group-Huber data model acceleration factor (use carefully to avoid divergence, 50 default)
+     _algorithm_ :
+            --iterations # the number of reconstruction algorithm iterations
+            --initialise # initialise an algorithm with an array
+            --nonnegativity # ENABLE (default) or DISABLE the nonnegativity for algorithms
+            --lipschitz_const # Lipschitz constant for FISTA algorithm, if not given will be calculated for each call
+            --ADMM_rho_const # only for ADMM algorithm augmented Lagrangian parameter
+            --ADMM_relax_par # ADMM-specific over relaxation parameter for convergence speed
+            --tolerance # tolerance to terminate reconstruction algorithm iterations earlier, default 0.0
+            --verbose # mode to print iterations number and other messages ('on' by default, 'off' to suppress)
+     _regularisation_ :
+            --method # select a regularisation method: ROF_TV,FGP_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
+            --regul_param # main regularisation parameter for all methods
+            --iterations # the number of inner (regularisation) iterations
+            --device_regulariser #  choose the 'cpu' or 'gpu'-type of the device for the regulariser
+            --edge_threhsold # edge (noise) threshold parameter for NDF and DIFF4th models
+            --tolerance # tolerance to stop inner regularisation iterations prematurely
+            --time_marching_step # a step to ensure convergence for gradient-based methods: ROF_TV,LLT_ROF,NDF,Diff4th
+            --regul_param2 # second regularisation parameter (LLT_ROF method)
+            --TGV_alpha1 # TGV specific parameter for the 1st order term
+            --TGV_alpha2 # TGV specific parameter for the 2nd order term
+            --PD_LipschitzConstant # Primal-dual parameter for convergence (PD_TV and TGV specific)
+            --NDF_penalty # NDF-method specific penalty type: Huber (default), Perona, Tukey
+            --NLTV_H_i # NLTV penalty related weights, , the array of i-related indices
+            --NLTV_H_j # NLTV penalty related weights, , the array of j-related indices
+            --NLTV_Weights # NLTV-specific penalty type, the array of Weights
+            --methodTV # 0/1 - TV specific isotropic/anisotropic choice
+    __________________________________________________________________________________________________
     """
     def __init__(self,
               DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
@@ -42,99 +272,95 @@ class RecToolsIR:
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
               datafidelity, # data fidelity, choose 'LS', 'PWLS'
-              nonnegativity, # select 'nonnegativity' constraint (set to 'ENABLE')
-              OS_number, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-              tolerance, # tolerance to stop OUTER iterations earlier
-              device):
+              device_projector # choose projector between 'cpu' and 'gpu'
+              ):
         if ObjSize is tuple:
             raise (" Reconstruction is currently available for square or cubic objects only, provide a scalar ")
         else:
             self.ObjSize = ObjSize # size of the object
 
-        self.tolerance = tolerance
         self.datafidelity = datafidelity
-        self.OS_number = OS_number
         self.DetectorsDimV = DetectorsDimV
         self.DetectorsDimH = DetectorsDimH
+        self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
         if CenterRotOffset is None:
             self.CenterRotOffset = 0.0
         else:
             self.CenterRotOffset = CenterRotOffset
 
-        # enables nonnegativity constraint
-        if nonnegativity == 'ENABLE':
-            self.nonnegativity = 1
+        if device_projector is None:
+            self.device_projector = 'gpu'
         else:
-            self.nonnegativity = 0
-
-        if device is None:
-            self.device = 'gpu'
-        else:
-            self.device = device
+            self.device_projector = device_projector
 
         if datafidelity not in ['LS','PWLS']:
             raise ValueError('Unknown data fidelity type, select: LS, PWLS')
 
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
-            if ((OS_number is None) or (OS_number <= 1)):
-                # classical approach
-                from tomobar.supp.astraOP import AstraTools
-                self.Atools = AstraTools(DetectorsDimH, AnglesVec, ObjSize, device) # initiate 2D ASTRA class object
-                self.OS_number = 1
-            else:
-                # Ordered-subset approach
-                from tomobar.supp.astraOP import AstraToolsOS
-                self.Atools = AstraToolsOS(DetectorsDimH, AnglesVec, ObjSize, self.OS_number, device) # initiate 2D ASTRA class OS object
             self.geom = '2D'
+            # classical approach
+            from tomobar.supp.astraOP import AstraTools
+            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
-            if ((OS_number is None) or (OS_number <= 1)):
-                from tomobar.supp.astraOP import AstraTools3D
-                self.Atools = AstraTools3D(DetectorsDimH, DetectorsDimV, AnglesVec, self.CenterRotOffset, ObjSize) # initiate 3D ASTRA class object
-                self.OS_number = 1
-            else:
-                # Ordered-subset
-                from tomobar.supp.astraOP import AstraToolsOS3D
-                self.Atools = AstraToolsOS3D(DetectorsDimH, DetectorsDimV, AnglesVec, self.CenterRotOffset, ObjSize, self.OS_number) # initiate 3D ASTRA class OS object
+            # classical approach
+            from tomobar.supp.astraOP import AstraTools3D
+            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
+        return None
+            
 
-    def SIRT(self, sinogram, iterations):
-        if (self.OS_number > 1):
-            raise('There is no OS mode for SIRT yet, please choose OS = None')
+    def SIRT(self, _data_, _algorithm_):
+        ######################################################################
+        # parameters check and initialisation
+        dict_check(self, _data_, _algorithm_, {})
+        ######################################################################
         #SIRT reconstruction algorithm from ASTRA
         if (self.geom == '2D'):
-            SIRT_rec = self.Atools.sirt2D(sinogram, iterations)
+            SIRT_rec = self.Atools.sirt2D(_data_['projection_norm_data'], _algorithm_['iterations'])
         if (self.geom == '3D'):
-            SIRT_rec = self.Atools.sirt3D(sinogram, iterations)
+            SIRT_rec = self.Atools.sirt3D(_data_['projection_norm_data'], _algorithm_['iterations'])
         return SIRT_rec
 
-    def CGLS(self, sinogram, iterations):
-        if (self.OS_number > 1):
-            raise('There is no OS mode for CGLS yet, please choose OS = None')
+    def CGLS(self, _data_, _algorithm_):
+        ######################################################################
+        # parameters check and initialisation
+        dict_check(self, _data_, _algorithm_, {})
+        ######################################################################
         #CGLS reconstruction algorithm from ASTRA
         if (self.geom == '2D'):
-            CGLS_rec = self.Atools.cgls2D(sinogram, iterations)
+            CGLS_rec = self.Atools.cgls2D(_data_['projection_norm_data'], _algorithm_['iterations'])
         if (self.geom == '3D'):
-            CGLS_rec = self.Atools.cgls3D(sinogram, iterations)
+            CGLS_rec = self.Atools.cgls3D(_data_['projection_norm_data'], _algorithm_['iterations'])
         return CGLS_rec
-
-    def powermethod(self, weights = None):
+    
+    def powermethod(self, _data_):
         # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
-        # weights (raw projection data) are required for PWLS fidelity (self.datafidelity = PWLS), otherwise ignored
+        # projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored
+        if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
+            # Ordered Subsets OR classical approach (default)
+            _data_['OS_number'] = 1
+        else:
+            #initialise OS ASTRA-related modules
+            if self.geom == '2D':
+                from tomobar.supp.astraOP import AstraToolsOS
+                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
+            else:
+                from tomobar.supp.astraOP import AstraToolsOS3D
+                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
         niter = 15 # number of power method iterations
         s = 1.0
+        
+        # classical approach 
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
             x1 = np.float32(np.random.randn(self.Atools.DetectorsDimV,self.Atools.ObjSize,self.Atools.ObjSize))
         if (self.datafidelity == 'PWLS'):
-            if weights is None:
-                raise ValueError('The selected data fidelity is PWLS, hence the raw projection data must be provided to the function')
-            else:
-                sqweight = np.sqrt(weights)
-        if (self.OS_number == 1):
+                sqweight = np.sqrt(_data_['projection_raw_data'])
+        if (_data_['OS_number'] == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
             if (self.datafidelity == 'PWLS'):
@@ -148,358 +374,270 @@ class RecToolsIR:
                     y = np.multiply(sqweight, y)
         else:
             # OS approach
-            y = self.Atools.forwprojOS(x1,0)
+            y = self.AtoolsOS.forwprojOS(x1,0)
             if (self.datafidelity == 'PWLS'):
                 if (self.geom == '2D'):
-                    y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
+                    y = np.multiply(sqweight[self.AtoolsOS.newInd_Vec[0,:],:], y)
                 else:
-                    y = np.multiply(sqweight[:,self.Atools.newInd_Vec[0,:],:], y)
+                    y = np.multiply(sqweight[:,self.AtoolsOS.newInd_Vec[0,:],:], y)
             for iter in range(0,niter):
-                x1 = self.Atools.backprojOS(y,0)
+                x1 = self.AtoolsOS.backprojOS(y,0)
                 s = LA.norm(x1)
                 x1 = x1/s
-                y = self.Atools.forwprojOS(x1,0)
+                y = self.AtoolsOS.forwprojOS(x1,0)
                 if (self.datafidelity == 'PWLS'):
                     if (self.geom == '2D'):
-                        y = np.multiply(sqweight[self.Atools.newInd_Vec[0,:],:], y)
+                        y = np.multiply(sqweight[self.AtoolsOS.newInd_Vec[0,:],:], y)
                     else:
-                        y = np.multiply(sqweight[:,self.Atools.newInd_Vec[0,:],:], y)
+                        y = np.multiply(sqweight[:,self.AtoolsOS.newInd_Vec[0,:],:], y)
         return s
 
-    def FISTA(self,
-              projdata, # tomographic projection data in 2D (sinogram) or 3D array
-              weights = None, # raw projection data for PWLS model
-              lambdaR_L1 = 0.0, # regularisation parameter for GH data model
-              alpha_ring = 50, # GH data model convergence accelerator (use carefully -> can generate artifacts)
-              ring_model_horiz_window = 0, # enables a better model to supress artifacts, set the size of the window to 7-15
-              ring_model_slices_window = 0, # 3D case only, enables a better model to supress artifacts, set the size of the window to 7-15
-              huber_data_threshold = 0.0, # threshold parameter for __Huber__ data fidelity
-              student_data_threshold = 0.0, # threshold parameter for __Students't__ data fidelity
-              initialise = None, # initialise reconstruction with an array
-              lipschitz_const = 5e+06, # can be a given value or calculated using Power method
-              iterationsFISTA = 100, # the number of OUTER FISTA iterations
-              regularisation = None, # enable regularisation  with CCPi - RGL toolkit
-              regularisation_parameter = 0.01, # regularisation parameter if regularisation is not None
-              regularisation_parameter2 = 0.01, # 2nd regularisation parameter (LLT_ROF method)
-              regularisation_iterations = 100, # the number of INNER iterations for regularisation
-              tolerance_regul = 0.0,  # tolerance to stop inner (regularisation) iterations / e.g. 1e-06
-              time_marching_parameter = 0.0025, # gradient step parameter (ROF_TV, LLT_ROF, NDF, DIFF4th) penalties
-              TGV_alpha1 = 1.0, # TGV specific parameter for the 1st order term
-              TGV_alpha2 = 2.0, # TGV specific parameter for the 2st order term
-              TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
-              edge_param = 0.01, # edge (noise) threshold parameter for NDF and DIFF4th
-              NDF_penalty = 'Huber', # NDF specific penalty type: Huber (default), Perona, Tukey
-              NLTV_H_i = 0, # NLTV-specific penalty type, the array of i-related indices
-              NLTV_H_j = 0, # NLTV-specific penalty type, the array of j-related indices
-              NLTV_Weights = 0, # NLTV-specific penalty type, the array of Weights
-              methodTV = 0 # 0/1 - TV specific isotropic/anisotropic choice
-              ):
+    def FISTA(self, _data_, _algorithm_, _regularisation_):
+        ######################################################################
+        # parameters check and initialisation
+        dict_check(self, _data_, _algorithm_, _regularisation_)
+        ######################################################################
 
-        L_const_inv = 1.0/lipschitz_const # inverted Lipschitz constant
+        L_const_inv = 1.0/_algorithm_['lipschitz_const'] # inverted Lipschitz constant
         if (self.geom == '2D'):
             # 2D reconstruction
             # initialise the solution
-            if (np.size(initialise) == self.ObjSize**2):
+            if (np.size(_algorithm_['initialise']) == self.ObjSize**2):
                 # the object has been initialised with an array
-                X = initialise
+                X = _algorithm_['initialise']
                 del initialise
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
             r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
         if (self.geom == '3D'):
             # initialise the solution
-            if (np.size(initialise) == self.ObjSize**3):
+            if (np.size(_algorithm_['initialise']) == self.ObjSize**3):
                 # the object has been initialised with an array
-                X = initialise
+                X = _algorithm_['initialise']
                 del initialise
             else:
                 X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
             r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
-        if (self.OS_number > 1):
-            regularisation_iterations = (int)(regularisation_iterations/self.OS_number)
-        if (NDF_penalty == 'Huber'):
-            NDF_penalty = 1
-        elif (NDF_penalty == 'Perona'):
-            NDF_penalty = 2
-        elif (NDF_penalty == 'Tukey'):
-            NDF_penalty = 3
-        else:
-            raise ("For NDF_penalty choose Huber, Perona or Tukey")
-
-        # The dependency on the CCPi-RGL toolkit for regularisation
-        if regularisation is not None:
-            if ((regularisation != 'ROF_TV') and (regularisation != 'FGP_TV') and (regularisation != 'SB_TV') and (regularisation != 'LLT_ROF') and (regularisation != 'TGV') and (regularisation != 'NDF') and (regularisation != 'Diff4th') and (regularisation != 'NLTV')):
-                raise('Unknown regularisation method, select: ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV')
-            else:
-                from ccpi.filters.regularisers import ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV
-
-#****************************************************************************#
+        info_vec = (0,1)
+        #****************************************************************************#
         # FISTA (model-based modification) algorithm begins here:
         t = 1.0
         denomN = 1.0/np.size(X)
         X_t = np.copy(X)
         r_x = r.copy()
         # Outer FISTA iterations
-        for iter in range(0,iterationsFISTA):
+        for iter in range(0,_algorithm_['iterations']):
             r_old = r
-            # Do G-H fidelity pre-calculations using the full projections dataset for OS version
-            if ((self.OS_number > 1) and  (lambdaR_L1 > 0.0) and (iter > 0)):
+            # Do GH fidelity pre-calculations using the full projections dataset for OS version
+            if ((_data_['OS_number'] != 1) and (_data_['ringGH_lambda'] is not None) and (iter > 0)):
                 if (self.geom == '2D'):
                     vec = np.zeros((self.DetectorsDimH))
                 else:
                     vec = np.zeros((self.DetectorsDimV, self.DetectorsDimH))
-                for sub_ind in range(self.OS_number):
+                for sub_ind in range(_data_['OS_number']):
                     #select a specific set of indeces for the subset (OS)
-                    indVec = self.Atools.newInd_Vec[sub_ind,:]
-                    if (indVec[self.Atools.NumbProjBins-1] == 0):
+                    indVec = self.AtoolsOS.newInd_Vec[sub_ind,:]
+                    if (indVec[self.AtoolsOS.NumbProjBins-1] == 0):
                         indVec = indVec[:-1] #shrink vector size
                     if (self.geom == '2D'):
-                         res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
-                         res[:,0:None] = res[:,0:None] + alpha_ring*r_x[:,0]
-                         vec = vec + (1.0/self.OS_number)*res.sum(axis = 0)
+                         res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]
+                         res[:,0:None] = res[:,0:None] + _data_['ringGH_accelerate']*r_x[:,0]
+                         vec = vec + (1.0/(_data_['OS_number']))*res.sum(axis = 0)
                     else:
-                        res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
+                        res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]
                         for ang_index in range(len(indVec)):
-                            res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x
+                            res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
                         vec = res.sum(axis = 1)
                 if (self.geom == '2D'):
                     r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
                 else:
                     r = r_x - np.multiply(L_const_inv,vec)
+            
+            if ((_data_['OS_number'] != 1) and (_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                # Ordered subset approach for a better ring model 
+                res_full = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
+                rings_weights = RING_WEIGHTS(res_full, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
+                multHuber_ring = np.ones(np.shape(res_full))
+                multHuber_ring[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**2.0)
             # loop over subsets (OS)
-            for sub_ind in range(self.OS_number):
+            for sub_ind in range(_data_['OS_number']):
                 X_old = X
                 t_old = t
-                if (self.OS_number > 1):
+                if (_data_['OS_number'] > 1):
                     #select a specific set of indeces for the subset (OS)
-                    indVec = self.Atools.newInd_Vec[sub_ind,:]
-                    if (indVec[self.Atools.NumbProjBins-1] == 0):
+                    indVec = self.AtoolsOS.newInd_Vec[sub_ind,:]
+                    if (indVec[self.AtoolsOS.NumbProjBins-1] == 0):
                         indVec = indVec[:-1] #shrink vector size
-                    if (self.OS_number > 1):
+                    if (_data_['OS_number'] != 1):
                         # OS-reduced residuals
                         if (self.geom == '2D'):
                             if (self.datafidelity == 'LS'):
                                 # 2D Least-squares (LS) data fidelity - OS (linear)
-                                res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]
+                                res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]
                             if (self.datafidelity == 'PWLS'):
                                 # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
-                                res = np.multiply(weights[indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[indVec,:]))
+                                res = np.multiply(_data_['projection_raw_data'][indVec,:], (self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]))
                             # ring removal part for Group-Huber (GH) fidelity (2D)
-                            if ((lambdaR_L1 > 0.0) and (iter > 0)):
-                                res[:,0:None] = res[:,0:None] + alpha_ring*r_x[:,0]
+                            if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
+                                res[:,0:None] = res[:,0:None] + _data_['ringGH_accelerate']*r_x[:,0]
                         else: # 3D
                             if (self.datafidelity == 'LS'):
                                 # 3D Least-squares (LS) data fidelity - OS (linear)
-                                res = self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]
+                                res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]
                             if (self.datafidelity == 'PWLS'):
                                 # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
-                                res = np.multiply(weights[:,indVec,:], (self.Atools.forwprojOS(X_t,sub_ind) - projdata[:,indVec,:]))
+                                res = np.multiply(_data_['projection_raw_data'][:,indVec,:], (self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]))
                             # GH - fidelity part (3D)
-                            if ((lambdaR_L1 > 0.0) and (iter > 0)):
+                            if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
                                 for ang_index in range(len(indVec)):
-                                    res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x
+                                    res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
+                        if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                            if (self.geom == '2D'):
+                                res = np.multiply(multHuber_ring[indVec,:],res)
+                            else:
+                                res = np.multiply(multHuber_ring[:,indVec,:],res)
                 else: # non-OS (classical all-data approach)
                         if (self.datafidelity == 'LS'):
                             # full residual for LS fidelity
-                            res = self.Atools.forwproj(X_t) - projdata
+                            res = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
                         if (self.datafidelity == 'PWLS'):
                             # full gradient for the PWLS fidelity
-                            res = np.multiply(weights, (self.Atools.forwproj(X_t) - projdata))
-                        if ((self.geom == '2D') and (lambdaR_L1 > 0.0) and (iter > 0)):  # GH 2D part
-                            res[0:None,:] = res[0:None,:] + alpha_ring*r_x[:,0]
+                            res = np.multiply(_data_['projection_raw_data'], (self.Atools.forwproj(X_t) - _data_['projection_norm_data']))
+                        if ((self.geom == '2D') and (_data_['ringGH_lambda'] is not None) and (iter > 0)):  # GH 2D part
+                            res[0:None,:] = res[0:None,:] + _data_['ringGH_accelerate']*r_x[:,0]
                             vec = res.sum(axis = 0)
                             r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
-                        if ((self.geom == '3D') and (lambdaR_L1 > 0.0) and (iter > 0)):  # GH 3D part
+                        if ((self.geom == '3D') and (_data_['ringGH_lambda'] is not None) and (iter > 0)):  # GH 3D part
                             for ang_index in range(self.angles_number):
-                                res[:,ang_index,:] = res[:,ang_index,:] + alpha_ring*r_x
+                                res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
                                 vec = res.sum(axis = 1)
                                 r = r_x - np.multiply(L_const_inv,vec)
-                if (huber_data_threshold > 0.0):
+                        if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                            # Approach for a better ring model
+                            rings_weights = RING_WEIGHTS(res, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
+                            multHuber_ring = np.ones(np.shape(res))
+                            multHuber_ring[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**2.0)
+                            res = np.multiply(multHuber_ring,res)
+                if (_data_['huber_threshold'] is not None):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
-                    if ((ring_model_horiz_window == 0) and (ring_model_slices_window == 0)):
-                        multHuber[(np.where(np.abs(res) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(res[(np.where(np.abs(res) > huber_data_threshold))]))
-                    else:
-                        # Apply smarter Huber model to supress ring artifacts
-                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_window, ring_model_slices_window)
-                        tempRes = res+offset_rings
-                        multHuber[(np.where(np.abs(tempRes) > huber_data_threshold))] = np.divide(huber_data_threshold, np.abs(tempRes[(np.where(np.abs(tempRes) > huber_data_threshold))]))
-                    if (self.OS_number > 1):
+                    multHuber[(np.where(np.abs(res) > _data_['huber_threshold']))] = np.divide(_data_['huber_threshold'], np.abs(res[(np.where(np.abs(res) > _data_['huber_threshold']))]))
+                    if (_data_['OS_number'] != 1):
                         # OS-Huber-gradient
-                        grad_fidelity = self.Atools.backprojOS(np.multiply(multHuber,res), sub_ind)
+                        grad_fidelity = self.AtoolsOS.backprojOS(np.multiply(multHuber,res), sub_ind)
                     else:
                         # full Huber gradient
                         grad_fidelity = self.Atools.backproj(np.multiply(multHuber,res))
-                elif (student_data_threshold > 0.0):
+                elif (_data_['studentst_threshold'] is not None):
                     # apply Students't penalty
                     multStudent = np.ones(np.shape(res))
-                    if ((ring_model_horiz_window == 0) and (ring_model_slices_window == 0)):
-                        multStudent = np.divide(2.0, student_data_threshold**2 + res**2)
-                    else:
-                        # Apply smarter Students't model to supress ring artifacts
-                        offset_rings = RING_WEIGHTS(res, ring_model_horiz_window, ring_model_slices_window)
-                        tempRes = res+offset_rings
-                        multStudent = np.divide(2.0, student_data_threshold**2 + tempRes**2)
-                    if (self.OS_number > 1):
+                    multStudent = np.divide(2.0, _data_['studentst_threshold']**2 + res**2)
+                    if (_data_['OS_number'] != 1):
                         # OS-Students't-gradient
-                        grad_fidelity = self.Atools.backprojOS(np.multiply(multStudent,res), sub_ind)
+                        grad_fidelity = self.AtoolsOS.backprojOS(np.multiply(multStudent,res), sub_ind)
                     else:
                         # full Students't gradient
                         grad_fidelity = self.Atools.backproj(np.multiply(multStudent,res))
                 else:
-                    if (self.OS_number > 1):
+                    if (_data_['OS_number'] != 1):
                         # OS reduced gradient
-                        grad_fidelity = self.Atools.backprojOS(res, sub_ind)
+                        grad_fidelity = self.AtoolsOS.backprojOS(res, sub_ind)
                     else:
                         # full gradient
                         grad_fidelity = self.Atools.backproj(res)
 
                 X = X_t - L_const_inv*grad_fidelity
-                if (self.nonnegativity == 1):
+                if (_algorithm_['nonnegativity'] == 'ENABLE'):
                     X[X < 0.0] = 0.0
-                # The proximal operator of the chosen regulariser
-                if (regularisation == 'ROF_TV'):
-                    # Rudin - Osher - Fatemi Total variation method
-                    (X,info_vec) = ROF_TV(X, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                if (regularisation == 'FGP_TV'):
-                    # Fast-Gradient-Projection Total variation method
-                    (X,info_vec) = FGP_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
-                if (regularisation == 'SB_TV'):
-                    # Split Bregman Total variation method
-                    (X,info_vec) = SB_TV(X, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
-                if (regularisation == 'LLT_ROF'):
-                    # Lysaker-Lundervold-Tai + ROF Total variation method
-                    (X,info_vec) = LLT_ROF(X, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                if (regularisation == 'TGV'):
-                    # Total Generalised Variation method
-                    (X,info_vec) = TGV(X, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device)
-                if (regularisation == 'NDF'):
-                    # Nonlinear isotropic diffusion method
-                    (X,info_vec) = NDF(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
-                if (regularisation == 'Diff4th'):
-                    # Anisotropic diffusion of higher order
-                    (X,info_vec) = Diff4th(X, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-                if (regularisation == 'NLTV'):
-                    # Non-local Total Variation
-                    X = NLTV(X, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
+                if (_regularisation_['method'] is not None):
+                    ##### The proximal operator of the chosen regulariser #####
+                    (X,info_vec) = prox_regul(self, X, _regularisation_)
+                    ###########################################################
                 t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
                 X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
-            if ((lambdaR_L1 > 0.0) and (iter > 0)):
-                r = np.maximum((np.abs(r) - lambdaR_L1), 0.0)*np.sign(r) # soft-thresholding operator for ring vector
+            if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
+                r = np.maximum((np.abs(r) - _data_['ringGH_lambda']), 0.0)*np.sign(r) # soft-thresholding operator for ring vector
                 r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
-            # stopping criteria (checked after reasonable number of iterations)
-            if (((iter > 8) and (self.OS_number > 1)) or ((iter > 150) and (self.OS_number == 1))):
+            if (_algorithm_['verbose'] == 'on'):
+                if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):
+                    print('FISTA iteration number:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+                if (iter == _algorithm_['iterations']-1):
+                    print('FISTA stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+            # stopping criteria (checked only after a reasonable number of iterations)
+            if (((iter > 10) and (_data_['OS_number'] > 1)) or ((iter > 150) and (_data_['OS_number'] == 1))):
                 nrm = LA.norm(X - X_old)*denomN
-                if nrm < self.tolerance:
-                    print('FISTA stopped at iteration', iter)
+                if (nrm < _algorithm_['tolerance']):
+                    if (_algorithm_['verbose'] == 'on'):
+                        print('FISTA stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
                     break
         return X
 #*****************************FISTA ends here*********************************#
 
 #**********************************ADMM***************************************#
-    def ADMM(self,
-             projdata, # tomographic projection data in 2D (sinogram) or 3D array
-             initialise = 0, # initialise reconstruction with an array
-             iterationsADMM = 15, # the number of outer ADMM iterations
-             rho_const = 1000.0, # augmented Lagrangian parameter
-             alpha = 1.0, # over-relaxation parameter (ADMM)
-             regularisation = None, # enable regularisation  with CCPi - RGL toolkit
-             regularisation_parameter = 0.01, # regularisation parameter if regularisation is not None
-             regularisation_parameter2 = 0.01, # 2nd regularisation parameter (LLT_ROF method)
-             regularisation_iterations = 100, # the number of INNER iterations for regularisation
-             tolerance_regul = 0.0,  # tolerance to stop inner (regularisation) iterations / e.g. 1e-06
-             time_marching_parameter = 0.0025, # gradient step parameter (ROF_TV, LLT_ROF, NDF, DIFF4th) penalties
-             TGV_alpha1 = 1.0, # TGV specific parameter for the 1st order term
-             TGV_alpha2 = 2.0, # TGV specific parameter for the 2st order term
-             TGV_LipschitzConstant = 12.0, # TGV specific parameter for convergence
-             edge_param = 0.01, # edge (noise) threshold parameter for NDF and DIFF4th
-             NDF_penalty = 1, # NDF specific penalty type: 1 - Huber, 2 - Perona-Malik, 3 - Tukey Biweight
-             NLTV_H_i = 0, # NLTV-specific penalty type, the array of i-related indices
-             NLTV_H_j = 0, # NLTV-specific penalty type, the array of j-related indices
-             NLTV_Weights = 0, # NLTV-specific penalty type, the array of Weights
-             methodTV = 0 # 0/1 - isotropic/anisotropic TV
-             ):
+    def ADMM(self, _data_, _algorithm_, _regularisation_):
+        ######################################################################
+        # parameters check and initialisation
+        dict_check(self, _data_, _algorithm_, _regularisation_)
+        ######################################################################
+
         def ADMM_Ax(x):
             data_upd = self.Atools.A_optomo(x)
             x_temp = self.Atools.A_optomo.transposeOpTomo(data_upd)
-            x_upd = x_temp + self.rho_const*x
+            x_upd = x_temp + _algorithm_['ADMM_rho_const']*x
             return x_upd
         def ADMM_Atb(b):
             b = self.Atools.A_optomo.transposeOpTomo(b)
             return b
-        self.rho_const = rho_const
         (data_dim,rec_dim) = np.shape(self.Atools.A_optomo)
 
-        # The dependency on the CCPi-RGL toolkit for regularisation
-        if regularisation is not None:
-            if ((regularisation != 'ROF_TV') and (regularisation != 'FGP_TV') and (regularisation != 'SB_TV') and (regularisation != 'LLT_ROF') and (regularisation != 'TGV') and (regularisation != 'NDF') and (regularisation != 'Diff4th') and (regularisation != 'NLTV')):
-                raise('Unknown regularisation method, select: ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV')
-            else:
-                from ccpi.filters.regularisers import ROF_TV, FGP_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV
-
         # initialise the solution and other ADMM variables
-        if (np.size(initialise) == rec_dim):
+        if (np.size(_algorithm_['initialise']) == rec_dim):
             # the object has been initialised with an array
-            X = initialise.ravel()
-            del initialise
+            X = _algorithm_['initialise'].ravel()
         else:
             X = np.zeros(rec_dim, 'float32')
 
+        info_vec = (0,2)
         denomN = 1.0/np.size(X)
         z = np.zeros(rec_dim, 'float32')
         u = np.zeros(rec_dim, 'float32')
-        b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(projdata.ravel())
+        b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(_data_['projection_norm_data'].ravel())
 
         # Outer ADMM iterations
-        for iter in range(0,iterationsADMM):
+        for iter in range(0,_algorithm_['iterations']):
             X_old = X
             # solving quadratic problem using linalg solver
             A_to_solver = scipy.sparse.linalg.LinearOperator((rec_dim,rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb)
-            b_to_solver = b_to_solver_const + self.rho_const*(z-u)
-            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, tol = self.tolerance, maxiter = 15)
+            b_to_solver = b_to_solver_const + _algorithm_['ADMM_rho_const']*(z-u)
+            outputSolver = scipy.sparse.linalg.gmres(A_to_solver, b_to_solver, tol = 1e-05, maxiter = 15)
             X = np.float32(outputSolver[0]) # get gmres solution
-            if (self.nonnegativity == 1):
+            if (_algorithm_['nonnegativity'] == 'ENABLE'):
                 X[X < 0.0] = 0.0
             # z-update with relaxation
             zold = z.copy();
-            x_hat = alpha*X + (1.0 - alpha)*zold;
+            x_hat = _algorithm_['ADMM_relax_par']*X + (1.0 - _algorithm_['ADMM_relax_par'])*zold;
             if (self.geom == '2D'):
                 x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
             if (self.geom == '3D'):
                 x_prox_reg = (x_hat + u).reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
             # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
-            if (regularisation == 'ROF_TV'):
-                # Rudin - Osher - Fatemi Total variation method
-                (z,info_vec) = ROF_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-            if (regularisation == 'FGP_TV'):
-                # Fast-Gradient-Projection Total variation method
-                (z,info_vec) = FGP_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, 0, self.device)
-            if (regularisation == 'SB_TV'):
-                # Split Bregman Total variation method
-                (z,info_vec) = SB_TV(x_prox_reg, regularisation_parameter, regularisation_iterations, tolerance_regul, methodTV, self.device)
-            if (regularisation == 'LLT_ROF'):
-                # Lysaker-Lundervold-Tai + ROF Total variation method
-                (z,info_vec) = LLT_ROF(x_prox_reg, regularisation_parameter, regularisation_parameter2, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-            if (regularisation == 'TGV'):
-                # Total Generalised Variation method
-                (z,info_vec) = TGV(x_prox_reg, regularisation_parameter, TGV_alpha1, TGV_alpha2, regularisation_iterations, TGV_LipschitzConstant, tolerance_regul, self.device)
-            if (regularisation == 'NDF'):
-                # Nonlinear isotropic diffusion method
-                (z,info_vec) = NDF(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, NDF_penalty, tolerance_regul, self.device)
-            if (regularisation == 'DIFF4th'):
-                # Anisotropic diffusion of higher order
-                (z,info_vec) = Diff4th(x_prox_reg, regularisation_parameter, edge_param, regularisation_iterations, time_marching_parameter, tolerance_regul, self.device)
-            if (regularisation == 'NLTV'):
-                # Non-local Total Variation / 2D only
-                z = NLTV(x_prox_reg, NLTV_H_i, NLTV_H_j, NLTV_H_i, NLTV_Weights, regularisation_parameter, regularisation_iterations)
+            if (_regularisation_['method'] is not None):
+                # The proximal operator of the chosen regulariser
+                (z,info_vec) = prox_regul(self, x_prox_reg, _regularisation_)
             z = z.ravel()
             # update u variable
             u = u + (x_hat - z)
+            if (_algorithm_['verbose'] == 'on'):
+                if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):
+                    print('ADMM iteration number:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+            if (iter == _algorithm_['iterations']-1):
+                print('ADMM stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+
             # stopping criteria (checked after reasonable number of iterations)
             if (iter > 5):
                 nrm = LA.norm(X - X_old)*denomN
-                if nrm < self.tolerance:
-                    print('ADMM stopped at iteration', iter)
+                if nrm < _algorithm_['tolerance']:
+                    print('ADMM stopped at iteration:', iter, 'with regularisation iterations:', (int)(info_vec[0]))
                     break
         if (self.geom == '2D'):
             return X.reshape([self.ObjSize, self.ObjSize])

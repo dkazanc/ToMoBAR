@@ -52,12 +52,15 @@ plt.imshow(sino_an,  cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
 #%%
-# Adding artifacts and noise
+# Adding noise
 from tomophantom.supp.artifacts import _Artifacts_
 
-# adding noise
-noisy_sino = _Artifacts_(sinogram = sino_an, \
-                                  noise_type='Poisson', noise_sigma=8000, noise_seed = 0)
+# forming dictionaries with artifact types
+_noise_ =  {'type' : 'Poisson',
+            'sigma' : 8000, # noise amplitude
+            'seed' : 0}
+
+noisy_sino = _Artifacts_(sino_an, _noise_, {}, {}, {})
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -75,7 +78,7 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimensi
                     CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device='gpu')
+                    device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(noisy_sino) #perform FBP
 
@@ -97,19 +100,21 @@ Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (
                     AnglesVec = angles_rad, # array of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-06, # tolerance to stop OUTER iterations earlier
-                    device='gpu')
+                    device_projector='gpu')
 
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : noisy_sino} # data dictionary
+_algorithm_ = {'iterations' : 15,
+               'ADMM_rho_const' : 4000.0}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'FGP_TV',
+                    'regul_param' : 0.06,
+                    'iterations' : 100,
+                    'device_regulariser': 'gpu'}
 
 # Run ADMM reconstrucion algorithm with regularisation
-RecADMM_reg = Rectools.ADMM(noisy_sino,
-                              rho_const = 4000.0, \
-                              iterationsADMM = 15, \
-                              regularisation = 'SB_TV', \
-                              regularisation_parameter = 0.06,\
-                              regularisation_iterations = 50)
+RecADMM_reg = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
 plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")
