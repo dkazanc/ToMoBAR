@@ -23,7 +23,11 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 from numpy import linalg as LA
 import scipy.sparse.linalg
-from tomobar.supp.addmodules import RING_WEIGHTS
+
+try:
+    from tomobar.supp.addmodules import RING_WEIGHTS
+except:    
+    print('____! RING_WEIGHTS C-module failed on import !____')
 
 try:
     from ccpi.filters.regularisers import ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
@@ -177,7 +181,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
 
 
 def prox_regul(self, X, _regularisation_):
-    info_vec = (0,1)
+    info_vec = (_regularisation_['iterations'],0)
     # The proximal operator of the chosen regulariser
     if (_regularisation_['method'] == 'ROF_TV'):
         # Rudin - Osher - Fatemi Total variation method
@@ -327,11 +331,11 @@ class RecToolsIR:
         ######################################################################
         #CGLS reconstruction algorithm from ASTRA
         if (self.geom == '2D'):
-            CGLS_rec = self.Atools.cgls2D(_data_['projection_norm__data_'], _algorithm_['iterations'])
+            CGLS_rec = self.Atools.cgls2D(_data_['projection_norm_data'], _algorithm_['iterations'])
         if (self.geom == '3D'):
-            CGLS_rec = self.Atools.cgls3D(_data_['projection_norm__data_'], _algorithm_['iterations'])
+            CGLS_rec = self.Atools.cgls3D(_data_['projection_norm_data'], _algorithm_['iterations'])
         return CGLS_rec
-
+    
     def powermethod(self, _data_):
         # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
         # projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored

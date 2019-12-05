@@ -95,43 +95,48 @@ _regularisation_ = {'method' : 'PD_TV',
                     'iterations' : 80,                    
                     'device_regulariser': 'gpu'}
 
-RecFISTA_os_pwls = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+RecFISTA_os_tv_pwls = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
-plt.imshow(RecFISTA_os_pwls[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
-plt.title('FISTA PWLS-OS reconstruction')
+plt.imshow(RecFISTA_os_tv_pwls[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+plt.title('FISTA PWLS-OS-TV reconstruction')
 plt.show()
 #fig.savefig('dendr_PWLS.png', dpi=200)
 #%%
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-GH-TV  method %%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# adding Group-Huber data model
+_data_.update({'ringGH_lambda' : 0.000001,
+                'ringGH_accelerate': 10}) 
 
-# Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_TV = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
-                              dataRaw[:,:,slice_to_recon], \
-                              iterationsFISTA = 15, \
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.000001,\
-                              regularisation_iterations = 350,\
-                              lipschitz_const = lc)
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.000001,
+                    'iterations' : 80,                    
+                    'device_regulariser': 'gpu'}
+
+# Run FISTA-PWLS-Group-Huber-OS reconstrucion algorithm with regularisation
+RecFISTA_pwls_GH_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
-plt.imshow(RecFISTA_pwls_os_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+plt.imshow(RecFISTA_pwls_GH_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
 #plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-plt.title('FISTA PWLS-OS-TV reconstruction')
+plt.title('FISTA PWLS-OS-GH-TV reconstruction')
 plt.show()
-#fig.savefig('dendr_TV.png', dpi=200)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-ROF_LLT method %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_rofllt = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
-                              dataRaw[:,:,slice_to_recon], \
-                              iterationsFISTA = 15, \
-                              regularisation = 'LLT_ROF', \
-                              regularisation_parameter = 0.000007,\
-                              regularisation_parameter2 = 0.0004,\
-                              regularisation_iterations = 350,\
-                              lipschitz_const = lc)
+_regularisation_ = {'method' : 'LLT_ROF',
+                    'regul_param' : 0.00001,
+                    'regul_param2' : 0.00002,
+                    'iterations' : 80,                    
+                    'device_regulariser': 'gpu'}
+
+RecFISTA_pwls_os_rofllt = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
 plt.imshow(RecFISTA_pwls_os_rofllt[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
@@ -143,17 +148,15 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TGV method %%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_os_tgv = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
-                              dataRaw[:,:,slice_to_recon], \
-                              iterationsFISTA = 15, \
-                              regularisation = 'TGV', \
-                              regularisation_parameter = 0.001,\
-                              TGV_alpha1 = 1.0,\
-                              TGV_alpha2 = 2.0,\
-                              TGV_LipschitzConstant = 12,\
-                              regularisation_iterations = 1000,\
-                              lipschitz_const = lc)
+_regularisation_ = {'method' : 'TGV',
+                    'regul_param' : 0.001,
+                    'TGV_alpha1' : 1.0,
+                    'TGV_alpha2' : 1.5,
+                    'iterations' : 100,                    
+                    'device_regulariser': 'gpu'}
+
+RecFISTA_pwls_os_tgv = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+        
 
 fig = plt.figure()
 plt.imshow(RecFISTA_pwls_os_tgv[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
@@ -163,64 +166,19 @@ plt.show()
 #fig.savefig('dendr_TGV.png', dpi=200)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing with FISTA PWLS-OS-TV method %%%%%%%%%%%%%%%%")
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-# set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-09, # tolerance to stop outer iterations earlier
-                    device='gpu')
-
-lc = Rectools.powermethod(dataRaw[:,:,slice_to_recon])
-
-#%%
-# Run FISTA-PWLS-Group-Huber-OS reconstrucion algorithm with regularisation
-RecFISTA_pwls_GH_TV = Rectools.FISTA(data_norm[:,:,slice_to_recon], \
-                              dataRaw[:,:,slice_to_recon], \
-                              lambdaR_L1 = 0.000001,\
-                              alpha_ring = 150,\
-                              iterationsFISTA = 200, \
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.000001,\
-                              regularisation_iterations = 100,\
-                              lipschitz_const = lc)
-
-fig = plt.figure()
-plt.imshow(RecFISTA_pwls_GH_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
-#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-plt.title('FISTA PWLS-OS-TV reconstruction')
-plt.show()
-#%%
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%Reconstructing with ADMM LS-TV method %%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-# set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-                    nonnegativity='ENABLE', # enable nonnegativity constraint (set to 'ENABLE')
-                    OS_number = None, # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
-                    tolerance = 1e-08, # tolerance to stop outer iterations earlier
-                    device='gpu')
+_algorithm_ = {'iterations' : 15,
+               'ADMM_rho_const' : 500.0}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.003,
+                    'iterations' : 80,                    
+                    'device_regulariser': 'gpu'}
 
 # Run ADMM-LS-TV reconstrucion algorithm
-RecADMM_LS_TV = Rectools.ADMM(data_norm[:,:,slice_to_recon], \
-                              rho_const = 500.0, \
-                              iterationsADMM = 5,\
-                              regularisation = 'FGP_TV', \
-                              regularisation_parameter = 0.005,\
-                              regularisation_iterations = 100)
+RecADMM_LS_TV = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
 plt.imshow(RecADMM_LS_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
