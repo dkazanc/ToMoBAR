@@ -67,7 +67,7 @@ noisy_sino_misalign = _Artifacts_(sino_an, _noise_, {}, {}, _sinoshifts_)
 _zingers_ = {'percentage' : 0.25,
              'modulus' : 10}
 
-_stripes_ = {'percentage' : 1.0,
+_stripes_ = {'percentage' : 1.2,
              'maxthickness' : 3.0,
              'intensity' : 0.3,
              'type' : 'full',
