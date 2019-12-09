@@ -92,7 +92,8 @@ _algorithm_ = {'iterations' : 20,
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.000001,
-                    'iterations' : 80,                    
+                    'iterations' :80,    
+                    'methodTV' : 1,
                     'device_regulariser': 'gpu'}
 
 RecFISTA_os_tv_pwls = Rectools.FISTA(_data_, _algorithm_, _regularisation_)

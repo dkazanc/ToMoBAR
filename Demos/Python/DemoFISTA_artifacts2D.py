@@ -204,6 +204,7 @@ _algorithm_ = {'iterations' : 20,
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.001,
                     'iterations' : 80,
+                    'time_marching_step' : 0.0000001,
                     'device_regulariser': 'gpu'}
 
 print("Run FISTA-OS reconstrucion algorithm with regularisation...")

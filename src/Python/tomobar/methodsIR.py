@@ -138,7 +138,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         _regularisation_['tolerance'] = 0.0
     # time marching step to ensure convergence for gradient based methods: ROF_TV, LLT_ROF,  NDF, Diff4th
     if ('time_marching_step' not in _regularisation_):
-        _regularisation_['time_marching_step'] = 0.001
+        _regularisation_['time_marching_step'] = 0.005
     #  TGV specific parameter for the 1st order term
     if ('TGV_alpha1' not in _regularisation_):
         _regularisation_['TGV_alpha1'] = 1.0
@@ -194,7 +194,7 @@ def prox_regul(self, X, _regularisation_):
         (X,info_vec) = FGP_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul, _regularisation_['device_regulariser'])
     if (_regularisation_['method'] == 'PD_TV'):
         # Primal-Dual (PD) Total variation method by Chambolle-Pock
-        (X,info_vec) = PD_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul,  _regularisation_['PD_LipschitzConstant'], 0.2*_regularisation_['time_marching_step'], _regularisation_['device_regulariser'])
+        (X,info_vec) = PD_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul, _regularisation_['PD_LipschitzConstant'], _regularisation_['device_regulariser'])
     if (_regularisation_['method'] == 'SB_TV'):
         # Split Bregman Total variation method
         (X,info_vec) = SB_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], _regularisation_['device_regulariser'])
@@ -564,15 +564,15 @@ class RecToolsIR:
                 r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
             if (_algorithm_['verbose'] == 'on'):
                 if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):
-                    print('FISTA iteration number:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+                    print('FISTA iteration (',iter+1,') using', _regularisation_['method'], 'regularisation for (',(int)(info_vec[0]),') iterations')
                 if (iter == _algorithm_['iterations']-1):
-                    print('FISTA stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+                    print('FISTA stopped at iteration (', iter+1, ')')
             # stopping criteria (checked only after a reasonable number of iterations)
             if (((iter > 10) and (_data_['OS_number'] > 1)) or ((iter > 150) and (_data_['OS_number'] == 1))):
                 nrm = LA.norm(X - X_old)*denomN
                 if (nrm < _algorithm_['tolerance']):
                     if (_algorithm_['verbose'] == 'on'):
-                        print('FISTA stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+                        print('FISTA stopped at iteration (', iter+1, ')')
                     break
         return X
 #*****************************FISTA ends here*********************************#
@@ -632,16 +632,16 @@ class RecToolsIR:
             # update u variable
             u = u + (x_hat - z)
             if (_algorithm_['verbose'] == 'on'):
-                if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):
-                    print('ADMM iteration number:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+                if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):                    
+                    print('ADMM iteration (',iter+1,') using', _regularisation_['method'], 'regularisation for (',(int)(info_vec[0]),') iterations')
             if (iter == _algorithm_['iterations']-1):
-                print('ADMM stopped at iteration:', iter+1, 'with regularisation iterations:', (int)(info_vec[0]))
+                print('ADMM stopped at iteration (', iter+1, ')')
 
             # stopping criteria (checked after reasonable number of iterations)
             if (iter > 5):
                 nrm = LA.norm(X - X_old)*denomN
                 if nrm < _algorithm_['tolerance']:
-                    print('ADMM stopped at iteration:', iter, 'with regularisation iterations:', (int)(info_vec[0]))
+                    print('ADMM stopped at iteration (', iter, ')')
                     break
         if (self.geom == '2D'):
             return X.reshape([self.ObjSize, self.ObjSize])
