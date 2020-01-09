@@ -52,6 +52,8 @@ plt.rcParams.update({'font.size': 21})
 plt.imshow(sino_an,  cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
+
+indicesROI = phantom_2D > 0
 #%%
 # Adding noise
 from tomophantom.supp.artifacts import _Artifacts_
@@ -63,7 +65,6 @@ _noise_ =  {'type' : 'Poisson',
 
 noisy_sino = _Artifacts_(sino_an, _noise_, {}, {}, {})
 
-
 plt.figure()
 plt.rcParams.update({'font.size': 21})
 plt.imshow(noisy_sino,cmap="gray")
@@ -74,11 +75,11 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
-RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+RectoolsDIR = RecToolsDIR(DetectorsDimH = P,         # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(noisy_sino) #perform FBP
@@ -95,25 +96,28 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS
+Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
 _data_ = {'projection_norm_data' : noisy_sino} # data dictionary
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {'iterations' : 350,
+_algorithm_ = {'iterations' : 400,
                'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
 RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
+plt.figure()
+plt.imshow(RecFISTA, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
-                    'regul_param' : 0.001,
+                    'regul_param' : 0.0005,
                     'iterations' : 150,
                     'device_regulariser': 'gpu'}
 
@@ -131,9 +135,9 @@ plt.title('Regularised FISTA reconstruction')
 plt.show()
 
 # calculate errors 
-Qtools = QualityTools(phantom_2D, RecFISTA)
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA[indicesROI])
 RMSE_FISTA = Qtools.rmse()
-Qtools = QualityTools(phantom_2D, RecFISTA_reg)
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_reg[indicesROI])
 RMSE_FISTA_reg = Qtools.rmse()
 print("RMSE for FISTA is {}".format(RMSE_FISTA))
 print("RMSE for regularised FISTA is {}".format(RMSE_FISTA_reg))
@@ -144,12 +148,12 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
@@ -158,13 +162,13 @@ _data_ = {'projection_norm_data' : noisy_sino,
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA-OS reconstrucion algorithm without regularisation
-_algorithm_ = {'iterations' : 20,
+_algorithm_ = {'iterations' : 30,
                'lipschitz_const' : lc}
 RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
 
 # adding regularisation
 _regularisation_ = {'method' : 'PD_TV',
-                    'regul_param' : 0.001,
+                    'regul_param' : 0.0005,
                     'iterations' : 80,
                     'device_regulariser': 'gpu'}
 
@@ -183,10 +187,62 @@ plt.title('Regularised FISTA-OS reconstruction')
 plt.show()
 
 # calculate errors 
-Qtools = QualityTools(phantom_2D, RecFISTA_os)
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_os[indicesROI])
 RMSE_FISTA_os = Qtools.rmse()
-Qtools = QualityTools(phantom_2D, RecFISTA_os_reg)
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_os_reg[indicesROI])
 RMSE_FISTA_os_reg = Qtools.rmse()
 print("RMSE for FISTA-OS is {}".format(RMSE_FISTA_os))
 print("RMSE for regularised FISTA-OS is {}".format(RMSE_FISTA_os_reg))
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA-KL-OS method")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+
+# set parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='KL',               # Data fidelity, choose from LS, KL, PWLS
+                    device_projector='gpu')
+
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : noisy_sino,
+          'OS_number' : 10} # data dictionary
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+
+# Run FISTA-OS reconstrucion algorithm without regularisation
+_algorithm_ = {'iterations' : 60,
+               'lipschitz_const' : lc*0.1}
+RecFISTA_os_kl = Rectools.FISTA(_data_, _algorithm_, {})
+
+# adding regularisation
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.00001,
+                    'iterations' : 80,
+                    'device_regulariser': 'gpu'}
+
+# adding regularisation using the CCPi regularisation toolkit
+RecFISTA_os_kl_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+
+plt.figure()
+plt.subplot(121)
+plt.imshow(RecFISTA_os_kl, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA-KL-OS reconstruction')
+plt.subplot(122)
+plt.imshow(RecFISTA_os_kl_reg, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('Regularised FISTA-KL-OS reconstruction')
+plt.show()
+
+# calculate errors 
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_os_kl[indicesROI])
+RMSE_FISTA_os = Qtools.rmse()
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_os_kl_reg[indicesROI])
+RMSE_FISTA_os_reg = Qtools.rmse()
+print("RMSE for FISTA-KL-OS is {}".format(RMSE_FISTA_os))
+print("RMSE for regularised FISTA-KL-OS is {}".format(RMSE_FISTA_os_reg))
 #%%

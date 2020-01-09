@@ -38,7 +38,7 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('{}''{}'.format('2D Phantom using model no.',model))
 
 # create sinogram analytically
-angles_num = int(0.5*np.pi*N_size); # angles number
+angles_num = int(N_size*0.5); # angles number
 angles = np.linspace(0.0,179.9,angles_num,dtype='float32')
 angles_rad = angles*(np.pi/180.0)
 P = N_size #int(np.sqrt(2)*N_size) #detectors
@@ -50,14 +50,14 @@ plt.rcParams.update({'font.size': 21})
 plt.imshow(sino_an,  cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
-
+indicesROI = phantom_2D > 0
 #%%
 # Adding artifacts and noise
 from tomophantom.supp.artifacts import _Artifacts_
 
 # forming dictionaries with artifact types
 _noise_ =  {'type' : 'Poisson',
-            'sigma' : 10000, # noise amplitude
+            'sigma' : 5000, # noise amplitude
             'seed' : 0}
 # misalignment dictionary
 _sinoshifts_ = {'maxamplitude' : 10}
@@ -70,8 +70,7 @@ _zingers_ = {'percentage' : 0.25,
 _stripes_ = {'percentage' : 1.2,
              'maxthickness' : 3.0,
              'intensity' : 0.3,
-             'type' : 'full',
-             'variability' : 0.005}
+             'type' : 'full'}
 
 noisy_zing_stripe = _Artifacts_(sino_an, _noise_, _zingers_, _stripes_, _sinoshifts_= {})
 
@@ -82,11 +81,11 @@ plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical noisy sinogram with artifacts.',model))
 #%%
 from tomobar.methodsDIR import RecToolsDIR
-Rectools = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = P, # a scalar to define reconstructed object dimensions
+Rectools = RecToolsDIR(DetectorsDimH = P,            # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -114,30 +113,32 @@ plt.show()
 plt.figure() 
 plt.imshow(abs(FBPrec_ideal-FBPrec_error), vmin=0, vmax=2, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 2], orientation='vertical')
-plt.title('FBP reconsrtuction differences')
+plt.title('FBP reconstruction differences')
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing using FISTA method (tomobar)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
-RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = P, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS', #data fidelity, choose LS
+RectoolsIR = RecToolsIR(DetectorsDimH = P,           # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
-_data_ = {'projection_norm_data' : noisy_zing_stripe} # data dictionary
+_data_ = {'projection_norm_data' : noisy_zing_stripe,
+           'OS_number' : 10} # data dictionary
 lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {'iterations' : 350,
+
+_algorithm_ = {'iterations' : 30,
                'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
-                    'regul_param' : 0.001,
-                    'iterations' : 150,
+                    'regul_param' : 0.0004,
+                    'iterations' : 80,
                     'device_regulariser': 'gpu'}
 
 print("Run FISTA reconstrucion algorithm with regularisation...")
@@ -149,7 +150,7 @@ print(" Run FISTA reconstrucion algorithm with regularisation and Huber data..."
 RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 print("Adding a better model for data with rings...")
-_data_.update({'ring_weights_threshold' : 7.0,
+_data_.update({'ring_weights_threshold' : 10.0,
                'ring_tuple_halfsizes': (9,7,0)})
 
 RecFISTA_HuberRing_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
@@ -170,107 +171,28 @@ plt.title('FISTA-HuberRing-TV reconstruction')
 plt.show()
 
 # calculate errors 
-Qtools = QualityTools(phantom_2D, RecFISTA_LS_reg)
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_LS_reg[indicesROI])
 RMSE_FISTA_LS_TV = Qtools.rmse()
-Qtools = QualityTools(phantom_2D, RecFISTA_Huber_reg)
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_Huber_reg[indicesROI])
 RMSE_FISTA_HUBER_TV = Qtools.rmse()
-Qtools = QualityTools(phantom_2D, RecFISTA_HuberRing_reg)
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_HuberRing_reg[indicesROI])
 RMSE_FISTA_HUBERRING_TV = Qtools.rmse()
 print("RMSE for FISTA-LS-TV reconstruction is {}".format(RMSE_FISTA_LS_TV))
 print("RMSE for FISTA-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
 print("RMSE for FISTA-OS-HuberRing-TV is {}".format(RMSE_FISTA_HUBERRING_TV))
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing using FISTA-OS method (tomobar)")
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = P, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS', #data fidelity, choose LS
-                    device_projector='gpu')
-
-# prepare dictionaries with parameters:
-_data_ = {'projection_norm_data' : noisy_zing_stripe,
-          'OS_number' : 10} # data dictionary
-lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
-
-_algorithm_ = {'iterations' : 20,
-               'lipschitz_const' : lc}
-
-# adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {'method' : 'PD_TV',
-                    'regul_param' : 0.001,
-                    'iterations' : 80,
-                    'time_marching_step' : 0.0000001,
-                    'device_regulariser': 'gpu'}
-
-print("Run FISTA-OS reconstrucion algorithm with regularisation...")
-RecFISTA_LS_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
-
-print(" Run FISTA-OS reconstrucion algorithm with regularisation and Huber data...")
-_data_.update({'huber_threshold' : 7.0})
-RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
-
-print("adding a better model for data with rings...")
-_data_.update({'ring_weights_threshold' : 7.0,
-               'ring_tuple_halfsizes': (9,7,0)}) #window sizes for (detectors,angles,slices)
-RecFISTA_HuberRing_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
-
-plt.figure()
-plt.subplot(131)
-plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=1, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-plt.title('FISTA-OS-LS-TV reconstruction')
-plt.subplot(132)
-plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=1, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-plt.title('FISTA-OS-Huber-TV reconstruction')
-plt.subplot(133)
-plt.imshow(RecFISTA_HuberRing_reg, vmin=0, vmax=1, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-plt.title('FISTA-OS-HuberRing-TV reconstruction')
-plt.show()
-
-# calculate errors 
-Qtools = QualityTools(phantom_2D, RecFISTA_LS_reg)
-RMSE_FISTA_LS_TV = Qtools.rmse()
-Qtools = QualityTools(phantom_2D, RecFISTA_Huber_reg)
-RMSE_FISTA_HUBER_TV = Qtools.rmse()
-Qtools = QualityTools(phantom_2D, RecFISTA_HuberRing_reg)
-RMSE_FISTA_HUBERRING_TV = Qtools.rmse()
-print("RMSE for FISTA-OS-LS-TV reconstruction is {}".format(RMSE_FISTA_LS_TV))
-print("RMSE for FISTA-OS-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
-print("RMSE for FISTA-OS-HuberRing-TV is {}".format(RMSE_FISTA_HUBERRING_TV))
-#%%
-print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing using FISTA-Group-Huber method (tomobar)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-RectoolsIR = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = P, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS', #data fidelity, choose LS
-                    device_projector='gpu')
-
 # prepare dictionaries with parameters:
 _data_ = {'projection_norm_data' : noisy_zing_stripe,
-         'ringGH_lambda' : 0.0025,
+         'huber_threshold' : 7.0,
+         'ringGH_lambda' : 0.00001,
          'ringGH_accelerate': 100,
-          } 
-lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {'iterations' : 350,
-               'lipschitz_const' : lc}
+          'OS_number' : 10}
 
-# adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {'method' : 'PD_TV',
-                    'regul_param' : 0.001,
-                    'iterations' : 150,
-                    'device_regulariser': 'gpu'}
+_algorithm_ = {'iterations' : 50,
+               'lipschitz_const' : lc}
 
 # Run FISTA reconstrucion algorithm with regularisation 
 RecFISTA_LS_GH_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
@@ -282,7 +204,38 @@ plt.title('FISTA-OS-GH-TV reconstruction')
 plt.show()
 
 # calculate errors 
-Qtools = QualityTools(phantom_2D, RecFISTA_LS_GH_reg)
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_LS_GH_reg[indicesROI])
 RMSE_FISTA_LS_GH_TV = Qtools.rmse()
 print("RMSE for FISTA-LS-GH-TV reconstruction is {}".format(RMSE_FISTA_LS_GH_TV))
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing using FISTA-students't method (tomobar)")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : noisy_zing_stripe,
+         'studentst_threshold' : 10.0}
+#lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+
+_algorithm_ = {'iterations' : 1000,
+               'lipschitz_const' : 35000}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.0001,
+                    'iterations' : 150,
+                    'device_regulariser': 'gpu'}
+
+# Run FISTA reconstrucion algorithm with regularisation 
+RecFISTA_LS_stud_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
+
+plt.figure()
+plt.imshow(RecFISTA_LS_stud_reg, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA-OS-Stidentst-TV reconstruction')
+plt.show()
+
+# calculate errors 
+Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_LS_stud_reg[indicesROI])
+RMSE_FISTA_LS_studentst_TV = Qtools.rmse()
+print("RMSE for FISTA-LS-Studentst-TV reconstruction is {}".format(RMSE_FISTA_LS_studentst_TV))
 #%%

@@ -74,7 +74,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         _data_['studentst_threshold'] = None
     # threshold to produce additional weights to supress ring artifacts
     if ('ring_weights_threshold' not in _data_):
-        _data_['ring_weights_threshold'] = None    
+        _data_['ring_weights_threshold'] = None
     # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more penalising  
     if ('ring_huber_power' not in _data_):
         _data_['ring_huber_power'] = 1.75       
@@ -221,13 +221,13 @@ class RecToolsIR:
     A class for iterative reconstruction algorithms (FISTA and ADMM) using ASTRA and CCPi-RGL toolkit
     -------------------------------------------------------------------------------------------------
     Parameters of the class function mainly describing geometry:
-        *DetectorsDimH  # detector dimension (horizontal)
-        *DetectorsDimV  # detector dimension (vertical) for 3D case only
-        *CenterRotOffset  # Center of Rotation (CoR) scalar (for 3D case only)
-        *AnglesVec # array of angles in radians
-        *ObjSize # a scalar to define reconstructed object dimensions
-        *datafidelity # data fidelity, choose 'LS', 'PWLS'
-        *device_projector # choose projector between 'cpu' and 'gpu'
+      *DetectorsDimH,     # Horizontal detector dimension
+      *DetectorsDimV,     # Vertical detector dimension (3D case)
+      *CenterRotOffset,   # Center of Rotation scalar (for 3D case)
+      *AnglesVec,         # Array of projection angles in radians
+      *ObjSize,           # Reconstructed object dimensions (scalar)
+      *datafidelity,      # Data fidelity, choose from LS, KL, PWLS
+      *device_projector   # choose projector between 'cpu' and 'gpu'
 
     Parameters for reconstruction algorithms extracted from 3 dictionaries:
       _data_ :
@@ -270,13 +270,13 @@ class RecToolsIR:
     __________________________________________________________________________________________________
     """
     def __init__(self,
-              DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
-              DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-              CenterRotOffset,  # Center of Rotation (CoR) scalar (for 3D case only)
-              AnglesVec, # array of angles in radians
-              ObjSize, # a scalar to define reconstructed object dimensions
-              datafidelity, # data fidelity, choose 'LS', 'PWLS'
-              device_projector # choose projector between 'cpu' and 'gpu'
+              DetectorsDimH,     # Horizontal detector dimension
+              DetectorsDimV,     # Vertical detector dimension (3D case)
+              CenterRotOffset,   # Center of Rotation scalar (for 3D case)
+              AnglesVec,         # Array of projection angles in radians
+              ObjSize,           # Reconstructed object dimensions (scalar)
+              datafidelity,      # Data fidelity, choose from LS, KL, PWLS
+              device_projector   # choose projector between 'cpu' and 'gpu'
               ):
         if ObjSize is tuple:
             raise (" Reconstruction is currently available for square or cubic objects only, provide a scalar ")
@@ -298,8 +298,8 @@ class RecToolsIR:
         else:
             self.device_projector = device_projector
 
-        if datafidelity not in ['LS','PWLS']:
-            raise ValueError('Unknown data fidelity type, select: LS, PWLS')
+        if datafidelity not in ['LS','PWLS','KL']:
+            raise ValueError('Unknown data fidelity type, select: LS, PWLS, KL')
 
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
@@ -481,6 +481,10 @@ class RecToolsIR:
                             if (self.datafidelity == 'PWLS'):
                                 # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(_data_['projection_raw_data'][indVec,:], (self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]))
+                            if (self.datafidelity == 'KL'):
+                                # 2D Kullback-Leibler (KL) data fidelity - OS
+                                tmp = self.AtoolsOS.forwprojOS(X_t,sub_ind)
+                                res = np.divide(tmp - _data_['projection_norm_data'][indVec,:], tmp + 1.0)
                             # ring removal part for Group-Huber (GH) fidelity (2D)
                             if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
                                 res[:,0:None] = res[:,0:None] + _data_['ringGH_accelerate']*r_x[:,0]
@@ -491,6 +495,10 @@ class RecToolsIR:
                             if (self.datafidelity == 'PWLS'):
                                 # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(_data_['projection_raw_data'][:,indVec,:], (self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]))
+                            if (self.datafidelity == 'KL'):
+                                # 3D Kullback-Leibler (KL) data fidelity - OS
+                                tmp = self.AtoolsOS.forwprojOS(X_t,sub_ind)
+                                res = np.divide(tmp - _data_['projection_norm_data'][:,indVec,:], tmp + 1.0)
                             # GH - fidelity part (3D)
                             if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
                                 for ang_index in range(len(indVec)):
@@ -507,6 +515,10 @@ class RecToolsIR:
                         if (self.datafidelity == 'PWLS'):
                             # full gradient for the PWLS fidelity
                             res = np.multiply(_data_['projection_raw_data'], (self.Atools.forwproj(X_t) - _data_['projection_norm_data']))
+                        if (self.datafidelity == 'KL'):
+                            # 2D Kullback-Leibler (KL) data fidelity
+                            tmp = self.Atools.forwproj(X_t)
+                            res = np.divide(tmp - _data_['projection_norm_data'], tmp + 1.0)
                         if ((self.geom == '2D') and (_data_['ringGH_lambda'] is not None) and (iter > 0)):  # GH 2D part
                             res[0:None,:] = res[0:None,:] + _data_['ringGH_accelerate']*r_x[:,0]
                             vec = res.sum(axis = 0)

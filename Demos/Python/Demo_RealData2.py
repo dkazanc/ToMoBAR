@@ -43,11 +43,11 @@ from tomobar.methodsDIR import RecToolsDIR
 N_size = 2000
 det_y_crop = [i for i in range(0,2374)]
 
-RectoolsDIR = RecToolsDIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+RectoolsDIR = RecToolsDIR(DetectorsDimH = np.size(det_y_crop), # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(data_norm[:,det_y_crop])
@@ -61,12 +61,12 @@ plt.title('FBP reconstruction')
 from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = np.size(det_y_crop),  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='PWLS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+Rectools = RecToolsIR(DetectorsDimH =  np.size(det_y_crop), # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='PWLS',             # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
@@ -93,7 +93,7 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # adding regularisation
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.0012,
-                    'iterations' : 80,                    
+                    'iterations' : 80,
                     'device_regulariser': 'gpu'}
 
 RecFISTA_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
@@ -158,7 +158,7 @@ _algorithm_ = {'iterations' : 5,
 
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.015,
-                    'iterations' : 80,                    
+                    'iterations' : 80,
                     'device_regulariser': 'gpu'}
 
 # Run ADMM-LS-TV reconstrucion algorithm
