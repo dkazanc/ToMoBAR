@@ -39,6 +39,7 @@ if(WIN32)
   message("library lib: ${LIBRARY_LIB}")
   
 elseif(UNIX)
+   # this is GCC specific
    set (FLAGS "-O2 -funsigned-char -Wall  -Wl,--no-undefined")  
    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
    set (CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
@@ -58,7 +59,9 @@ add_library(tomobar SHARED
     	    ${CMAKE_CURRENT_SOURCE_DIR}/functions_CPU/utils.c
 	    )
 target_link_libraries(tomobar ${EXTRA_LIBRARIES} )
-include_directories(tomobar PUBLIC 
+target_include_directories(tomobar PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+target_include_directories(tomobar PUBLIC 
                       ${LIBRARY_INC}/include 
 					  ${CMAKE_CURRENT_SOURCE_DIR}
 		              ${CMAKE_CURRENT_SOURCE_DIR}/functions_CPU/ )

@@ -15,11 +15,13 @@ limitations under the License.
 #include <stdlib.h>
 #include <memory.h>
 #include "omp.h"
+#include "dll_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-float copyIm(float *A, float *U, long dimX, long dimY, long dimZ);
-unsigned char copyIm_unchar(unsigned char *A, unsigned char *U, int dimX, int dimY, int dimZ);
+DLL_EXPORT float copyIm(float *A, float *U, long dimX, long dimY, long dimZ);
+DLL_EXPORT unsigned char copyIm_unchar(unsigned char *A, unsigned char *U, int dimX, int dimY, int dimZ);
 #ifdef __cplusplus
 }
 #endif

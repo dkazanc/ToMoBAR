@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include "omp.h"
 #include "utils.h"
-
+#include "dll_export.h"
 
 /*
 * C function to establish a better model for supressing ring artifacts.
@@ -39,14 +39,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-float RingWeights_main(float *residual, float *weights, int window_halfsize_detectors, int window_halfsize_angles, int window_halfsize_projections, long anglesDim, long detectorsDim, long slices);
+DLL_EXPORT float RingWeights_main(float *residual, float *weights, int window_halfsize_detectors, int window_halfsize_angles, int window_halfsize_projections, long anglesDim, long detectorsDim, long slices);
 /************2D functions ***********/
-float RingWeights_det2D(float *residual, float *weights_temp, int window_halfsize_detectors, int detectors_full_window, long anglesDim, long detectorsDim, long i, long j);
-float RingWeights_angles2D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long i, long j);
+DLL_EXPORT float RingWeights_det2D(float *residual, float *weights_temp, int window_halfsize_detectors, int detectors_full_window, long anglesDim, long detectorsDim, long i, long j);
+DLL_EXPORT float RingWeights_angles2D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long i, long j);
 /************3D functions ***********/
-float RingWeights_proj3D(float *residual, float *weights_temp, int window_halfsize_projections, int projections_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k);
-float RingWeights_det3D(float *residual, float *weights_temp, int window_halfsize_detectors, int detectors_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k);
-float RingWeights_angles3D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k);
+DLL_EXPORT float RingWeights_proj3D(float *residual, float *weights_temp, int window_halfsize_projections, int projections_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k);
+DLL_EXPORT float RingWeights_det3D(float *residual, float *weights_temp, int window_halfsize_detectors, int detectors_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k);
+DLL_EXPORT float RingWeights_angles3D(float *weights_temp, float *weights, int window_halfsize_angles, int angles_full_window, long anglesDim, long detectorsDim, long slices, long j, long i, long k);
 #ifdef __cplusplus
 }
 #endif
