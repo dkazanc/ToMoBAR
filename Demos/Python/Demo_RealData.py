@@ -54,52 +54,55 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
-RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz, # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(data_norm[:,:,slice_to_recon])
 
-plt.figure()
-plt.imshow(FBPrec[150:550,150:550], vmin=0, vmax=0.005, cmap="gray")
+fig = plt.figure()
+plt.imshow(FBPrec[180:800,180:800], vmin=0, vmax=0.005, cmap="gray")
 plt.title('FBP reconstruction')
+#fig.savefig('dendr_FPP.png', dpi=200)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TV method %%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
-# set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = detectorHoriz,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='PWLS',# data fidelity, choose LS, PWLS
+# Set scanning geometry parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = detectorHoriz, # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='PWLS',             # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
 
-# prepare dictionaries with parameters:
-_data_ = {'projection_norm_data' : data_norm[:,:,slice_to_recon],
-          'projection_raw_data' : dataRaw[:,:,slice_to_recon],
-          'OS_number' : 6} # data dictionary
+####################### Creating the data dictionary: #######################
+_data_ = {'projection_norm_data' : data_norm[:,:,slice_to_recon], # Normalised projection data
+          'projection_raw_data' : dataRaw[:,:,slice_to_recon],    # Raw projection data
+          'OS_number' : 6                                         # The number of subsets
+          }
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once)
 
-lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {'iterations' : 20,
+####################### Creating the algorithm dictionary: #######################
+_algorithm_ = {'iterations' : 25,                   # The number of iterations
                'lipschitz_const' : lc}
 
-# adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {'method' : 'PD_TV',
-                    'regul_param' : 0.000001,
-                    'iterations' :80,    
-                    'methodTV' : 1,
+##### creating the regularisation dictionary using the CCPi regularisation toolkit: #####
+_regularisation_ = {'method' : 'PD_TV',         # Selected regularisation method
+                    'regul_param' : 0.000001,   # Regularisation parameter
+                    'iterations' :80,           # The number of regularisation iterations
                     'device_regulariser': 'gpu'}
 
+# RUN THE FISTA METHOD: 
 RecFISTA_os_tv_pwls = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
-plt.imshow(RecFISTA_os_tv_pwls[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+plt.imshow(RecFISTA_os_tv_pwls[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
 plt.title('FISTA PWLS-OS-TV reconstruction')
 plt.show()
 #fig.savefig('dendr_PWLS.png', dpi=200)
@@ -108,43 +111,38 @@ plt.show()
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-GH-TV  method %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# adding Group-Huber data model
-_data_.update({'ringGH_lambda' : 0.000001,
-                'ringGH_accelerate': 10}) 
-
-# adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {'method' : 'PD_TV',
-                    'regul_param' : 0.000001,
-                    'iterations' : 80,                    
-                    'device_regulariser': 'gpu'}
+# adding Group-Huber data model by updaing the data dictionary
+_data_.update({'ringGH_lambda' : 0.0000015,
+                'ringGH_accelerate': 8})
 
 # Run FISTA-PWLS-Group-Huber-OS reconstrucion algorithm with regularisation
 RecFISTA_pwls_GH_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
-plt.imshow(RecFISTA_pwls_GH_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+plt.imshow(RecFISTA_pwls_GH_TV[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
 #plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA PWLS-OS-GH-TV reconstruction')
 plt.show()
+#fig.savefig('dendr_PWLS_OS_GH_TV.png', dpi=200)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-ROF_LLT method %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
 _regularisation_ = {'method' : 'LLT_ROF',
-                    'regul_param' : 0.00001,
-                    'regul_param2' : 0.00002,
-                    'iterations' : 80,                    
+                    'regul_param' : 0.000001,
+                    'regul_param2' : 0.00000125,
+                    'iterations' : 150,
                     'device_regulariser': 'gpu'}
 
 RecFISTA_pwls_os_rofllt = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
-plt.imshow(RecFISTA_pwls_os_rofllt[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+plt.imshow(RecFISTA_pwls_os_rofllt[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
 #plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA PWLS-OS-ROF-LLT reconstruction')
 plt.show()
-#fig.savefig('dendr_ROFLLT.png', dpi=200)
+#fig.savefig('dendr_PWLS_OS_GH_ROFLLT.png', dpi=200)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-TGV method %%%%%%%%%%%%%%%")
@@ -153,14 +151,13 @@ _regularisation_ = {'method' : 'TGV',
                     'regul_param' : 0.001,
                     'TGV_alpha1' : 1.0,
                     'TGV_alpha2' : 1.5,
-                    'iterations' : 100,                    
+                    'iterations' : 100,
                     'device_regulariser': 'gpu'}
 
 RecFISTA_pwls_os_tgv = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
-        
 
 fig = plt.figure()
-plt.imshow(RecFISTA_pwls_os_tgv[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+plt.imshow(RecFISTA_pwls_os_tgv[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
 #plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA PWLS-OS-TGV reconstruction')
 plt.show()
@@ -175,15 +172,86 @@ _algorithm_ = {'iterations' : 15,
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.003,
-                    'iterations' : 80,                    
+                    'iterations' : 80,
                     'device_regulariser': 'gpu'}
 
 # Run ADMM-LS-TV reconstrucion algorithm
 RecADMM_LS_TV = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
-plt.imshow(RecADMM_LS_TV[150:550,150:550], vmin=0, vmax=0.003, cmap="gray")
+plt.imshow(RecADMM_LS_TV[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
 #plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('ADMM LS-TV reconstruction')
 plt.show()
 #fig.savefig('dendr_TV.png', dpi=200)
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA KL-OS-TV method %%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+# set parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = detectorHoriz, # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
+                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='KL',             # Data fidelity, choose from LS, KL, PWLS
+                    device_projector='gpu')
+
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : data_norm[:,:,slice_to_recon],
+          'OS_number' : 6} # data dictionary
+
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+_algorithm_ = {'iterations' : 50,
+               'lipschitz_const' : lc*0.7}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' : 0.000002,
+                    'iterations' :80,
+                    'device_regulariser': 'gpu'}
+
+RecFISTA_os_tv_kl = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_os_tv_kl[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
+plt.title('FISTA KL-OS-TV reconstruction')
+plt.show()
+#fig.savefig('dendr_KL_OS_GH_TV.png', dpi=200)
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA KL-OS-GH-TV  method %%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# adding Group-Huber data model
+_data_.update({'ringGH_lambda' : 0.000001,
+                'ringGH_accelerate': 15})
+
+RecFISTA_KL_GH_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_KL_GH_TV[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA KL-OS-GH-TV reconstruction')
+plt.show()
+#fig.savefig('dendr_KL_OS_GH_TV.png', dpi=200)
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA KL-OS-ROF_LLT method %%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# Run FISTA-PWLS-OS reconstrucion algorithm with regularisation
+_regularisation_ = {'method' : 'LLT_ROF',
+                    'regul_param' : 0.0000021,
+                    'regul_param2' : 0.0000025,
+                    'iterations' : 150,
+                    'device_regulariser': 'gpu'}
+
+RecFISTA_KL_os_rofllt = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_KL_os_rofllt[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
+#plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('FISTA KL-OS-ROF-LLT reconstruction')
+plt.show()
+#fig.savefig('dendr_KL_OS_GH_ROF_LLT.png', dpi=200)
+#%%

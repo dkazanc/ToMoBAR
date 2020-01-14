@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2020.01]
+### Added
+- Kullback-Leibler term has been added according to C.Vogel p.174
+- Demos has been updated to use KL term
+
 ## [2019.12]
 ### Changed
 - Due to model-based structure of algorithms, the amount of parameters constantly increases. It has been 

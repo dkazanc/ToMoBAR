@@ -25,7 +25,7 @@
 ## Software highlights:
  * Tomographic parallel-beam projection data can be simulated without the "inverse crime" using [TomoPhantom](https://github.com/dkazanc/TomoPhantom). Noise and artifacts (zingers, rings, jitter) can be modelled and added to the data.
  * Simulated data reconstructed iteratively using FISTA or ADMM algorithms with multiple "plug-and-play" regularisers from [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit).
- * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method, PWLS, Huber, Group-Huber[3] and Students't data fidelities [1,2] to deal with noise and imaging artifacts (rings, streaks).
+ * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method; data fidelities: PWLS, Kullback-Leibler, Huber, Group-Huber[3] and Students't [1,2] to deal with noise and imaging artifacts (rings, streaks).
 
 ### General software prerequisites
  * [MATLAB](http://www.mathworks.com/products/matlab/) or Python
@@ -50,8 +50,8 @@ conda install -c dkazanc tomobar
 ```
 export VERSION=`date +%Y.%m` (unix) / set VERSION=2020.01 (Windows)
 conda build conda-recipe/ --numpy 1.16 --python 3.6
-conda install tomobar --use-local --force-reinstall # if this don't work (probably you're on Python 3*)
-conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall # try this one
+conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall 
+conda install tomobar --use-local --force-reinstall # if Python2
 ```
 #### Matlab:
 Simply use available m-functions, see Demos
