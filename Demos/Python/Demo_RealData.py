@@ -203,8 +203,8 @@ _data_ = {'projection_norm_data' : data_norm[:,:,slice_to_recon],
           'OS_number' : 6} # data dictionary
 
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {'iterations' : 25,
-               'lipschitz_const' : lc*0.5}
+_algorithm_ = {'iterations' : 50,
+               'lipschitz_const' : lc*0.7}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
@@ -224,8 +224,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA KL-OS-GH-TV  method %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # adding Group-Huber data model
-_data_.update({'ringGH_lambda' : 0.0000015,
-                'ringGH_accelerate': 17})
+_data_.update({'ringGH_lambda' : 0.000001,
+                'ringGH_accelerate': 15})
 
 RecFISTA_KL_GH_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 

@@ -214,13 +214,13 @@ _data_ = {'projection_norm_data' : noisy_sino,
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA-OS reconstrucion algorithm without regularisation
-_algorithm_ = {'iterations' : 60,
-               'lipschitz_const' : lc*0.1}
+_algorithm_ = {'iterations' : 50,
+               'lipschitz_const' : lc*0.3}
 RecFISTA_os_kl = Rectools.FISTA(_data_, _algorithm_, {})
 
 # adding regularisation
 _regularisation_ = {'method' : 'PD_TV',
-                    'regul_param' : 0.00001,
+                    'regul_param' : 0.00003,
                     'iterations' : 80,
                     'device_regulariser': 'gpu'}
 
