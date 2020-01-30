@@ -111,6 +111,8 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         _algorithm_['nonnegativity'] = 'ENABLE'
     if (_algorithm_['nonnegativity'] == 'ENABLE'):
         self.nonneg_regul = 1 # enable nonnegativity for regularisers
+    else:
+    	self.nonneg_regul = 0 # disable nonnegativity for regularisers
     # tolerance to stop OUTER algorithm iterations earlier
     if ('tolerance' not in _algorithm_):
         _algorithm_['tolerance'] = 0.0
