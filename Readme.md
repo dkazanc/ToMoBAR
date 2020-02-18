@@ -7,7 +7,7 @@
         </td>
         <td>
         <font size="12"><b> TOmographic MOdel-BAsed Reconstruction software </b></font>        
-        <br><font size="9">ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability</font></br>
+        <br><font size="9" face="verdana" color="green">ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability</font></br>
         </td>
     </tr>
 </table>
