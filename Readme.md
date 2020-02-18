@@ -1,8 +1,20 @@
+<table>
+    <tr>
+        <td>
+        <div align="left">
+          <img src="docs/images/tomobar_logo.png" width="250"><br>  
+        </div>
+        </td>
+        <td>
+        <font size="5"> TOmographic MOdel-BAsed Reconstruction software </font>
+        </td>
+    </tr>
+</table>
+
 | Master | Anaconda binaries |
 |--------|-------------------|
 | [![Build Status](https://travis-ci.org/dkazanc/ToMoBAR.svg?branch=master)](https://travis-ci.org/dkazanc/ToMoBAR.svg?branch=master) | ![conda version](https://anaconda.org/dkazanc/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/dkazanc/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/dkazanc/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/dkazanc/tomobar/badges/downloads.svg)](https://anaconda.org/dkazanc/tomobar/) |
 
-# TOmographic MOdel-BAsed Reconstruction (ToMoBAR)
 
 ## ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms with a *plug-and-play* capability
 
@@ -50,7 +62,7 @@ conda install -c dkazanc tomobar
 ```
 export VERSION=`date +%Y.%m` (unix) / set VERSION=2020.01 (Windows)
 conda build conda-recipe/ --numpy 1.16 --python 3.6
-conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall 
+conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
 conda install tomobar --use-local --force-reinstall # if Python2
 ```
 #### Matlab:
