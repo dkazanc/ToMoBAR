@@ -67,8 +67,8 @@ conda install tomobar --use-local --force-reinstall # if Python2
 Simply use available m-functions, see Demos
 
 ### How to use ToMoBAR in Python:
-<div align="center">
-  <img src="docs/images/tomobar_pres.png" width="550">  
+<div align="left">
+  <img src="docs/images/tomobar_pres.png" width="620">  
 </div>
 
 ### References:
