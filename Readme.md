@@ -6,8 +6,8 @@
         </div>
         </td>
         <td>
-        <font size="12"><b> TOmographic MOdel-BAsed Reconstruction software </b></font>        
-        <br><font size="9" face="verdana" color="green">ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability</font></br>
+        <font size="5"><b> TOmographic MOdel-BAsed Reconstruction software </b></font>     
+        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability to substitute various data models and constraints. </font></br>
         </td>
     </tr>
 </table>
@@ -26,10 +26,10 @@
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Demos to reconstruct synthetic and also real data (provided) [4-6]
 
 <div align="center">
-  <img src="docs/images/recsFISTA_stud.png" height="216"><br>  
+  <img src="docs/images/recsFISTA_stud.png" width=""><br>  
 </div>
 <div align="center">
-  <img src="docs/images/TomoRec_surf2.jpg" height="250"><br>  
+  <img src="docs/images/TomoRec_surf2.jpg" width=""><br>  
 </div>
 
 ## Software highlights:
