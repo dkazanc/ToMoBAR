@@ -26,10 +26,10 @@
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Demos to reconstruct synthetic and also real data (provided) [4-6]
 
 <div align="center">
-  <img src="docs/images/recsFISTA_stud.png" width="500">
+  <img src="docs/images/recsFISTA_stud.png" width="550">
 </div>
 <div align="center">
-  <img src="docs/images/TomoRec_surf2.jpg" width="500">  
+  <img src="docs/images/TomoRec_surf2.jpg" width="600">  
 </div>
 
 ## Software highlights:
