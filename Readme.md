@@ -26,10 +26,10 @@
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Demos to reconstruct synthetic and also real data (provided) [4-6]
 
 <div align="center">
-  <img src="docs/images/recsFISTA_stud.png" width="500"><br>  
+  <img src="docs/images/recsFISTA_stud.png" width="500">
 </div>
 <div align="center">
-  <img src="docs/images/TomoRec_surf2.jpg" width="500"><br>  
+  <img src="docs/images/TomoRec_surf2.jpg" width="500">  
 </div>
 
 ## Software highlights:
@@ -68,7 +68,7 @@ Simply use available m-functions, see Demos
 
 ### How to use ToMoBAR in Python:
 <div align="center">
-  <img src="docs/images/tomobar_pres.png" height="464"><br>  
+  <img src="docs/images/tomobar_pres.png" weight="600">  
 </div>
 
 ### References:
