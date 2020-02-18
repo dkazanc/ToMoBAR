@@ -6,7 +6,8 @@
         </div>
         </td>
         <td>
-        <font size="5"> TOmographic MOdel-BAsed Reconstruction software </font>
+        <font size="8"><b> TOmographic MOdel-BAsed Reconstruction software </b></font>        
+        <br><font size="6">ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability</font></br>
         </td>
     </tr>
 </table>
@@ -14,9 +15,6 @@
 | Master | Anaconda binaries |
 |--------|-------------------|
 | [![Build Status](https://travis-ci.org/dkazanc/ToMoBAR.svg?branch=master)](https://travis-ci.org/dkazanc/ToMoBAR.svg?branch=master) | ![conda version](https://anaconda.org/dkazanc/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/dkazanc/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/dkazanc/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/dkazanc/tomobar/badges/downloads.svg)](https://anaconda.org/dkazanc/tomobar/) |
-
-
-## ToMoBAR is a library of direct and model-based regularised iterative reconstruction algorithms with a *plug-and-play* capability
 
 ### Software includes:
  ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods ASTRA has
