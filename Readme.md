@@ -68,7 +68,7 @@ Simply use available m-functions, see Demos
 
 ### How to use ToMoBAR in Python:
 <div align="center">
-  <img src="docs/images/tomobar_pres.png" weight="600">  
+  <img src="docs/images/tomobar_pres.png" width="550">  
 </div>
 
 ### References:
