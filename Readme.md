@@ -2,7 +2,7 @@
     <tr>
         <td>
         <div align="left">
-          <img src="docs/images/tomobar_logo.png" width="350"><br>  
+          <img src="docs/images/tomobar_logo.png" width="450"><br>  
         </div>
         </td>
         <td>
