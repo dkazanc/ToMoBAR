@@ -2,12 +2,12 @@
     <tr>
         <td>
         <div align="left">
-          <img src="docs/images/tomobar_logo.png" width="250"><br>  
+          <img src="docs/images/tomobar_logo.png" width="350"><br>  
         </div>
         </td>
         <td>
         <font size="5"><b> TOmographic MOdel-BAsed Reconstruction software </b></font>     
-        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability to substitute various data models and constraints. </font></br>
+        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability. ToMoBAR offers you a selection of various data models and constraints resulting in more complex yet versatile objectives. </font></br>
         </td>
     </tr>
 </table>
