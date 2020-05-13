@@ -107,8 +107,8 @@ plt.show()
 from tomobar.methodsDIR import RecToolsDIR
 Rectools = RecToolsDIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,        # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = None,          # Center of Rotation scalar 
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
@@ -144,8 +144,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,        # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
@@ -249,8 +249,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,        # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='KL',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')

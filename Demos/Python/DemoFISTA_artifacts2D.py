@@ -83,8 +83,8 @@ plt.title('{}''{}'.format('Analytical noisy sinogram with artifacts.',model))
 from tomobar.methodsDIR import RecToolsDIR
 Rectools = RecToolsDIR(DetectorsDimH = P,            # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = None,          # Center of Rotation scalar 
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
@@ -121,8 +121,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
 RectoolsIR = RecToolsIR(DetectorsDimH = P,           # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')

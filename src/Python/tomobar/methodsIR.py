@@ -62,7 +62,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         #initialise OS ASTRA-related modules
         if self.geom == '2D':
             from tomobar.supp.astraOP import AstraToolsOS
-            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
+            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
         else:
             from tomobar.supp.astraOP import AstraToolsOS3D
             self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
@@ -308,7 +308,7 @@ class RecToolsIR:
             self.geom = '2D'
             # classical approach
             from tomobar.supp.astraOP import AstraTools
-            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
+            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
@@ -352,7 +352,7 @@ class RecToolsIR:
             #initialise OS ASTRA-related modules
             if self.geom == '2D':
                 from tomobar.supp.astraOP import AstraToolsOS
-                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
+                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
             else:
                 from tomobar.supp.astraOP import AstraToolsOS3D
                 self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
