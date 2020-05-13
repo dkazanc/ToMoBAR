@@ -77,12 +77,12 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,         # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset  = None,         # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
-FBPrec = RectoolsDIR.FBP(noisy_sino) #perform FBP
+FBPrec = RectoolsDIR.FBP(noisy_sino) # perform FBP reconstruction
 
 plt.figure()
 plt.rcParams.update({'font.size': 20})
@@ -98,8 +98,8 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
@@ -150,8 +150,8 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
@@ -165,7 +165,7 @@ lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to in
 _algorithm_ = {'iterations' : 30,
                'lipschitz_const' : lc}
 RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
-
+#
 # adding regularisation
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' : 0.0005,
@@ -202,8 +202,8 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='KL',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')

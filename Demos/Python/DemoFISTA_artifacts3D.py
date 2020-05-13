@@ -110,15 +110,15 @@ plt.show()
 #%%
 # initialise tomobar DIRECT reconstruction class ONCE
 from tomobar.methodsDIR import RecToolsDIR
-Rectools = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = 0.0, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    device_projector = 'gpu')
+RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # Horizontal detector dimension
+                    DetectorsDimV = Vert_det,         # Vertical detector dimension (3D case)
+                    CenterRotOffset  = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,           # A vector of projection angles in radians
+                    ObjSize = N_size,                 # Reconstructed object dimensions (scalar)
+                    device_projector='gpu')
 
 print ("Reconstruction using FBP from tomobar")
-recNumerical= Rectools.FBP(projData3D_analyt_noisy) # FBP reconstruction
+recNumerical= RectoolsDIR.FBP(projData3D_analyt_noisy) # FBP reconstruction
 
 sliceSel = int(0.5*N_size)
 max_val = 1
@@ -147,13 +147,14 @@ print ("Reconstructing with FISTA-OS method using tomobar")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # initialise tomobar ITERATIVE reconstruction class ONCE
 from tomobar.methodsIR import RecToolsIR
-Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = 0.0, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
+                    DetectorsDimV = Vert_det,         # Vertical detector dimension (3D case)
+                    CenterRotOffset  = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,           # A vector of projection angles in radians
+                    ObjSize = N_size,                 # Reconstructed object dimensions (scalar)
+                    datafidelity='LS',                # data fidelity, choose LS, KL
                     device_projector='gpu')
+
 
 _data_ = {'projection_norm_data' : projData3D_analyt_noisy,
           'OS_number' : 10} # data dictionary

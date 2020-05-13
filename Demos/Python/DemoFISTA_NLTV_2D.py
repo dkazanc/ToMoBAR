@@ -78,20 +78,20 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+RectoolsIR = RecToolsIR(DetectorsDimH = P,           # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
 
 from tomobar.methodsDIR import RecToolsDIR
-RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+RectoolsDIR = RecToolsDIR(DetectorsDimH = P,         # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset  = None,         # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
 FBPrec = RectoolsDIR.FBP(noisy_sino) #perform FBP
@@ -100,7 +100,6 @@ plt.figure()
 plt.imshow(FBPrec, vmin=0, vmax=1, cmap="BuPu")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FBP reconstruction')
-
 #%%
 from ccpi.filters.regularisers import PatchSelect
 print ("Pre-calculating weights for non-local patches using FBP image...")
@@ -125,7 +124,7 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 _data_ = {'projection_norm_data' : noisy_sino,
           'OS_number' : 10} # data dictionary
 
-lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA reconstrucion algorithm without regularisation
 _algorithm_ = {'iterations' : 20,
@@ -139,7 +138,7 @@ _regularisation_ = {'method' : 'PD_TV',
 
 tic=timeit.default_timer()
 print ("Run FISTA-OS reconstrucion algorithm with TV regularisation...")
-RecFISTA_TV_os = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+RecFISTA_TV_os = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 toc=timeit.default_timer()
 Run_time = toc - tic
 print("FISTA-OS-TV completed in {} seconds".format(Run_time))
@@ -156,7 +155,7 @@ _regularisation_ = {'method' : 'NLTV',
                     'device_regulariser': 'gpu'}
 
 
-RecFISTA_NLTV_os = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+RecFISTA_NLTV_os = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 toc=timeit.default_timer()
 Run_time = toc - tic

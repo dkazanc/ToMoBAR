@@ -41,37 +41,35 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 
 N_size = 2000
-det_y_crop = [i for i in range(0,2374)]
+angles_number,detectorHoriz = np.shape(data_norm)
 
-RectoolsDIR = RecToolsDIR(DetectorsDimH = np.size(det_y_crop), # Horizontal detector dimension
-                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
-                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz, # Horizontal detector dimension
+                    DetectorsDimV = None,                # Vertical detector dimension (3D case)
+                    CenterRotOffset = 92,                # Center of Rotation scalar
+                    AnglesVec = angles_rad,              # A vector of projection angles in radians
+                    ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
-FBPrec = RectoolsDIR.FBP(data_norm[:,det_y_crop])
+FBPrec = RectoolsDIR.FBP(data_norm)
 
 plt.figure()
 #plt.imshow(FBPrec[500:1500,500:1500], vmin=0, vmax=1, cmap="gray")
 plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
 plt.title('FBP reconstruction')
-
 #%%
 from tomobar.methodsIR import RecToolsIR
-
 # set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH =  np.size(det_y_crop), # Horizontal detector dimension
+Rectools = RecToolsIR(DetectorsDimH =  detectorHoriz, # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar (for 3D case)
-                    AnglesVec = angles_rad,          # Array of projection angles in radians
+                    CenterRotOffset = 92,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='PWLS',             # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
-_data_ = {'projection_norm_data' : data_norm[:,det_y_crop],
-          'projection_raw_data' :data_raw[:,det_y_crop],
+_data_ = {'projection_norm_data' : data_norm,
+          'projection_raw_data' :data_raw,
           'OS_number' : 6} # data dictionary
 
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)

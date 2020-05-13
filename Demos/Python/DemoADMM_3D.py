@@ -91,8 +91,8 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
+                    CenterRotOffset = None, # Center of Rotation (CoR) scalar 
+                    AnglesVec = angles_rad, # a vector of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     device_projector='gpu')
 
@@ -122,8 +122,8 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
                     DetectorsDimV = Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
+                    CenterRotOffset = None, # Center of Rotation (CoR) scalar 
+                    AnglesVec = angles_rad, # a vector of angles in radians
                     ObjSize = N_size, # a scalar to define reconstructed object dimensions
                     datafidelity='LS',# data fidelity, choose LS, PWLS, GH (wip), Student (wip)
                     device_projector='gpu')

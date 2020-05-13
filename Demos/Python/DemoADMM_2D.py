@@ -73,14 +73,13 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
-RectoolsDIR = RecToolsDIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
+RecToolsDIR = RecToolsDIR(DetectorsDimH = P, # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
-
-FBPrec = RectoolsDIR.FBP(noisy_sino) #perform FBP
+FBPrec = RecToolsDIR.FBP(noisy_sino) #perform FBP
 
 plt.figure()
 plt.rcParams.update({'font.size': 20})
@@ -94,12 +93,12 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
-Rectools = RecToolsIR(DetectorsDimH = P,  # DetectorsDimH # detector dimension (horizontal)
-                    DetectorsDimV = None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-                    CenterRotOffset = None, # Center of Rotation (CoR) scalar (for 3D case only)
-                    AnglesVec = angles_rad, # array of angles in radians
-                    ObjSize = N_size, # a scalar to define reconstructed object dimensions
-                    datafidelity='LS',# data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+Rectools = RecToolsIR(DetectorsDimH = P, # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
                     device_projector='gpu')
 
 # prepare dictionaries with parameters:
