@@ -137,6 +137,7 @@ _data_ = {'projection_norm_data' : sino_artifacts,
 lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 _algorithm_ = {'iterations' : 30,
+               'mask_diameter' : 0.9,
                'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
@@ -202,11 +203,12 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,           # Horizontal detector dimen
 # data dictionary
 _data_ = {'projection_norm_data' : sino_artifacts,
           'projection_raw_data' : sino_artifacts_raw/np.max(sino_artifacts_raw),
-          'beta_SWLS' : 0.7*np.ones(P),
-           'OS_number' : 10} 
+          'beta_SWLS' : 1.0*np.ones(P),
+           'OS_number' : 10}
 lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 _algorithm_ = {'iterations' : 30,
+               'mask_diameter' : 0.9,
                'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
@@ -218,7 +220,7 @@ _regularisation_ = {'method' : 'PD_TV',
 RecFISTA_SWLS = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 # adding Huber data fidelity threshold to remove zingers
-_data_.update({'huber_threshold' : 25.0})
+_data_.update({'huber_threshold' : 30.0})
 
 RecFISTA_SWLS_Huber = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
@@ -254,6 +256,7 @@ _data_ = {'projection_norm_data' : sino_artifacts,
           'OS_number' : 10}
 
 _algorithm_ = {'iterations' : 30,
+               'mask_diameter' : 0.9,
                'lipschitz_const' : lc}
 
 # Run FISTA reconstrucion algorithm with regularisation 
@@ -280,6 +283,7 @@ _data_ = {'projection_norm_data' : sino_artifacts,
 #lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 _algorithm_ = {'iterations' : 600,
+               'mask_diameter' : 0.9,
                'lipschitz_const' : 35000}
 
 # adding regularisation using the CCPi regularisation toolkit

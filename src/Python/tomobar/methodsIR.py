@@ -34,8 +34,8 @@ try:
 except:
     print('____! CCPi regularisation package is missing, please install !____')
 
-# function to smooth 1D signal
 def smooth(y, box_pts):
+    # a function to smooth 1D signal
     box = np.ones(box_pts)/box_pts
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
@@ -45,6 +45,19 @@ def merge_3_dicts(x, y, z):
     merg.update(y)
     merg.update(z)
     return merg
+
+def circ_mask(X, diameter):
+    # applying a circular mask to the reconstructed image/volume
+    # Make the 'diameter' smaller than 1.0 in order to shrink it
+    objsize = np.size(X,0)
+    c = np.linspace(-(objsize*(1.0/diameter))/2.0, (objsize*(1.0/diameter))/2.0, objsize)
+    if np.ndim(X) == 2:
+        x, y = np.meshgrid(c, c)
+        mask = np.float32(np.array((x**2 + y**2 < (objsize/2.0)**2)))
+    else:
+        x, y, z = np.meshgrid(c, c, c)
+        mask = np.float32(np.array((x**2 + y**2 + z**2 < (objsize/2.0)**2)))
+    return np.multiply(X,mask)
 
 def dict_check(self, _data_, _algorithm_, _regularisation_):
     # checking and initialising all required parameters here:
@@ -115,7 +128,9 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if (_algorithm_['nonnegativity'] == 'ENABLE'):
         self.nonneg_regul = 1 # enable nonnegativity for regularisers
     else:
-    	self.nonneg_regul = 0 # disable nonnegativity for regularisers
+        self.nonneg_regul = 0 # disable nonnegativity for regularisers
+    if ('mask_diameter' not in _algorithm_):
+        _algorithm_['mask_diameter'] = 1.0
     # tolerance to stop OUTER algorithm iterations earlier
     if ('tolerance' not in _algorithm_):
         _algorithm_['tolerance'] = 0.0
@@ -187,7 +202,6 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if (_algorithm_['verbose'] == 'on'):
         print('Parameters check has been succesfull, running the algorithm...')
 
-
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_['iterations'],0)
     # The proximal operator of the chosen regulariser
@@ -251,6 +265,7 @@ class RecToolsIR:
             --iterations # the number of the reconstruction algorithm iterations
             --initialise # initialisation for the algorithm (array)
             --nonnegativity # ENABLE (default) or DISABLE the nonnegativity for algorithms
+            --mask_diameter # set to 1.0 to enable a circular mask diameter, < 1.0 to shrink the mask
             --lipschitz_const # Lipschitz constant for FISTA algorithm, if not given will be calculated for each call
             --ADMM_rho_const # only for ADMM algorithm augmented Lagrangian parameter
             --ADMM_relax_par # ADMM-specific over relaxation parameter for convergence speed
@@ -273,7 +288,11 @@ class RecToolsIR:
             --NLTV_H_j # NLTV penalty related weights, , the array of j-related indices
             --NLTV_Weights # NLTV-specific penalty type, the array of Weights
             --methodTV # 0/1 - TV specific isotropic/anisotropic choice
-    __________________________________________________________________________________________________
+
+    Accepted data shapes (the input data must be provided in this fixed order):
+        2D - [Angles, DetectorsDimH]
+        3D - [DetectorsDimV, Angles, DetectorsDimH]
+    ----------------------------------------------------------------------------------------------------------
     """
     def __init__(self,
               DetectorsDimH,     # Horizontal detector dimension
@@ -500,6 +519,8 @@ class RecToolsIR:
                             # ring removal part for Group-Huber (GH) fidelity (2D)
                             if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
                                 res[:,0:None] = res[:,0:None] + _data_['ringGH_accelerate']*r_x[:,0]
+                            if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                                res = np.multiply(ring_function_weight[indVec,:],res)
                         else: # 3D
                             if (self.datafidelity == 'LS'):
                                 # 3D Least-squares (LS) data fidelity - OS (linear)
@@ -507,6 +528,13 @@ class RecToolsIR:
                             if (self.datafidelity == 'PWLS'):
                                 # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(_data_['projection_raw_data'][:,indVec,:], (self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]))
+                            if (self.datafidelity == 'SWLS'):
+                                # 3D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
+                                res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]
+                                for detVert_index in range(self.DetectorsDimV):
+                                    for detHorz_index in range(self.DetectorsDimH):
+                                        wk = _data_['projection_raw_data'][detVert_index,indVec,detHorz_index]
+                                        res[detVert_index,:,detHorz_index] = np.multiply(wk, res[detVert_index,:,detHorz_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][detHorz_index])*(wk.dot(res[detVert_index,:,detHorz_index]))*wk
                             if (self.datafidelity == 'KL'):
                                 # 3D Kullback-Leibler (KL) data fidelity - OS
                                 tmp = self.AtoolsOS.forwprojOS(X_t,sub_ind)
@@ -515,12 +543,9 @@ class RecToolsIR:
                             if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
                                 for ang_index in range(len(indVec)):
                                     res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
-                        if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
-                            if (self.geom == '2D'):
-                                res = np.multiply(ring_function_weight[indVec,:],res)
-                            else:
+                            if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
                                 res = np.multiply(ring_function_weight[:,indVec,:],res)
-                else: # non-OS (classical all-data approach)
+                else: # CLASSICAL all-data approach
                         if (self.datafidelity == 'LS'):
                             # full residual for LS fidelity
                             res = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
@@ -528,18 +553,19 @@ class RecToolsIR:
                             # full gradient for the PWLS fidelity
                             res = np.multiply(_data_['projection_raw_data'], (self.Atools.forwproj(X_t) - _data_['projection_norm_data']))
                         if (self.datafidelity == 'KL'):
-                            # 2D Kullback-Leibler (KL) data fidelity
+                            # Kullback-Leibler (KL) data fidelity
                             tmp = self.Atools.forwproj(X_t)
                             res = np.divide(tmp - _data_['projection_norm_data'], tmp + 1.0)
-                        if ((self.geom == '2D') and (_data_['ringGH_lambda'] is not None) and (iter > 0)):  # GH 2D part
-                            res[0:None,:] = res[0:None,:] + _data_['ringGH_accelerate']*r_x[:,0]
-                            vec = res.sum(axis = 0)
-                            r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
-                        if ((self.geom == '3D') and (_data_['ringGH_lambda'] is not None) and (iter > 0)):  # GH 3D part
-                            for ang_index in range(self.angles_number):
-                                res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
-                                vec = res.sum(axis = 1)
-                                r = r_x - np.multiply(L_const_inv,vec)
+                        if (_data_['ringGH_lambda'] is not None) and (iter > 0):
+                            if (self.geom == '2D'):
+                                res[0:None,:] = res[0:None,:] + _data_['ringGH_accelerate']*r_x[:,0]
+                                vec = res.sum(axis = 0)
+                                r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
+                            else: # 3D case
+                                for ang_index in range(self.angles_number):
+                                    res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
+                                    vec = res.sum(axis = 1)
+                                    r = r_x - np.multiply(L_const_inv,vec)
                         if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
                             # Approach for a better ring model
                             rings_weights = RING_WEIGHTS(res, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
@@ -548,9 +574,15 @@ class RecToolsIR:
                             res = np.multiply(ring_function_weight,res)
                         if (self.datafidelity == 'SWLS'):
                             res = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
-                            for det_index in range(self.DetectorsDimH):
-                                wk = _data_['projection_raw_data'][:,det_index]
-                                res[:,det_index] = np.multiply(wk, res[:,det_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][det_index])*(wk.dot(res[:,det_index]))*wk
+                            if (self.geom == '2D'):
+                                for det_index in range(self.DetectorsDimH):
+                                    wk = _data_['projection_raw_data'][:,det_index]
+                                    res[:,det_index] = np.multiply(wk, res[:,det_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][det_index])*(wk.dot(res[:,det_index]))*wk
+                            else: # 3D case
+                                for detVert_index in range(self.DetectorsDimV):
+                                    for detHorz_index in range(self.DetectorsDimH):
+                                        wk = _data_['projection_raw_data'][detVert_index,:,detHorz_index]
+                                        res[detVert_index,:,detHorz_index] = np.multiply(wk, res[detVert_index,:,detHorz_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][detHorz_index])*(wk.dot(res[detVert_index,:,detHorz_index]))*wk
                 if (_data_['huber_threshold'] is not None):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
@@ -582,7 +614,9 @@ class RecToolsIR:
                 X = X_t - L_const_inv*grad_fidelity
                 if (_algorithm_['nonnegativity'] == 'ENABLE'):
                     X[X < 0.0] = 0.0
-                if (_regularisation_['method'] is not None):
+                if _algorithm_['mask_diameter'] is not None:
+                    X = circ_mask(X, _algorithm_['mask_diameter']) # applying a circular mask
+                if _regularisation_['method'] is not None:
                     ##### The proximal operator of the chosen regulariser #####
                     (X,info_vec) = prox_regul(self, X, _regularisation_)
                     ###########################################################

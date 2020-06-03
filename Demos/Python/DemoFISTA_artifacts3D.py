@@ -78,7 +78,8 @@ from tomophantom.supp.artifacts import _Artifacts_
 # forming dictionaries with artifact types
 _noise_ =  {'type' : 'Poisson',
             'sigma' : 10000, # noise amplitude
-            'seed' : 0}
+            'seed' : 0,
+            'prelog' : True}
 
 # adding zingers and stripes
 _zingers_ = {'percentage' : 0.25,
@@ -90,7 +91,7 @@ _stripes_ = {'percentage' : 1.0,
              'type' : 'full',
              'variability' : 0.005}
 
-projData3D_analyt_noisy = _Artifacts_(projData3D_analyt, _noise_, _zingers_, _stripes_, _sinoshifts_= {})
+[projData3D_analyt_noisy, projData3D_raw] = _Artifacts_(projData3D_analyt, _noise_, _zingers_, _stripes_, _sinoshifts_= {})
 
 intens_max = 70
 sliceSel = int(0.5*N_size)
@@ -110,7 +111,7 @@ plt.show()
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # Horizontal detector dimension
                     DetectorsDimV = Vert_det,         # Vertical detector dimension (3D case)
-                    CenterRotOffset  = None,          # Center of Rotation scalar
+                    CenterRotOffset  = None,          # Centre of Rotation scalar
                     AnglesVec = angles_rad,           # A vector of projection angles in radians
                     ObjSize = N_size,                 # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
@@ -150,11 +151,11 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimen
                     CenterRotOffset  = None,          # Center of Rotation scalar
                     AnglesVec = angles_rad,           # A vector of projection angles in radians
                     ObjSize = N_size,                 # Reconstructed object dimensions (scalar)
-                    datafidelity='LS',                # data fidelity, choose LS, KL
+                    datafidelity='PWLS',                # data fidelity, choose LS, KL, PWLS or SWLS
                     device_projector='gpu')
 
-
 _data_ = {'projection_norm_data' : projData3D_analyt_noisy,
+          'projection_raw_data' : projData3D_raw/np.max(projData3D_raw),
           'OS_number' : 10} # data dictionary
 
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
@@ -192,7 +193,9 @@ plt.imshow(RecFISTA_reg[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D FISTA-TV Recon, sagittal view')
 plt.show()
 #%%
-# Run FISTA reconstrucion algorithm with 3D regularisation and Huber data penalty
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA-OS-Huber-TV using tomobar")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # adding Huber data fidelity threhsold
 _data_.update({'huber_threshold' : 2.0})
 
@@ -244,5 +247,50 @@ plt.title('3D HuberRing Rec, coronal')
 plt.subplot(133)
 plt.imshow(RecFISTA_HuberRING_TV[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D HuberRing Rec, sagittal')
+plt.show()
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA-OS-SWLS-TV using tomobar")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+Rectools = RecToolsIR(DetectorsDimH = Horiz_det,      # Horizontal detector dimension
+                    DetectorsDimV = Vert_det,         # Vertical detector dimension (3D case)
+                    CenterRotOffset  = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,           # A vector of projection angles in radians
+                    ObjSize = N_size,                 # Reconstructed object dimensions (scalar)
+                    datafidelity='SWLS',              # data fidelity, choose LS, KL, PWLS or SWLS
+                    device_projector='gpu')
+
+_data_ = {'projection_norm_data' : projData3D_analyt_noisy,
+          'projection_raw_data' : projData3D_raw/np.max(projData3D_raw),
+          'beta_SWLS' : 2.5*np.ones(Horiz_det),
+          'OS_number' : 10} # data dictionary
+
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
+
+_algorithm_ = {'iterations' : 20,
+               'mask_diameter' : 0.95,
+               'lipschitz_const' : lc}
+
+# Run FISTA reconstrucion algorithm with 3D regularisation
+RecFISTA_SWLS_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+
+Qtools = QualityTools(phantom_tm, RecFISTA_SWLS_reg)
+RMSE_FISTA_SWLS_TV = Qtools.rmse()
+print("RMSE for FISTA-OS-SWLS-TV is {}".format(RMSE_FISTA_SWLS_TV))
+
+sliceSel = int(0.5*N_size)
+max_val = 1
+plt.figure() 
+plt.subplot(131)
+plt.imshow(RecFISTA_SWLS_reg[sliceSel,:,:],vmin=0, vmax=max_val)
+plt.title('3D FISTA-SWLS-TV Recon, axial view')
+
+plt.subplot(132)
+plt.imshow(RecFISTA_SWLS_reg[:,sliceSel,:],vmin=0, vmax=max_val)
+plt.title('3D FISTA-SWLS-TV Recon, coronal view')
+
+plt.subplot(133)
+plt.imshow(RecFISTA_SWLS_reg[:,:,sliceSel],vmin=0, vmax=max_val)
+plt.title('3D FISTA-SWLS-TV Recon, sagittal view')
 plt.show()
 #%%
