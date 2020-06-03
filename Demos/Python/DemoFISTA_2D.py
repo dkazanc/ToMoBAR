@@ -77,7 +77,7 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,         # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset  = None,         # Center of Rotation scalar
+                    CenterRotOffset  = 0.001,         # Center of Rotation scalar
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
@@ -107,7 +107,7 @@ Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimen
 # prepare dictionaries with parameters:
 _data_ = {'projection_norm_data' : noisy_sino} # data dictionary
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {'iterations' : 400,
+_algorithm_ = {'iterations' : 10,
                'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
 RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})

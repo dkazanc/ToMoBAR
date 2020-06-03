@@ -47,14 +47,14 @@ def merge_3_dicts(x, y, z):
     return merg
 
 def dict_check(self, _data_, _algorithm_, _regularisation_):
-    # checking and initialisaing all required parameters
+    # checking and initialising all required parameters here:
     # ---------- deal with _data_ dictionary first --------------
     # projection nomnalised _data_
     if ('projection_norm_data' not in _data_):
           raise NameError("No input 'projection_norm_data' have been provided")
     # projection nomnalised raw data as PWLS-model weights
-    if (('projection_raw_data' not in _data_) and (self.datafidelity == 'PWLS')):
-          raise NameError("No input 'projection_raw_data' have been provided")
+    if (('projection_raw_data' not in _data_) and ((self.datafidelity == 'PWLS') or (self.datafidelity == 'SWLS'))):
+          raise NameError("No input 'projection_raw_data', has to be provided for PWLS or SWLS data fidelity")
     if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
         # Ordered Subsets OR classical approach (default)
         _data_['OS_number'] = 1
@@ -66,6 +66,9 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         else:
             from tomobar.supp.astraOP import AstraToolsOS3D
             self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
+    # SWLS related parameter (ring supression)
+    if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
+        _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
     # Huber data model to supress artifacts
     if ('huber_threshold' not in _data_):
         _data_['huber_threshold'] = None
@@ -75,9 +78,9 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     # threshold to produce additional weights to supress ring artifacts
     if ('ring_weights_threshold' not in _data_):
         _data_['ring_weights_threshold'] = None
-    # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more penalising  
+    # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more strength
     if ('ring_huber_power' not in _data_):
-        _data_['ring_huber_power'] = 1.75       
+        _data_['ring_huber_power'] = 1.75
     # a tuple for half window sizes as [detector, angles, number of projections]
     if ('ring_tuple_halfsizes' not in _data_):
         _data_['ring_tuple_halfsizes'] = (9,7,9)
@@ -219,23 +222,23 @@ def prox_regul(self, X, _regularisation_):
 
 class RecToolsIR:
     """
-    -------------------------------------------------------------------------------------------------
-    A class for iterative reconstruction algorithms (FISTA and ADMM) using ASTRA and CCPi-RGL toolkit
-    -------------------------------------------------------------------------------------------------
-    Parameters of the class function mainly describing geometry:
+    ----------------------------------------------------------------------------------------------------------
+    A class for iterative reconstruction algorithms (FISTA and ADMM) using ASTRA toolbox and CCPi-RGL toolkit
+    ----------------------------------------------------------------------------------------------------------
+    Parameters of the class function main specifying the projection geometry:
       *DetectorsDimH,     # Horizontal detector dimension
-      *DetectorsDimV,     # Vertical detector dimension (3D case)
-      *CenterRotOffset,   # Center of Rotation scalar (for 3D case)
-      *AnglesVec,         # Array of projection angles in radians
-      *ObjSize,           # Reconstructed object dimensions (scalar)
-      *datafidelity,      # Data fidelity, choose from LS, KL, PWLS
+      *DetectorsDimV,     # Vertical detector dimension for 3D case
+      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar
+      *AnglesVec,         # A vector of projection angles in radians
+      *ObjSize,           # Reconstructed object dimensions (a scalar)
+      *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
       *device_projector   # choose projector between 'cpu' and 'gpu'
 
-    Parameters for reconstruction algorithms extracted from 3 dictionaries:
+    Parameters for reconstruction algorithms are extracted from 3 dictionaries:
       _data_ :
             --projection_norm_data # the flat/dark field normalised -log projection data: sinogram or 3D data
-            --projection_raw_data # for PWLS model you also need to provide the raw data
-            --OS_number # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+            --projection_raw_data # for PWLS and SWLS models you also need to provide the raw data
+            --OS_number # the number of subsets, if None or 1 - classical (full data) algorithm
             --huber_threshold # threshold for Huber function to apply to data model (supress outliers)
             --studentst_threshold # threshold for Students't function to apply to data model (supress outliers)
             --ring_weights_threshold # threshold to produce additional weights to supress ring artifacts
@@ -243,9 +246,10 @@ class RecToolsIR:
             --ring_tuple_halfsizes # a tuple for half window sizes as [detector, angles, num of projections]
             --ringGH_lambda # a parameter for Group-Huber data model to supress full rings of the same intensity
             --ringGH_accelerate # Group-Huber data model acceleration factor (use carefully to avoid divergence, 50 default)
+            --beta_SWLS # a regularisation parameter for stripe-weighted LS model (given as a vector size of DetectorsDimH)
      _algorithm_ :
-            --iterations # the number of reconstruction algorithm iterations
-            --initialise # initialise an algorithm with an array
+            --iterations # the number of the reconstruction algorithm iterations
+            --initialise # initialisation for the algorithm (array)
             --nonnegativity # ENABLE (default) or DISABLE the nonnegativity for algorithms
             --lipschitz_const # Lipschitz constant for FISTA algorithm, if not given will be calculated for each call
             --ADMM_rho_const # only for ADMM algorithm augmented Lagrangian parameter
@@ -253,7 +257,7 @@ class RecToolsIR:
             --tolerance # tolerance to terminate reconstruction algorithm iterations earlier, default 0.0
             --verbose # mode to print iterations number and other messages ('on' by default, 'off' to suppress)
      _regularisation_ :
-            --method # select a regularisation method: ROF_TV,FGP_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
+            --method # select a regularisation method: ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
             --regul_param # main regularisation parameter for all methods
             --iterations # the number of inner (regularisation) iterations
             --device_regulariser #  choose the 'cpu' or 'gpu'-type of the device for the regulariser
@@ -281,7 +285,7 @@ class RecToolsIR:
               device_projector   # choose projector between 'cpu' and 'gpu'
               ):
         if ObjSize is tuple:
-            raise (" Reconstruction is currently available for square or cubic objects only, provide a scalar ")
+            raise (" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")
         else:
             self.ObjSize = ObjSize # size of the object
 
@@ -300,8 +304,8 @@ class RecToolsIR:
         else:
             self.device_projector = device_projector
 
-        if datafidelity not in ['LS','PWLS','KL']:
-            raise ValueError('Unknown data fidelity type, select: LS, PWLS, KL')
+        if datafidelity not in ['LS','PWLS', 'SWLS','KL']:
+            raise ValueError('Unknown data fidelity type, select: LS, PWLS, SWLS or KL')
 
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
@@ -365,7 +369,7 @@ class RecToolsIR:
         else:
             x1 = np.float32(np.random.randn(self.Atools.DetectorsDimV,self.Atools.ObjSize,self.Atools.ObjSize))
         if (self.datafidelity == 'PWLS'):
-                sqweight = np.sqrt(_data_['projection_raw_data'])
+                sqweight = _data_['projection_raw_data']
         if (_data_['OS_number'] == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
@@ -483,6 +487,12 @@ class RecToolsIR:
                             if (self.datafidelity == 'PWLS'):
                                 # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(_data_['projection_raw_data'][indVec,:], (self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]))
+                            if (self.datafidelity == 'SWLS'):
+                                # 2D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
+                                res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]
+                                for det_index in range(self.DetectorsDimH):
+                                    wk = _data_['projection_raw_data'][indVec, det_index]
+                                    res[:,det_index] = np.multiply(wk, res[:,det_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][det_index])*(wk.dot(res[:,det_index]))*wk
                             if (self.datafidelity == 'KL'):
                                 # 2D Kullback-Leibler (KL) data fidelity - OS
                                 tmp = self.AtoolsOS.forwprojOS(X_t,sub_ind)
@@ -536,6 +546,11 @@ class RecToolsIR:
                             ring_function_weight = np.ones(np.shape(res))
                             ring_function_weight[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**_data_['ring_huber_power'])
                             res = np.multiply(ring_function_weight,res)
+                        if (self.datafidelity == 'SWLS'):
+                            res = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
+                            for det_index in range(self.DetectorsDimH):
+                                wk = _data_['projection_raw_data'][:,det_index]
+                                res[:,det_index] = np.multiply(wk, res[:,det_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][det_index])*(wk.dot(res[:,det_index]))*wk
                 if (_data_['huber_threshold'] is not None):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))

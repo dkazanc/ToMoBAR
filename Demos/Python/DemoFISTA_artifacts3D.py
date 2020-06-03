@@ -72,7 +72,6 @@ plt.imshow(projData3D_analyt[:,:,sliceSel],vmin=0, vmax=intens_max)
 plt.title('Tangentogram view')
 plt.show()
 
-
 # Adding artifacts and noise
 from tomophantom.supp.artifacts import _Artifacts_
 
@@ -92,7 +91,6 @@ _stripes_ = {'percentage' : 1.0,
              'variability' : 0.005}
 
 projData3D_analyt_noisy = _Artifacts_(projData3D_analyt, _noise_, _zingers_, _stripes_, _sinoshifts_= {})
-
 
 intens_max = 70
 sliceSel = int(0.5*N_size)

@@ -87,7 +87,7 @@ plt.title('A selected simulated flat-field')
 # Apply normalisation of data and add noise
 flux_intensity = 7000 # controls the level of noise (Poisson) 
 sigma_flats = 200 # control the level of noise in flats (lower creates more ring artifacts)
-projData3D_norm = normaliser_sim(projData3D_analyt, flatsSIM, sigma_flats, flux_intensity)
+[projData3D_norm, projData3D_raw] = normaliser_sim(projData3D_analyt, flatsSIM, sigma_flats, flux_intensity)
 
 intens_max = 70
 sliceSel = 120
