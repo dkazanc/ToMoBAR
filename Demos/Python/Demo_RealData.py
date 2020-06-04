@@ -48,7 +48,7 @@ dataRaw = np.float32(np.divide(dataRaw, np.max(dataRaw).astype(float)))
 detectorHoriz = np.size(data_norm,1)
 N_size = 1000
 slice_to_recon = 19 # select which slice to reconstruct
-angles_rad = angles*(np.pi/180.0)
+angles_rad = angles[:,0]*(np.pi/180.0)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
@@ -254,4 +254,43 @@ plt.imshow(RecFISTA_KL_os_rofllt[180:800,180:800], vmin=0, vmax=0.003, cmap="gra
 plt.title('FISTA KL-OS-ROF-LLT reconstruction')
 plt.show()
 #fig.savefig('dendr_KL_OS_GH_ROF_LLT.png', dpi=200)
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA SWLS-OS-TV method %%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+# Set scanning geometry parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = detectorHoriz, # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = None,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='SWLS',             # Data fidelity, choose from LS, KL, PWLS
+                    device_projector='gpu')
+
+####################### Creating the data dictionary: #######################
+_data_ = {'projection_norm_data' : data_norm[:,:,slice_to_recon], # Normalised projection data
+          'projection_raw_data' : dataRaw[:,:,slice_to_recon],    # Raw projection data
+          'beta_SWLS' : 0.2*np.ones(detectorHoriz), #  a parameter for SWLS model
+          'OS_number' : 6                                         # The number of subsets
+          }
+lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once)
+
+####################### Creating the algorithm dictionary: #######################
+_algorithm_ = {'iterations' : 25,                   # The number of iterations
+               'lipschitz_const' : lc}
+
+##### creating the regularisation dictionary using the CCPi regularisation toolkit: #####
+_regularisation_ = {'method' : 'PD_TV',         # Selected regularisation method
+                    'regul_param' : 0.000001,   # Regularisation parameter
+                    'iterations' :80,           # The number of regularisation iterations
+                    'device_regulariser': 'gpu'}
+
+# RUN THE FISTA METHOD: 
+RecFISTA_os_tv_swls = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_os_tv_swls[180:800,180:800], vmin=0, vmax=0.003, cmap="gray")
+plt.title('FISTA SWLS-OS-TV reconstruction')
+plt.show()
 #%%

@@ -34,8 +34,8 @@ try:
 except:
     print('____! CCPi regularisation package is missing, please install !____')
 
-# function to smooth 1D signal
 def smooth(y, box_pts):
+    # a function to smooth 1D signal
     box = np.ones(box_pts)/box_pts
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
@@ -46,15 +46,28 @@ def merge_3_dicts(x, y, z):
     merg.update(z)
     return merg
 
+def circ_mask(X, diameter):
+    # applying a circular mask to the reconstructed image/volume
+    # Make the 'diameter' smaller than 1.0 in order to shrink it
+    objsize = np.size(X,0)
+    c = np.linspace(-(objsize*(1.0/diameter))/2.0, (objsize*(1.0/diameter))/2.0, objsize)
+    if np.ndim(X) == 2:
+        x, y = np.meshgrid(c, c)
+        mask = np.float32(np.array((x**2 + y**2 < (objsize/2.0)**2)))
+    else:
+        x, y, z = np.meshgrid(c, c, c)
+        mask = np.float32(np.array((x**2 + y**2 + z**2 < (objsize/2.0)**2)))
+    return np.multiply(X,mask)
+
 def dict_check(self, _data_, _algorithm_, _regularisation_):
-    # checking and initialisaing all required parameters
+    # checking and initialising all required parameters here:
     # ---------- deal with _data_ dictionary first --------------
     # projection nomnalised _data_
     if ('projection_norm_data' not in _data_):
           raise NameError("No input 'projection_norm_data' have been provided")
     # projection nomnalised raw data as PWLS-model weights
-    if (('projection_raw_data' not in _data_) and (self.datafidelity == 'PWLS')):
-          raise NameError("No input 'projection_raw_data' have been provided")
+    if (('projection_raw_data' not in _data_) and ((self.datafidelity == 'PWLS') or (self.datafidelity == 'SWLS'))):
+          raise NameError("No input 'projection_raw_data', has to be provided for PWLS or SWLS data fidelity")
     if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
         # Ordered Subsets OR classical approach (default)
         _data_['OS_number'] = 1
@@ -66,6 +79,9 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         else:
             from tomobar.supp.astraOP import AstraToolsOS3D
             self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
+    # SWLS related parameter (ring supression)
+    if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
+        _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
     # Huber data model to supress artifacts
     if ('huber_threshold' not in _data_):
         _data_['huber_threshold'] = None
@@ -75,9 +91,9 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     # threshold to produce additional weights to supress ring artifacts
     if ('ring_weights_threshold' not in _data_):
         _data_['ring_weights_threshold'] = None
-    # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more penalising  
+    # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more strength
     if ('ring_huber_power' not in _data_):
-        _data_['ring_huber_power'] = 1.75       
+        _data_['ring_huber_power'] = 1.75
     # a tuple for half window sizes as [detector, angles, number of projections]
     if ('ring_tuple_halfsizes' not in _data_):
         _data_['ring_tuple_halfsizes'] = (9,7,9)
@@ -112,7 +128,9 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if (_algorithm_['nonnegativity'] == 'ENABLE'):
         self.nonneg_regul = 1 # enable nonnegativity for regularisers
     else:
-    	self.nonneg_regul = 0 # disable nonnegativity for regularisers
+        self.nonneg_regul = 0 # disable nonnegativity for regularisers
+    if ('mask_diameter' not in _algorithm_):
+        _algorithm_['mask_diameter'] = 1.0
     # tolerance to stop OUTER algorithm iterations earlier
     if ('tolerance' not in _algorithm_):
         _algorithm_['tolerance'] = 0.0
@@ -184,7 +202,6 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if (_algorithm_['verbose'] == 'on'):
         print('Parameters check has been succesfull, running the algorithm...')
 
-
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_['iterations'],0)
     # The proximal operator of the chosen regulariser
@@ -219,23 +236,23 @@ def prox_regul(self, X, _regularisation_):
 
 class RecToolsIR:
     """
-    -------------------------------------------------------------------------------------------------
-    A class for iterative reconstruction algorithms (FISTA and ADMM) using ASTRA and CCPi-RGL toolkit
-    -------------------------------------------------------------------------------------------------
-    Parameters of the class function mainly describing geometry:
+    ----------------------------------------------------------------------------------------------------------
+    A class for iterative reconstruction algorithms (FISTA and ADMM) using ASTRA toolbox and CCPi-RGL toolkit
+    ----------------------------------------------------------------------------------------------------------
+    Parameters of the class function main specifying the projection geometry:
       *DetectorsDimH,     # Horizontal detector dimension
-      *DetectorsDimV,     # Vertical detector dimension (3D case)
-      *CenterRotOffset,   # Center of Rotation scalar (for 3D case)
-      *AnglesVec,         # Array of projection angles in radians
-      *ObjSize,           # Reconstructed object dimensions (scalar)
-      *datafidelity,      # Data fidelity, choose from LS, KL, PWLS
+      *DetectorsDimV,     # Vertical detector dimension for 3D case
+      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar
+      *AnglesVec,         # A vector of projection angles in radians
+      *ObjSize,           # Reconstructed object dimensions (a scalar)
+      *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
       *device_projector   # choose projector between 'cpu' and 'gpu'
 
-    Parameters for reconstruction algorithms extracted from 3 dictionaries:
+    Parameters for reconstruction algorithms are extracted from 3 dictionaries:
       _data_ :
             --projection_norm_data # the flat/dark field normalised -log projection data: sinogram or 3D data
-            --projection_raw_data # for PWLS model you also need to provide the raw data
-            --OS_number # the number of subsets, NONE/(or > 1) ~ classical / ordered subsets
+            --projection_raw_data # for PWLS and SWLS models you also need to provide the raw data
+            --OS_number # the number of subsets, if None or 1 - classical (full data) algorithm
             --huber_threshold # threshold for Huber function to apply to data model (supress outliers)
             --studentst_threshold # threshold for Students't function to apply to data model (supress outliers)
             --ring_weights_threshold # threshold to produce additional weights to supress ring artifacts
@@ -243,17 +260,19 @@ class RecToolsIR:
             --ring_tuple_halfsizes # a tuple for half window sizes as [detector, angles, num of projections]
             --ringGH_lambda # a parameter for Group-Huber data model to supress full rings of the same intensity
             --ringGH_accelerate # Group-Huber data model acceleration factor (use carefully to avoid divergence, 50 default)
+            --beta_SWLS # a regularisation parameter for stripe-weighted LS model (given as a vector size of DetectorsDimH)
      _algorithm_ :
-            --iterations # the number of reconstruction algorithm iterations
-            --initialise # initialise an algorithm with an array
+            --iterations # the number of the reconstruction algorithm iterations
+            --initialise # initialisation for the algorithm (array)
             --nonnegativity # ENABLE (default) or DISABLE the nonnegativity for algorithms
+            --mask_diameter # set to 1.0 to enable a circular mask diameter, < 1.0 to shrink the mask
             --lipschitz_const # Lipschitz constant for FISTA algorithm, if not given will be calculated for each call
             --ADMM_rho_const # only for ADMM algorithm augmented Lagrangian parameter
             --ADMM_relax_par # ADMM-specific over relaxation parameter for convergence speed
             --tolerance # tolerance to terminate reconstruction algorithm iterations earlier, default 0.0
             --verbose # mode to print iterations number and other messages ('on' by default, 'off' to suppress)
      _regularisation_ :
-            --method # select a regularisation method: ROF_TV,FGP_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
+            --method # select a regularisation method: ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
             --regul_param # main regularisation parameter for all methods
             --iterations # the number of inner (regularisation) iterations
             --device_regulariser #  choose the 'cpu' or 'gpu'-type of the device for the regulariser
@@ -269,7 +288,11 @@ class RecToolsIR:
             --NLTV_H_j # NLTV penalty related weights, , the array of j-related indices
             --NLTV_Weights # NLTV-specific penalty type, the array of Weights
             --methodTV # 0/1 - TV specific isotropic/anisotropic choice
-    __________________________________________________________________________________________________
+
+    Accepted data shapes (the input data must be provided in this fixed order):
+        2D - [Angles, DetectorsDimH]
+        3D - [DetectorsDimV, Angles, DetectorsDimH]
+    ----------------------------------------------------------------------------------------------------------
     """
     def __init__(self,
               DetectorsDimH,     # Horizontal detector dimension
@@ -281,7 +304,7 @@ class RecToolsIR:
               device_projector   # choose projector between 'cpu' and 'gpu'
               ):
         if ObjSize is tuple:
-            raise (" Reconstruction is currently available for square or cubic objects only, provide a scalar ")
+            raise (" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")
         else:
             self.ObjSize = ObjSize # size of the object
 
@@ -300,8 +323,8 @@ class RecToolsIR:
         else:
             self.device_projector = device_projector
 
-        if datafidelity not in ['LS','PWLS','KL']:
-            raise ValueError('Unknown data fidelity type, select: LS, PWLS, KL')
+        if datafidelity not in ['LS','PWLS', 'SWLS','KL']:
+            raise ValueError('Unknown data fidelity type, select: LS, PWLS, SWLS or KL')
 
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
@@ -365,7 +388,7 @@ class RecToolsIR:
         else:
             x1 = np.float32(np.random.randn(self.Atools.DetectorsDimV,self.Atools.ObjSize,self.Atools.ObjSize))
         if (self.datafidelity == 'PWLS'):
-                sqweight = np.sqrt(_data_['projection_raw_data'])
+                sqweight = _data_['projection_raw_data']
         if (_data_['OS_number'] == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
@@ -483,6 +506,12 @@ class RecToolsIR:
                             if (self.datafidelity == 'PWLS'):
                                 # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(_data_['projection_raw_data'][indVec,:], (self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]))
+                            if (self.datafidelity == 'SWLS'):
+                                # 2D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
+                                res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][indVec,:]
+                                for det_index in range(self.DetectorsDimH):
+                                    wk = _data_['projection_raw_data'][indVec, det_index]
+                                    res[:,det_index] = np.multiply(wk, res[:,det_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][det_index])*(wk.dot(res[:,det_index]))*wk
                             if (self.datafidelity == 'KL'):
                                 # 2D Kullback-Leibler (KL) data fidelity - OS
                                 tmp = self.AtoolsOS.forwprojOS(X_t,sub_ind)
@@ -490,6 +519,8 @@ class RecToolsIR:
                             # ring removal part for Group-Huber (GH) fidelity (2D)
                             if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
                                 res[:,0:None] = res[:,0:None] + _data_['ringGH_accelerate']*r_x[:,0]
+                            if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                                res = np.multiply(ring_function_weight[indVec,:],res)
                         else: # 3D
                             if (self.datafidelity == 'LS'):
                                 # 3D Least-squares (LS) data fidelity - OS (linear)
@@ -497,6 +528,13 @@ class RecToolsIR:
                             if (self.datafidelity == 'PWLS'):
                                 # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                                 res = np.multiply(_data_['projection_raw_data'][:,indVec,:], (self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]))
+                            if (self.datafidelity == 'SWLS'):
+                                # 3D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
+                                res = self.AtoolsOS.forwprojOS(X_t,sub_ind) - _data_['projection_norm_data'][:,indVec,:]
+                                for detVert_index in range(self.DetectorsDimV):
+                                    for detHorz_index in range(self.DetectorsDimH):
+                                        wk = _data_['projection_raw_data'][detVert_index,indVec,detHorz_index]
+                                        res[detVert_index,:,detHorz_index] = np.multiply(wk, res[detVert_index,:,detHorz_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][detHorz_index])*(wk.dot(res[detVert_index,:,detHorz_index]))*wk
                             if (self.datafidelity == 'KL'):
                                 # 3D Kullback-Leibler (KL) data fidelity - OS
                                 tmp = self.AtoolsOS.forwprojOS(X_t,sub_ind)
@@ -505,12 +543,9 @@ class RecToolsIR:
                             if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
                                 for ang_index in range(len(indVec)):
                                     res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
-                        if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
-                            if (self.geom == '2D'):
-                                res = np.multiply(ring_function_weight[indVec,:],res)
-                            else:
+                            if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
                                 res = np.multiply(ring_function_weight[:,indVec,:],res)
-                else: # non-OS (classical all-data approach)
+                else: # CLASSICAL all-data approach
                         if (self.datafidelity == 'LS'):
                             # full residual for LS fidelity
                             res = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
@@ -518,24 +553,36 @@ class RecToolsIR:
                             # full gradient for the PWLS fidelity
                             res = np.multiply(_data_['projection_raw_data'], (self.Atools.forwproj(X_t) - _data_['projection_norm_data']))
                         if (self.datafidelity == 'KL'):
-                            # 2D Kullback-Leibler (KL) data fidelity
+                            # Kullback-Leibler (KL) data fidelity
                             tmp = self.Atools.forwproj(X_t)
                             res = np.divide(tmp - _data_['projection_norm_data'], tmp + 1.0)
-                        if ((self.geom == '2D') and (_data_['ringGH_lambda'] is not None) and (iter > 0)):  # GH 2D part
-                            res[0:None,:] = res[0:None,:] + _data_['ringGH_accelerate']*r_x[:,0]
-                            vec = res.sum(axis = 0)
-                            r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
-                        if ((self.geom == '3D') and (_data_['ringGH_lambda'] is not None) and (iter > 0)):  # GH 3D part
-                            for ang_index in range(self.angles_number):
-                                res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
-                                vec = res.sum(axis = 1)
-                                r = r_x - np.multiply(L_const_inv,vec)
+                        if (_data_['ringGH_lambda'] is not None) and (iter > 0):
+                            if (self.geom == '2D'):
+                                res[0:None,:] = res[0:None,:] + _data_['ringGH_accelerate']*r_x[:,0]
+                                vec = res.sum(axis = 0)
+                                r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
+                            else: # 3D case
+                                for ang_index in range(self.angles_number):
+                                    res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
+                                    vec = res.sum(axis = 1)
+                                    r = r_x - np.multiply(L_const_inv,vec)
                         if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
                             # Approach for a better ring model
                             rings_weights = RING_WEIGHTS(res, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
                             ring_function_weight = np.ones(np.shape(res))
                             ring_function_weight[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**_data_['ring_huber_power'])
                             res = np.multiply(ring_function_weight,res)
+                        if (self.datafidelity == 'SWLS'):
+                            res = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
+                            if (self.geom == '2D'):
+                                for det_index in range(self.DetectorsDimH):
+                                    wk = _data_['projection_raw_data'][:,det_index]
+                                    res[:,det_index] = np.multiply(wk, res[:,det_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][det_index])*(wk.dot(res[:,det_index]))*wk
+                            else: # 3D case
+                                for detVert_index in range(self.DetectorsDimV):
+                                    for detHorz_index in range(self.DetectorsDimH):
+                                        wk = _data_['projection_raw_data'][detVert_index,:,detHorz_index]
+                                        res[detVert_index,:,detHorz_index] = np.multiply(wk, res[detVert_index,:,detHorz_index]) - 1.0/(np.sum(wk) + _data_['beta_SWLS'][detHorz_index])*(wk.dot(res[detVert_index,:,detHorz_index]))*wk
                 if (_data_['huber_threshold'] is not None):
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
@@ -567,7 +614,9 @@ class RecToolsIR:
                 X = X_t - L_const_inv*grad_fidelity
                 if (_algorithm_['nonnegativity'] == 'ENABLE'):
                     X[X < 0.0] = 0.0
-                if (_regularisation_['method'] is not None):
+                if _algorithm_['mask_diameter'] is not None:
+                    X = circ_mask(X, _algorithm_['mask_diameter']) # applying a circular mask
+                if _regularisation_['method'] is not None:
                     ##### The proximal operator of the chosen regulariser #####
                     (X,info_vec) = prox_regul(self, X, _regularisation_)
                     ###########################################################

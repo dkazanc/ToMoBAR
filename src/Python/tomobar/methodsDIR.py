@@ -75,7 +75,7 @@ class RecToolsDIR:
     def __init__(self, 
               DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
               DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-              CenterRotOffset,  # Center of Rotation (CoR) scalar (for 3D case only)
+              CenterRotOffset,  # Centre of Rotation (CoR) scalar
               AnglesVec, # array of angles in radians
               ObjSize, # a scalar to define reconstructed object dimensions
               device_projector):

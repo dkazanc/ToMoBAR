@@ -34,14 +34,14 @@ angles_rad = h5f['angles'][:]
 h5f.close()
 data_norm = np.swapaxes(data_norm[:,:,0],0,1)
 data_raw = np.swapaxes(data_raw[:,:,0],0,1)
+
+N_size = 2000
+angles_number,detectorHoriz = np.shape(data_norm)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
-
-N_size = 2000
-angles_number,detectorHoriz = np.shape(data_norm)
 
 RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz, # Horizontal detector dimension
                     DetectorsDimV = None,                # Vertical detector dimension (3D case)
