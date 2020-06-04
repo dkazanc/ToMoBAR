@@ -36,7 +36,7 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = detectorHoriz, # Horizontal detector dimension
                     DetectorsDimV = None,                # Vertical detector dimension (3D case)
-                    CenterRotOffset = 13.0,              # Center of Rotation scalar
+                    CenterRotOffset = 13.0,              # Centre of Rotation scalar
                     AnglesVec = angles_rad,              # A vector of projection angles in radians
                     ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
