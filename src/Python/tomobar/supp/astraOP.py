@@ -25,7 +25,6 @@ def rotation_matrix3D(theta):
                      [np.sin(theta), np.cos(theta), 0.0],
                      [0.0 , 0.0 , 1.0]])
 
-
 #define 2D vector geometry
 def vec_geom_init2D(angles_rad, DetectorSpacingX, CenterRotOffset):
     s0 = [0.0, -1.0] # source
@@ -206,7 +205,7 @@ class AstraToolsOS:
                     ind_sel += OS
         
         # create full ASTRA geometry (to calculate Lipshitz constant)
-        if ((np.sum(CenterRotOffset) == 0.0) or (CenterRotOffset is None)):
+        if CenterRotOffset is None:
             self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
         else:
             vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
@@ -228,7 +227,7 @@ class AstraToolsOS:
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
             anglesOS = self.AnglesVec[self.indVec] # OS-specific angles
-            if ((np.sum(CenterRotOffset) == 0.0) or (CenterRotOffset is None)):
+            if CenterRotOffset is None:
                 self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
             else:
                 vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset[self.indVec])
@@ -269,10 +268,12 @@ class AstraTools3D:
         self.ObjSize = ObjSize
         self.DetectorsDimV = DetRowCount
         # define astra type geometry (scalar)
-        # self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
-        # define astra vector geometry (default)
-        vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
-        self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
+        if CenterRotOffset is None:
+         self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
+        else:
+            # define astra vector geometry
+            vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
+            self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
         if type(ObjSize) == tuple:
             Y,X,Z = [int(i) for i in ObjSize]
         else:
@@ -366,9 +367,11 @@ class AstraToolsOS3D:
                     ind_sel += OS
         
         # create full ASTRA geometry (to calculate Lipshitz constant)
-        # self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
-        vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
-        self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
+        if CenterRotOffset is None:
+            self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
+        else:
+            vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
+            self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
         # create OS-specific ASTRA geometry
         self.proj_geom_OS = {}
         for sub_ind in range(OS):
@@ -376,9 +379,11 @@ class AstraToolsOS3D:
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
             anglesOS = AnglesVec[self.indVec] # OS-specific angles
-            #self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, anglesOS)
-            vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, CenterRotOffset)
-            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
+            if CenterRotOffset is None:
+                self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, anglesOS)
+            else:
+                vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, CenterRotOffset[self.indVec])
+                self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
 
     def forwproj(self, object3D):
         """Applying forward projection"""
