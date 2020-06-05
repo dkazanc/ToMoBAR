@@ -81,6 +81,10 @@ _noise_ =  {'type' : 'Poisson',
             'seed' : 0,
             'prelog' : True}
 
+# misalignment dictionary
+_sinoshifts_ = {'maxamplitude' : 10}
+[[projData3D_analyt_misalign, projData3D_analyt_misalign_raw], shifts2D] = _Artifacts_(projData3D_analyt, _noise_, {}, {}, _sinoshifts_)
+
 # adding zingers and stripes
 _zingers_ = {'percentage' : 0.25,
              'modulus' : 10}
@@ -117,29 +121,60 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # Horizontal detector dime
                     device_projector='gpu')
 
 print ("Reconstruction using FBP from tomobar")
-recNumerical= RectoolsDIR.FBP(projData3D_analyt_noisy) # FBP reconstruction
+Rec_FBP= RectoolsDIR.FBP(projData3D_analyt_noisy) # FBP reconstruction
 
 sliceSel = int(0.5*N_size)
 max_val = 1
 #plt.gray()
 plt.figure() 
 plt.subplot(131)
-plt.imshow(recNumerical[sliceSel,:,:],vmin=0, vmax=max_val)
-plt.title('3D Reconstruction, axial view')
+plt.imshow(Rec_FBP[sliceSel,:,:],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, axial view')
 
 plt.subplot(132)
-plt.imshow(recNumerical[:,sliceSel,:],vmin=0, vmax=max_val)
-plt.title('3D Reconstruction, coronal view')
+plt.imshow(Rec_FBP[:,sliceSel,:],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, coronal view')
 
 plt.subplot(133)
-plt.imshow(recNumerical[:,:,sliceSel],vmin=0, vmax=max_val)
-plt.title('3D Reconstruction, sagittal view')
+plt.imshow(Rec_FBP[:,:,sliceSel],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction, sagittal view')
 plt.show()
 
 # calculate errors 
-Qtools = QualityTools(phantom_tm, recNumerical)
+Qtools = QualityTools(phantom_tm, Rec_FBP)
 RMSE = Qtools.rmse()
 print("Root Mean Square Error is {}".format(RMSE))
+#%%
+# Reconstructing misaligned data using exact shifts
+
+# initialise tomobar DIRECT reconstruction class ONCE
+from tomobar.methodsDIR import RecToolsDIR
+RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # Horizontal detector dimension
+                    DetectorsDimV = Vert_det,         # Vertical detector dimension (3D case)
+                    CenterRotOffset  = -shifts2D,     # Centre of Rotation scalar
+                    AnglesVec = angles_rad,           # A vector of projection angles in radians
+                    ObjSize = N_size,                 # Reconstructed object dimensions (scalar)
+                    device_projector='gpu')
+
+print ("Reconstruction using FBP from tomobar")
+Rec_FBP_misalign= RectoolsDIR.FBP(projData3D_analyt_misalign) # FBP reconstruction
+
+sliceSel = int(0.5*N_size)
+max_val = 1
+#plt.gray()
+plt.figure() 
+plt.subplot(131)
+plt.imshow(Rec_FBP_misalign[sliceSel,:,:],vmin=0, vmax=max_val)
+plt.title('3D FBP Reconstruction (misaligned), axial view')
+
+plt.subplot(132)
+plt.imshow(Rec_FBP_misalign[:,sliceSel,:],vmin=0, vmax=max_val)
+plt.title('3D FBP Rec, coronal view')
+
+plt.subplot(133)
+plt.imshow(Rec_FBP_misalign[:,:,sliceSel],vmin=0, vmax=max_val)
+plt.title('3D FBP Rec, sagittal view')
+plt.show()
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA-OS method using tomobar")

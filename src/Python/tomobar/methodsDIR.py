@@ -101,7 +101,7 @@ class RecToolsDIR:
     def FORWPROJ(self, image):
         if (self.geom == '2D'):
             from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
             sinogram = Atools.forwproj(image)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
@@ -111,7 +111,7 @@ class RecToolsDIR:
     def BACKPROJ(self, sinogram):
         if (self.geom == '2D'):
             from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.device_projector) # initiate 2D ASTRA class object
             image = Atools.backproj(sinogram)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D

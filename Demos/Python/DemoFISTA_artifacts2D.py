@@ -78,6 +78,11 @@ _stripes_ = {'percentage' : 1.2,
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
+plt.subplot(121)
+plt.imshow(sino_misalign,cmap="gray")
+plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
+plt.title('{}''{}'.format('Analytical noisy misaligned sinogram.',model))
+plt.subplot(122)
 plt.imshow(sino_artifacts,cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical noisy sinogram with artifacts.',model))
@@ -107,7 +112,7 @@ plt.imshow(FBPrec_error, vmin=0, vmax=2, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 2], orientation='vertical')
 plt.title('Erroneous data FBP Reconstruction')
 plt.subplot(133)
-plt.imshow(FBPrec_misalign, vmin=0, vmax=3, cmap="gray")
+plt.imshow(FBPrec_misalign, vmin=0, vmax=2, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 2], orientation='vertical')
 plt.title('Misaligned noisy FBP Reconstruction')
 plt.show()
@@ -116,6 +121,21 @@ plt.figure()
 plt.imshow(abs(FBPrec_ideal-FBPrec_error), vmin=0, vmax=2, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 2], orientation='vertical')
 plt.title('FBP reconstruction differences')
+#%%
+# One can correct shifts by providing correct shift values
+from tomobar.methodsDIR import RecToolsDIR
+Rectools = RecToolsDIR(DetectorsDimH = P,            # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = -shifts,       # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    device_projector='gpu')
+
+FBPrec_misalign = Rectools.FBP(sino_misalign) # reconstruction with misalignment
+
+plt.figure() 
+plt.imshow(FBPrec_misalign, vmin=0, vmax=1, cmap="gray")
+plt.title('FBP reconstruction of misaligned data using known exact shifts')
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing using FISTA method (tomobar)")
