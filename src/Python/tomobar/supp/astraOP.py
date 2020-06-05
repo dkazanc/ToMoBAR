@@ -29,11 +29,13 @@ def rotation_matrix3D(theta):
 #define 2D vector geometry
 def vec_geom_init2D(angles_rad, DetectorSpacingX, CenterRotOffset):
     s0 = [0.0, -1.0] # source
-    d0 = [CenterRotOffset, 0.0] # detector
     u0 = [DetectorSpacingX, 0.0] # detector coordinates
-    
-    vectors = np.zeros([angles_rad.size,6])
+    vectors = np.zeros([angles_rad.size, 6])
     for i in range(0,angles_rad.size):
+        if np.ndim(CenterRotOffset) == 0:
+            d0 = [CenterRotOffset, 0.0] # detector
+        else:
+            d0 = [CenterRotOffset[i], 0.0] # detector
         theta = angles_rad[i]
         vec_temp = np.dot(rotation_matrix2D(theta),s0)
         vectors[i,0:2] = vec_temp[:] # ray position
@@ -46,12 +48,15 @@ def vec_geom_init2D(angles_rad, DetectorSpacingX, CenterRotOffset):
 #define 3D vector geometry
 def vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOffset):
     s0 = [0.0, -1.0, 0.0] # source
-    d0 = [CenterRotOffset, 0.0, 0.0] # detector
     u0 = [DetectorSpacingX, 0.0, 0.0] # detector coordinates
     v0 = [0.0, 0.0, DetectorSpacingY] # detector coordinates
     
     vectors = np.zeros([angles_rad.size,12])
     for i in range(0,angles_rad.size):
+        if np.ndim(CenterRotOffset) == 0:
+            d0 = [CenterRotOffset, 0.0, 0.0] # detector
+        else:
+            d0 = [CenterRotOffset[i,1], 0.0, CenterRotOffset[i,0]] # detector
         theta = angles_rad[i]
         vec_temp = np.dot(rotation_matrix3D(theta),s0)
         vectors[i,0:3] = vec_temp[:] # ray position
@@ -69,8 +74,8 @@ class AstraTools:
         self.DetectorsDim = DetectorsDim
         self.AnglesVec = AnglesVec
         self.ObjSize = ObjSize
-        if ((CenterRotOffset == 0.0) or (CenterRotOffset is None)):
-            ' scalar geometry since parallel_vec is not implemented for CPU modules ? '
+        if CenterRotOffset is None:
+            'scalar geometry since parallel_vec is not implemented for CPU ASTRA modules yet?'
             self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
         else:
             # define astra vector geometry (default)
@@ -201,10 +206,12 @@ class AstraToolsOS:
                     ind_sel += OS
         
         # create full ASTRA geometry (to calculate Lipshitz constant)
-        #self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
-        vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset) 
-        self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
-        self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
+        if ((np.sum(CenterRotOffset) == 0.0) or (CenterRotOffset is None)):
+            self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
+        else:
+            vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
+            self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
+            self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
         if device == 'cpu':
             self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
             self.device = 1
@@ -221,9 +228,11 @@ class AstraToolsOS:
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
             anglesOS = self.AnglesVec[self.indVec] # OS-specific angles
-            #self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
-            vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset) 
-            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel_vec', DetectorsDim, vectorsOS)
+            if ((np.sum(CenterRotOffset) == 0.0) or (CenterRotOffset is None)):
+                self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
+            else:
+                vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset[self.indVec])
+                self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel_vec', DetectorsDim, vectorsOS)
             if self.device == 1:
                 self.proj_id_OS[sub_ind] = astra.create_projector('line', self.proj_geom_OS[sub_ind], self.vol_geom) # for CPU
             if self.device == 0:
