@@ -91,7 +91,7 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = 0.00001,              # Center of Rotation scalar
+                    CenterRotOffset = None,              # Center of Rotation scalar or a vector
                     AnglesVec = angles_rad,              # A vector of projection angles in radians
                     ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
@@ -122,7 +122,7 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,        # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar 
+                    CenterRotOffset = None,          # Center of Rotation scalar or a vector 
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
@@ -195,7 +195,7 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,        # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar 
+                    CenterRotOffset = None,          # Center of Rotation scalar or a vector 
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
@@ -268,7 +268,7 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,        # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar 
+                    CenterRotOffset = None,          # Center of Rotation scalar or a vector 
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='KL',               # Data fidelity, choose from LS, KL, PWLS

@@ -181,12 +181,12 @@ print ("Reconstructing with FISTA-OS method using tomobar")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # initialise tomobar ITERATIVE reconstruction class ONCE
 from tomobar.methodsIR import RecToolsIR
-Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
+Rectools = RecToolsIR(DetectorsDimH = Horiz_det,      # Horizontal detector dimension
                     DetectorsDimV = Vert_det,         # Vertical detector dimension (3D case)
                     CenterRotOffset  = None,          # Center of Rotation scalar
                     AnglesVec = angles_rad,           # A vector of projection angles in radians
                     ObjSize = N_size,                 # Reconstructed object dimensions (scalar)
-                    datafidelity='PWLS',                # data fidelity, choose LS, KL, PWLS or SWLS
+                    datafidelity='PWLS',              # data fidelity, choose LS, KL, PWLS or SWLS
                     device_projector='gpu')
 
 _data_ = {'projection_norm_data' : projData3D_analyt_noisy,

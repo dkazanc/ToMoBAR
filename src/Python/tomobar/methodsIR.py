@@ -242,7 +242,7 @@ class RecToolsIR:
     Parameters of the class function main specifying the projection geometry:
       *DetectorsDimH,     # Horizontal detector dimension
       *DetectorsDimV,     # Vertical detector dimension for 3D case
-      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar
+      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar or a vector
       *AnglesVec,         # A vector of projection angles in radians
       *ObjSize,           # Reconstructed object dimensions (a scalar)
       *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
@@ -297,7 +297,7 @@ class RecToolsIR:
     def __init__(self,
               DetectorsDimH,     # Horizontal detector dimension
               DetectorsDimV,     # Vertical detector dimension (3D case)
-              CenterRotOffset,   # Center of Rotation scalar (for 3D case)
+              CenterRotOffset,   # The Centre of Rotation scalar or a vector
               AnglesVec,         # Array of projection angles in radians
               ObjSize,           # Reconstructed object dimensions (scalar)
               datafidelity,      # Data fidelity, choose from LS, KL, PWLS
@@ -313,10 +313,7 @@ class RecToolsIR:
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
-        if CenterRotOffset is None:
-            self.CenterRotOffset = 0.0
-        else:
-            self.CenterRotOffset = CenterRotOffset
+        self.CenterRotOffset = CenterRotOffset
 
         if device_projector is None:
             self.device_projector = 'gpu'
