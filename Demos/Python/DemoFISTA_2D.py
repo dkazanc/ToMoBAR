@@ -107,7 +107,7 @@ Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimen
 # prepare dictionaries with parameters:
 _data_ = {'projection_norm_data' : noisy_sino} # data dictionary
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {'iterations' : 10,
+_algorithm_ = {'iterations' : 300,
                'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
 RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
