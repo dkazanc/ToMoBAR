@@ -313,7 +313,10 @@ class RecToolsIR:
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
-        self.CenterRotOffset = CenterRotOffset
+        if (CenterRotOffset is None):
+             self.CenterRotOffset = 0.0
+        else:
+            self.CenterRotOffset = CenterRotOffset
 
         if device_projector is None:
             self.device_projector = 'gpu'

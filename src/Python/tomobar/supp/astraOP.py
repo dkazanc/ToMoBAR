@@ -205,12 +205,9 @@ class AstraToolsOS:
                     ind_sel += OS
         
         # create full ASTRA geometry (to calculate Lipshitz constant)
+        vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
+        self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
         self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
-        if CenterRotOffset is None:
-            self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
-        else:
-            vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
-            self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
         if device == 'cpu':
             self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
             self.device = 1
@@ -227,11 +224,13 @@ class AstraToolsOS:
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
             anglesOS = self.AnglesVec[self.indVec] # OS-specific angles
-            if CenterRotOffset is None:
-                self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
-            else:
+            
+            if np.ndim(CenterRotOffset) == 0: # CenterRotOffset is a _scalar_
+                    vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset)
+                    #self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
+            else: # CenterRotOffset is a _vector_
                 vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset[self.indVec])
-                self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel_vec', DetectorsDim, vectorsOS)
+            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel_vec', DetectorsDim, vectorsOS)
             if self.device == 1:
                 self.proj_id_OS[sub_ind] = astra.create_projector('line', self.proj_geom_OS[sub_ind], self.vol_geom) # for CPU
             if self.device == 0:
@@ -268,12 +267,10 @@ class AstraTools3D:
         self.ObjSize = ObjSize
         self.DetectorsDimV = DetRowCount
         # define astra type geometry (scalar)
-        if CenterRotOffset is None:
-         self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
-        else:
-            # define astra vector geometry
-            vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
-            self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
+        # self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec):
+        # define astra vector geometry
+        vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
+        self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
         if type(ObjSize) == tuple:
             Y,X,Z = [int(i) for i in ObjSize]
         else:
@@ -367,11 +364,8 @@ class AstraToolsOS3D:
                     ind_sel += OS
         
         # create full ASTRA geometry (to calculate Lipshitz constant)
-        if CenterRotOffset is None:
-            self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec)
-        else:
-            vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
-            self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
+        vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
+        self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
         # create OS-specific ASTRA geometry
         self.proj_geom_OS = {}
         for sub_ind in range(OS):
@@ -379,12 +373,12 @@ class AstraToolsOS3D:
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
             anglesOS = AnglesVec[self.indVec] # OS-specific angles
-            if CenterRotOffset is None:
-                self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, anglesOS)
-            else:
+            
+            if np.ndim(CenterRotOffset) == 0: # CenterRotOffset is a _scalar_
+                vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, CenterRotOffset)
+            else: # CenterRotOffset is a _vector_
                 vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, CenterRotOffset[self.indVec])
-                self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
-
+            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
     def forwproj(self, object3D):
         """Applying forward projection"""
         proj_id, proj_data = astra.create_sino3d_gpu(object3D, self.proj_geom, self.vol_geom)
