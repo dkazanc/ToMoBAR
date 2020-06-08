@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2020.01-2020.06]
+### Added
+- Stripe-Weighted Least squares penalty to remove ring artifacts
+- Mask initialisation to apply circular masking to the reconstructed image/VOLUME
+- An option to provide variable CoRs values in order to fix the problem of misalignment for 2D and 3D case
+- Additional real data demo to reconstruct macrocrystallographic data
+- Various bug fixes
+
 ## [2020.01]
 ### Added
 - Kullback-Leibler term has been added according to C.Vogel p.174
@@ -8,7 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ## [2019.12]
 ### Changed
-- Due to model-based structure of algorithms, the amount of parameters constantly increases. It has been 
+- Due to model-based structure of algorithms, the amount of parameters constantly increases. It has been
 decided to re-structure class function and make it simpler to operate. See demos for examples.
 - Added extensive HELP, one can use - help(RecToolsIR) or help(RecToolsDIR) to get information about parameters
 - Demos modified to adapt a new structure
@@ -33,8 +41,8 @@ decided to re-structure class function and make it simpler to operate. See demos
 
 ## [2019.06]
 ### Added
-- Vector geometry added to 3D case replacing the scalar aproach
-- Center of Rotation (CenterRotOffset variable) can be defined in the class as a scalar to avoid direct data manupulations (cropping, padding)
+- Vector geometry added to 3D case replacing the scalar approach
+- Center of Rotation (CenterRotOffset variable) can be defined in the class as a scalar to avoid direct data manipulations (cropping, padding)
 
 ### Changed
 - Demos for 2D/3D reconstruction updated with a new class
