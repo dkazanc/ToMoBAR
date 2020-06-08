@@ -205,12 +205,12 @@ class AstraToolsOS:
                     ind_sel += OS
         
         # create full ASTRA geometry (to calculate Lipshitz constant)
+        self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
         if CenterRotOffset is None:
             self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
         else:
             vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
             self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
-            self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
         if device == 'cpu':
             self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
             self.device = 1
