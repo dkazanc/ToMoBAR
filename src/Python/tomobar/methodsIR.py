@@ -49,15 +49,23 @@ def merge_3_dicts(x, y, z):
 def circ_mask(X, diameter):
     # applying a circular mask to the reconstructed image/volume
     # Make the 'diameter' smaller than 1.0 in order to shrink it
-    objsize = np.size(X,0)
-    c = np.linspace(-(objsize*(1.0/diameter))/2.0, (objsize*(1.0/diameter))/2.0, objsize)
+    obj_shape = np.shape(X)
+    X_masked = np.float32(np.zeros(obj_shape))
     if np.ndim(X) == 2:
-        x, y = np.meshgrid(c, c)
-        mask = np.float32(np.array((x**2 + y**2 < (objsize/2.0)**2)))
+        objsize = obj_shape[0]
+    elif np.ndim(X) == 3:
+        objsize = obj_shape[1]
     else:
-        x, y, z = np.meshgrid(c, c, c)
-        mask = np.float32(np.array((x**2 + y**2 + z**2 < (objsize/2.0)**2)))
-    return np.multiply(X,mask)
+        print("Object input size is wrong for the mask to apply to")
+    c = np.linspace(-(objsize*(1.0/diameter))/2.0, (objsize*(1.0/diameter))/2.0, objsize)
+    x, y = np.meshgrid(c, c)
+    mask = np.float32(np.array((x**2 + y**2 < (objsize/2.0)**2)))
+    if np.ndim(X) == 3:
+        for z in range(0, obj_shape[0]):
+            X_masked[z,:,:] = np.multiply(X[z,:,:], mask)
+    else:
+        X_masked = np.multiply(X,mask)
+    return X_masked
 
 def dict_check(self, _data_, _algorithm_, _regularisation_):
     # checking and initialising all required parameters here:
