@@ -30,7 +30,7 @@ install:
   - conda install --yes numpy=$NUMPY pytest conda-build anaconda-client 
   - conda config --set anaconda_upload no
   - export VERSION=`date +%Y.%m`
-  - conda build conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION
+  - conda build conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION --no-test
   - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
 
 after_success:
