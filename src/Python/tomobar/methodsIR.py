@@ -22,17 +22,28 @@ GPLv3 license (ASTRA toolbox)
 
 import numpy as np
 from numpy import linalg as LA
-import scipy.sparse.linalg
-
-try:
-    from tomobar.supp.addmodules import RING_WEIGHTS
-except:    
-    print('____! RING_WEIGHTS C-module failed on import !____')
 
 try:
     from ccpi.filters.regularisers import ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
 except:
-    print('____! CCPi regularisation package is missing, please install !____')
+    print('____! CCPi-regularisation package is missing, please install !____')
+
+try:
+    import astra
+except:
+    print('____! Astra-toolbox package is missing, please install !____')
+
+try:
+    import scipy.sparse.linalg
+except:
+    print('____! Scipy toolbox package is missing, please install !____')
+
+try:
+    from tomobar.supp.addmodules import RING_WEIGHTS
+except:
+    print('____! RING_WEIGHTS C-module failed on import !____')
+
+
 
 def smooth(y, box_pts):
     # a function to smooth 1D signal
@@ -264,7 +275,7 @@ class RecToolsIR:
             --huber_threshold # threshold for Huber function to apply to data model (supress outliers)
             --studentst_threshold # threshold for Students't function to apply to data model (supress outliers)
             --ring_weights_threshold # threshold to produce additional weights to supress ring artifacts
-            --ring_huber_power # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more penalising  
+            --ring_huber_power # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more penalising
             --ring_tuple_halfsizes # a tuple for half window sizes as [detector, angles, num of projections]
             --ringGH_lambda # a parameter for Group-Huber data model to supress full rings of the same intensity
             --ringGH_accelerate # Group-Huber data model acceleration factor (use carefully to avoid divergence, 50 default)
@@ -347,7 +358,7 @@ class RecToolsIR:
             from tomobar.supp.astraOP import AstraTools3D
             self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
         return None
-            
+
 
     def SIRT(self, _data_, _algorithm_):
         ######################################################################
@@ -372,7 +383,7 @@ class RecToolsIR:
         if (self.geom == '3D'):
             CGLS_rec = self.Atools.cgls3D(_data_['projection_norm_data'], _algorithm_['iterations'])
         return CGLS_rec
-    
+
     def powermethod(self, _data_):
         # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
         # projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored
@@ -389,8 +400,8 @@ class RecToolsIR:
                 self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
         niter = 15 # number of power method iterations
         s = 1.0
-        
-        # classical approach 
+
+        # classical approach
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
@@ -489,9 +500,9 @@ class RecToolsIR:
                     r[:,0] = r_x[:,0] - np.multiply(L_const_inv,vec)
                 else:
                     r = r_x - np.multiply(L_const_inv,vec)
-            
+
             if ((_data_['OS_number'] != 1) and (_data_['ring_weights_threshold'] is not None) and (iter > 0)):
-                # Ordered subset approach for a better ring model 
+                # Ordered subset approach for a better ring model
                 res_full = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
                 rings_weights = RING_WEIGHTS(res_full, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
                 ring_function_weight = np.ones(np.shape(res_full))
@@ -703,7 +714,7 @@ class RecToolsIR:
             # update u variable
             u = u + (x_hat - z)
             if (_algorithm_['verbose'] == 'on'):
-                if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):                    
+                if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):
                     print('ADMM iteration (',iter+1,') using', _regularisation_['method'], 'regularisation for (',(int)(info_vec[0]),') iterations')
             if (iter == _algorithm_['iterations']-1):
                 print('ADMM stopped at iteration (', iter+1, ')')

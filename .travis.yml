@@ -1,13 +1,6 @@
 language: python
 
 matrix:
-  include:
-    - python: 2.7
-      env: NUMPY=1.16      
-    
-    - python: 2.7
-      env: NUMPY=1.15 
-
     - python: 3.5
       env: NUMPY=1.15
       
@@ -16,7 +9,13 @@ matrix:
       
     - python: 3.6
       env: NUMPY=1.16
-      
+
+    - python: 3.7
+      env: NUMPY=1.15
+
+    - python: 3.7
+      env: NUMPY=1.16      
+
 os:
   - linux
   
@@ -41,10 +40,10 @@ install:
   - export VERSION=`date +%Y.%m`
   - conda build conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION
   - conda install --channel /home/travis/miniconda/envs/test-environment/conda-bld/ tomobar --offline --override-channels
-
+  
 after_success:
   - chmod +x src/Python/conda-recipe/conda_upload.sh
   - test $TRAVIS_BRANCH = "master" && bash conda-recipe/conda_upload.sh
 
 script:
-  - python tests/test.py
+  - python test/test_tomobarCPU_DIR.py

@@ -117,7 +117,7 @@ plt.colorbar(ticks=[0, 0.5, 2], orientation='vertical')
 plt.title('Misaligned noisy FBP Reconstruction')
 plt.show()
 
-plt.figure() 
+plt.figure()
 plt.imshow(abs(FBPrec_ideal-FBPrec_error), vmin=0, vmax=2, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 2], orientation='vertical')
 plt.title('FBP reconstruction differences')
@@ -133,7 +133,7 @@ Rectools = RecToolsDIR(DetectorsDimH = P,            # Horizontal detector dimen
 
 FBPrec_misalign = Rectools.FBP(sino_misalign) # reconstruction with misalignment
 
-plt.figure() 
+plt.figure()
 plt.imshow(FBPrec_misalign, vmin=0, vmax=1, cmap="gray")
 plt.title('FBP reconstruction of misaligned data using known exact shifts')
 #%%
@@ -153,7 +153,7 @@ RectoolsIR = RecToolsIR(DetectorsDimH = P,           # Horizontal detector dimen
 # data dictionary
 _data_ = {'projection_norm_data' : sino_artifacts,
           'projection_raw_data' : sino_artifacts_raw/np.max(sino_artifacts_raw),
-           'OS_number' : 10} 
+           'OS_number' : 10}
 lc = RectoolsIR.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 _algorithm_ = {'iterations' : 30,
@@ -169,7 +169,7 @@ _regularisation_ = {'method' : 'PD_TV',
 print("Run FISTA reconstrucion algorithm with regularisation...")
 RecFISTA_LS_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
-# adding Huber data fidelity threshold 
+# adding Huber data fidelity threshold
 _data_.update({'huber_threshold' : 7.0})
 print(" Run FISTA reconstrucion algorithm with regularisation and Huber data...")
 RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
@@ -196,7 +196,7 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-HuberRing-TV reconstruction')
 plt.show()
 
-# calculate errors 
+# calculate errors
 Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_LS_reg[indicesROI])
 RMSE_FISTA_LS_TV = Qtools.rmse()
 Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_Huber_reg[indicesROI])
@@ -256,7 +256,7 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-SWLS-Huber-TV reconstruction')
 plt.show()
 
-# calculate errors 
+# calculate errors
 Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_SWLS[indicesROI])
 RMSE_FISTA_SWLS_TV = Qtools.rmse()
 Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_SWLS_Huber[indicesROI])
@@ -279,7 +279,7 @@ _algorithm_ = {'iterations' : 30,
                'mask_diameter' : 0.9,
                'lipschitz_const' : lc}
 
-# Run FISTA reconstrucion algorithm with regularisation 
+# Run FISTA reconstrucion algorithm with regularisation
 RecFISTA_LS_GH_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
@@ -288,7 +288,7 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-GH-TV reconstruction')
 plt.show()
 
-# calculate errors 
+# calculate errors
 Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_LS_GH_reg[indicesROI])
 RMSE_FISTA_LS_GH_TV = Qtools.rmse()
 print("RMSE for FISTA-PWLS-GH-TV reconstruction is {}".format(RMSE_FISTA_LS_GH_TV))
@@ -312,7 +312,7 @@ _regularisation_ = {'method' : 'PD_TV',
                     'iterations' : 120,
                     'device_regulariser': 'gpu'}
 
-# Run FISTA reconstrucion algorithm with regularisation 
+# Run FISTA reconstrucion algorithm with regularisation
 RecFISTA_LS_stud_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
@@ -321,7 +321,7 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FISTA-OS-Stidentst-TV reconstruction')
 plt.show()
 
-# calculate errors 
+# calculate errors
 Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_LS_stud_reg[indicesROI])
 RMSE_FISTA_LS_studentst_TV = Qtools.rmse()
 print("RMSE for FISTA-PWLS-Studentst-TV reconstruction is {}".format(RMSE_FISTA_LS_studentst_TV))

@@ -1,12 +1,19 @@
 package:
   name: tomobar
   version: {{ environ['VERSION'] }}
-  
+
 build:
   preserve_egg_dir: False
   number: 0
   script_env:
     - VERSION
+
+test:
+  source_files:
+    - ./test/
+  commands:
+    - python -c "import os; print (os.getcwd())"
+    - python -m unittest discover -s test
 
 requirements:
   build:
@@ -15,8 +22,8 @@ requirements:
     - setuptools
     - cython
     - cmake
-
   run:
+    - scipy
     - python
     - numpy
     - libgcc-ng # [unix]
