@@ -1,4 +1,5 @@
-set -xe 
+set -xe
+cp -rv "$RECIPE_DIR/../test" "$SRC_DIR/"
 
 cd $SRC_DIR
 

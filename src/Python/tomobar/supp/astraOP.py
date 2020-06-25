@@ -2,17 +2,19 @@
 # -*- coding: utf-8 -*-
 """
 A class based on using ASTRA toolbox to perform projection/bakprojection of 2D/3D
-data using parallel beam geometry 
-- SIRT algorithm from ASTRA 
-- CGLS algorithm from ASTRA 
+data using parallel beam geometry
+- SIRT algorithm from ASTRA
+- CGLS algorithm from ASTRA
 
 GPLv3 license (ASTRA toolbox)
 @author: Daniil Kazantsev: https://github.com/dkazanc
 """
-
-import astra
 import numpy as np
 
+try:
+    import astra
+except:
+    print('____! Astra-toolbox package is missing, please install !____')
 
 #define 2D rotation matrix
 def rotation_matrix2D(theta):
@@ -49,7 +51,7 @@ def vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOff
     s0 = [0.0, -1.0, 0.0] # source
     u0 = [DetectorSpacingX, 0.0, 0.0] # detector coordinates
     v0 = [0.0, 0.0, DetectorSpacingY] # detector coordinates
-    
+
     vectors = np.zeros([angles_rad.size,12])
     for i in range(0,angles_rad.size):
         if np.ndim(CenterRotOffset) == 0:
@@ -91,7 +93,7 @@ class AstraTools:
             print ("Select between 'cpu' or 'gpu' for device")
         # add optomo operator
         self.A_optomo = astra.OpTomo(self.proj_id)
-        
+
     def forwproj(self, image):
         """Applying forward projection"""
         sinogram_id, sinogram = astra.create_sino(image, self.proj_id)
@@ -105,11 +107,11 @@ class AstraTools:
         astra.data2d.delete(rec_id)
         return image
     def fbp2D(self, sinogram):
-        """perform FBP reconstruction""" 
+        """perform FBP reconstruction"""
         rec_id = astra.data2d.create( '-vol', self.vol_geom)
         # Create a data object to hold the sinogram data
         sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
-        
+
         if self.device == 1:
             cfg = astra.astra_dict('FBP')
             cfg['ProjectorId'] = self.proj_id
@@ -131,11 +133,11 @@ class AstraTools:
         astra.data2d.delete(self.proj_id)
         return recFBP
     def sirt2D(self, sinogram, iterations):
-        """perform SIRT reconstruction""" 
+        """perform SIRT reconstruction"""
         rec_id = astra.data2d.create( '-vol', self.vol_geom)
         # Create a data object to hold the sinogram data
         sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
-        
+
         if self.device == 1:
             cfg = astra.astra_dict('SIRT')
             cfg['ProjectorId'] = self.proj_id
@@ -156,11 +158,11 @@ class AstraTools:
         astra.data2d.delete(self.proj_id)
         return recSIRT
     def cgls2D(self, sinogram, iterations):
-        """perform CGLS reconstruction""" 
+        """perform CGLS reconstruction"""
         rec_id = astra.data2d.create( '-vol', self.vol_geom)
         # Create a data object to hold the sinogram data
         sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
-        
+
         if self.device == 1:
             cfg = astra.astra_dict('CGLS')
             cfg['ProjectorId'] = self.proj_id
@@ -180,17 +182,17 @@ class AstraTools:
         astra.data2d.delete(sinogram_id)
         astra.data2d.delete(self.proj_id)
         return recCGLS
-    
+
 class AstraToolsOS:
     """
-    2D ordered subset parallel beam projection/backprojection class based 
+    2D ordered subset parallel beam projection/backprojection class based
     on ASTRA toolbox
     """
     def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device):
         self.DetectorsDim = DetectorsDim
         self.AnglesVec = AnglesVec
         self.ObjSize = ObjSize
-        
+
         ################ arrange ordered-subsets ################
         import numpy as np
         AnglesTot = np.size(AnglesVec) # total number of angles
@@ -203,7 +205,7 @@ class AstraToolsOS:
                 if (indexS < AnglesTot):
                     self.newInd_Vec[sub_ind,proj_ind] = indexS
                     ind_sel += OS
-        
+
         # create full ASTRA geometry (to calculate Lipshitz constant)
         vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
         self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
@@ -224,7 +226,7 @@ class AstraToolsOS:
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
             anglesOS = self.AnglesVec[self.indVec] # OS-specific angles
-            
+
             if np.ndim(CenterRotOffset) == 0: # CenterRotOffset is a _scalar_
                     vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset)
                     #self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
@@ -279,7 +281,7 @@ class AstraTools3D:
         self.vol_geom = astra.create_vol_geom(Y,X,Z)
         self.proj_id = astra.create_projector('cuda3d', self.proj_geom, self.vol_geom) # for GPU
         self.A_optomo = astra.OpTomo(self.proj_id)
-        
+
     def forwproj(self, object3D):
         """Applying forward projection"""
         proj_id, proj_data = astra.create_sino3d_gpu(object3D, self.proj_geom, self.vol_geom)
@@ -291,7 +293,7 @@ class AstraTools3D:
         astra.data3d.delete(rec_id)
         return object3D
     def sirt3D(self, sinogram, iterations):
-        """perform SIRT reconstruction""" 
+        """perform SIRT reconstruction"""
         sinogram_id = astra.data3d.create("-sino", self.proj_geom, sinogram)
         # Create a data object for the reconstruction
         rec_id = astra.data3d.create('-vol', self.vol_geom)
@@ -304,7 +306,7 @@ class AstraTools3D:
         alg_id = astra.algorithm.create(cfg)
         # This will have a runtime in the order of 10 seconds.
         astra.algorithm.run(alg_id, iterations)
-        
+
         # Get the result
         recSIRT = astra.data3d.get(rec_id)
 
@@ -313,7 +315,7 @@ class AstraTools3D:
         astra.data3d.delete(sinogram_id)
         return recSIRT
     def cgls3D(self, sinogram, iterations):
-        """perform CGLS reconstruction""" 
+        """perform CGLS reconstruction"""
         sinogram_id = astra.data3d.create("-sino", self.proj_geom, sinogram)
         # Create a data object for the reconstruction
         rec_id = astra.data3d.create('-vol', self.vol_geom)
@@ -326,7 +328,7 @@ class AstraTools3D:
         alg_id = astra.algorithm.create(cfg)
         # This will have a runtime in the order of 10 seconds.
         astra.algorithm.run(alg_id, iterations)
-        
+
         # Get the result
         recCGLS = astra.data3d.get(rec_id)
 
@@ -337,7 +339,7 @@ class AstraTools3D:
 
 class AstraToolsOS3D:
     """
-    3D ordered subset parallel beam projection/backprojection class based 
+    3D ordered subset parallel beam projection/backprojection class based
     on ASTRA toolbox
     """
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS):
@@ -349,7 +351,7 @@ class AstraToolsOS3D:
             Y=X=ObjSize
             Z=DetRowCount
         self.vol_geom = astra.create_vol_geom(Y,X,Z)
-        
+
         ################ arrange ordered-subsets ################
         import numpy as np
         AnglesTot = np.size(AnglesVec) # total number of angles
@@ -362,7 +364,7 @@ class AstraToolsOS3D:
                 if (indexS < AnglesTot):
                     self.newInd_Vec[sub_ind,proj_ind] = indexS
                     ind_sel += OS
-        
+
         # create full ASTRA geometry (to calculate Lipshitz constant)
         vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
         self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
@@ -373,7 +375,7 @@ class AstraToolsOS3D:
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
             anglesOS = AnglesVec[self.indVec] # OS-specific angles
-            
+
             if np.ndim(CenterRotOffset) == 0: # CenterRotOffset is a _scalar_
                 vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, CenterRotOffset)
             else: # CenterRotOffset is a _vector_
