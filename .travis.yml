@@ -18,7 +18,7 @@ os:
   
 install:
   # Install Anaconda
-  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -28,7 +28,6 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION 
   - source activate test-environment
   - conda install --yes numpy=$NUMPY pytest conda-build anaconda-client 
-  - conda install -c conda-forge sparse
   - conda config --set anaconda_upload no
   - export VERSION=`date +%Y.%m`
   - conda build conda-recipe --numpy=$NUMPY --python=$TRAVIS_PYTHON_VERSION
