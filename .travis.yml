@@ -1,13 +1,6 @@
 language: python
 
 matrix:
-  include:
-    - python: 2.7
-      env: NUMPY=1.16      
-    
-    - python: 2.7
-      env: NUMPY=1.15 
-
     - python: 3.5
       env: NUMPY=1.15
       
@@ -16,17 +9,16 @@ matrix:
       
     - python: 3.6
       env: NUMPY=1.16
+
+    - python: 3.7
+      env: NUMPY=1.15      
       
 os:
   - linux
   
 install:
   # Install Anaconda
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
+  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -47,4 +39,4 @@ after_success:
   - test $TRAVIS_BRANCH = "master" && bash conda-recipe/conda_upload.sh
 
 script:
-  - python tests/test.py
+  - python test/test_tomobarCPU_DIR.py
