@@ -37,7 +37,7 @@ def normaliser(data, flats, darks, log):
 
 def normaliser_ffd(data, flats, darks, log):
     """
-    dynamic flat field corrections from the paper...
+    dynamic flat field corrections from the paper by Vincent Van 
     data normaliser which assumes data/flats/darks to be in the following format:
     [Projections, detectorsVertical, detectorsHoriz] or
     [Projections, detectorsHoriz, detectorsVertical]
