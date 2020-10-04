@@ -8,25 +8,40 @@ Supplementary data tools:
 """
 import numpy as np
 
-def normaliser(data, flats, darks, log):
+def normaliser(data, flats, darks, log, method):
     """
     data normaliser which assumes data/flats/darks to be in the following format:
-    [Projections, detectorsVertical, detectorsHoriz] or 
-    [Projections, detectorsHoriz, detectorsVertical]
+    [detectorsVertical, Projections, detectorsHoriz] or 
+    [detectorsHoriz, Projections, detectorsVertical]
     """
     data_norm = np.zeros(np.shape(data),dtype='float32')
-    [ProjectionsNum, detectorsX, detectorsY]= np.shape(data) # get the number of projection angles
-    flats = np.mean(flats,0) # mean across flats
-    darks = np.mean(darks,0) # mean across darks
+    [detectorsX, ProjectionsNum, detectorsY]= np.shape(data) # get the number of projection angles
+    if method is None or method=='mean':
+        flats = np.mean(flats,1) # mean across flats
+        if darks is not None:
+            darks = np.mean(darks,1) # mean across darks
+        else:
+            darks = 0.0
+    elif (method=='median'):
+        flats = np.median(flats,1) # median across flats
+        if darks is not None:
+            darks = np.median(darks,1) # median across darks
+        else:
+            darks = 0.0
+    elif (method=='dynamic'):
+        # dynamic flat field normalisation accordian to the paper of V. Van 
+        print('TODO')
+    else:
+        raise NameError('Please select an appropriate method for normalisation:mean, median or dynamic')
     denom = (flats-darks)
     denom[(np.where(denom <= 0.0))] = 1.0 # remove zeros/negatives in the denominator if any
     
     for i in range(0,ProjectionsNum):
-        sliceS = data[i,:,:] # select a stack [detector x slices]
-        nomin = sliceS - darks # get nominator
+        projection2D = data[:,i,:] 
+        nomin = projection2D - darks # get nominator
         nomin[(np.where(nomin < 0.0))] = 1.0 # remove negatives
         fraction = np.true_divide(nomin,denom)
-        data_norm[i,:,:] = fraction.astype(float)
+        data_norm[:,i,:] = fraction.astype(float)
     
     if log is not None:
         # calculate negative log (avoiding of log(0) (= inf) and > 1.0 (negative val))
