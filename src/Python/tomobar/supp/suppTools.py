@@ -7,6 +7,8 @@ Supplementary data tools:
 @author: Daniil Kazantsev: https://github.com/dkazanc
 """
 import numpy as np
+import scipy
+from skimage.transform import downscale_local_mean
 
 def DFFC(data, flats, darks, downsample=20):
     # Load frames
