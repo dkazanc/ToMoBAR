@@ -8,15 +8,126 @@ Supplementary data tools:
 """
 import numpy as np
 
-def normaliser(data, flats, darks, log, method):
+def DFFC(data, flats, darks, downsample=20):
+    # Load frames
+    meanDarkfield = np.mean(darks, axis=0)
+
+    whiteVect = np.zeros((flats.shape[0], flats.shape[1]*flats.shape[2]))
+    k = 0
+    for ff in flats:
+        whiteVect[k] = ff.flatten() - meanDarkfield.flatten()
+        k += 1
+
+    mn = np.mean(whiteVect, axis=0)
+
+    # Substract mean flat field
+    M, N = whiteVect.shape
+    Data = whiteVect - mn
+
+    # =============================================================================
+    # Parallel Analysis (EEFs selection):
+    #      Selection of the number of components for PCA using parallel Analysis.
+    #      Each flat field is a single row of the matrix flatFields, different
+    #      rows are different observations.
+    # =============================================================================
+
+    def parallelAnalysis(flatFields, repetitions):
+        stdEFF = np.std(flatFields, axis=0)
+        H, W = flatFields.shape
+        keepTrack = np.zeros((H, repetitions))
+        stdMatrix = np.tile(stdEFF, (H, 1))
+        for i in range(repetitions):
+            #print(f"Parallel Analysis - repetition {i}")
+            sample = stdMatrix * np.random.randn(H, W)
+            D1, _ = np.linalg.eig(np.cov(sample))
+            keepTrack[:,i] = D1
+        mean_flat_fields_EFF = np.mean(flatFields, axis=0)
+        F = flatFields - mean_flat_fields_EFF
+        D1, V1 = np.linalg.eig(np.cov(F))
+        selection = np.zeros((1,H))
+        # mean + 2 * std
+        selection[:,D1>(np.mean(keepTrack, axis=1) + 2 * np.std(keepTrack, axis=1))] = 1
+        numberPC = np.sum(selection)
+        return V1, D1, int(numberPC)
+
+    # Parallel Analysis
+    nrPArepetions = 10
+    print("Parallel Analysis:")
+    V1, D1, nrEigenflatfields = parallelAnalysis(Data,nrPArepetions)
+    print(f"{nrEigenflatfields} eigen flat fields selected!")
+
+    # Calculation eigen flat fields
+    C, H, W = data.shape
+    eig0 = mn.reshape((H,W))
+    EFF = np.zeros((nrEigenflatfields+1, H, W)) #n_EFF + 1 eig0
+    print("Calculating EFFs:")
+    EFF[0] = eig0
+    for i in range(nrEigenflatfields):
+        EFF[i+1] = (np.matmul(Data.T, V1[-i]).T).reshape((H,W)) #why the last ones?
+    print("Done!")
+
+    def cost_func(x, *args):
+        (projections, meanFF, FF, DF) = args
+        FF_eff = np.zeros((FF.shape[1], FF.shape[2]))
+        for i in range(len(FF)):
+            FF_eff  = FF_eff + x[i] * FF[i]
+        logCorProj=(projections-DF)/(meanFF+FF_eff)*np.mean(meanFF.flatten()+FF_eff.flatten());
+        Gx, Gy = np.gradient(logCorProj)
+        mag = (Gx**2 + Gy**2)**(1/2)
+        cost = np.sum(mag.flatten())
+        return cost
+
+    # =============================================================================
+    # CondTVmean function: finds the optimal estimates  of the coefficients of the
+    # eigen flat fields.
+    # =============================================================================
+
+    def condTVmean(projection, meanFF, FF, DF, x, DS):
+        # Downsample image
+        projection = downscale_local_mean(projection, (DS, DS))
+        meanFF = downscale_local_mean(meanFF, (DS, DS))
+        FF2 = np.zeros((FF.shape[0], meanFF.shape[0], meanFF.shape[1]))
+        for i in range(len(FF)):
+            FF2[i] = downscale_local_mean(FF[i], (DS, DS))
+        FF = FF2
+        DF = downscale_local_mean(DF, (DS, DS))
+
+        # Optimize weights (x)
+        x = scipy.optimize.minimize(cost_func, x, args=(projection, meanFF, FF, DF), method='BFGS')
+
+        return x.x
+
+    n_im = len(data)
+    print("DFFC:")
+    clean_DFFC = np.zeros((n_im, H, W))
+    for i in range(n_im):
+        if i%100 == 0: print("Iteration", i)
+        #print("Estimation projection:")
+        projection = data[i]
+        # Estimate weights for a single projection
+        meanFF = EFF[0]
+        FF = EFF[1:]
+        weights = np.zeros(nrEigenflatfields)
+        x=condTVmean(projection, meanFF, FF, meanDarkfield, weights, downsample)
+
+        # Dynamic FFC
+        FFeff = np.zeros(meanDarkfield.shape)
+        for j in range(nrEigenflatfields):
+            FFeff = FFeff + x[j] * EFF[j+1]
+        tmp = (projection - meanDarkfield)/(EFF[0] + FFeff)
+        clean_DFFC[i] = tmp
+
+    return clean_DFFC
+
+def normaliser(data, flats, darks, log, method = 'mean'):
     """
     data normaliser which assumes data/flats/darks to be in the following format:
-    [detectorsVertical, Projections, detectorsHoriz] or 
+    [detectorsVertical, Projections, detectorsHoriz] or
     [detectorsHoriz, Projections, detectorsVertical]
     """
     data_norm = np.zeros(np.shape(data),dtype='float32')
     [detectorsX, ProjectionsNum, detectorsY]= np.shape(data) # get the number of projection angles
-    if method is None or method=='mean':
+    if (method=='mean'):
         flats = np.mean(flats,1) # mean across flats
         if darks is not None:
             darks = np.mean(darks,1) # mean across darks
@@ -29,15 +140,21 @@ def normaliser(data, flats, darks, log, method):
         else:
             darks = 0.0
     elif (method=='dynamic'):
-        # dynamic flat field normalisation accordian to the paper of V. Van 
-        print('TODO')
+        # dynamic flat field normalisation accordian to the paper of V. Van
+        # requires format [Projections, detecorsVertical, detectorsHoriz]
+        data_norm = DFFC(data, flats, darks)
+        if log is not None:
+            # calculate negative log (avoiding of log(0) (= inf) and > 1.0 (negative val))
+            data_norm[data_norm > 0.0] = -np.log(data_norm[data_norm > 0.0])
+            data_norm[data_norm < 0.0] = 0.0 # remove negative values
+        return data_norm
     else:
-        raise NameError('Please select an appropriate method for normalisation:mean, median or dynamic')
+        raise NameError('Please select an appropriate method for normalisation: mean, median or dynamic')
     denom = (flats-darks)
     denom[(np.where(denom <= 0.0))] = 1.0 # remove zeros/negatives in the denominator if any
 
     for i in range(0,ProjectionsNum):
-        projection2D = data[:,i,:] 
+        projection2D = data[:,i,:]
         nomin = projection2D - darks # get nominator
         nomin[(np.where(nomin < 0.0))] = 1.0 # remove negatives
         fraction = np.true_divide(nomin,denom)
@@ -49,7 +166,6 @@ def normaliser(data, flats, darks, log, method):
         data_norm[data_norm < 0.0] = 0.0 # remove negative values
 
     return data_norm
-
 
 def autocropper(data, addbox, backgr_pix1):
     """
