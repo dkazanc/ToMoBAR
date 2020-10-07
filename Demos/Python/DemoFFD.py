@@ -77,7 +77,7 @@ flatsnum = 80 # the number of the flat fields required
                                            arguments_Bessel = (1,10,10,12),\
                                            strip_height = 0.05, strip_thickness = 1,\
                                            sigmasmooth = 3, flatsnum=flatsnum)
-del projData3D_analyt
+#del projData3D_analyt
 plt.figure() 
 plt.subplot(121)
 plt.imshow(projData3D_noisy[:,0,:])
@@ -93,7 +93,7 @@ print("Compute Dynamic Flat Field Correction with simulated data")
 
 # normalise the data, the required format for DFFC is [detectorsX, Projections, detectorsY]
 darks = np.zeros(flatsSIM.shape)
-projData3D_norm = normaliser(projData3D_noisy, flatsSIM, darks, log='True', method='dynamic')
+projData3D_norm = normaliser(projData3D_noisy, flatsSIM, darks, log='True', method='median')
 
 #del projData3D_noisy
 intens_max = np.max(projData3D_norm)
@@ -109,6 +109,16 @@ plt.subplot(133)
 plt.imshow(projData3D_norm[:,:,sliceSel],vmin=0, vmax=intens_max)
 plt.title('Tangentogram view')
 plt.show()
+
+#%%
+import h5py
+# save data
+h5f = h5py.File('synth_data.h5', 'w')
+h5f.create_dataset('clean_data', data=projData3D_analyt)
+h5f.create_dataset('noisy_data', data=projData3D_noisy)
+h5f.create_dataset('flats', data=flatsSIM)
+h5f.create_dataset('darks', data=np.zeros(flatsSIM.shape))
+h5f.close()
 
 #%%
 # initialise tomobar DIRECT reconstruction class ONCE
