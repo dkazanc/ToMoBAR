@@ -30,14 +30,14 @@ def DFFC(data, flats, darks, downsample, nrPArepetions, sigma_bm3d):
     # Substract mean flat field
     M, N = whiteVect.shape
     Data = whiteVect - mn
-    
+
     # =============================================================================
     # Parallel Analysis (EEFs selection):
     #      Selection of the number of components for PCA using parallel Analysis.
     #      Each flat field is a single row of the matrix flatFields, different
     #      rows are different observations.
     # =============================================================================
-    
+
     def cov(X):
         one_vector = np.ones((1,X.shape[0]))
         mu = np.dot(one_vector, X) / X.shape[0]
@@ -83,7 +83,7 @@ def DFFC(data, flats, darks, downsample, nrPArepetions, sigma_bm3d):
     EFF[0] = eig0
     for i in range(nrEigenflatfields):
         EFF[i+1] = (np.matmul(Data.T, V1[i]).T).reshape((H,W))
-    
+
     EFF_denoised = EFF.copy()
     # Denoise eigen flat fields
     print("Denoising EFFs using BM3D method:")
@@ -93,7 +93,7 @@ def DFFC(data, flats, darks, downsample, nrPArepetions, sigma_bm3d):
         EFF_denoised[i,:,:] = (EFF_denoised[i,:,:] - EFF_min) / (EFF_max - EFF_min)
         EFF_denoised[i,:,:] = bm3d.bm3d(EFF_denoised[i,:,:], sigma_bm3d)
         EFF_denoised[i,:,:] = (EFF_denoised[i,:,:] * (EFF_max - EFF_min)) + EFF_min
-        
+
     print("Denoising completed.")
     # =============================================================================
     # cost_func: cost funcion used to estimate the weights using TV
@@ -153,7 +153,7 @@ def DFFC(data, flats, darks, downsample, nrPArepetions, sigma_bm3d):
 def normaliser(data, flats, darks, log, method, dyn_downsample=2, dyn_iterations=10, sigma_bm3d = 0.1):
     """
     data normaliser which assumes data/flats/darks to be in the following format:
-    [detectorsVertical, Projections, detectorsHoriz] or 
+    [detectorsVertical, Projections, detectorsHoriz] or
     [detectorsHoriz, Projections, detectorsVertical]
     """
     data_norm = np.zeros(np.shape(data),dtype='float32')
@@ -171,17 +171,17 @@ def normaliser(data, flats, darks, log, method, dyn_downsample=2, dyn_iterations
         [data_norm, EFF, EFF_filt] = DFFC(data, flats, darks, dyn_downsample, dyn_iterations, sigma_bm3d)
     else:
         raise NameError('Please select an appropriate method for normalisation: mean, median or dynamic')
-    
+
     if (method!='dynamic'):
         denom = (flats-darks)
         denom[(np.where(denom <= 0.0))] = 1.0 # remove zeros/negatives in the denominator if any
         for i in range(0,ProjectionsNum):
-            projection2D = data[:,i,:] 
+            projection2D = data[:,i,:]
             nomin = projection2D - darks # get nominator
             nomin[(np.where(nomin < 0.0))] = 1.0 # remove negatives
             fraction = np.true_divide(nomin,denom)
             data_norm[:,i,:] = fraction.astype(float)
-    
+
     if log is not None:
         # calculate negative log (avoiding of log(0) (= inf) and > 1.0 (negative val))
         data_norm[data_norm > 0.0] = -np.log(data_norm[data_norm > 0.0])
@@ -197,20 +197,20 @@ def autocropper(data, addbox, backgr_pix1):
     of each projection is used to estimate the background noise levels.
     Parameters:
     - data ! The required dimensions: [Projections, detectorsVertical, detectorsHoriz] !
-    - addbox: (int pixels) to add additional pixels in addition to automatically 
+    - addbox: (int pixels) to add additional pixels in addition to automatically
     found cropped values, i.e. increasing the cropping region (safety option)
     - backgr_pix1 (int pixels): to create rectangular ROIs to collect noise statistics
     on both (vertical) sides of each 2D projection
     """
     backgr_pix2 = int(2.5*backgr_pix1) # usually enough to collect noise statistics
-    
+
     [Projections, detectorsVertical, detectorsHoriz] = np.shape(data)
-        
+
     horiz_left_indices = np.zeros(Projections).astype(int)
     horiz_right_indices = np.zeros(Projections).astype(int)
     vert_up_indices = np.zeros(Projections).astype(int)
     vert_down_indices = np.zeros(Projections).astype(int)
-    
+
     for i in range(0,Projections):
         proj2D = data[i,:,:] # extract 2D projection
         detectorsVert_mid = (int)(0.5*detectorsVertical)
@@ -267,7 +267,7 @@ def autocropper(data, addbox, backgr_pix1):
     crop_right_horiz = np.max(horiz_right_indices)
     crop_up_vert = np.min(vert_up_indices)
     crop_down_vert = np.max(vert_down_indices)
-    
+
     # Finally time to crop the data
     cropped_data = data[:,crop_up_vert:crop_down_vert,crop_left_horiz:crop_right_horiz]
     return cropped_data
