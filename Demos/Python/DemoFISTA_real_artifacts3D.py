@@ -21,10 +21,11 @@ import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.supp.qualitymetrics import QualityTools
 from tomophantom.supp.flatsgen import synth_flats
+from tomobar.supp.suppTools import normaliser
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
-model = 14 # select a model number from the library
+model = 17 # select a model number from the library
 N_size = 256 # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
@@ -75,15 +76,16 @@ plt.title('Tangentogram view')
 plt.show()
 #%%
 print ("Simulate synthetic flat fields, add flat field background to the projections and add noise")
-I0  = 8000; # Source intensity
-flatsnum = 20 # the number of the flat fields required
+I0  = 15000; # Source intensity
+flatsnum = 100 # the number of the flat fields simulated
 
-[projData3D_noisy, flatsSIM] = synth_flats(projData3D_analyt, 
-                                           source_intensity = I0, source_variation=0.015,\
+[projData3D_noisy, flatsSIM] = synth_flats(projData3D_analyt,
+                                           source_intensity = I0, source_variation=0.02,\
                                            arguments_Bessel = (1,10,10,12),\
-                                           strip_height = 0.05, strip_thickness = 1,\
+                                           specklesize = 5,\
+                                           kbar = 0.3,\
+                                           jitter = 5.0,\
                                            sigmasmooth = 3, flatsnum=flatsnum)
-del projData3D_analyt
 plt.figure() 
 plt.subplot(121)
 plt.imshow(projData3D_noisy[:,0,:])
@@ -94,23 +96,38 @@ plt.title('A selected simulated flat-field')
 plt.show()
 #%%
 print ("Normalise projections using ToMoBAR software")
-from tomobar.supp.suppTools import normaliser
-
-# normalise the data, the required format is [detectorsX, Projections, detectorsY]
+# normalise the data, the required data format is [detectorsX, Projections, detectorsY]
 projData3D_norm = normaliser(projData3D_noisy, flatsSIM, darks=None, log='true', method='mean')
 
-#del projData3D_noisy
-intens_max = np.max(projData3D_norm)
+intens_max = 0.15*np.max(projData3D_norm)
 sliceSel = 150
 plt.figure() 
 plt.subplot(131)
 plt.imshow(projData3D_norm[:,sliceSel,:],vmin=0, vmax=intens_max)
-plt.title('2D Projection (erroneous)')
+plt.title('Normalised 2D Projection (erroneous)')
 plt.subplot(132)
 plt.imshow(projData3D_norm[sliceSel,:,:],vmin=0, vmax=intens_max)
 plt.title('Sinogram view')
 plt.subplot(133)
 plt.imshow(projData3D_norm[:,:,sliceSel],vmin=0, vmax=intens_max)
+plt.title('Tangentogram view')
+plt.show()
+#%%
+print ("Normalise projections dynamically using ToMoBAR software")
+# normalise the data, the required data format is [detectorsX, Projections, detectorsY]
+projData3D_norm_dyn = normaliser(projData3D_noisy, flatsSIM, darks=None, log='true',  method='dynamic', dyn_downsample=2, dyn_iterations=10, sigma_bm3d = 0.1)
+
+intens_max = 0.15*np.max(projData3D_norm_dyn)
+sliceSel = 150
+plt.figure() 
+plt.subplot(131)
+plt.imshow(projData3D_norm_dyn[:,sliceSel,:],vmin=0, vmax=intens_max)
+plt.title('Normalised dynamically 2D Projection (erroneous)')
+plt.subplot(132)
+plt.imshow(projData3D_norm_dyn[sliceSel,:,:],vmin=0, vmax=intens_max)
+plt.title('Sinogram view')
+plt.subplot(133)
+plt.imshow(projData3D_norm_dyn[:,:,sliceSel],vmin=0, vmax=intens_max)
 plt.title('Tangentogram view')
 plt.show()
 #%%
@@ -124,30 +141,52 @@ RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # DetectorsDimH # detector
                     device_projector = 'gpu')
 
 print ("Reconstruction using FBP from tomobar")
-recNumerical= RectoolsDIR.FBP(projData3D_norm) # FBP reconstruction
-recNumerical *= intens_max_clean
+recNumerical_conventional = RectoolsDIR.FBP(projData3D_norm) # FBP reconstruction
+recNumerical_conventional *= intens_max_clean
+
+recNumerical_dynamic = RectoolsDIR.FBP(projData3D_norm_dyn) # FBP reconstruction
+recNumerical_dynamic *= intens_max_clean
 
 sliceSel = int(0.5*N_size)
 max_val = 1
 #plt.gray()
 plt.figure() 
 plt.subplot(131)
-plt.imshow(recNumerical[sliceSel,:,:],vmin=0, vmax=max_val)
+plt.imshow(recNumerical_conventional[sliceSel,:,:],vmin=0, vmax=max_val)
 plt.title('3D Reconstruction, axial view')
 
 plt.subplot(132)
-plt.imshow(recNumerical[:,sliceSel,:],vmin=0, vmax=max_val)
+plt.imshow(recNumerical_conventional[:,sliceSel,:],vmin=0, vmax=max_val)
 plt.title('3D Reconstruction, coronal view')
 
 plt.subplot(133)
-plt.imshow(recNumerical[:,:,sliceSel],vmin=0, vmax=max_val)
+plt.imshow(recNumerical_conventional[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D Reconstruction, sagittal view')
 plt.show()
 
 # calculate errors 
-Qtools = QualityTools(phantom_tm, recNumerical)
+Qtools = QualityTools(phantom_tm, recNumerical_conventional)
 RMSE = Qtools.rmse()
-print("Root Mean Square Error is {}".format(RMSE))
+print("Root Mean Square Error is {} for conventional flat field normalisation".format(RMSE))
+
+plt.figure() 
+plt.subplot(131)
+plt.imshow(recNumerical_dynamic[sliceSel,:,:],vmin=0, vmax=max_val)
+plt.title('3D Reconstruction, axial view')
+
+plt.subplot(132)
+plt.imshow(recNumerical_dynamic[:,sliceSel,:],vmin=0, vmax=max_val)
+plt.title('3D Reconstruction, coronal view')
+
+plt.subplot(133)
+plt.imshow(recNumerical_dynamic[:,:,sliceSel],vmin=0, vmax=max_val)
+plt.title('3D Reconstruction, sagittal view')
+plt.show()
+
+# calculate errors 
+Qtools = QualityTools(phantom_tm, recNumerical_dynamic)
+RMSE = Qtools.rmse()
+print("Root Mean Square Error is {} for dynamic flat fields normalisation".format(RMSE))
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA-OS method using tomobar")
