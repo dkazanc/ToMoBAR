@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2020.09-2020.11]
+### Added
+- Dynamic flat-field normalisation routine according to the paper 
+"Dynamic intensity normalization using eigen flatfields in X-ray imaging" by 
+Vincent Van Nieuwenhove
+
 ## [2020.01-2020.06]
 ### Added
 - Stripe-Weighted Least squares penalty to remove ring artifacts
