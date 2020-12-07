@@ -453,7 +453,6 @@ class RecToolsIR:
             if (np.size(_algorithm_['initialise']) == self.ObjSize**2):
                 # the object has been initialised with an array
                 X = _algorithm_['initialise']
-                del initialise
             else:
                 X = np.zeros((self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
             r = np.zeros((self.DetectorsDimH,1),'float32') # 1D array of sparse "ring" variables (GH)
@@ -462,7 +461,6 @@ class RecToolsIR:
             if (np.size(_algorithm_['initialise']) == self.ObjSize**3):
                 # the object has been initialised with an array
                 X = _algorithm_['initialise']
-                del initialise
             else:
                 X = np.zeros((self.DetectorsDimV,self.ObjSize,self.ObjSize), 'float32') # initialise with zeros
             r = np.zeros((self.DetectorsDimV,self.DetectorsDimH), 'float32') # 2D array of sparse "ring" variables (GH)
