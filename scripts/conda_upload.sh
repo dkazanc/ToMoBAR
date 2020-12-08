@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
+
 PKG_NAME=tomobar
 USER=dkazanc
 OS=linux-64
 CONDA_TOKEN=$(cat $HOME/secrets/my_secret.json)
 export VERSION=`date +%Y.%m`
-
-array=( 3.5 3.6 3.7 )
+array=(3.5 3.6 3.7)
 
 mkdir ~/conda-bld
 conda config --set anaconda_upload no
