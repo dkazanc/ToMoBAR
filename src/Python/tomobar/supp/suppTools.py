@@ -12,6 +12,7 @@ Supplementary data tools:
 import numpy as np
 import scipy
 from skimage.transform import downscale_local_mean
+from skimage.restoration import estimate_sigma
 
 try:
     import bm3d
@@ -19,7 +20,7 @@ except:
     print('____! BM3D module is required to use for dynamic flat fields calculation !____')
 
 
-def DFFC(data, flats, darks, downsample, nrPArepetions, sigma_bm3d):
+def DFFC(data, flats, darks, downsample, nrPArepetions):
     # Load frames
     meanDarkfield = np.mean(darks, axis=1, dtype=np.float64)
     whiteVect = np.zeros((flats.shape[1], flats.shape[0]*flats.shape[2]), dtype=np.float64)
@@ -91,6 +92,8 @@ def DFFC(data, flats, darks, downsample, nrPArepetions, sigma_bm3d):
         print(f"Denoising EFF {i}")
         EFF_max, EFF_min = EFF_denoised[i,:,:].max(), EFF_denoised[i,:,:].min()
         EFF_denoised[i,:,:] = (EFF_denoised[i,:,:] - EFF_min) / (EFF_max - EFF_min)
+        sigma_bm3d = estimate_sigma(EFF_denoised[i,:,:]) * 10
+        #print(f"Estimated sigma: {sigma_bm3d}")
         EFF_denoised[i,:,:] = bm3d.bm3d(EFF_denoised[i,:,:], sigma_bm3d)
         EFF_denoised[i,:,:] = (EFF_denoised[i,:,:] * (EFF_max - EFF_min)) + EFF_min
 
@@ -124,10 +127,12 @@ def DFFC(data, flats, darks, downsample, nrPArepetions, sigma_bm3d):
             FF2[i] = downscale_local_mean(FF[i], (DS, DS))
         FF = FF2
         DF = downscale_local_mean(DF, (DS, DS))
-
         # Optimize weights (x)
-        x = scipy.optimize.minimize(cost_func, x, args=(projection, meanFF, FF, DF), method='BFGS', tol=1e-6)
-
+        x = scipy.optimize.minimize(cost_func, 
+                                    x, 
+                                    args=(projection, meanFF, FF, DF), 
+                                    method='BFGS', 
+                                    tol=1e-8)
         return x.x
 
     H, C, W = data.shape
@@ -150,7 +155,7 @@ def DFFC(data, flats, darks, downsample, nrPArepetions, sigma_bm3d):
 
     return [clean_DFFC, EFF, EFF_denoised]
 
-def normaliser(data, flats, darks, log, method, dyn_downsample=2, dyn_iterations=10, sigma_bm3d = 0.1):
+def normaliser(data, flats, darks, log, method, dyn_downsample=2, dyn_iterations=10):
     """
     data normaliser which assumes data/flats/darks to be in the following format:
     [detectorsVertical, Projections, detectorsHoriz] or
@@ -168,7 +173,7 @@ def normaliser(data, flats, darks, log, method, dyn_downsample=2, dyn_iterations
         darks = np.median(darks,1) # median across darks
     elif (method=='dynamic'):
         # dynamic flat field normalisation according to the paper of Vincent Van Nieuwenhove
-        [data_norm, EFF, EFF_filt] = DFFC(data, flats, darks, dyn_downsample, dyn_iterations, sigma_bm3d)
+        [data_norm, EFF, EFF_filt] = DFFC(data, flats, darks, dyn_downsample, dyn_iterations)
     else:
         raise NameError('Please select an appropriate method for normalisation: mean, median or dynamic')
 

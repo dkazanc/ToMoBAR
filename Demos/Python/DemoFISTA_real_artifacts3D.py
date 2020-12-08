@@ -115,7 +115,7 @@ plt.show()
 #%%
 print ("Normalise projections dynamically using ToMoBAR software")
 # normalise the data, the required data format is [detectorsX, Projections, detectorsY]
-projData3D_norm_dyn = normaliser(projData3D_noisy, flatsSIM, darks=None, log='true',  method='dynamic', dyn_downsample=2, dyn_iterations=10, sigma_bm3d = 0.1)
+projData3D_norm_dyn = normaliser(projData3D_noisy, flatsSIM, darks=None, log='true',  method='dynamic', dyn_downsample=2, dyn_iterations=10)
 
 intens_max = 0.15*np.max(projData3D_norm_dyn)
 sliceSel = 150

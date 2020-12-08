@@ -1,14 +1,13 @@
 #%%
 from scipy.signal import savgol_filter
-
-window_size=51 
-polynomial_order=3
-yhat = savgol_filter(x, window_size, polynomial_order)
-
-#%%
 import numpy as np
+
+window_size=51
+polynomial_order=3
 x = np.linspace(0,2*np.pi,100)
 y = np.sin(x) + np.random.random(100) * 0.8
+
+#yhat = savgol_filter(x, window_size, polynomial_order)
 
 def smooth(y, box_pts):
     box = np.ones(box_pts)/box_pts
