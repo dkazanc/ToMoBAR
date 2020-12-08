@@ -1,4 +1,4 @@
-name: tomobar_package
+name: linux
 
 on: [push]
 
@@ -80,7 +80,7 @@ jobs:
         conda config --set anaconda_upload no
         export VERSION=`date +%Y.%m`
         conda build conda-recipe/ --numpy=1.15 --python=3.7
-        conda install --channel /usr/share/miniconda/conda-bld/ tomobar --offline --override-channels --force-reinstall        
+        conda install --channel /usr/share/miniconda/conda-bld/ tomobar --offline --override-channels --force-reinstall
 
     - name: Test with pytest
       run: |
