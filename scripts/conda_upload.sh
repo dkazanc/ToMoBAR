@@ -4,18 +4,15 @@ PKG_NAME=tomobar
 USER=dkazanc
 OS=linux-64
 CONDA_TOKEN=$(cat $HOME/secrets/my_secret.json)
-export VERSION=`date +%Y.%m`
 array=(3.5 3.6 3.7)
 
-mkdir ~/conda-bld
+mmkdir ~/conda-bld
 conda config --set anaconda_upload no
 export CONDA_BLD_PATH=~/conda-bld
+export VERSION=`date +%Y.%m`
+conda install --yes anaconda-client
+conda build .
 
-# building conda packages
-for i in "${array[@]}"
-do
-   сonda-build . --python $i $PKG_NAME
-done
 
 # upload packages to conda
 find $CONDA_BLD_PATH/$OS -name *.tar.bz2 | while read file
