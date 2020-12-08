@@ -14,7 +14,7 @@ export CONDA_BLD_PATH=~/conda-bld
 # building conda packages
 for i in "${array[@]}"
 do
-	conda-build . --python $i $pkg
+   сonda-build . --python $i $PKG_NAME
 done
 
 # upload packages to conda
