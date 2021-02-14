@@ -56,25 +56,25 @@ indicesROI = phantom_2D > 0
 from tomophantom.supp.artifacts import _Artifacts_
 
 # forming dictionaries with artifact types
-_noise_ =  {'type' : 'Poisson',
-            'sigma' : 5000, # noise amplitude
-            'seed' : 0,
-            'prelog' : True}
+_noise_ =  {'noise_type' : 'Poisson',
+            'noise_sigma' : 5000, # noise amplitude
+            'noise_seed' : 0,
+            'noise_prelog': True}
 
 # misalignment dictionary
-_sinoshifts_ = {'maxamplitude' : 10}
-[[sino_misalign, sino_misalign_raw], shifts] = _Artifacts_(sino_an, _noise_, {}, {}, _sinoshifts_)
+_sinoshifts_ = {'sinoshifts_maxamplitude' : 10}
+[[sino_misalign, sino_misalign_raw], shifts] = _Artifacts_(sino_an, **_noise_, **_sinoshifts_)
 
 # adding zingers and stripes
-_zingers_ = {'percentage' : 0.25,
-             'modulus' : 10}
+_zingers_ = {'zingers_percentage' : 0.25,
+             'zingers_modulus' : 10}
 
-_stripes_ = {'percentage' : 1.2,
-             'maxthickness' : 3.0,
-             'intensity' : 0.3,
-             'type' : 'full'}
+_stripes_ = {'stripes_percentage' : 1.2,
+             'stripes_maxthickness' : 3.0,
+             'stripes_intensity' : 0.3,
+             'stripes_type' : 'full'}
 
-[sino_artifacts, sino_artifacts_raw] = _Artifacts_(sino_an, _noise_, _zingers_, _stripes_, _sinoshifts_= {})
+[sino_artifacts, sino_artifacts_raw] = _Artifacts_(sino_an, **_noise_, **_zingers_, **_stripes_)
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})

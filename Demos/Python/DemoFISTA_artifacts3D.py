@@ -19,6 +19,7 @@ import numpy as np
 import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.supp.qualitymetrics import QualityTools
+from tomophantom.supp.artifacts import _Artifacts_
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
@@ -73,29 +74,27 @@ plt.title('Tangentogram view')
 plt.show()
 
 # Adding artifacts and noise
-from tomophantom.supp.artifacts import _Artifacts_
-
 # forming dictionaries with artifact types
-_noise_ =  {'type' : 'Poisson',
-            'sigma' : 10000, # noise amplitude
-            'seed' : 0,
-            'prelog' : True}
+_noise_ =  {'noise_type' : 'Poisson',
+            'noise_sigma' : 10000, # noise amplitude
+            'noise_seed' : 0,
+            'noise_prelog': True}
 
 # misalignment dictionary
-_sinoshifts_ = {'maxamplitude' : 10}
-[[projData3D_analyt_misalign, projData3D_analyt_misalign_raw], shifts2D] = _Artifacts_(projData3D_analyt, _noise_, {}, {}, _sinoshifts_)
+_sinoshifts_ = {'sinoshifts_maxamplitude' : 10}
+[[projData3D_analyt_misalign, projData3D_analyt_misalign_raw], shifts2D] = _Artifacts_(projData3D_analyt, **_noise_, **_sinoshifts_)
 
 # adding zingers and stripes
-_zingers_ = {'percentage' : 0.25,
-             'modulus' : 10}
+_zingers_ = {'zingers_percentage' : 0.25,
+             'zingers_modulus' : 10}
 
-_stripes_ = {'percentage' : 1.0,
-             'maxthickness' : 3.0,
-             'intensity' : 0.3,
-             'type' : 'full',
-             'variability' : 0.005}
+_stripes_ = {'stripes_percentage' : 1.2,
+             'stripes_maxthickness' : 3.0,
+             'stripes_intensity' : 0.3,
+             'stripes_type' : 'full',
+             'stripes_variability' : 0.005}
 
-[projData3D_analyt_noisy, projData3D_raw] = _Artifacts_(projData3D_analyt, _noise_, _zingers_, _stripes_, _sinoshifts_= {})
+[projData3D_analyt_noisy, projData3D_raw] = _Artifacts_(projData3D_analyt, **_noise_, **_zingers_, **_stripes_)
 
 intens_max = 70
 sliceSel = int(0.5*N_size)

@@ -25,7 +25,7 @@ from tomophantom import TomoP2D
 import os
 import tomophantom
 from tomophantom.supp.qualitymetrics import QualityTools
-
+from tomophantom.supp.artifacts import _Artifacts_
 
 model = 13 # select a model
 N_size = 512 # set dimension of the phantom
@@ -57,14 +57,12 @@ plt.colorbar(ticks=[0, 150, 250], orientation='vertical')
 plt.title('{}''{}'.format('Analytical sinogram of model no.',model))
 #%%
 # Adding noise
-from tomophantom.supp.artifacts import _Artifacts_
-
 # forming dictionaries with artifact types
-_noise_ =  {'type' : 'Poisson',
-            'sigma' : 5000, # noise amplitude
-            'seed' : 0}
+_noise_ =  {'noise_type' : 'Poisson',
+            'noise_sigma' : 5000, # noise amplitude
+            'noise_seed' : 0}
 
-noisy_sino = _Artifacts_(sino_an, _noise_, {}, {}, {})
+noisy_sino = _Artifacts_(sino_an, **_noise_)
 
 plt.figure()
 plt.rcParams.update({'font.size': 21})
@@ -110,7 +108,7 @@ pars = {'algorithm' : PatchSelect, \
         'patchwindow': 2,\
         'neighbours' : 15 ,\
         'edge_parameter':0.9}
-H_i, H_j, Weights = PatchSelect(pars['input'], pars['searchwindow'],  pars['patchwindow'],         pars['neighbours'],
+H_i, H_j, Weights = PatchSelect(pars['input'], pars['searchwindow'],  pars['patchwindow'], pars['neighbours'],
               pars['edge_parameter'],'gpu')
 """
 plt.figure()

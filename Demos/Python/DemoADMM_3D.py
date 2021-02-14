@@ -62,13 +62,12 @@ angles_rad = angles*(np.pi/180.0)
 print ("Generate 3D analytical projection data with TomoPhantom")
 projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
-# adding noise
-# forming dictionaries with artifact types
-_noise_ =  {'type' : 'Poisson',
-            'sigma' : 8000, # noise amplitude
-            'seed' : 0}
+# adding a noise dictionary
+_noise_ =  {'noise_type' : 'Poisson',
+            'noise_sigma' : 8000, # noise amplitude
+            'noise_seed' : 0}
 
-projData3D_analyt_noise = _Artifacts_(projData3D_analyt, _noise_, {}, {}, {})
+projData3D_analyt_noise = _Artifacts_(projData3D_analyt, **_noise_)
 
 
 intens_max = 45
