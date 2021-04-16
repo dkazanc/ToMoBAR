@@ -10,10 +10,18 @@ Supplementary data tools:
           Gerard Jover Pujol https://github.com/IararIV/
 """
 import numpy as np
-import scipy
-from skimage.transform import downscale_local_mean
-from skimage.restoration import estimate_sigma
-
+try:
+    from skimage.transform import downscale_local_mean
+except:
+    print('____! Skimage module is required for Dynamic Flat fields estimation !____')
+try:
+    from skimage.restoration import estimate_sigma
+except:
+    print('____! Skimage module is required for Dynamic Flat fields estimation !____')
+try:
+    import scipy
+except:
+    print('____! scipy module is required for Dynamic Flat fields estimation !____')
 try:
     import bm3d
 except:
