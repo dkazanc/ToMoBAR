@@ -52,9 +52,11 @@
 For building on Linux see `run.sh`
 
 #### Python conda:
-Install from the conda channel:
+Install from conda channels:
 ```
 conda install -c dkazanc tomobar
+conda install -c savu-dep tomobar
+conda install -c ccpi tomophantom
 ```
  or build with:
 ```
