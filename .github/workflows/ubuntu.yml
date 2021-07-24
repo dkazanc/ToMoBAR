@@ -28,10 +28,10 @@ jobs:
       config: "Release"
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.8
+    - name: Set up Python 3.7
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: 3.7
 
     # Specify the correct host compilers
     - name: Install/Select gcc and g++
@@ -79,7 +79,7 @@ jobs:
       run: |
         conda config --set anaconda_upload no
         export VERSION=`date +%Y.%m`
-        conda build conda-recipe/ --numpy=1.20 --python=3.8
+        conda build conda-recipe/ --numpy=1.15 --python=3.7
         conda install --channel /usr/share/miniconda/conda-bld/ tomobar --offline --override-channels --force-reinstall
 
     - name: Test with pytest
