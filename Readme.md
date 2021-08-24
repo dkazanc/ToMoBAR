@@ -17,13 +17,13 @@
 | [![YourActionName Actions Status](https://github.com/dkazanc/ToMoBAR/workflows/linux/badge.svg)](https://github.com/dkazanc/ToMoBAR/actions) | ![conda version](https://anaconda.org/dkazanc/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/dkazanc/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/dkazanc/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/dkazanc/tomobar/badges/downloads.svg)](https://anaconda.org/dkazanc/tomobar/) |
 
 ### Software includes:
- ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods ASTRA has
+ * A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods ASTRA has
 
- ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities
+ * Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities
 
- ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
+ * Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
 
- ![#1589F0](https://placehold.it/15/1589F0/000000?text=+) Demos to reconstruct synthetic and also real data (provided) [4-6]
+ * Demos to reconstruct synthetic and also real data (provided) [4-6]
 
 <div align="center">
   <img src="docs/images/recsFISTA_stud.png" width="550">
@@ -34,41 +34,55 @@
 
 ## Software highlights:
  * Tomographic parallel-beam projection data can be simulated without the "inverse crime" using [TomoPhantom](https://github.com/dkazanc/TomoPhantom). Noise and artifacts (zingers, rings, jitter) can be modelled and added to the data.
- * Simulated data reconstructed iteratively using FISTA or ADMM algorithms with multiple "plug-and-play" regularisers from [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit).
+ * Simulated data reconstructed iteratively using FISTA or ADMM algorithms with multiple "plug-and-play" regularisers from [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) and GPU-accelerated wavelets from [pypwt](https://github.com/pierrepaleo/pypwt).
  * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method; data fidelities: PWLS, Kullback-Leibler, Huber, Group-Huber[2], Students't [3,4], and SWLS [5] to deal with noise and imaging artifacts (rings, streaks).
 
 ### General software prerequisites
- * [MATLAB](http://www.mathworks.com/products/matlab/) or Python
+ * Python or [MATLAB](http://www.mathworks.com/products/matlab/)
 
 ### Software dependencies:
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations
  * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for tomographic data and phantoms simulations
  * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation [7]
+ * Wavelet toolbox [pypwt](https://github.com/pierrepaleo/pypwt) if wavelet regularisation is used (optional)
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
-### Installation (Python or Matlab)
+### Python conda:
+Install ToMoBAR and basic dependencies into a new environment using the provided [file]():
+```
+conda create --name tomobar --file conda-recipe/tomobar_env.txt
+```
 
-#### Python standalone
-For building on Linux see `run.sh`
-
-#### Python conda:
-Install from conda channels:
+Install a package from one of conda channels bellow:
 ```
 conda install -c dkazanc tomobar
 conda install -c savu-dep tomobar
-conda install -c ccpi tomophantom
 ```
- or build with:
+
+ or build using provided conda recipe:
 ```
 export VERSION=`date +%Y.%m` (unix) / set VERSION=2020.10 (Windows)
 conda build conda-recipe/ --numpy 1.15 --python 3.7
 conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
 conda install tomobar --use-local --force-reinstall # if Python2
 ```
-#### Matlab:
-Simply use available m-functions, see Demos
+
+### Python standalone
+For building on Linux, modify and run the following [script](https://github.com/dkazanc/ToMoBAR/blob/master/run.sh)
+
+### Matlab (is not fully supported):
+Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
 ### How to use ToMoBAR in Python:
+Detailed information about methods and parameters can be obtained with:
+```
+from tomobar.methodsIR import RecToolsIR
+help(RecToolsIR)
+from tomobar.methodsDIR import RecToolsDIR
+help(RecToolsIR)
+```
+
+A typical setup for iterative reconstruction would include three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`
 <div align="left">
   <img src="docs/images/tomobar_pres.png" width="620">  
 </div>
