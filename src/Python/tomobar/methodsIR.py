@@ -15,6 +15,7 @@ Dependencies:
     * CCPi-RGL toolkit (for regularisation), install with
     conda install ccpi-regulariser -c ccpi -c conda-forge
     or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
+    pwpwt uf you're planning to use WAVELETS as a regulariser (optional)
 
 GPLv3 license (ASTRA toolbox)
 @author: Daniil Kazantsev: https://github.com/dkazanc
@@ -25,22 +26,27 @@ from numpy import linalg as LA
 
 try:
     from ccpi.filters.regularisers import ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
-except:
+except ImportError:
     print('____! CCPi-regularisation package is missing, please install !____')
 
 try:
     import astra
-except:
+except ImportError:
     print('____! Astra-toolbox package is missing, please install !____')
 
 try:
     import scipy.sparse.linalg
-except:
+except ImportError:
     print('____! Scipy toolbox package is missing, please install !____')
 
 try:
+    from pypwt import Wavelets
+except ImportError:
+    print('____! Wavelet package pywpt is missing, please install !____')
+
+try:
     from tomobar.supp.addmodules import RING_WEIGHTS
-except:
+except ImportError:
     print('____! RING_WEIGHTS C-module failed on import !____')
 
 
@@ -160,9 +166,6 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     # The dependency on the CCPi-RGL toolkit for regularisation
     if ('method' not in _regularisation_):
         _regularisation_['method'] = None
-    else:
-        if (_regularisation_['method'] not in ['ROF_TV','FGP_TV','PD_TV','SB_TV','LLT_ROF','TGV','NDF','Diff4th','NLTV']):
-            raise NameError('Unknown regularisation method, select: ROF_TV, FGP_TV, PD_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV')
     # regularisation parameter  (main)
     if ('regul_param' not in _regularisation_):
         _regularisation_['regul_param'] = 0.001
@@ -224,33 +227,47 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_['iterations'],0)
     # The proximal operator of the chosen regulariser
-    if (_regularisation_['method'] == 'ROF_TV'):
+    if 'ROF_TV' in _regularisation_['method']:
         # Rudin - Osher - Fatemi Total variation method
         (X,info_vec) = ROF_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['time_marching_step'], _regularisation_['tolerance'], _regularisation_['device_regulariser'])
-    if (_regularisation_['method'] == 'FGP_TV'):
+    if 'FGP_TV' in _regularisation_['method']:
         # Fast-Gradient-Projection Total variation method
         (X,info_vec) = FGP_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul, _regularisation_['device_regulariser'])
-    if (_regularisation_['method'] == 'PD_TV'):
+    if 'PD_TV' in _regularisation_['method']:
         # Primal-Dual (PD) Total variation method by Chambolle-Pock
         (X,info_vec) = PD_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul, _regularisation_['PD_LipschitzConstant'], _regularisation_['device_regulariser'])
-    if (_regularisation_['method'] == 'SB_TV'):
+    if 'SB_TV' in _regularisation_['method']:
         # Split Bregman Total variation method
         (X,info_vec) = SB_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], _regularisation_['device_regulariser'])
-    if (_regularisation_['method'] == 'LLT_ROF'):
+    if 'LLT_ROF' in _regularisation_['method']:
         # Lysaker-Lundervold-Tai + ROF Total variation method
         (X,info_vec) = LLT_ROF(X, _regularisation_['regul_param'], _regularisation_['regul_param2'], _regularisation_['iterations'], _regularisation_['time_marching_step'], _regularisation_['tolerance'], _regularisation_['device_regulariser'])
-    if (_regularisation_['method'] == 'TGV'):
+    if 'TGV' in _regularisation_['method']:
         # Total Generalised Variation method
         (X,info_vec) = TGV(X, _regularisation_['regul_param'], _regularisation_['TGV_alpha1'], _regularisation_['TGV_alpha2'], _regularisation_['iterations'], _regularisation_['PD_LipschitzConstant'], _regularisation_['tolerance'], _regularisation_['device_regulariser'])
-    if (_regularisation_['method'] == 'NDF'):
+    if 'NDF' in _regularisation_['method']:
         # Nonlinear isotropic diffusion method
         (X,info_vec) = NDF(X, _regularisation_['regul_param'], _regularisation_['edge_threhsold'], _regularisation_['iterations'], _regularisation_['time_marching_step'], self.NDF_method, _regularisation_['tolerance'], _regularisation_['device_regulariser'])
-    if (_regularisation_['method'] == 'Diff4th'):
+    if 'Diff4th' in _regularisation_['method']:
         # Anisotropic diffusion of higher order
         (X,info_vec) = Diff4th(X, _regularisation_['regul_param'], _regularisation_['edge_threhsold'], _regularisation_['iterations'], _regularisation_['time_marching_step'], _regularisation_['tolerance'], _regularisation_['device_regulariser'])
-    if (_regularisation_['method'] == 'NLTV'):
+    if 'NLTV' in _regularisation_['method']:
         # Non-local Total Variation
         X = NLTV(X, _regularisation_['NLTV_H_i'], _regularisation_['NLTV_H_j'], _regularisation_['NLTV_H_j'],_regularisation_['NLTV_Weights'], _regularisation_['regul_param'], _regularisation_['iterations'])
+    if 'WAVELETS' in _regularisation_['method']:
+        if (X.ndim==2):
+            W = Wavelets(X, "db5", 3)
+            W.forward()
+            W.soft_threshold(_regularisation_['regul_param2'])
+            W.inverse()
+            X=W.image
+        else:
+            for i in range(np.shape(X)[0]):
+                W = Wavelets(X[i,:,:], "db5", 3)
+                W.forward()
+                W.soft_threshold(_regularisation_['regul_param2'])
+                W.inverse()
+                X[i,:,:]=W.image
     return (X,info_vec)
 
 class RecToolsIR:
@@ -291,14 +308,15 @@ class RecToolsIR:
             --tolerance # tolerance to terminate reconstruction algorithm iterations earlier, default 0.0
             --verbose # mode to print iterations number and other messages ('on' by default, 'off' to suppress)
      _regularisation_ :
-            --method # select a regularisation method: ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
+            --method # select a regularisation method: ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV /
+              you can also add WAVELET regularisation by adding WAVELETS to any method above, e.g. ROF_TV_WAVELETS
             --regul_param # main regularisation parameter for all methods
             --iterations # the number of inner (regularisation) iterations
             --device_regulariser #  choose the 'cpu' or 'gpu'-type of the device for the regulariser
             --edge_threhsold # edge (noise) threshold parameter for NDF and DIFF4th models
             --tolerance # tolerance to stop inner regularisation iterations prematurely
             --time_marching_step # a step to ensure convergence for gradient-based methods: ROF_TV,LLT_ROF,NDF,Diff4th
-            --regul_param2 # second regularisation parameter (LLT_ROF method)
+            --regul_param2 # second regularisation parameter (LLT_ROF or when using WAVELETS)
             --TGV_alpha1 # TGV specific parameter for the 1st order term
             --TGV_alpha2 # TGV specific parameter for the 2nd order term
             --PD_LipschitzConstant # Primal-dual parameter for convergence (PD_TV and TGV specific)

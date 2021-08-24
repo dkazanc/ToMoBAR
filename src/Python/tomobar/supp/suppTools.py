@@ -12,19 +12,19 @@ Supplementary data tools:
 import numpy as np
 try:
     from skimage.transform import downscale_local_mean
-except:
+except ImportError:
     print('____! Skimage module is required for Dynamic Flat fields estimation !____')
 try:
     from skimage.restoration import estimate_sigma
-except:
+except ImportError:
     print('____! Skimage module is required for Dynamic Flat fields estimation !____')
 try:
     import scipy
-except:
+except ImportError:
     print('____! scipy module is required for Dynamic Flat fields estimation !____')
 try:
     import bm3d
-except:
+except ImportError:
     print('____! BM3D module is required to use for dynamic flat fields calculation !____')
 
 

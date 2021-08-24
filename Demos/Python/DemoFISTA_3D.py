@@ -286,10 +286,11 @@ _algorithm_ = {'iterations' : 30,
 # Run FISTA reconstrucion algorithm without regularisation
 RecFISTA_kl_os = Rectools.FISTA(_data_, _algorithm_, {})
 
-# adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {'method' : 'PD_TV',
+# adding regularisation using the CCPi regularisation toolkit and wavelets
+_regularisation_ = {'method' : 'PD_TV_WAVELETS',
                     'regul_param' :0.00003,
-                    'iterations' : 60,
+                    'regul_param2' :0.00001,
+                    'iterations' : 30,
                     'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with 3D regularisation

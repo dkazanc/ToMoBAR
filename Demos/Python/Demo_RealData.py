@@ -94,8 +94,8 @@ _algorithm_ = {'iterations' : 25,                   # The number of iterations
 
 ##### creating the regularisation dictionary using the CCPi regularisation toolkit: #####
 _regularisation_ = {'method' : 'PD_TV',         # Selected regularisation method
-                    'regul_param' : 0.000001,   # Regularisation parameter
-                    'iterations' :80,           # The number of regularisation iterations
+                    'regul_param' : 0.000002,   # Regularisation parameter
+                    'iterations' :60,           # The number of regularisation iterations
                     'device_regulariser': 'gpu'}
 
 # RUN THE FISTA METHOD: 
@@ -107,13 +107,29 @@ plt.title('FISTA PWLS-OS-TV reconstruction')
 plt.show()
 #fig.savefig('dendr_PWLS.png', dpi=200)
 #%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-TV-WAVLETS method %%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+##### creating the regularisation dictionary using the CCPi regularisation toolkit: #####
+_regularisation_ = {'method' : 'PD_TV_WAVELETS',         # Selected regularisation method
+                    'regul_param' : 0.000002,   # Regularisation parameter
+                    'regul_param2' : 0.0000015,   # Regularisation parameter
+                    'iterations' :30,           # The number of regularisation iterations
+                    'device_regulariser': 'gpu'}
+# RUN THE FISTA METHOD: 
+RecFISTA_os_tv_wavlets_pwls = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+
+fig = plt.figure()
+plt.imshow(RecFISTA_os_tv_wavlets_pwls[100:900,100:900], vmin=0, vmax=0.003, cmap="gray")
+plt.title('FISTA PWLS-OS-TV-WAVELETS reconstruction')
+plt.show()
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA PWLS-OS-GH-TV  method %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # adding Group-Huber data model by updaing the data dictionary
-_data_.update({'ringGH_lambda' : 0.0000015,
-                'ringGH_accelerate': 8})
+_data_.update({'ringGH_lambda' : 0.000015,
+                'ringGH_accelerate': 6})
 
 # Run FISTA-PWLS-Group-Huber-OS reconstrucion algorithm with regularisation
 RecFISTA_pwls_GH_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
