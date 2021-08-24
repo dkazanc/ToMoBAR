@@ -45,7 +45,7 @@
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Python conda:
-Install ToMoBAR and basic dependencies into a new environment using the provided [file]():
+Install ToMoBAR and basic dependencies into a new environment using the provided [file](https://github.com/dkazanc/blob/master/conda-recipe/tomobar_env.txt):
 ```
 conda create --name tomobar --file conda-recipe/tomobar_env.txt
 ```
