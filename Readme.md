@@ -50,7 +50,7 @@ Install ToMoBAR and basic dependencies into a new environment using the provided
 conda create --name tomobar --file conda-recipe/tomobar_env.txt
 ```
 
-Install a package from one of conda channels bellow:
+Install the ToMoBAR package from one of conda channels bellow:
 ```
 conda install -c dkazanc tomobar
 conda install -c savu-dep tomobar
