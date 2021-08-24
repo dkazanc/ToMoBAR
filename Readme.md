@@ -18,11 +18,8 @@
 
 ### Software includes:
  * A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods ASTRA has
-
  * Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities
-
  * Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
-
  * Demos to reconstruct synthetic and also real data (provided) [4-6]
 
 <div align="center">

@@ -26,27 +26,27 @@ from numpy import linalg as LA
 
 try:
     from ccpi.filters.regularisers import ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
-except:
+except ImportError:
     print('____! CCPi-regularisation package is missing, please install !____')
 
 try:
     import astra
-except:
+except ImportError:
     print('____! Astra-toolbox package is missing, please install !____')
 
 try:
     import scipy.sparse.linalg
-except:
+except ImportError:
     print('____! Scipy toolbox package is missing, please install !____')
 
 try:
     from pypwt import Wavelets
-except:
+except ImportError:
     print('____! Wavelet package pywpt is missing, please install !____')
 
 try:
     from tomobar.supp.addmodules import RING_WEIGHTS
-except:
+except ImportError:
     print('____! RING_WEIGHTS C-module failed on import !____')
 
 
