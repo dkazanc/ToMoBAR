@@ -108,12 +108,12 @@ plt.show()
 #fig.savefig('dendr_PWLS.png', dpi=200)
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("Reconstructing with FISTA PWLS-OS-TV-WAVLETS method %%%%%%%%")
+print ("Reconstructing with FISTA PWLS-OS-TV-WAVELETS method %%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ##### creating the regularisation dictionary using the CCPi regularisation toolkit: #####
 _regularisation_ = {'method' : 'PD_TV_WAVELETS',         # Selected regularisation method
                     'regul_param' : 0.000002,   # Regularisation parameter
-                    'regul_param2' : 0.0000015,   # Regularisation parameter
+                    'regul_param2' : 0.000002,   # Regularisation parameter for wavelets
                     'iterations' :30,           # The number of regularisation iterations
                     'device_regulariser': 'gpu'}
 # RUN THE FISTA METHOD: 
