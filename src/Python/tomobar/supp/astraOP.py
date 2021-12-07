@@ -57,7 +57,7 @@ def vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOff
         if np.ndim(CenterRotOffset) == 0:
             d0 = [CenterRotOffset, 0.0, 0.0] # detector
         else:
-            d0 = [CenterRotOffset[i,1], 0.0, CenterRotOffset[i,0]] # detector
+            d0 = [CenterRotOffset[i,0], 0.0, CenterRotOffset[i,1]] # detector
         theta = angles_rad[i]
         vec_temp = np.dot(rotation_matrix3D(theta),s0)
         vectors[i,0:3] = vec_temp[:] # ray position

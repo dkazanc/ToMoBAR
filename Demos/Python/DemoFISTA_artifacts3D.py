@@ -81,8 +81,8 @@ _noise_ =  {'noise_type' : 'Poisson',
             'noise_prelog': True}
 
 # misalignment dictionary
-_sinoshifts_ = {'sinoshifts_maxamplitude' : 10}
-[[projData3D_analyt_misalign, projData3D_analyt_misalign_raw], shifts2D] = _Artifacts_(projData3D_analyt, **_noise_, **_sinoshifts_)
+_datashifts_ = {'datashifts_maxamplitude_pixel' : 10}
+[[projData3D_analyt_misalign, projData3D_analyt_misalign_raw], shifts2D] = _Artifacts_(projData3D_analyt, **_noise_, **_datashifts_)
 
 # adding zingers and stripes
 _zingers_ = {'zingers_percentage' : 0.25,
