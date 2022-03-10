@@ -69,9 +69,37 @@ def vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOff
         vectors[i,9:12] = vec_temp[:] # Vector from detector pixel (0,0) to (1,0)
     return vectors
 
+
+def _set_device(self, device_projector):
+        # deal with device_projector for 2D geom
+        try:
+            device_projector = int(device_projector)
+            device_projector = 'gpu'
+        except ValueError:
+            device_projector = device_projector
+
+        if device_projector == 'cpu':
+            self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
+        elif device_projector == 'gpu':
+            self.proj_id = astra.create_projector('cuda', self.proj_geom, self.vol_geom) # for GPU
+        else:
+            raise ValueError("Select between 'cpu' or 'gpu' device")
+        return device_projector
+
+def _set_gpu_device_index(self, device_projector):
+        try:
+            GPUdevice_index = int(device_projector) # get GPU index
+            device_projector = 'gpu'
+        except ValueError:
+            if (device_projector == 'gpu'):
+                GPUdevice_index = 0 # set to 0 index by default
+            else:
+                raise ValueError("A 'gpu' device is required for 3D geometry")
+        return GPUdevice_index
+
 class AstraTools:
     """2D parallel beam projection/backprojection class based on ASTRA toolbox"""
-    def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, device):
+    def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, device_projector):
         self.DetectorsDim = DetectorsDim
         self.AnglesVec = AnglesVec
         self.ObjSize = ObjSize
@@ -83,14 +111,9 @@ class AstraTools:
             vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
             self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
         self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
-        if device == 'cpu':
-            self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
-            self.device = 1
-        elif device == 'gpu':
-            self.proj_id = astra.create_projector('cuda', self.proj_geom, self.vol_geom) # for GPU
-            self.device = 0
-        else:
-            print ("Select between 'cpu' or 'gpu' for device")
+
+        self.device_projector = _set_device(self, device_projector)  # deal with device_projector
+
         # add optomo operator
         self.A_optomo = astra.OpTomo(self.proj_id)
 
@@ -112,7 +135,7 @@ class AstraTools:
         # Create a data object to hold the sinogram data
         sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
 
-        if self.device == 1:
+        if self.device_projector == 'cpu':
             cfg = astra.astra_dict('FBP')
             cfg['ProjectorId'] = self.proj_id
         else:
@@ -138,7 +161,7 @@ class AstraTools:
         # Create a data object to hold the sinogram data
         sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
 
-        if self.device == 1:
+        if self.device_projector == 'cpu':
             cfg = astra.astra_dict('SIRT')
             cfg['ProjectorId'] = self.proj_id
         else:
@@ -163,7 +186,7 @@ class AstraTools:
         # Create a data object to hold the sinogram data
         sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
 
-        if self.device == 1:
+        if self.device_projector == 'cpu':
             cfg = astra.astra_dict('CGLS')
             cfg['ProjectorId'] = self.proj_id
         else:
@@ -188,7 +211,7 @@ class AstraToolsOS:
     2D ordered subset parallel beam projection/backprojection class based
     on ASTRA toolbox
     """
-    def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device):
+    def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
         self.DetectorsDim = DetectorsDim
         self.AnglesVec = AnglesVec
         self.ObjSize = ObjSize
@@ -210,14 +233,9 @@ class AstraToolsOS:
         vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
         self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
         self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
-        if device == 'cpu':
-            self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
-            self.device = 1
-        elif device == 'gpu':
-            self.proj_id = astra.create_projector('cuda', self.proj_geom, self.vol_geom) # for GPU
-            self.device = 0
-        else:
-            print ("Select between 'cpu' or 'gpu' for device")
+
+        device_projector = _set_device(self, device_projector)  # deal with device_projector
+
         # create OS-specific ASTRA geometry
         self.proj_geom_OS = {}
         self.proj_id_OS = {}
@@ -233,9 +251,9 @@ class AstraToolsOS:
             else: # CenterRotOffset is a _vector_
                 vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset[self.indVec])
             self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel_vec', DetectorsDim, vectorsOS)
-            if self.device == 1:
+            if device_projector == 'cpu':
                 self.proj_id_OS[sub_ind] = astra.create_projector('line', self.proj_geom_OS[sub_ind], self.vol_geom) # for CPU
-            if self.device == 0:
+            else:
                 self.proj_id_OS[sub_ind] = astra.create_projector('cuda', self.proj_geom_OS[sub_ind], self.vol_geom) # for GPU
 
     def forwprojOS(self, image, no_os):
@@ -265,12 +283,12 @@ class AstraToolsOS:
 
 class AstraTools3D:
     """3D parallel beam projection/backprojection class based on ASTRA toolbox"""
-    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize):
+    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, device_projector):
         self.ObjSize = ObjSize
         self.DetectorsDimV = DetRowCount
-        # define astra type geometry (scalar)
-        # self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec):
-        # define astra vector geometry
+
+        GPUdevice_index = _set_gpu_device_index(self, device_projector)
+        astra.set_gpu_index([GPUdevice_index]) # setting the GPU index here for this run
         vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
         self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
         if type(ObjSize) == tuple:
@@ -342,7 +360,7 @@ class AstraToolsOS3D:
     3D ordered subset parallel beam projection/backprojection class based
     on ASTRA toolbox
     """
-    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS):
+    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
         self.ObjSize = ObjSize
         self.DetectorsDimV = DetRowCount
         if type(ObjSize) == tuple:
@@ -351,6 +369,9 @@ class AstraToolsOS3D:
             Y=X=ObjSize
             Z=DetRowCount
         self.vol_geom = astra.create_vol_geom(Y,X,Z)
+
+        GPUdevice_index = _set_gpu_device_index(self, device_projector)
+        astra.set_gpu_index([GPUdevice_index]) # setting the GPU index here for this run
 
         ################ arrange ordered-subsets ################
         import numpy as np

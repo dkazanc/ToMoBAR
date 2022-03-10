@@ -103,7 +103,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
             self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
         else:
             from tomobar.supp.astraOP import AstraToolsOS3D
-            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
+            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 3D ASTRA class OS object
     # SWLS related parameter (ring supression)
     if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
         _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
@@ -282,7 +282,7 @@ class RecToolsIR:
       *AnglesVec,         # A vector of projection angles in radians
       *ObjSize,           # Reconstructed object dimensions (a scalar)
       *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
-      *device_projector   # choose projector between 'cpu' and 'gpu'
+      *device_projector   # choose projector between 'cpu' and 'gpu' OR provide a GPU index
 
     Parameters for reconstruction algorithms are extracted from 3 dictionaries:
       _data_ :
@@ -338,7 +338,7 @@ class RecToolsIR:
               AnglesVec,         # Array of projection angles in radians
               ObjSize,           # Reconstructed object dimensions (scalar)
               datafidelity,      # Data fidelity, choose from LS, KL, PWLS
-              device_projector   # choose projector between 'cpu' and 'gpu'
+              device_projector   # choose projector between 'cpu' and 'gpu' OR GPU index
               ):
         if ObjSize is tuple:
             raise (" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")
@@ -356,7 +356,7 @@ class RecToolsIR:
             self.CenterRotOffset = CenterRotOffset
 
         if device_projector is None:
-            self.device_projector = 'gpu'
+            self.device_projector = 0 # chosen as the first GPU device by default
         else:
             self.device_projector = device_projector
 
@@ -374,7 +374,7 @@ class RecToolsIR:
             self.geom = '3D'
             # classical approach
             from tomobar.supp.astraOP import AstraTools3D
-            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize) # initiate 3D ASTRA class object
+            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.device_projector) # initiate 3D ASTRA class object
         return None
 
 
@@ -415,7 +415,7 @@ class RecToolsIR:
                 self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
             else:
                 from tomobar.supp.astraOP import AstraToolsOS3D
-                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number']) # initiate 3D ASTRA class OS object
+                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 3D ASTRA class OS object
         niter = 15 # number of power method iterations
         s = 1.0
 
