@@ -97,6 +97,56 @@ def _set_gpu_device_index(self, device_projector):
                 raise ValueError("A 'gpu' device is required for 3D geometry")
         return GPUdevice_index
 
+
+class Astra3D:
+    """ the parent 3D parallel beam projection/backprojection class based on ASTRA toolbox"""
+    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, device_projector):
+        self.ObjSize = ObjSize
+        self.DetectorsDimV = DetRowCount
+
+        self.GPUdevice_index = _set_gpu_device_index(self, device_projector)
+        #astra.set_gpu_index([GPUdevice_index]) # setting the GPU index here for this run
+        vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
+        self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
+        if type(ObjSize) == tuple:
+            Y,X,Z = [int(i) for i in ObjSize]
+        else:
+            Y=X=ObjSize
+            Z=DetRowCount
+        self.vol_geom = astra.create_vol_geom(Y,X,Z)
+        self.proj_id = astra.create_projector('cuda3d', self.proj_geom, self.vol_geom) # for GPU
+        self.A_optomo = astra.OpTomo(self.proj_id)
+
+    def runAstra3D(self, proj_data, method, iterations):
+        # set ASTRA configuration
+        proj_id = astra.data3d.create("-sino", self.proj_geom, proj_data)
+        # Create a data object for the reconstruction
+        rec_id = astra.data3d.create('-vol', self.vol_geom)
+
+        # Create algorithm object
+        cfg = astra.astra_dict(method)
+        cfg['option'] = {'GPUindex': self.GPUdevice_index}
+
+        if method == 'FB3D_CUDA':
+            #forward projector
+            cfg['VolumeDataId'] = self.vol_geom
+        else:
+            cfg['ReconstructionDataId'] = rec_id
+
+        cfg['ProjectionDataId'] = proj_id
+
+        # Create the algorithm object from the configuration structure
+        alg_id = astra.algorithm.create(cfg)
+        astra.algorithm.run(alg_id, iterations)
+
+        # Get the result
+        result = astra.data3d.get(rec_id)
+
+        astra.algorithm.delete(alg_id)
+        astra.data3d.delete(rec_id)
+        astra.data3d.delete(proj_id)
+        return result
+
 class AstraTools:
     """2D parallel beam projection/backprojection class based on ASTRA toolbox"""
     def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, device_projector):
@@ -281,79 +331,28 @@ class AstraToolsOS:
         astra.data2d.delete(rec_id)
         return image
 
-class AstraTools3D:
+class AstraTools3D(Astra3D):
     """3D parallel beam projection/backprojection class based on ASTRA toolbox"""
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, device_projector):
-        self.ObjSize = ObjSize
-        self.DetectorsDimV = DetRowCount
-
-        GPUdevice_index = _set_gpu_device_index(self, device_projector)
-        astra.set_gpu_index([GPUdevice_index]) # setting the GPU index here for this run
-        vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
-        self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
-        if type(ObjSize) == tuple:
-            Y,X,Z = [int(i) for i in ObjSize]
-        else:
-            Y=X=ObjSize
-            Z=DetRowCount
-        self.vol_geom = astra.create_vol_geom(Y,X,Z)
-        self.proj_id = astra.create_projector('cuda3d', self.proj_geom, self.vol_geom) # for GPU
-        self.A_optomo = astra.OpTomo(self.proj_id)
+        super().__init__(DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, device_projector)
 
     def forwproj(self, object3D):
         """Applying forward projection"""
-        proj_id, proj_data = astra.create_sino3d_gpu(object3D, self.proj_geom, self.vol_geom)
-        astra.data3d.delete(proj_id)
+        #proj_id, proj_data = astra.create_sino3d_gpu(object3D, self.proj_geom, self.vol_geom)
+        proj_data = Astra3D.runAstra3D(self, object3D, 'FP3D_CUDA', 1)
         return proj_data
     def backproj(self, proj_data):
-        """Applying backprojection"""
-        rec_id, object3D = astra.create_backprojection3d_gpu(proj_data, self.proj_geom, self.vol_geom)
-        astra.data3d.delete(rec_id)
-        return object3D
-    def sirt3D(self, sinogram, iterations):
+        """Applying 3D backprojection"""
+        recon_object3D = Astra3D.runAstra3D(self, proj_data, 'BP3D_CUDA', 1)
+        return recon_object3D
+    def sirt3D(self, proj_data, iterations):
         """perform SIRT reconstruction"""
-        sinogram_id = astra.data3d.create("-sino", self.proj_geom, sinogram)
-        # Create a data object for the reconstruction
-        rec_id = astra.data3d.create('-vol', self.vol_geom)
-
-        cfg = astra.astra_dict('SIRT3D_CUDA')
-        cfg['ReconstructionDataId'] = rec_id
-        cfg['ProjectionDataId'] = sinogram_id
-
-        # Create the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        # This will have a runtime in the order of 10 seconds.
-        astra.algorithm.run(alg_id, iterations)
-
-        # Get the result
-        recSIRT = astra.data3d.get(rec_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data3d.delete(rec_id)
-        astra.data3d.delete(sinogram_id)
-        return recSIRT
-    def cgls3D(self, sinogram, iterations):
+        recon_object3D = Astra3D.runAstra3D(self, proj_data, 'SIRT3D_CUDA', iterations)
+        return recon_object3D
+    def cgls3D(self, proj_data, iterations):
         """perform CGLS reconstruction"""
-        sinogram_id = astra.data3d.create("-sino", self.proj_geom, sinogram)
-        # Create a data object for the reconstruction
-        rec_id = astra.data3d.create('-vol', self.vol_geom)
-
-        cfg = astra.astra_dict('CGLS3D_CUDA')
-        cfg['ReconstructionDataId'] = rec_id
-        cfg['ProjectionDataId'] = sinogram_id
-
-        # Create the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        # This will have a runtime in the order of 10 seconds.
-        astra.algorithm.run(alg_id, iterations)
-
-        # Get the result
-        recCGLS = astra.data3d.get(rec_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data3d.delete(rec_id)
-        astra.data3d.delete(sinogram_id)
-        return recCGLS
+        recon_object3D = Astra3D.runAstra3D(self, proj_data, 'CGLS3D_CUDA', iterations)
+        return recon_object3D
 
 class AstraToolsOS3D:
     """
