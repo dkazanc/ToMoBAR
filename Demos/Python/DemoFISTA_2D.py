@@ -77,10 +77,11 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,         # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset  = 0.001,         # Center of Rotation scalar
+                    CenterRotOffset  = 0.0,         # Center of Rotation scalar
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
+
 
 FBPrec = RectoolsDIR.FBP(noisy_sino) # perform FBP reconstruction
 
@@ -98,7 +99,7 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar
+                    CenterRotOffset = 0.0,          # Center of Rotation scalar
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
