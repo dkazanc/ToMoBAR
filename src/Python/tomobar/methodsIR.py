@@ -100,10 +100,10 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         #initialise OS ASTRA-related modules
         if self.geom == '2D':
             from tomobar.supp.astraOP import AstraToolsOS
-            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
+            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.GPUdevice_index) # initiate 2D ASTRA class OS object
         else:
             from tomobar.supp.astraOP import AstraToolsOS3D
-            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 3D ASTRA class OS object
+            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.GPUdevice_index) # initiate 3D ASTRA class OS object
     # SWLS related parameter (ring supression)
     if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
         _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
@@ -235,7 +235,7 @@ def prox_regul(self, X, _regularisation_):
         (X,info_vec) = FGP_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul, _regularisation_['device_regulariser'])
     if 'PD_TV' in _regularisation_['method']:
         # Primal-Dual (PD) Total variation method by Chambolle-Pock
-        (X,info_vec) = PD_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul, _regularisation_['PD_LipschitzConstant'], self.device_projector)
+        (X,info_vec) = PD_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], self.nonneg_regul, _regularisation_['PD_LipschitzConstant'], self.GPUdevice_index)
     if 'SB_TV' in _regularisation_['method']:
         # Split Bregman Total variation method
         (X,info_vec) = SB_TV(X, _regularisation_['regul_param'], _regularisation_['iterations'], _regularisation_['tolerance'], _regularisation_['methodTV'], _regularisation_['device_regulariser'])
@@ -354,11 +354,13 @@ class RecToolsIR:
              self.CenterRotOffset = 0.0
         else:
             self.CenterRotOffset = CenterRotOffset
+        self.device_projector = device_projector
 
-        if device_projector is None:
-            self.device_projector = 0 # chosen as the first GPU device by default
+        from tomobar.supp.astraOP import _set_gpu_device_index
+        if self.device_projector != 'cpu':
+            _set_gpu_device_index(self)
         else:
-            self.device_projector = device_projector
+            raise ("please provide 'cpu' or 'gpu' device or GPU index ")
 
         if datafidelity not in ['LS','PWLS', 'SWLS','KL']:
             raise ValueError('Unknown data fidelity type, select: LS, PWLS, SWLS or KL')
@@ -368,13 +370,13 @@ class RecToolsIR:
             self.geom = '2D'
             # classical approach
             from tomobar.supp.astraOP import AstraTools
-            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 2D ASTRA class object
+            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.GPUdevice_index) # initiate 2D ASTRA class object
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
             # classical approach
             from tomobar.supp.astraOP import AstraTools3D
-            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 3D ASTRA class object
+            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.GPUdevice_index) # initiate 3D ASTRA class object
         return None
 
 
@@ -412,10 +414,10 @@ class RecToolsIR:
             #initialise OS ASTRA-related modules
             if self.geom == '2D':
                 from tomobar.supp.astraOP import AstraToolsOS
-                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 2D ASTRA class OS object
+                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.GPUdevice_index) # initiate 2D ASTRA class OS object
             else:
                 from tomobar.supp.astraOP import AstraToolsOS3D
-                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.device_projector) # initiate 3D ASTRA class OS object
+                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.GPUdevice_index) # initiate 3D ASTRA class OS object
         niter = 15 # number of power method iterations
         s = 1.0
 
