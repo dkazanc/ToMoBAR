@@ -88,10 +88,12 @@ class RecToolsDIR:
         self.AnglesVec = AnglesVec
         self.CenterRotOffset = CenterRotOffset
 
-        if device_projector is None:
-            self.device_projector = 0
+        self.device_projector = device_projector
+        from tomobar.supp.astraOP import _set_gpu_device_index
+        if self.device_projector != 'cpu':
+            _set_gpu_device_index(self)
         else:
-            self.device_projector = device_projector
+            raise ("please provide 'cpu' or 'gpu' device or GPU index ")
 
         if DetectorsDimV is None:
             #2D geometry
