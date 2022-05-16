@@ -250,7 +250,6 @@ plt.imshow(RecFISTA_os_reg[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D FISTA-OS regularised reconstruction, sagittal view')
 plt.show()
 
-
 # calculate errors 
 Qtools = QualityTools(phantom_tm, RecFISTA_os)
 RMSE_FISTA_os = Qtools.rmse()
@@ -323,7 +322,6 @@ plt.subplot(133)
 plt.imshow(RecFISTA_kl_os_reg[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D FISTA-KL-OS regularised reconstruction, sagittal view')
 plt.show()
-
 
 # calculate errors 
 Qtools = QualityTools(phantom_tm, RecFISTA_kl_os)
