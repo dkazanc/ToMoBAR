@@ -92,8 +92,6 @@ class RecToolsDIR:
         from tomobar.supp.astraOP import _set_gpu_device_index
         if self.device_projector != 'cpu':
             _set_gpu_device_index(self)
-        else:
-            raise ("please provide 'cpu' or 'gpu' device or GPU index ")
 
         if DetectorsDimV is None:
             #2D geometry

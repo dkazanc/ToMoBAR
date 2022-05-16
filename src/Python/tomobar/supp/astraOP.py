@@ -162,10 +162,11 @@ def _set_OS_geometry3d(self, AnglesVec, CenterRotOffset, DetRowCount, DetColumnC
         return self.proj_geom_OS
 
 #######################Reconstruction Parent classes##########################
-
 class Astra2D:
-    """ the parent 2D parallel beam projection/backprojection class based on ASTRA toolbox"""
     def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+        """
+        Parent 2D parallel beam projection/backprojection class based on ASTRA toolbox
+        """
         self.DetectorsDim = DetectorsDim
         self.AnglesVec = AnglesVec
         self.ObjSize = ObjSize
@@ -268,8 +269,10 @@ class Astra2D:
         return sinogram
 
 class Astra3D:
-    """ the parent 3D parallel beam projection/backprojection class based on ASTRA toolbox"""
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+        """
+        Parent 3D parallel beam projection/backprojection class based on ASTRA toolbox
+        """
         self.ObjSize = ObjSize
         self.DetectorsDimV = DetRowCount
         self.OS = OS
@@ -336,6 +339,7 @@ class Astra3D:
         # Create algorithm object
         algString = 'FP3D_CUDA'
         cfg = astra.astra_dict(algString)
+        #astra.set_gpu_index([self.GPUdevice_index])
         cfg['option'] = {'GPUindex': self.GPUdevice_index}
         cfg['VolumeDataId'] = volume_id
         cfg['ProjectionDataId'] = proj_id
