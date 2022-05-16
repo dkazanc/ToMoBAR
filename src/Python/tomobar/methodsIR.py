@@ -488,10 +488,10 @@ class RecToolsIR:
         X_t = np.copy(X)
         r_x = r.copy()
         # Outer FISTA iterations
-        for iter in range(_algorithm_['iterations']):
+        for iter_no in range(_algorithm_['iterations']):
             r_old = r
             # Do GH fidelity pre-calculations using the full projections dataset for OS version
-            if ((_data_['OS_number'] != 1) and (_data_['ringGH_lambda'] is not None) and (iter > 0)):
+            if ((_data_['OS_number'] != 1) and (_data_['ringGH_lambda'] is not None) and (iter_no > 0)):
                 if (self.geom == '2D'):
                     vec = np.zeros((self.DetectorsDimH))
                 else:
@@ -515,7 +515,7 @@ class RecToolsIR:
                 else:
                     r = r_x - np.multiply(L_const_inv,vec)
 
-            if ((_data_['OS_number'] != 1) and (_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+            if ((_data_['OS_number'] != 1) and (_data_['ring_weights_threshold'] is not None) and (iter_no > 0)):
                 # Ordered subset approach for a better ring model
                 res_full = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
                 rings_weights = RING_WEIGHTS(res_full, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
@@ -550,9 +550,9 @@ class RecToolsIR:
                                 tmp = self.AtoolsOS.forwprojOS(X_t,sub_ind)
                                 res = np.divide(tmp - _data_['projection_norm_data'][indVec,:], tmp + 1.0)
                             # ring removal part for Group-Huber (GH) fidelity (2D)
-                            if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
+                            if ((_data_['ringGH_lambda'] is not None) and (iter_no > 0)):
                                 res[:,0:None] = res[:,0:None] + _data_['ringGH_accelerate']*r_x[:,0]
-                            if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                            if ((_data_['ring_weights_threshold'] is not None) and (iter_no > 0)):
                                 res = np.multiply(ring_function_weight[indVec,:],res)
                         else: # 3D
                             if (self.datafidelity == 'LS'):
@@ -573,10 +573,10 @@ class RecToolsIR:
                                 tmp = self.AtoolsOS.forwprojOS(X_t,sub_ind)
                                 res = np.divide(tmp - _data_['projection_norm_data'][:,indVec,:], tmp + 1.0)
                             # GH - fidelity part (3D)
-                            if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
+                            if ((_data_['ringGH_lambda'] is not None) and (iter_no > 0)):
                                 for ang_index in range(len(indVec)):
                                     res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
-                            if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                            if ((_data_['ring_weights_threshold'] is not None) and (iter_no > 0)):
                                 res = np.multiply(ring_function_weight[:,indVec,:],res)
                 else: # CLASSICAL all-data approach
                         if (self.datafidelity == 'LS'):
@@ -589,7 +589,7 @@ class RecToolsIR:
                             # Kullback-Leibler (KL) data fidelity
                             tmp = self.Atools.forwproj(X_t)
                             res = np.divide(tmp - _data_['projection_norm_data'], tmp + 1.0)
-                        if (_data_['ringGH_lambda'] is not None) and (iter > 0):
+                        if (_data_['ringGH_lambda'] is not None) and (iter_no > 0):
                             if (self.geom == '2D'):
                                 res[0:None,:] = res[0:None,:] + _data_['ringGH_accelerate']*r_x[:,0]
                                 vec = res.sum(axis = 0)
@@ -599,7 +599,7 @@ class RecToolsIR:
                                     res[:,ang_index,:] = res[:,ang_index,:] + _data_['ringGH_accelerate']*r_x
                                     vec = res.sum(axis = 1)
                                     r = r_x - np.multiply(L_const_inv,vec)
-                        if ((_data_['ring_weights_threshold'] is not None) and (iter > 0)):
+                        if ((_data_['ring_weights_threshold'] is not None) and (iter_no > 0)):
                             # Approach for a better ring model
                             rings_weights = RING_WEIGHTS(res, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
                             ring_function_weight = np.ones(np.shape(res))
@@ -655,20 +655,20 @@ class RecToolsIR:
                     ###########################################################
                 t = (1.0 + np.sqrt(1.0 + 4.0*t**2))*0.5; # updating t variable
                 X_t = X + ((t_old - 1.0)/t)*(X - X_old) # updating X
-            if ((_data_['ringGH_lambda'] is not None) and (iter > 0)):
+            if ((_data_['ringGH_lambda'] is not None) and (iter_no > 0)):
                 r = np.maximum((np.abs(r) - _data_['ringGH_lambda']), 0.0)*np.sign(r) # soft-thresholding operator for ring vector
                 r_x = r + ((t_old - 1.0)/t)*(r - r_old) # updating r
             if (_algorithm_['verbose'] == 'on'):
-                if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):
-                    print('FISTA iteration (',iter+1,') using', _regularisation_['method'], 'regularisation for (',(int)(info_vec[0]),') iterations')
-                if (iter == _algorithm_['iterations']-1):
-                    print('FISTA stopped at iteration (', iter+1, ')')
+                if (np.mod(iter_no,(round)(_algorithm_['iterations']/5)+1) == 0):
+                    print('FISTA iteration (',iter_no+1,') using', _regularisation_['method'], 'regularisation for (',(int)(info_vec[0]),') iterations')
+                if (iter_no == _algorithm_['iterations']-1):
+                    print('FISTA stopped at iteration (', iter_no+1, ')')
             # stopping criteria (checked only after a reasonable number of iterations)
-            if (((iter > 10) and (_data_['OS_number'] > 1)) or ((iter > 150) and (_data_['OS_number'] == 1))):
+            if (((iter_no > 10) and (_data_['OS_number'] > 1)) or ((iter_no > 150) and (_data_['OS_number'] == 1))):
                 nrm = LA.norm(X - X_old)*denomN
                 if (nrm < _algorithm_['tolerance']):
                     if (_algorithm_['verbose'] == 'on'):
-                        print('FISTA stopped at iteration (', iter+1, ')')
+                        print('FISTA stopped at iteration (', iter_no+1, ')')
                     break
         return X
 #*****************************FISTA ends here*********************************#
@@ -704,7 +704,7 @@ class RecToolsIR:
         b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(_data_['projection_norm_data'].ravel())
 
         # Outer ADMM iterations
-        for iter in range(_algorithm_['iterations']):
+        for iter_no in range(_algorithm_['iterations']):
             X_old = X
             # solving quadratic problem using linalg solver
             A_to_solver = scipy.sparse.linalg.LinearOperator((rec_dim,rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb)
@@ -714,8 +714,8 @@ class RecToolsIR:
             if (_algorithm_['nonnegativity'] == 'ENABLE'):
                 X[X < 0.0] = 0.0
             # z-update with relaxation
-            zold = z.copy()
-            x_hat = _algorithm_['ADMM_relax_par']*X + (1.0 - _algorithm_['ADMM_relax_par'])*zold
+            zold = z.copy();
+            x_hat = _algorithm_['ADMM_relax_par']*X + (1.0 - _algorithm_['ADMM_relax_par'])*zold;
             if (self.geom == '2D'):
                 x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
             if (self.geom == '3D'):
@@ -728,16 +728,16 @@ class RecToolsIR:
             # update u variable
             u = u + (x_hat - z)
             if (_algorithm_['verbose'] == 'on'):
-                if (np.mod(iter,(round)(_algorithm_['iterations']/5)+1) == 0):
-                    print('ADMM iteration (',iter+1,') using', _regularisation_['method'], 'regularisation for (',(int)(info_vec[0]),') iterations')
-            if (iter == _algorithm_['iterations']-1):
-                print('ADMM stopped at iteration (', iter+1, ')')
+                if (np.mod(iter_no,(round)(_algorithm_['iterations']/5)+1) == 0):
+                    print('ADMM iteration (',iter_no+1,') using', _regularisation_['method'], 'regularisation for (',(int)(info_vec[0]),') iterations')
+            if (iter_no == _algorithm_['iterations']-1):
+                print('ADMM stopped at iteration (', iter_no+1, ')')
 
             # stopping criteria (checked after reasonable number of iterations)
-            if (iter > 5):
+            if (iter_no > 5):
                 nrm = LA.norm(X - X_old)*denomN
                 if nrm < _algorithm_['tolerance']:
-                    print('ADMM stopped at iteration (', iter, ')')
+                    print('ADMM stopped at iteration (', iter_no, ')')
                     break
         if (self.geom == '2D'):
             return X.reshape([self.ObjSize, self.ObjSize])

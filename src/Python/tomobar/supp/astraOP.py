@@ -358,10 +358,10 @@ class Astra3D:
 
 #####################Reconstruction Children classes#########################
 class AstraTools(Astra2D):
-    """
-    2D parallel beam projection/backprojection class based on ASTRA toolbox
-    """
     def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+        """
+        2D parallel beam projection/backprojection class based on ASTRA toolbox
+        """
         super().__init__(DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
 
     def forwproj(self, image):
@@ -391,53 +391,45 @@ class AstraTools(Astra2D):
         return Astra2D.runAstraRecon(self, sinogram, astra_method, iterations, None)
 
 class AstraToolsOS(Astra2D):
-    """
-    2D parallel ordered-subsets beam projection/backprojection class
-    """
     def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+        """
+        2D parallel ordered-subsets beam projection/backprojection class
+        """
         super().__init__(DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
 
     def forwprojOS(self, image, os_index):
-        "Applying 2d forward projection to a specific subset"
         astra_method = 'FP_CUDA' # 2d forward projection
         if self.device_projector == 'cpu':
             astra_method = 'FP'
         return Astra2D.runAstraProj(self, image, os_index, astra_method)
     def backprojOS(self, sinogram, os_index):
-        "Applying 2d back-projection to a specific subset"
         astra_method = 'BP_CUDA' # 2D back projection
         if self.device_projector == 'cpu':
             astra_method = 'BP'
         return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, os_index)
 
 class AstraTools3D(Astra3D):
-    """
-    3D parallel beam projection/backprojection class based on ASTRA toolbox
-    """
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+        """
+        3D parallel beam projection/backprojection class based on ASTRA toolbox
+        """
         super().__init__(DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
     def forwproj(self, object3D):
         return Astra3D.runAstraProj(self, object3D, None) # 3D forward projection
     def backproj(self, proj_data):
-        "Applying 3D backprojection"
-        return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, None)
+        return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, None) # 3D backprojection
     def sirt3D(self, proj_data, iterations):
-        "perform 3D SIRT reconstruction"
-        return Astra3D.runAstraRecon(self, proj_data, 'SIRT3D_CUDA', iterations, None)
+        return Astra3D.runAstraRecon(self, proj_data, 'SIRT3D_CUDA', iterations, None) #3D SIRT reconstruction
     def cgls3D(self, proj_data, iterations):
-        "perform 3D CGLS reconstruction"
-        return Astra3D.runAstraRecon(self, proj_data, 'CGLS3D_CUDA', iterations, None)
+        return Astra3D.runAstraRecon(self, proj_data, 'CGLS3D_CUDA', iterations, None) #3D CGLS reconstruction
 
 class AstraToolsOS3D(Astra3D):
-    """
-    3D ordered subset parallel beam projection/backprojection class
-    """
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+        """
+        3D ordered subset parallel beam projection/backprojection class
+        """
         super().__init__(DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
-
     def forwprojOS(self, object3D, os_index):
-        "Applying 3d forward projection to a specific subset"
-        return Astra3D.runAstraProj(self, object3D, os_index)
+        return Astra3D.runAstraProj(self, object3D, os_index) # 3d forward projection of a specific subset
     def backprojOS(self, proj_data, os_index):
-        "Applying 3d back-projection to a specific subset"
-        return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, os_index)
+        return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, os_index) # 3d back-projection of a specific subset
