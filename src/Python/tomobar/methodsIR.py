@@ -205,7 +205,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         elif (_regularisation_['NDF_penalty'] == 'Tukey'):
             self.NDF_method = 3
         else:
-            raise ("For NDF_penalty choose Huber, Perona or Tukey")
+            raise NameError("For NDF_penalty choose Huber, Perona or Tukey")
     # NLTV penalty related weights, , the array of i-related indices
     if ('NLTV_H_i' not in _regularisation_):
         _regularisation_['NLTV_H_i'] = 0
@@ -341,10 +341,8 @@ class RecToolsIR:
               device_projector   # choose projector between 'cpu' and 'gpu' OR GPU index
               ):
         if ObjSize is tuple:
-            raise (" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")
-        else:
-            self.ObjSize = ObjSize # size of the object
-
+            raise ValueError(" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")
+        self.ObjSize = ObjSize
         self.datafidelity = datafidelity
         self.DetectorsDimV = DetectorsDimV
         self.DetectorsDimH = DetectorsDimH
@@ -359,8 +357,6 @@ class RecToolsIR:
         from tomobar.supp.astraOP import _set_gpu_device_index
         if self.device_projector != 'cpu':
             _set_gpu_device_index(self)
-        else:
-            raise ("please provide 'cpu' or 'gpu' device or GPU index ")
 
         if datafidelity not in ['LS','PWLS', 'SWLS','KL']:
             raise ValueError('Unknown data fidelity type, select: LS, PWLS, SWLS or KL')
@@ -492,7 +488,7 @@ class RecToolsIR:
         X_t = np.copy(X)
         r_x = r.copy()
         # Outer FISTA iterations
-        for iter in range(0,_algorithm_['iterations']):
+        for iter in range(_algorithm_['iterations']):
             r_old = r
             # Do GH fidelity pre-calculations using the full projections dataset for OS version
             if ((_data_['OS_number'] != 1) and (_data_['ringGH_lambda'] is not None) and (iter > 0)):
@@ -708,7 +704,7 @@ class RecToolsIR:
         b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(_data_['projection_norm_data'].ravel())
 
         # Outer ADMM iterations
-        for iter in range(0,_algorithm_['iterations']):
+        for iter in range(_algorithm_['iterations']):
             X_old = X
             # solving quadratic problem using linalg solver
             A_to_solver = scipy.sparse.linalg.LinearOperator((rec_dim,rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb)
@@ -718,8 +714,8 @@ class RecToolsIR:
             if (_algorithm_['nonnegativity'] == 'ENABLE'):
                 X[X < 0.0] = 0.0
             # z-update with relaxation
-            zold = z.copy();
-            x_hat = _algorithm_['ADMM_relax_par']*X + (1.0 - _algorithm_['ADMM_relax_par'])*zold;
+            zold = z.copy()
+            x_hat = _algorithm_['ADMM_relax_par']*X + (1.0 - _algorithm_['ADMM_relax_par'])*zold
             if (self.geom == '2D'):
                 x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
             if (self.geom == '3D'):

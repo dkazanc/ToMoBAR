@@ -357,9 +357,10 @@ class Astra3D:
         return proj_volume
 
 #####################Reconstruction Children classes#########################
-
 class AstraTools(Astra2D):
-    "2D parallel beam projection/backprojection class based on ASTRA toolbox"
+    """
+    2D parallel beam projection/backprojection class based on ASTRA toolbox
+    """
     def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
         super().__init__(DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
 
@@ -390,7 +391,9 @@ class AstraTools(Astra2D):
         return Astra2D.runAstraRecon(self, sinogram, astra_method, iterations, None)
 
 class AstraToolsOS(Astra2D):
-    "2D parallel ordered-subsets beam projection/backprojection class"
+    """
+    2D parallel ordered-subsets beam projection/backprojection class
+    """
     def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
         super().__init__(DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
 
@@ -408,7 +411,9 @@ class AstraToolsOS(Astra2D):
         return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, os_index)
 
 class AstraTools3D(Astra3D):
-    """3D parallel beam projection/backprojection class based on ASTRA toolbox"""
+    """
+    3D parallel beam projection/backprojection class based on ASTRA toolbox
+    """
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
         super().__init__(DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
     def forwproj(self, object3D):
@@ -424,7 +429,9 @@ class AstraTools3D(Astra3D):
         return Astra3D.runAstraRecon(self, proj_data, 'CGLS3D_CUDA', iterations, None)
 
 class AstraToolsOS3D(Astra3D):
-    """3D ordered subset parallel beam projection/backprojection class"""
+    """
+    3D ordered subset parallel beam projection/backprojection class
+    """
     def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
         super().__init__(DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
 
