@@ -13,6 +13,7 @@ conda install --yes anaconda-client
 conda build . --numpy=1.15 --python=3.5
 conda build . --numpy=1.15 --python=3.6
 conda build . --numpy=1.15 --python=3.7
+conda build . --numpy=1.21 --python=3.7
 conda build . --numpy=1.18 --python=3.8
 
 # upload packages to conda
