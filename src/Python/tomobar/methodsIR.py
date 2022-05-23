@@ -94,16 +94,18 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if (('projection_raw_data' not in _data_) and ((self.datafidelity == 'PWLS') or (self.datafidelity == 'SWLS'))):
           raise NameError("No input 'projection_raw_data', has to be provided for PWLS or SWLS data fidelity")
     if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
-        # Ordered Subsets OR classical approach (default)
+        # classical approach (default)
         _data_['OS_number'] = 1
+        self.OS = False
     else:
-        #initialise OS ASTRA-related modules
+        # initialise OS ASTRA-related modules
+        self.OS = True
         if self.geom == '2D':
             from tomobar.supp.astraOP import AstraToolsOS
-            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.GPUdevice_index) # initiate 2D ASTRA class OS object
+            self.AtoolsOS = AstraToolsOS(self, _data_['OS_number']) # initiate 2D ASTRA class OS object
         else:
             from tomobar.supp.astraOP import AstraToolsOS3D
-            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.GPUdevice_index) # initiate 3D ASTRA class OS object
+            self.AtoolsOS = AstraToolsOS3D(self, _data_['OS_number']) # initiate 3D ASTRA class OS object
     # SWLS related parameter (ring supression)
     if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
         _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
@@ -312,7 +314,7 @@ class RecToolsIR:
               you can also add WAVELET regularisation by adding WAVELETS to any method above, e.g. ROF_TV_WAVELETS
             --regul_param # main regularisation parameter for all methods
             --iterations # the number of inner (regularisation) iterations
-            --device_regulariser #  choose the 'cpu' or 'gpu'-type of the device for the regulariser
+            --device_regulariser #  choose the 'cpu' or 'gpu'-type (OR provide a GPU index) of the device for the regulariser
             --edge_threhsold # edge (noise) threshold parameter for NDF and DIFF4th models
             --tolerance # tolerance to stop inner regularisation iterations prematurely
             --time_marching_step # a step to ensure convergence for gradient-based methods: ROF_TV,LLT_ROF,NDF,Diff4th
@@ -338,7 +340,7 @@ class RecToolsIR:
               AnglesVec,         # Array of projection angles in radians
               ObjSize,           # Reconstructed object dimensions (scalar)
               datafidelity,      # Data fidelity, choose from LS, KL, PWLS
-              device_projector   # choose projector between 'cpu' and 'gpu' OR GPU index
+              device_projector   # choose projector between 'cpu' and 'gpu' OR a GPU index
               ):
         if ObjSize is tuple:
             raise ValueError(" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")
@@ -348,33 +350,32 @@ class RecToolsIR:
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
+        self.OS = False # defined initially to be False
         if (CenterRotOffset is None):
              self.CenterRotOffset = 0.0
         else:
             self.CenterRotOffset = CenterRotOffset
-        self.device_projector = device_projector
-
         from tomobar.supp.astraOP import _set_gpu_device_index
-        if self.device_projector != 'cpu':
+        if device_projector != 'cpu':
             _set_gpu_device_index(self)
+        else:
+            self.device_projector = device_projector
 
         if datafidelity not in ['LS','PWLS', 'SWLS','KL']:
             raise ValueError('Unknown data fidelity type, select: LS, PWLS, SWLS or KL')
 
         if DetectorsDimV is None:
             # Creating Astra class specific to 2D parallel geometry
-            self.geom = '2D'
+            self.geom = '2D'            
             # classical approach
             from tomobar.supp.astraOP import AstraTools
-            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.GPUdevice_index) # initiate 2D ASTRA class object
+            self.Atools = AstraTools(self) # initiate 2D ASTRA class object
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
             # classical approach
             from tomobar.supp.astraOP import AstraTools3D
-            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.GPUdevice_index) # initiate 3D ASTRA class object
-        return None
-
+            self.Atools = AstraTools3D(self) # initiate 3D ASTRA class object
 
     def SIRT(self, _data_, _algorithm_):
         ######################################################################
