@@ -339,7 +339,7 @@ class RecToolsIR:
               CenterRotOffset,   # The Centre of Rotation scalar or a vector
               AnglesVec,         # Array of projection angles in radians
               ObjSize,           # Reconstructed object dimensions (scalar)
-              datafidelity,      # Data fidelity, choose from LS, KL, PWLS
+              datafidelity,      # Data fidelity, choose from LS, KL, PWLS, SWLS
               device_projector   # choose projector between 'cpu' and 'gpu' OR a GPU index
               ):
         if ObjSize is tuple:
@@ -351,6 +351,8 @@ class RecToolsIR:
         self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
         self.OS = False # defined initially to be False
+        self.GPUdevice_index = None
+
         if (CenterRotOffset is None):
              self.CenterRotOffset = 0.0
         else:
@@ -365,17 +367,10 @@ class RecToolsIR:
             raise ValueError('Unknown data fidelity type, select: LS, PWLS, SWLS or KL')
 
         if DetectorsDimV is None:
-            # Creating Astra class specific to 2D parallel geometry
-            self.geom = '2D'            
-            # classical approach
-            from tomobar.supp.astraOP import AstraTools
-            self.Atools = AstraTools(self) # initiate 2D ASTRA class object
+            self.geom = '2D'
         else:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
-            # classical approach
-            from tomobar.supp.astraOP import AstraTools3D
-            self.Atools = AstraTools3D(self) # initiate 3D ASTRA class object
 
     def SIRT(self, _data_, _algorithm_):
         ######################################################################
@@ -407,18 +402,24 @@ class RecToolsIR:
         if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
             # Ordered Subsets OR classical approach (default)
             _data_['OS_number'] = 1
+            self.OS_number = _data_['OS_number']
+            if self.geom == '2D':
+                from tomobar.supp.astraOP import AstraTools
+                self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
+            else:
+                from tomobar.supp.astraOP import AstraTools3D
+                self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
         else:
             #initialise OS ASTRA-related modules
             if self.geom == '2D':
                 from tomobar.supp.astraOP import AstraToolsOS
-                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.GPUdevice_index) # initiate 2D ASTRA class OS object
+                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.GPUdevice_index) # initiate 2D ASTRA class OS object
             else:
                 from tomobar.supp.astraOP import AstraToolsOS3D
-                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, _data_['OS_number'], self.GPUdevice_index) # initiate 3D ASTRA class OS object
+                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.GPUdevice_index) # initiate 3D ASTRA class OS object
         niter = 15 # number of power method iterations
         s = 1.0
 
-        # classical approach
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
