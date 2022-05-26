@@ -88,7 +88,7 @@ class RecToolsDIR:
         self.AnglesVec = AnglesVec
         self.CenterRotOffset = CenterRotOffset
         self.GPUdevice_index = None
-        self.OS_number  = 1
+        self.OS_number = 1
 
         from tomobar.supp.astraOP import _set_gpu_device_index
         if device_projector != 'cpu':
