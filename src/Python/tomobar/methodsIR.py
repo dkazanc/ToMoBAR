@@ -406,11 +406,12 @@ class RecToolsIR:
         s = 1.0
 
         if (self.geom == '2D'):
-            x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
+            x1 = np.float32(np.random.randn(self.ObjSize,self.ObjSize))
         else:
-            x1 = np.float32(np.random.randn(self.AtoolsOS.DetectorsDimV,self.AtoolsOS.ObjSize,self.AtoolsOS.ObjSize))
+            x1 = np.float32(np.random.randn(self.DetectorsDimV,self.ObjSize,self.ObjSize))
         if (self.datafidelity == 'PWLS'):
                 sqweight = _data_['projection_raw_data']
+        
         if (self.OS_number == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
@@ -731,3 +732,4 @@ class RecToolsIR:
         if (self.geom == '3D'):
             return X.reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
 #*****************************ADMM ends here*********************************#
+

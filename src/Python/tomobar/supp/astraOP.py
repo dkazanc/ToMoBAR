@@ -226,7 +226,7 @@ class Astra2D:
         return recon_slice
 
     def runAstraProj(self, image, os_index, method):
-         # set ASTRA configuration for 2D projector
+        # set ASTRA configuration for 2D projector
         if isinstance(image, np.ndarray):
             rec_id = astra.data2d.link('-vol', self.vol_geom, image)
         else:
@@ -414,7 +414,7 @@ class AstraTools3D(Astra3D):
         3D parallel beam projection/backprojection class based on ASTRA toolbox
         """
         super().__init__(DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
-                
+        
     def forwproj(self, object3D):
         return Astra3D.runAstraProj(self, object3D, None) # 3D forward projection
     def backproj(self, proj_data):
@@ -435,3 +435,4 @@ class AstraToolsOS3D(Astra3D):
         return Astra3D.runAstraProj(self, object3D, os_index) # 3d forward projection of a specific subset
     def backprojOS(self, proj_data, os_index):
         return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, os_index) # 3d back-projection of a specific subset
+
