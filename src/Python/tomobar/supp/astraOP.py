@@ -280,7 +280,7 @@ class Astra3D:
         self.device_projector = device_projector
         self.GPUdevice_index = GPUdevice_index
 
-        if type(self.ObjSize) == tuple:
+        if isinstance(self.ObjSize) == tuple:
             Y,X,Z = [int(i) for i in self.ObjSize]
         else:
             Y=X=self.ObjSize
@@ -414,7 +414,7 @@ class AstraTools3D(Astra3D):
         3D parallel beam projection/backprojection class based on ASTRA toolbox
         """
         super().__init__(DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
-        
+                
     def forwproj(self, object3D):
         return Astra3D.runAstraProj(self, object3D, None) # 3D forward projection
     def backproj(self, proj_data):

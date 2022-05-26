@@ -3,7 +3,7 @@ name: linux
 on:
   pull_request:
     # Sequence of patterns matched against refs/heads
-    branches:    
+    branches:
       - main
 
 jobs:
