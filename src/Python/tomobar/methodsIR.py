@@ -30,11 +30,6 @@ except ImportError:
     print('____! CCPi-regularisation package is missing, please install !____')
 
 try:
-    import astra
-except ImportError:
-    print('____! Astra-toolbox package is missing, please install !____')
-
-try:
     import scipy.sparse.linalg
 except ImportError:
     print('____! Scipy toolbox package is missing, please install !____')
@@ -96,16 +91,22 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
         # classical approach (default)
         _data_['OS_number'] = 1
-        self.OS = False
+        self.OS_number = _data_['OS_number']
+        if self.geom == '2D':
+            from tomobar.supp.astraOP import AstraTools
+            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
+        else:
+            from tomobar.supp.astraOP import AstraTools3D
+            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
     else:
-        # initialise OS ASTRA-related modules
-        self.OS = True
+        #initialise OS ASTRA-related modules
+        self.OS_number = _data_['OS_number']
         if self.geom == '2D':
             from tomobar.supp.astraOP import AstraToolsOS
-            self.AtoolsOS = AstraToolsOS(self, _data_['OS_number']) # initiate 2D ASTRA class OS object
+            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class OS object
         else:
             from tomobar.supp.astraOP import AstraToolsOS3D
-            self.AtoolsOS = AstraToolsOS3D(self, _data_['OS_number']) # initiate 3D ASTRA class OS object
+            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class OS object
     # SWLS related parameter (ring supression)
     if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
         _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
@@ -131,7 +132,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if ('ringGH_accelerate' not in _data_):
         _data_['ringGH_accelerate'] = 50
     # ----------  deal with _algorithm_  --------------
-    if ('lipschitz_const' not in _algorithm_):
+    if ('lipschitz_const' not in _algorithm_ and len(_algorithm_) > 0):
         # if not provided calculate Lipschitz constant automatically
         _algorithm_['lipschitz_const'] = RecToolsIR.powermethod(self, _data_)
     # iterations number for the selected reconstruction algorithm
@@ -350,7 +351,6 @@ class RecToolsIR:
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
-        self.OS = False # defined initially to be False
         self.GPUdevice_index = None
 
         if (CenterRotOffset is None):
@@ -375,6 +375,7 @@ class RecToolsIR:
     def SIRT(self, _data_, _algorithm_):
         ######################################################################
         # parameters check and initialisation
+        _algorithm_['lipschitz_const'] = 0 # bypass Lipshitz calculation
         dict_check(self, _data_, _algorithm_, {})
         ######################################################################
         #SIRT reconstruction algorithm from ASTRA
@@ -387,6 +388,7 @@ class RecToolsIR:
     def CGLS(self, _data_, _algorithm_):
         ######################################################################
         # parameters check and initialisation
+        _algorithm_['lipschitz_const'] = 0 # bypass Lipshitz calculation
         dict_check(self, _data_, _algorithm_, {})
         ######################################################################
         #CGLS reconstruction algorithm from ASTRA
@@ -399,34 +401,17 @@ class RecToolsIR:
     def powermethod(self, _data_):
         # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
         # projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored
-        if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
-            # Ordered Subsets OR classical approach (default)
-            _data_['OS_number'] = 1
-            self.OS_number = _data_['OS_number']
-            if self.geom == '2D':
-                from tomobar.supp.astraOP import AstraTools
-                self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-            else:
-                from tomobar.supp.astraOP import AstraTools3D
-                self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
-        else:
-            #initialise OS ASTRA-related modules
-            if self.geom == '2D':
-                from tomobar.supp.astraOP import AstraToolsOS
-                self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.GPUdevice_index) # initiate 2D ASTRA class OS object
-            else:
-                from tomobar.supp.astraOP import AstraToolsOS3D
-                self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.GPUdevice_index) # initiate 3D ASTRA class OS object
-        niter = 15 # number of power method iterations
+        dict_check(self, _data_, {}, {}) # sets ASTRA geometry
+        niter = 15 # number of power method iterations (normally enough to converge)
         s = 1.0
 
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.Atools.ObjSize,self.Atools.ObjSize))
         else:
-            x1 = np.float32(np.random.randn(self.Atools.DetectorsDimV,self.Atools.ObjSize,self.Atools.ObjSize))
+            x1 = np.float32(np.random.randn(self.AtoolsOS.DetectorsDimV,self.AtoolsOS.ObjSize,self.AtoolsOS.ObjSize))
         if (self.datafidelity == 'PWLS'):
                 sqweight = _data_['projection_raw_data']
-        if (_data_['OS_number'] == 1):
+        if (self.OS_number == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
             if (self.datafidelity == 'PWLS'):
