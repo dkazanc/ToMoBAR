@@ -226,7 +226,7 @@ class Astra2D:
         return recon_slice
 
     def runAstraProj(self, image, os_index, method):
-         # set ASTRA configuration for 2D projector
+        # set ASTRA configuration for 2D projector
         if isinstance(image, np.ndarray):
             rec_id = astra.data2d.link('-vol', self.vol_geom, image)
         else:
@@ -267,12 +267,20 @@ class Astra2D:
         return sinogram
 
 class Astra3D:
-    def __init__(self):
+    def __init__(self, DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
         """
         Parent 3D parallel beam projection/backprojection class based on ASTRA toolbox
         """
+        self.DetectorsDimV = DetectorsDimV
+        self.DetectorsDimH = DetectorsDimH
+        self.AnglesVec = AnglesVec
+        self.CenterRotOffset = CenterRotOffset
+        self.ObjSize = ObjSize
+        self.OS_number = OS_number
+        self.device_projector = device_projector
+        self.GPUdevice_index = GPUdevice_index
 
-        if type(self.ObjSize) == tuple:
+        if isinstance(self.ObjSize) == tuple:
             Y,X,Z = [int(i) for i in self.ObjSize]
         else:
             Y=X=self.ObjSize
@@ -383,11 +391,11 @@ class AstraTools(Astra2D):
         return Astra2D.runAstraRecon(self, sinogram, astra_method, iterations, None)
 
 class AstraToolsOS(Astra2D):
-    def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+    def __init__(self, DetectorsDimH, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
         """
         2D parallel ordered-subsets beam projection/backprojection class
         """
-        super().__init__(DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
+        super().__init__(DetectorsDimH, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
 
     def forwprojOS(self, image, os_index):
         astra_method = 'FP_CUDA' # 2d forward projection
@@ -401,11 +409,12 @@ class AstraToolsOS(Astra2D):
         return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, os_index)
 
 class AstraTools3D(Astra3D):
-    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+    def __init__(self, DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
         """
         3D parallel beam projection/backprojection class based on ASTRA toolbox
         """
-        super().__init__(DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
+        super().__init__(DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
+        
     def forwproj(self, object3D):
         return Astra3D.runAstraProj(self, object3D, None) # 3D forward projection
     def backproj(self, proj_data):
@@ -416,12 +425,14 @@ class AstraTools3D(Astra3D):
         return Astra3D.runAstraRecon(self, proj_data, 'CGLS3D_CUDA', iterations, None) #3D CGLS reconstruction
 
 class AstraToolsOS3D(Astra3D):
-    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector):
+    def __init__(self, DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
         """
         3D ordered subset parallel beam projection/backprojection class
         """
-        super().__init__(DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS, device_projector)
+        super().__init__(DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
+        
     def forwprojOS(self, object3D, os_index):
         return Astra3D.runAstraProj(self, object3D, os_index) # 3d forward projection of a specific subset
     def backprojOS(self, proj_data, os_index):
         return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, os_index) # 3d back-projection of a specific subset
+

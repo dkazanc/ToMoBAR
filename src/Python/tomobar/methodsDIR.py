@@ -87,11 +87,14 @@ class RecToolsDIR:
         self.DetectorsDimV = DetectorsDimV
         self.AnglesVec = AnglesVec
         self.CenterRotOffset = CenterRotOffset
+        self.GPUdevice_index = None
+        self.OS_number  = 1
 
-        self.device_projector = device_projector
         from tomobar.supp.astraOP import _set_gpu_device_index
-        if self.device_projector != 'cpu':
+        if device_projector != 'cpu':
             _set_gpu_device_index(self)
+        else:
+            self.device_projector = device_projector
 
         if DetectorsDimV is None:
             #2D geometry
@@ -101,21 +104,21 @@ class RecToolsDIR:
     def FORWPROJ(self, image):
         if (self.geom == '2D'):
             from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
             sinogram = Atools.forwproj(image)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 3D ASTRA class object
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
             sinogram = Atools.forwproj(image)
         return sinogram
     def BACKPROJ(self, sinogram):
         if (self.geom == '2D'):
             from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
             image = Atools.backproj(sinogram)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 3D ASTRA class object
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
             image = Atools.backproj(sinogram)
         return image
     def FOURIER(self, sinogram, method='linear'):
@@ -202,7 +205,7 @@ class RecToolsDIR:
     def FBP(self, sinogram):
         from tomobar.supp.astraOP import AstraTools
         if (self.geom == '2D'):
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector,  self.GPUdevice_index) # initiate 2D ASTRA class object
             'dealing with FBP 2D not working for parallel_vec geometry and CPU'
             if (self.device_projector == 'gpu'):
                 FBP_rec = Atools.fbp2D(sinogram) # GPU reconstruction
@@ -211,13 +214,14 @@ class RecToolsDIR:
                 FBP_rec = Atools.backproj(filtered_sino) # backproject
         if ((self.geom == '3D') and (self.CenterRotOffset is None)):
             FBP_rec = np.zeros((self.DetectorsDimV, self.ObjSize, self.ObjSize), dtype='float32')
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec-np.pi, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 2D ASTRA class object
+            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec-np.pi, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector,  self.GPUdevice_index) # initiate 2D ASTRA class object
             for i in range(0, self.DetectorsDimV):
                 FBP_rec[i,:,:] = Atools.fbp2D(np.flipud(sinogram[i,:,:]))
         if ((self.geom == '3D') and (self.CenterRotOffset is not None)):
             # perform FBP using custom filtration
             from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, None, self.device_projector) # initiate 3D ASTRA class object
+            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector,  self.GPUdevice_index) # initiate 3D ASTRA class object
             filtered_sino = filtersinc3D(sinogram) # filtering sinogram
             FBP_rec = Atools.backproj(filtered_sino) # backproject
         return FBP_rec
+
