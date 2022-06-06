@@ -343,7 +343,7 @@ class RecToolsIR:
               datafidelity,      # Data fidelity, choose from LS, KL, PWLS, SWLS
               device_projector   # choose projector between 'cpu' and 'gpu' OR a GPU index
               ):
-        if ObjSize is tuple:
+        if isinstance(ObjSize,tuple):
             raise ValueError(" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")
         self.ObjSize = ObjSize
         self.datafidelity = datafidelity
@@ -351,17 +351,17 @@ class RecToolsIR:
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
-        self.GPUdevice_index = None
+        self.device_projector = device_projector
 
         if (CenterRotOffset is None):
              self.CenterRotOffset = 0.0
         else:
             self.CenterRotOffset = CenterRotOffset
         from tomobar.supp.astraOP import _set_gpu_device_index
-        if device_projector != 'cpu':
+        if isinstance(self.device_projector, int):
             _set_gpu_device_index(self)
-        else:
-            self.device_projector = device_projector
+        if self.device_projector not in ['cpu','gpu']:
+            raise ValueError('Choose a relevant device: "cpu", "gpu" OR provide a GPU index')
 
         if datafidelity not in ['LS','PWLS', 'SWLS','KL']:
             raise ValueError('Unknown data fidelity type, select: LS, PWLS, SWLS or KL')
@@ -375,7 +375,7 @@ class RecToolsIR:
     def SIRT(self, _data_, _algorithm_):
         ######################################################################
         # parameters check and initialisation
-        _algorithm_['lipschitz_const'] = 0 # bypass Lipshitz calculation
+        _algorithm_['lipschitz_const'] = 0 # bypass Lipshitz const calculations
         dict_check(self, _data_, _algorithm_, {})
         ######################################################################
         #SIRT reconstruction algorithm from ASTRA
@@ -388,7 +388,7 @@ class RecToolsIR:
     def CGLS(self, _data_, _algorithm_):
         ######################################################################
         # parameters check and initialisation
-        _algorithm_['lipschitz_const'] = 0 # bypass Lipshitz calculation
+        _algorithm_['lipschitz_const'] = 0 # bypass Lipshitz const calculations
         dict_check(self, _data_, _algorithm_, {})
         ######################################################################
         #CGLS reconstruction algorithm from ASTRA
@@ -732,4 +732,3 @@ class RecToolsIR:
         if (self.geom == '3D'):
             return X.reshape([self.DetectorsDimV, self.ObjSize, self.ObjSize])
 #*****************************ADMM ends here*********************************#
-

@@ -70,14 +70,12 @@ def vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOff
     return vectors
 
 def _set_gpu_device_index(self):
-        #  set device_projector for GPU
-        self.device_projector = 'gpu'
-        self.GPUdevice_index = None
+        #  set device_projector for GPU and enable the GPU indexing
         try:
-            self.GPUdevice_index = int(self.device_projector) # get GPU index
+            self.GPUdevice_index = int(self.device_projector) # get a GPU index
         except ValueError:
             self.GPUdevice_index = 0 # set to 0 GPU index by default
-        return self.GPUdevice_index
+        self.device_projector = 'gpu'
 
 def _setOS_indices(self):
         AnglesTot = np.size(self.AnglesVec) # total number of angles
@@ -280,7 +278,7 @@ class Astra3D:
         self.device_projector = device_projector
         self.GPUdevice_index = GPUdevice_index
 
-        if isinstance(self.ObjSize) == tuple:
+        if isinstance(self.ObjSize, tuple):
             Y,X,Z = [int(i) for i in self.ObjSize]
         else:
             Y=X=self.ObjSize
@@ -414,7 +412,7 @@ class AstraTools3D(Astra3D):
         3D parallel beam projection/backprojection class based on ASTRA toolbox
         """
         super().__init__(DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
-   
+        
     def forwproj(self, object3D):
         return Astra3D.runAstraProj(self, object3D, None) # 3D forward projection
     def backproj(self, proj_data):
@@ -435,3 +433,4 @@ class AstraToolsOS3D(Astra3D):
         return Astra3D.runAstraProj(self, object3D, os_index) # 3d forward projection of a specific subset
     def backprojOS(self, proj_data, os_index):
         return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, os_index) # 3d back-projection of a specific subset
+
