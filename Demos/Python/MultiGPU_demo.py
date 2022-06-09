@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 GPLv3 license (ASTRA toolbox)
 
@@ -8,13 +6,6 @@ that mpi4py is required.
 Written with a help from:
 https://github.com/mcduta/programming/tree/main/simple-mpi-cuda
 # Run the demo for two processes mpirun -np 2 python MultiGPU_demo.py -g -s -gpus 1
-
-Dependencies:
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-    * TomoPhantom, https://github.com/dkazanc/TomoPhantom
 
 @author: Daniil Kazantsev
 """
@@ -79,6 +70,7 @@ def reconstructorSIRT(data_proj, iterations_alg, DEVICE_no):
     _algorithm_ = {'iterations' : iterations_alg}
 
     RecSIRT = Rectools.SIRT(_data_, _algorithm_) # SIRT reconstruction
+    return RecSIRT
 
 def reconstructorFISTA(data_proj, iterations_alg, DEVICE_no):
     # perform basic data splitting between GPUs
@@ -113,6 +105,7 @@ def reconstructorFISTA(data_proj, iterations_alg, DEVICE_no):
 
     # Run FISTA reconstrucion algorithm with 3D regularisation
     RecFISTA_os_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+    return RecFISTA_os_reg
 
 #%%
 if __name__ == "__main__":

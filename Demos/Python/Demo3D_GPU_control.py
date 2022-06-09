@@ -1,16 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 GPLv3 license (ASTRA toolbox)
 
 A script to demonstrate how to control GPU devices through ToMoBAR and ASTRA
-
-Dependencies: 
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-    * TomoPhantom, https://github.com/dkazanc/TomoPhantom
 
 @author: Daniil Kazantsev
 """
@@ -21,6 +12,8 @@ import numpy as np
 import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.supp.artifacts import _Artifacts_
+from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsDIR import RecToolsDIR
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
@@ -35,8 +28,7 @@ Run_time = toc - tic
 print("Phantom has been built in {} seconds".format(Run_time))
 
 sliceSel = int(0.5*N_size)
-#plt.gray()
-plt.figure() 
+plt.figure()
 plt.subplot(131)
 plt.imshow(phantom_tm[sliceSel,:,:],vmin=0, vmax=1)
 plt.title('3D Phantom, axial view')
@@ -87,8 +79,6 @@ plt.show()
 # One can reconstruct on a specific GPU device by providing the GPU index, e.g.:
 GPU_device_no = 0 # zeroth device is the default GPU device on a PC with only 1 GPU card
 
-
-from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
                     CenterRotOffset = 0.0,              # Center of Rotation scalar or a vector
@@ -114,15 +104,13 @@ plt.imshow(FBPrec[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D FBP Reconstruction, sagittal view')
 plt.show()
 #%%
-# Or iterative reconstruction on a fixed GPU device! 
-    
-GPU_device_no = 0 
+# Or iterative reconstruction on a fixed GPU device    
+GPU_device_no = 0
 
-from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,        # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar or a vector 
+                    CenterRotOffset = 0.0,          # Center of Rotation scalar or a vector
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
