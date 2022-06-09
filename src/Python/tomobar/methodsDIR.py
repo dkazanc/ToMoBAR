@@ -1,7 +1,6 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-A reconstruction class for direct reconstructon methods (parallel beam geometry):
+"""A reconstruction class for direct reconstructon methods (parallel beam geometry):
 -- Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
 -- Forward/Backward projection (ASTRA)
 -- Filtered Back Projection (ASTRA)
@@ -73,12 +72,13 @@ def filtersinc2D(sinogram):
 class RecToolsDIR:
     """ Class for reconstruction using DIRect methods (FBP and Fourier)"""
     def __init__(self,
-              DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
-              DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+              DetectorsDimH,    # DetectorsDimH # detector dimension (horizontal)
+              DetectorsDimV,    # DetectorsDimV # detector dimension (vertical) for 3D case only
               CenterRotOffset,  # Centre of Rotation (CoR) scalar
-              AnglesVec, # array of angles in radians
-              ObjSize, # a scalar to define reconstructed object dimensions
-              device_projector):
+              AnglesVec,        # Array of angles in radians
+              ObjSize,          # A scalar to define reconstructed object dimensions
+              device_projector  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+              ):
         if isinstance(ObjSize,tuple):
             raise (" Reconstruction is currently available for square or cubic objects only, provide a scalar ")
         else:
@@ -98,7 +98,7 @@ class RecToolsDIR:
         if isinstance(self.device_projector, int):
             _set_gpu_device_index(self)
         if self.device_projector not in ['cpu','gpu']:
-            raise ValueError('Choose a relevant device: "cpu", "gpu" OR provide a GPU index')
+            raise ValueError('Choose a relevant device: "cpu" or "gpu", OR provide a GPU index (integer) of a specific device')
 
         if DetectorsDimV is None:
             #2D geometry

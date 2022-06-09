@@ -1,7 +1,6 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-A reconstruction class for regularised iterative methods:
+"""A reconstruction class for regularised iterative methods:
 -- Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
                                shrinkage-thresholding algorithm for linear inverse problems,
                                SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
@@ -284,7 +283,7 @@ class RecToolsIR:
       *AnglesVec,         # A vector of projection angles in radians
       *ObjSize,           # Reconstructed object dimensions (a scalar)
       *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
-      *device_projector   # choose projector between 'cpu' and 'gpu' OR provide a GPU index
+      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
 
     Parameters for reconstruction algorithms are extracted from 3 dictionaries:
       _data_ :
@@ -314,7 +313,7 @@ class RecToolsIR:
               you can also add WAVELET regularisation by adding WAVELETS to any method above, e.g. ROF_TV_WAVELETS
             --regul_param # main regularisation parameter for all methods
             --iterations # the number of inner (regularisation) iterations
-            --device_regulariser #  choose the 'cpu' or 'gpu'-type (OR provide a GPU index) of the device for the regulariser
+            --device_regulariser #  Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
             --edge_threhsold # edge (noise) threshold parameter for NDF and DIFF4th models
             --tolerance # tolerance to stop inner regularisation iterations prematurely
             --time_marching_step # a step to ensure convergence for gradient-based methods: ROF_TV,LLT_ROF,NDF,Diff4th
@@ -340,7 +339,7 @@ class RecToolsIR:
               AnglesVec,         # Array of projection angles in radians
               ObjSize,           # Reconstructed object dimensions (scalar)
               datafidelity,      # Data fidelity, choose from LS, KL, PWLS, SWLS
-              device_projector   # choose projector between 'cpu' and 'gpu' OR a GPU index
+              device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
               ):
         if isinstance(ObjSize,tuple):
             raise ValueError(" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")

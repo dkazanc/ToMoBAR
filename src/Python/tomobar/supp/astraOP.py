@@ -161,7 +161,17 @@ def _set_OS_geometry3d(self):
 class Astra2D:
     def __init__(self, DetectorsDimH, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
         """
+        ------------------------------------------------------------------------------
         Parent 2D parallel beam projection/backprojection class based on ASTRA toolbox
+        ------------------------------------------------------------------------------        
+        Parameters of the class:
+        * DetectorsDimH     # Horizontal detector dimension
+        * AnglesVec         # Array of projection angles in radians
+        * CenterRotOffset   # The Centre of Rotation scalar or a vector
+        * ObjSize,          # Reconstructed object dimensions (scalar)
+        * OS_number         # the total number of subsets for iterative reconstruction 
+        * device_projector  # a 'cpu' or 'gpu' string 
+        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number 
         """
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
@@ -266,8 +276,19 @@ class Astra2D:
 
 class Astra3D:
     def __init__(self, DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
-        """
+        """  
+        ------------------------------------------------------------------------------
         Parent 3D parallel beam projection/backprojection class based on ASTRA toolbox
+        ------------------------------------------------------------------------------        
+        Parameters of the class:
+        * DetectorsDimH     # Horizontal detector dimension
+        * DetectorsDimV     # Vertical detector dimension
+        * AnglesVec         # Array of projection angles in radians
+        * CenterRotOffset   # The Centre of Rotation scalar or a vector
+        * ObjSize,          # Reconstructed object dimensions (scalar)
+        * OS_number         # the total number of subsets for iterative reconstruction 
+        * device_projector  # a 'cpu' or 'gpu' string 
+        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number 
         """
         self.DetectorsDimV = DetectorsDimV
         self.DetectorsDimH = DetectorsDimH
@@ -433,4 +454,3 @@ class AstraToolsOS3D(Astra3D):
         return Astra3D.runAstraProj(self, object3D, os_index) # 3d forward projection of a specific subset
     def backprojOS(self, proj_data, os_index):
         return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, os_index) # 3d back-projection of a specific subset
-
