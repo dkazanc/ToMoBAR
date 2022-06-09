@@ -45,7 +45,7 @@ plt.show()
 # Projection geometry related parameters:
 Horiz_det = int(np.sqrt(2)*N_size) # detector column count (horizontal)
 Vert_det = N_size # detector row count (vertical) (no reason for it to be > N)
-angles_num = int(0.25*np.pi*N_size); # angles number
+angles_num = int(0.25*np.pi*N_size) # angles number
 angles = np.linspace(0.0,179.9,angles_num,dtype='float32') # in degrees
 angles_rad = angles*(np.pi/180.0)
 
@@ -53,7 +53,7 @@ print ("Generate 3D analytical projection data with TomoPhantom")
 projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
 # adding noise
-_noise_ =  {'noise_type' : 'Poisson',
+_noise_ = {'noise_type' : 'Poisson',
             'noise_sigma' : 8000, # noise amplitude
             'noise_seed' : 0}
 
@@ -61,7 +61,7 @@ projData3D_analyt_noise = _Artifacts_(projData3D_analyt, **_noise_)
 
 intens_max = 45
 sliceSel = int(0.5*N_size)
-plt.figure() 
+plt.figure()
 plt.subplot(131)
 plt.imshow(projData3D_analyt_noise[:,sliceSel,:],vmin=0, vmax=intens_max)
 plt.title('2D Projection (analytical)')
@@ -90,7 +90,7 @@ FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise) #perform FBP
 
 sliceSel = int(0.5*N_size)
 max_val = 1
-plt.figure() 
+plt.figure()
 plt.subplot(131)
 plt.imshow(FBPrec[sliceSel,:,:],vmin=0, vmax=max_val)
 plt.title('3D FBP Reconstruction, axial view')
@@ -124,7 +124,7 @@ RecSIRT = Rectools.SIRT(_data_, _algorithm_) # SIRT reconstruction
 
 sliceSel = int(0.5*N_size)
 max_val = 1
-plt.figure() 
+plt.figure()
 plt.subplot(131)
 plt.imshow(RecSIRT[sliceSel,:,:],vmin=0, vmax=max_val)
 plt.title('3D SIRT Reconstruction, axial view')
@@ -141,8 +141,6 @@ plt.show()
 # Or iterative reconstruction on a fixed GPU device! 
 GPU_device_no = 0
 # NOTE here that the same GPU index has been passed to the regularisation block
-
-from tomobar.methodsIR import RecToolsIR
 
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
@@ -172,7 +170,7 @@ _regularisation_ = {'method' : 'PD_TV',
 RecFISTA_os_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
 
-plt.figure() 
+plt.figure()
 plt.subplot(131)
 plt.imshow(RecFISTA_os_reg[sliceSel,:,:],vmin=0, vmax=max_val)
 plt.title('3D FISTA-OS regularised reconstruction, axial view')

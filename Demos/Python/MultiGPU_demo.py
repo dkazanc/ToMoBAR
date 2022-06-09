@@ -26,7 +26,7 @@ def data_generator():
     # Projection geometry related parameters:
     Horiz_det = int(np.sqrt(2)*N_size) # detector column count (horizontal)
     Vert_det = N_size # detector row count (vertical) (no reason for it to be > N)
-    angles_num = int(0.25*np.pi*N_size); # angles number
+    angles_num = int(0.25*np.pi*N_size) # angles number
     angles = np.linspace(0.0,179.9,angles_num,dtype='float32') # in degrees
     angles_rad = angles*(np.pi/180.0)
 
@@ -34,7 +34,7 @@ def data_generator():
     projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
     # adding noise
-    _noise_ =  {'noise_type' : 'Poisson',
+    _noise_ = {'noise_type' : 'Poisson',
                 'noise_sigma' : 8000, # noise amplitude
                 'noise_seed' : 0}
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     # MPI process
     mpi_proc_num = MPI.COMM_WORLD.size
-    mpi_proc_id  = MPI.COMM_WORLD.rank
+    mpi_proc_id = MPI.COMM_WORLD.rank
 
     # process arguments
     import argparse
