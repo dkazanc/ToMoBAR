@@ -1,11 +1,14 @@
 """
 GPLv3 license (ASTRA toolbox)
 
-A script to demonstrate multi-gpu capabilities of ToMoBAR package, note
-that mpi4py is required.
-Written with a help from:
-https://github.com/mcduta/programming/tree/main/simple-mpi-cuda
-# Run the demo for two processes mpirun -np 2 python MultiGPU_demo.py -g -s -gpus 1
+A script to demonstrate multi-gpu capabilities of ToMoBAR package, note that mpi4py is required.
+Used reference: https://github.com/mcduta/programming/tree/main/simple-mpi-cuda
+
+# Run the script as:
+# mpirun -np 2 python MultiGPU_demo.py -g -s -gpus 1
+# where:
+#   -np is a number of processes
+#   -gpus is the number of GPUs available
 
 @author: Daniil Kazantsev
 """
