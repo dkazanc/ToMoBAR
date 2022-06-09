@@ -44,8 +44,6 @@ try:
 except ImportError:
     print('____! RING_WEIGHTS C-module failed on import !____')
 
-
-
 def smooth(y, box_pts):
     # a function to smooth 1D signal
     box = np.ones(box_pts)/box_pts
@@ -352,6 +350,7 @@ class RecToolsIR:
         self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
         self.device_projector = device_projector
+        self.GPUdevice_index = 0
 
         if (CenterRotOffset is None):
              self.CenterRotOffset = 0.0
@@ -411,7 +410,7 @@ class RecToolsIR:
             x1 = np.float32(np.random.randn(self.DetectorsDimV,self.ObjSize,self.ObjSize))
         if (self.datafidelity == 'PWLS'):
                 sqweight = _data_['projection_raw_data']
-        
+
         if (self.OS_number == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)

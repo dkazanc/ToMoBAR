@@ -7,11 +7,11 @@ A script to demonstrate multi-gpu capabilities of ToMoBAR package, note
 that mpi4py is required.
 Written with a help from:
 https://github.com/mcduta/programming/tree/main/simple-mpi-cuda
-# Run the demo for two processes mpirun -np 2 python MultiGPU_demo.py -g -s
+# Run the demo for two processes mpirun -np 2 python MultiGPU_demo.py -g -s -gpus 1
 
-Dependencies: 
+Dependencies:
     * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
+    * CCPi-RGL toolkit (for regularisation), install with
     conda install ccpi-regulariser -c ccpi -c conda-forge
     or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
     * TomoPhantom, https://github.com/dkazanc/TomoPhantom
@@ -38,7 +38,7 @@ def data_generator():
     angles_num = int(0.25*np.pi*N_size); # angles number
     angles = np.linspace(0.0,179.9,angles_num,dtype='float32') # in degrees
     angles_rad = angles*(np.pi/180.0)
-    
+
     print ("Generate 3D analytical projection data with TomoPhantom")
     projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
@@ -46,9 +46,9 @@ def data_generator():
     _noise_ =  {'noise_type' : 'Poisson',
                 'noise_sigma' : 8000, # noise amplitude
                 'noise_seed' : 0}
-    
+
     projData3D_analyt_noise = _Artifacts_(projData3D_analyt, **_noise_)
-    
+
     del projData3D_analyt
     data_dict["model"] = model
     data_dict["N_size"] = N_size
@@ -56,11 +56,11 @@ def data_generator():
     data_dict["Vert_det"] = Vert_det
     data_dict["angles_num"] = angles_num
     data_dict["angles_rad"] = angles_rad
-    data_dict["proj_data"] = projData3D_analyt_noise    
+    data_dict["proj_data"] = projData3D_analyt_noise
     return data_dict
 
 def reconstructorSIRT(data_proj, iterations_alg, DEVICE_no):
-    # perform basic data splitting between GPUs    
+    # perform basic data splitting between GPUs
     print("-----------------------------------------------------------------")
     print("Perform SIRT reconstruction in parallel on {} GPU device...".format(DEVICE_no))
     print("-----------------------------------------------------------------")
@@ -68,7 +68,7 @@ def reconstructorSIRT(data_proj, iterations_alg, DEVICE_no):
     # set parameters and initiate a class object
     Rectools = RecToolsIR(DetectorsDimH = data_dict["Horiz_det"],     # Horizontal detector dimension
                         DetectorsDimV = data_dict["Vert_det"],        # Vertical detector dimension (3D case)
-                        CenterRotOffset = 0.0,           # Center of Rotation scalar or a vector 
+                        CenterRotOffset = 0.0,           # Center of Rotation scalar or a vector
                         AnglesVec = data_dict["angles_rad"],          # A vector of projection angles in radians
                         ObjSize = data_dict["N_size"],                # Reconstructed object dimensions (scalar)
                         datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
@@ -81,7 +81,7 @@ def reconstructorSIRT(data_proj, iterations_alg, DEVICE_no):
     RecSIRT = Rectools.SIRT(_data_, _algorithm_) # SIRT reconstruction
 
 def reconstructorFISTA(data_proj, iterations_alg, DEVICE_no):
-    # perform basic data splitting between GPUs    
+    # perform basic data splitting between GPUs
     print("-----------------------------------------------------------------")
     print("Perform FISTA reconstruction in parallel on {} GPU device...".format(DEVICE_no))
     print("-----------------------------------------------------------------")
@@ -89,7 +89,7 @@ def reconstructorFISTA(data_proj, iterations_alg, DEVICE_no):
     # set parameters and initiate a class object
     Rectools = RecToolsIR(DetectorsDimH = data_dict["Horiz_det"],     # Horizontal detector dimension
                         DetectorsDimV = data_dict["Vert_det"],        # Vertical detector dimension (3D case)
-                        CenterRotOffset = 0.0,           # Center of Rotation scalar or a vector 
+                        CenterRotOffset = 0.0,           # Center of Rotation scalar or a vector
                         AnglesVec = data_dict["angles_rad"],          # A vector of projection angles in radians
                         ObjSize = data_dict["N_size"],                # Reconstructed object dimensions (scalar)
                         datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
@@ -119,9 +119,6 @@ if __name__ == "__main__":
    # imports
     from mpi4py import MPI
 
-    # set the total number of available GPU devices
-    GPUs_total_num = 2
-    
     # MPI process
     mpi_proc_num = MPI.COMM_WORLD.size
     mpi_proc_id  = MPI.COMM_WORLD.rank
@@ -130,21 +127,24 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser (description="GPU device use from mpi4py")
     parser.add_argument ("-g", "--get_device", action="store_true", help="report device for each MPI process (default: NO)")
-    parser.add_argument ("-s", "--set_device", action="store_true", help="automatically set device for each MPI process (default: NO)")    
+    parser.add_argument ("-s", "--set_device", action="store_true", help="automatically set device for each MPI process (default: NO)")
+    parser.add_argument('-gpus', '--gpus_no', dest='gpus_total', default=2, help='the total number of available GPU devices')
     args = parser.parse_args ()
 
     # Generating the projection data
     # NOTE that the data is generated for each process for the sake of simplicity but it could be splitted into multiple mpi processess generating smaller chunks of the global dataset
     data_dict = data_generator()
+
+    # set the total number of available GPU devices
+    GPUs_total_num = int(args.gpus_total)
     data_dict['gpu_devices_total'] = GPUs_total_num
     DEVICE_no = mpi_proc_id % GPUs_total_num
-       
+
     # reconstructing using SIRT algorithm:
-    iterations_alg=200
+    iterations_alg=500
     reconstructionSIRT = reconstructorSIRT(data_dict, iterations_alg, DEVICE_no)
-    
+
     # reconstructing using the regularised FISTA algorithm:
     iterations_alg=15
     reconstructionFISTA = reconstructorFISTA(data_dict, iterations_alg, DEVICE_no)
 #%%
-

@@ -89,7 +89,8 @@ class RecToolsDIR:
         self.CenterRotOffset = CenterRotOffset
         self.OS_number  = 1
         self.device_projector = device_projector
-        
+        self.GPUdevice_index = 0
+
         from tomobar.supp.astraOP import _set_gpu_device_index
         if isinstance(self.device_projector, int):
             _set_gpu_device_index(self)
@@ -224,4 +225,3 @@ class RecToolsDIR:
             filtered_sino = filtersinc3D(sinogram) # filtering sinogram
             FBP_rec = Atools.backproj(filtered_sino) # backproject
         return FBP_rec
-
