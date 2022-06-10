@@ -1,8 +1,6 @@
-"""
+"""A script to demonstrate how to control GPU devices through ToMoBAR and ASTRA
+
 GPLv3 license (ASTRA toolbox)
-
-A script to demonstrate how to control GPU devices through ToMoBAR and ASTRA
-
 @author: Daniil Kazantsev
 """
 import timeit

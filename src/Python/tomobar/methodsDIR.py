@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""A reconstruction class for direct reconstructon methods (parallel beam geometry):
+"""A reconstruction class for direct reconstructon methods.
+
 -- Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
 -- Forward/Backward projection (ASTRA)
 -- Filtered Back Projection (ASTRA)
@@ -9,6 +10,9 @@
 """
 
 import numpy as np
+from tomobar.supp.astraOP import AstraTools
+from tomobar.supp.astraOP import AstraTools3D
+from tomobar.supp.astraOP import parse_device_argument
 
 def filtersinc3D(projection3D):
     import scipy.fftpack
@@ -87,19 +91,9 @@ class RecToolsDIR:
         self.DetectorsDimV = DetectorsDimV
         self.AnglesVec = AnglesVec
         self.CenterRotOffset = CenterRotOffset
-        self.OS_number = 1
-        self.device_projector = device_projector
-        if device_projector == 'cpu':
-            self.GPUdevice_index = -1
-        else:
-            self.GPUdevice_index = 0
-
-        from tomobar.supp.astraOP import _set_gpu_device_index
-        if isinstance(self.device_projector, int):
-            _set_gpu_device_index(self)
-        if self.device_projector not in ['cpu','gpu']:
-            raise ValueError('Choose a relevant device: "cpu" or "gpu", OR provide a GPU index (integer) of a specific device')
-
+        self.OS_number = 1       
+        self.device_projector, self.GPUdevice_index = parse_device_argument(device_projector)
+        
         if DetectorsDimV is None:
             #2D geometry
             self.geom = '2D'
@@ -207,8 +201,6 @@ class RecToolsDIR:
         image = recon[int(((self.DetectorsDimH-self.ObjSize)/2)+1):self.DetectorsDimH-int(((self.DetectorsDimH-self.ObjSize)/2)-1),int(((self.DetectorsDimH-self.ObjSize)/2)):self.DetectorsDimH-int(((self.DetectorsDimH-self.ObjSize)/2))]
         return image
     def FBP(self, sinogram):
-        from tomobar.supp.astraOP import AstraTools
-        from tomobar.supp.astraOP import AstraTools3D
         if (self.geom == '2D'):
             Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
             'dealing with FBP 2D not working for parallel_vec geometry and CPU'

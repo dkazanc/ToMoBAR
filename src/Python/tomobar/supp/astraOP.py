@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Series of classes that wrapping ASTRA toolbox to perform projection/backprojection
-and reconstruction of of 2D/3D parallel beam data
+"""Series of classes that wrapping ASTRA toolbox to perform projection/backprojection
+and reconstruction of of 2D/3D parallel beam data.
 
 GPLv3 license (ASTRA toolbox)
 @author: Daniil Kazantsev: https://github.com/dkazanc
@@ -69,13 +68,17 @@ def vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOff
         vectors[i,9:12] = vec_temp[:] # Vector from detector pixel (0,0) to (1,0)
     return vectors
 
-def _set_gpu_device_index(self):
-        #  set device_projector for GPU and enable the GPU indexing
-        try:
-            self.GPUdevice_index = int(self.device_projector) # get a GPU index
-        except ValueError:
-            self.GPUdevice_index = 0 # set to 0 GPU index by default
-        self.device_projector = 'gpu'
+def parse_device_argument(device_int_or_string):
+    """Convert a cpu/gpu string or integer gpu number into a tuple."""
+    if isinstance(device_int_or_string, int):
+        return "gpu", device_int_or_string
+    elif device_int_or_string == 'gpu':
+        return "gpu", 0
+    elif device_int_or_string == 'cpu':
+        return "cpu", -1
+    else:
+        raise ValueError('Unknown device {0}. Expecting either "cpu" or "gpu" strings OR the gpu device integer'\
+                         .format(device_int_or_string))
 
 def _setOS_indices(self):
         AnglesTot = np.size(self.AnglesVec) # total number of angles
@@ -163,15 +166,15 @@ class Astra2D:
         """
         ------------------------------------------------------------------------------
         Parent 2D parallel beam projection/backprojection class based on ASTRA toolbox
-        ------------------------------------------------------------------------------        
+        ------------------------------------------------------------------------------
         Parameters of the class:
         * DetectorsDimH     # Horizontal detector dimension
         * AnglesVec         # Array of projection angles in radians
         * CenterRotOffset   # The Centre of Rotation scalar or a vector
         * ObjSize,          # Reconstructed object dimensions (scalar)
-        * OS_number         # the total number of subsets for iterative reconstruction 
-        * device_projector  # a 'cpu' or 'gpu' string 
-        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number 
+        * OS_number         # the total number of subsets for iterative reconstruction
+        * device_projector  # a 'cpu' or 'gpu' string
+        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number
         """
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
@@ -276,19 +279,19 @@ class Astra2D:
 
 class Astra3D:
     def __init__(self, DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
-        """  
+        """
         ------------------------------------------------------------------------------
         Parent 3D parallel beam projection/backprojection class based on ASTRA toolbox
-        ------------------------------------------------------------------------------        
+        ------------------------------------------------------------------------------       
         Parameters of the class:
         * DetectorsDimH     # Horizontal detector dimension
         * DetectorsDimV     # Vertical detector dimension
         * AnglesVec         # Array of projection angles in radians
         * CenterRotOffset   # The Centre of Rotation scalar or a vector
         * ObjSize,          # Reconstructed object dimensions (scalar)
-        * OS_number         # the total number of subsets for iterative reconstruction 
-        * device_projector  # a 'cpu' or 'gpu' string 
-        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number 
+        * OS_number         # the total number of subsets for iterative reconstruction
+        * device_projector  # a 'cpu' or 'gpu' string
+        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number
         """
         self.DetectorsDimV = DetectorsDimV
         self.DetectorsDimH = DetectorsDimH

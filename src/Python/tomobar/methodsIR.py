@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""A reconstruction class for regularised iterative methods:
+"""A reconstruction class for regularised iterative methods.
+
 -- Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
                                shrinkage-thresholding algorithm for linear inverse problems,
                                SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
@@ -22,6 +23,7 @@ GPLv3 license (ASTRA toolbox)
 
 import numpy as np
 from numpy import linalg as LA
+from tomobar.supp.astraOP import parse_device_argument
 
 try:
     from ccpi.filters.regularisers import ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
@@ -86,24 +88,16 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     if (('projection_raw_data' not in _data_) and ((self.datafidelity == 'PWLS') or (self.datafidelity == 'SWLS'))):
           raise NameError("No input 'projection_raw_data', has to be provided for PWLS or SWLS data fidelity")
     if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
-        # classical approach (default)
-        _data_['OS_number'] = 1
-        self.OS_number = _data_['OS_number']
-        if self.geom == '2D':
-            from tomobar.supp.astraOP import AstraTools
-            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-        else:
-            from tomobar.supp.astraOP import AstraTools3D
-            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
+        _data_['OS_number'] = 1 # classical approach (default)
+    self.OS_number = _data_['OS_number']
+    if self.geom == '2D':
+        from tomobar.supp.astraOP import AstraTools, AstraToolsOS
+        self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, 1, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
+        self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class OS object
     else:
-        #initialise OS ASTRA-related modules
-        self.OS_number = _data_['OS_number']
-        if self.geom == '2D':
-            from tomobar.supp.astraOP import AstraToolsOS
-            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class OS object
-        else:
-            from tomobar.supp.astraOP import AstraToolsOS3D
-            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class OS object
+        from tomobar.supp.astraOP import AstraTools3D, AstraToolsOS3D
+        self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, 1 , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
+        self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class OS object                   
     # SWLS related parameter (ring supression)
     if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
         _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
@@ -349,21 +343,12 @@ class RecToolsIR:
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
         self.angles_number = len(AnglesVec)
-        self.device_projector = device_projector
-        if device_projector == 'cpu':
-            self.GPUdevice_index = -1
-        else:
-            self.GPUdevice_index = 0
+        self.device_projector, self.GPUdevice_index = parse_device_argument(device_projector)
 
         if (CenterRotOffset is None):
              self.CenterRotOffset = 0.0
         else:
             self.CenterRotOffset = CenterRotOffset
-        from tomobar.supp.astraOP import _set_gpu_device_index
-        if isinstance(self.device_projector, int):
-            _set_gpu_device_index(self)
-        if self.device_projector not in ['cpu','gpu']:
-            raise ValueError('Choose a relevant device: "cpu", "gpu" OR provide a GPU index')
 
         if datafidelity not in ['LS','PWLS', 'SWLS','KL']:
             raise ValueError('Unknown data fidelity type, select: LS, PWLS, SWLS or KL')
@@ -508,7 +493,7 @@ class RecToolsIR:
             if ((_data_['OS_number'] != 1) and (_data_['ring_weights_threshold'] is not None) and (iter_no > 0)):
                 # Ordered subset approach for a better ring model
                 res_full = self.Atools.forwproj(X_t) - _data_['projection_norm_data']
-                rings_weights = RING_WEIGHTS(res_full, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
+                rings_weights = RING_WEIGHTS(np.float32(res_full), _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
                 ring_function_weight = np.ones(np.shape(res_full))
                 ring_function_weight[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**_data_['ring_huber_power'])
             # loop over subsets (OS)
@@ -591,7 +576,7 @@ class RecToolsIR:
                                     r = r_x - np.multiply(L_const_inv,vec)
                         if ((_data_['ring_weights_threshold'] is not None) and (iter_no > 0)):
                             # Approach for a better ring model
-                            rings_weights = RING_WEIGHTS(res, _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
+                            rings_weights = RING_WEIGHTS(np.float32(res), _data_['ring_tuple_halfsizes'][0], _data_['ring_tuple_halfsizes'][1], _data_['ring_tuple_halfsizes'][2])
                             ring_function_weight = np.ones(np.shape(res))
                             ring_function_weight[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))] = np.divide(_data_['ring_weights_threshold'], np.abs(rings_weights[(np.where(np.abs(rings_weights) > _data_['ring_weights_threshold']))])**_data_['ring_huber_power'])
                             res = np.multiply(ring_function_weight,res)
