@@ -102,7 +102,7 @@ def reconstructorFISTA(data_proj, iterations_alg, DEVICE_no):
     # adding regularisation using the CCPi regularisation toolkit
     _regularisation_ = {'method' : 'PD_TV',
                         'regul_param' :0.0005,
-                        'iterations' : 100,
+                        'iterations' : 200,
                         'device_regulariser': DEVICE_no}
 
     # Run FISTA reconstrucion algorithm with 3D regularisation
@@ -140,6 +140,6 @@ if __name__ == "__main__":
     reconstructionSIRT = reconstructorSIRT(data_dict, iterations_alg, DEVICE_no)
 
     # reconstructing using the regularised FISTA algorithm:
-    iterations_alg=15
+    iterations_alg=5
     reconstructionFISTA = reconstructorFISTA(data_dict, iterations_alg, DEVICE_no)
 #%%

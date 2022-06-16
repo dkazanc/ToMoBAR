@@ -215,7 +215,6 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     # choose the type of the device for the regulariser
     if ('device_regulariser' not in _regularisation_):
         _regularisation_['device_regulariser'] = 'gpu'
-        self.GPUdevice_index = 0
     if (_algorithm_['verbose'] == 'on'):
         print('Parameters check has been succesfull, running the algorithm...')
 

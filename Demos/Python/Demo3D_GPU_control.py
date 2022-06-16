@@ -116,7 +116,7 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimen
 
 # prepare dictionaries with parameters:
 _data_ = {'projection_norm_data' : projData3D_analyt_noise} # data dictionary
-_algorithm_ = {'iterations' : 50}
+_algorithm_ = {'iterations' : 250}
 
 RecSIRT = Rectools.SIRT(_data_, _algorithm_) # SIRT reconstruction
 
@@ -136,8 +136,8 @@ plt.imshow(RecSIRT[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D SIRT Reconstruction, sagittal view')
 plt.show()
 #%%
-# Or iterative reconstruction on a fixed GPU device! 
-GPU_device_no = 0
+# Or iterative reconstruction on a fixed GPU device 
+GPU_device_no = 1 # ! you need to have a second GPU device for this to work
 # NOTE here that the same GPU index has been passed to the regularisation block
 
 # set parameters and initiate a class object
@@ -155,13 +155,13 @@ _data_ = {'projection_norm_data' : projData3D_analyt_noise,
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA reconstrucion algorithm without regularisation
-_algorithm_ = {'iterations' : 15,
+_algorithm_ = {'iterations' : 10,
                'lipschitz_const' : lc}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {'method' : 'PD_TV',
                     'regul_param' :0.0005,
-                    'iterations' : 60,
+                    'iterations' : 100,
                     'device_regulariser': GPU_device_no}
 
 # Run FISTA reconstrucion algorithm with 3D regularisation
