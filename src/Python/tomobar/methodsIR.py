@@ -80,14 +80,14 @@ def circ_mask(X, diameter):
 
 def dict_check(self, _data_, _algorithm_, _regularisation_):
     # checking and initialising all required parameters here:
-    # ---------- deal with _data_ dictionary first --------------
-    # projection nomnalised _data_
-    if ('projection_norm_data' not in _data_):
+    # ---------- deal with _data_ dictionary --------------
+    # projection normalised _data_
+    if 'projection_norm_data' not in _data_:
           raise NameError("No input 'projection_norm_data' have been provided")
-    # projection nomnalised raw data as PWLS-model weights
-    if (('projection_raw_data' not in _data_) and ((self.datafidelity == 'PWLS') or (self.datafidelity == 'SWLS'))):
+    # projection normalised raw data as PWLS-model weights
+    if ('projection_raw_data' not in _data_) and ((self.datafidelity == 'PWLS') or (self.datafidelity == 'SWLS')):
           raise NameError("No input 'projection_raw_data', has to be provided for PWLS or SWLS data fidelity")
-    if (('OS_number' not in _data_) or (_data_['OS_number'] is None)):
+    if ('OS_number' not in _data_) or (_data_['OS_number'] is None):
         _data_['OS_number'] = 1 # classical approach (default)
     self.OS_number = _data_['OS_number']
     if self.geom == '2D':
@@ -99,124 +99,122 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, 1 , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
         self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class OS object
     # SWLS related parameter (ring supression)
-    if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
+    if ('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS'):
         _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
     # Huber data model to supress artifacts
-    if ('huber_threshold' not in _data_):
+    if 'huber_threshold' not in _data_:
         _data_['huber_threshold'] = None
     # Students#t data model to supress artifacts
-    if ('studentst_threshold' not in _data_):
+    if 'studentst_threshold' not in _data_:
         _data_['studentst_threshold'] = None
     # threshold to produce additional weights to supress ring artifacts
-    if ('ring_weights_threshold' not in _data_):
+    if 'ring_weights_threshold' not in _data_:
         _data_['ring_weights_threshold'] = None
     # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more strength
-    if ('ring_huber_power' not in _data_):
+    if 'ring_huber_power' not in _data_:
         _data_['ring_huber_power'] = 1.75
     # a tuple for half window sizes as [detector, angles, number of projections]
-    if ('ring_tuple_halfsizes' not in _data_):
+    if 'ring_tuple_halfsizes' not in _data_:
         _data_['ring_tuple_halfsizes'] = (9,7,9)
     # Group-Huber data model to supress full rings of the same intensity
-    if ('ringGH_lambda' not in _data_):
+    if 'ringGH_lambda' not in _data_:
         _data_['ringGH_lambda'] = None
     # Group-Huber data model acceleration factor (use carefully to avoid divergence)
-    if ('ringGH_accelerate' not in _data_):
+    if 'ringGH_accelerate' not in _data_:
         _data_['ringGH_accelerate'] = 50
     # ----------  deal with _algorithm_  --------------
-    if ('lipschitz_const' not in _algorithm_ and len(_algorithm_) > 0):
-        # if not provided calculate Lipschitz constant automatically
-        _algorithm_['lipschitz_const'] = RecToolsIR.powermethod(self, _data_)
-    # iterations number for the selected reconstruction algorithm
-    if ('iterations' not in _algorithm_):
-        if (_data_['OS_number'] == 1):
-            _algorithm_['iterations'] = 400 #classical
+    if len(_algorithm_) > 0:
+        if 'lipschitz_const' not in _algorithm_:
+            # if not provided calculate Lipschitz constant automatically
+            _algorithm_['lipschitz_const'] = RecToolsIR.powermethod(self, _data_)
+        # iterations number for the selected reconstruction algorithm
+        if 'iterations' not in _algorithm_:
+            if _data_['OS_number'] == 1:
+                _algorithm_['iterations'] = 400 #classical
+            else:
+                _algorithm_['iterations'] = 20 # Ordered - Subsets
+        # ADMM -algorithm  augmented Lagrangian parameter
+        if 'ADMM_rho_const' not in _algorithm_:
+            _algorithm_['ADMM_rho_const'] = 1000.0
+        # ADMM over-relaxation parameter to accelerate convergence
+        if 'ADMM_relax_par' not in _algorithm_:
+            _algorithm_['ADMM_relax_par'] = 1.0
+        # initialise an algorithm with an array
+        if 'initialise' not in _algorithm_:
+            _algorithm_['initialise'] = None
+        # ENABLE or DISABLE the nonnegativity for algorithm
+        if 'nonnegativity' not in _algorithm_:
+            _algorithm_['nonnegativity'] = 'ENABLE'
+        if _algorithm_['nonnegativity'] == 'ENABLE':
+            self.nonneg_regul = 1 # enable nonnegativity for regularisers
         else:
-            _algorithm_['iterations'] = 20 # Ordered - Subsets
-    # ADMM -algorithm  augmented Lagrangian parameter
-    if ('ADMM_rho_const' not in _algorithm_):
-        _algorithm_['ADMM_rho_const'] = 1000.0
-    # ADMM over-relaxation parameter to accelerate convergence
-    if ('ADMM_relax_par' not in _algorithm_):
-        _algorithm_['ADMM_relax_par'] = 1.0
-    # initialise an algorithm with an array
-    if ('initialise' not in _algorithm_):
-        _algorithm_['initialise'] = None
-    # ENABLE or DISABLE the nonnegativity for algorithm
-    if ('nonnegativity' not in _algorithm_):
-        _algorithm_['nonnegativity'] = 'ENABLE'
-    if (_algorithm_['nonnegativity'] == 'ENABLE'):
-        self.nonneg_regul = 1 # enable nonnegativity for regularisers
-    else:
-        self.nonneg_regul = 0 # disable nonnegativity for regularisers
-    if ('mask_diameter' not in _algorithm_):
-        _algorithm_['mask_diameter'] = 1.0
-    # tolerance to stop OUTER algorithm iterations earlier
-    if ('tolerance' not in _algorithm_):
-        _algorithm_['tolerance'] = 0.0
-    if ('verbose' not in _algorithm_):
-        _algorithm_['verbose'] = 'on'
+            self.nonneg_regul = 0 # disable nonnegativity for regularisers
+        if 'mask_diameter' not in _algorithm_:
+            _algorithm_['mask_diameter'] = 1.0
+        # tolerance to stop OUTER algorithm iterations earlier
+        if 'tolerance' not in _algorithm_:
+            _algorithm_['tolerance'] = 0.0
+        if 'verbose' not in _algorithm_:
+            _algorithm_['verbose'] = 'on'
     # ----------  deal with _regularisation_  --------------
-    # choose your regularisation algorithm
-    # The dependency on the CCPi-RGL toolkit for regularisation
-    if ('method' not in _regularisation_):
-        _regularisation_['method'] = None
-    # regularisation parameter  (main)
-    if ('regul_param' not in _regularisation_):
-        _regularisation_['regul_param'] = 0.001
-    # regularisation parameter second (LLT_ROF)
-    if ('regul_param2' not in _regularisation_):
-        _regularisation_['regul_param2'] = 0.001
-    # set the number of inner (regularisation) iterations
-    if ('iterations' not in _regularisation_):
-        _regularisation_['iterations'] = 150
-    # tolerance to stop inner regularisation iterations prematurely
-    if ('tolerance' not in _regularisation_):
-        _regularisation_['tolerance'] = 0.0
-    # time marching step to ensure convergence for gradient based methods: ROF_TV, LLT_ROF,  NDF, Diff4th
-    if ('time_marching_step' not in _regularisation_):
-        _regularisation_['time_marching_step'] = 0.005
-    #  TGV specific parameter for the 1st order term
-    if ('TGV_alpha1' not in _regularisation_):
-        _regularisation_['TGV_alpha1'] = 1.0
-    #  TGV specific parameter for the 2тв order term
-    if ('TGV_alpha2' not in _regularisation_):
-        _regularisation_['TGV_alpha2'] = 2.0
-    # Primal-dual parameter for convergence (TGV specific)
-    if ('PD_LipschitzConstant' not in _regularisation_):
-        _regularisation_['PD_LipschitzConstant'] = 12.0
-    # edge (noise) threshold parameter for NDF and DIFF4th models
-    if ('edge_threhsold' not in _regularisation_):
-        _regularisation_['edge_threhsold'] = 0.001
-     # NDF specific penalty type: Huber (default), Perona, Tukey
-    if ('NDF_penalty' not in _regularisation_):
-        _regularisation_['NDF_penalty'] = 'Huber'
-        self.NDF_method = 1
-    else:
-        if (_regularisation_['NDF_penalty'] == 'Huber'):
+    if len(_regularisation_) > 0:        
+        if 'method' not in _regularisation_:
+            _regularisation_['method'] = None
+        # regularisation parameter  (main)
+        if 'regul_param' not in _regularisation_:
+            _regularisation_['regul_param'] = 0.001
+        # regularisation parameter second (LLT_ROF)
+        if 'regul_param2' not in _regularisation_:
+            _regularisation_['regul_param2'] = 0.001
+        # set the number of inner (regularisation) iterations
+        if 'iterations' not in _regularisation_:
+            _regularisation_['iterations'] = 150
+        # tolerance to stop inner regularisation iterations prematurely
+        if 'tolerance' not in _regularisation_:
+            _regularisation_['tolerance'] = 0.0
+        # time marching step to ensure convergence for gradient based methods: ROF_TV, LLT_ROF,  NDF, Diff4th
+        if 'time_marching_step' not in _regularisation_:
+            _regularisation_['time_marching_step'] = 0.005
+        #  TGV specific parameter for the 1st order term
+        if 'TGV_alpha1' not in _regularisation_:
+            _regularisation_['TGV_alpha1'] = 1.0
+        #  TGV specific parameter for the 2тв order term
+        if 'TGV_alpha2' not in _regularisation_:
+            _regularisation_['TGV_alpha2'] = 2.0
+        # Primal-dual parameter for convergence (TGV specific)
+        if 'PD_LipschitzConstant' not in _regularisation_:
+            _regularisation_['PD_LipschitzConstant'] = 12.0
+        # edge (noise) threshold parameter for NDF and DIFF4th models
+        if 'edge_threhsold' not in _regularisation_:
+            _regularisation_['edge_threhsold'] = 0.001
+        # NDF specific penalty type: Huber (default), Perona, Tukey
+        if 'NDF_penalty' not in _regularisation_:
+            _regularisation_['NDF_penalty'] = 'Huber'
             self.NDF_method = 1
-        elif (_regularisation_['NDF_penalty'] == 'Perona'):
-            self.NDF_method = 2
-        elif (_regularisation_['NDF_penalty'] == 'Tukey'):
-            self.NDF_method = 3
         else:
-            raise NameError("For NDF_penalty choose Huber, Perona or Tukey")
-    # NLTV penalty related weights, , the array of i-related indices
-    if ('NLTV_H_i' not in _regularisation_):
-        _regularisation_['NLTV_H_i'] = 0
-    # NLTV penalty related weights, , the array of i-related indices
-    if ('NLTV_H_j' not in _regularisation_):
-        _regularisation_['NLTV_H_j'] = 0
-     # NLTV-specific penalty type, the array of Weights
-    if ('NLTV_Weights' not in _regularisation_):
-        _regularisation_['NLTV_Weights'] = 0
-    # 0/1 - TV specific isotropic/anisotropic choice
-    if ('methodTV' not in _regularisation_):
-        _regularisation_['methodTV'] = 0
-    # choose the type of the device for the regulariser
-    if ('device_regulariser' not in _regularisation_):
-        _regularisation_['device_regulariser'] = 'gpu'
-    if (_algorithm_['verbose'] == 'on'):
-        print('Parameters check has been succesfull, running the algorithm...')
+            if _regularisation_['NDF_penalty'] == 'Huber':
+                self.NDF_method = 1
+            elif _regularisation_['NDF_penalty'] == 'Perona':
+                self.NDF_method = 2
+            elif _regularisation_['NDF_penalty'] == 'Tukey':
+                self.NDF_method = 3
+            else:
+                raise NameError("For NDF_penalty choose Huber, Perona or Tukey")
+        # NLTV penalty related weights, , the array of i-related indices
+        if 'NLTV_H_i' not in _regularisation_:
+            _regularisation_['NLTV_H_i'] = 0
+        # NLTV penalty related weights, , the array of i-related indices
+        if 'NLTV_H_j' not in _regularisation_:
+            _regularisation_['NLTV_H_j'] = 0
+        # NLTV-specific penalty type, the array of Weights
+        if 'NLTV_Weights' not in _regularisation_:
+            _regularisation_['NLTV_Weights'] = 0
+        # 0/1 - TV specific isotropic/anisotropic choice
+        if 'methodTV' not in _regularisation_:
+            _regularisation_['methodTV'] = 0
+        # choose the type of the device for the regulariser
+        if 'device_regulariser' not in _regularisation_:
+            _regularisation_['device_regulariser'] = 'cpu'
 
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_['iterations'],0)
