@@ -97,7 +97,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
     else:
         from tomobar.supp.astraOP import AstraTools3D, AstraToolsOS3D
         self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, 1 , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
-        self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class OS object                   
+        self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class OS object
     # SWLS related parameter (ring supression)
     if (('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS')):
         _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)

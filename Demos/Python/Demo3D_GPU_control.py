@@ -1,3 +1,4 @@
+
 """A script to demonstrate how to control GPU devices through ToMoBAR and ASTRA
 
 GPLv3 license (ASTRA toolbox)
@@ -136,8 +137,8 @@ plt.imshow(RecSIRT[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D SIRT Reconstruction, sagittal view')
 plt.show()
 #%%
-# Or iterative reconstruction on a fixed GPU device 
-GPU_device_no = 1 # ! you need to have a second GPU device for this to work
+# Or iterative reconstruction on a fixed GPU device
+GPU_device_no = 1 # ! you will need to have the second GPU device 
 # NOTE here that the same GPU index has been passed to the regularisation block
 
 # set parameters and initiate a class object

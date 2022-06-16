@@ -38,12 +38,12 @@
 ### General software prerequisites
  * Python or [MATLAB](http://www.mathworks.com/products/matlab/)
 
-### Software dependencies:
+### Software dependencies
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations
  * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for tomographic data and phantoms simulations
  * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation [7]
  * Wavelet toolbox [pypwt](https://github.com/pierrepaleo/pypwt) if wavelet regularisation is used (optional)
- * mpi4py if multi-gpu reconstructiuon is needed
+ * [mpi4py](https://mpi4py.readthedocs.io/en/stable/) for multi-GPU reconstruction control
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Python conda:
@@ -72,7 +72,7 @@ For building on Linux, modify and run the following [script](https://github.com/
 ### MultiGPU capability
 ToMoBAR can be used by running in parallel across multiple GPU devices on a PC or a compute node of a cluster. In order to initiate a parallel run on multiple GPUs you will need an MPI library, such as, [mpi4py](https://mpi4py.readthedocs.io/en/stable/). See this [demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py).
 
-### Matlab (not currently supported):
+### Matlab (is not currently supported)
 Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
 ### How to use ToMoBAR in Python:

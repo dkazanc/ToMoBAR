@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""A reconstruction class for direct reconstructon methods.
+"""
+A reconstruction class for direct reconstructon methods.
 
 -- Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
 -- Forward/Backward projection (ASTRA)
