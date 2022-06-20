@@ -1,0 +1,43 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: linux-64
+@EXPLICIT
+https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/blas-1.0-mkl.conda
+https://conda.anaconda.org/conda-forge/linux-64/ca-certificates-2022.6.15-ha878542_0.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/intel-openmp-2021.4.0-h06a4308_3561.conda
+https://repo.anaconda.com/pkgs/main/linux-64/ld_impl_linux-64-2.38-h1181459_1.conda
+https://repo.anaconda.com/pkgs/main/linux-64/libgfortran4-7.5.0-ha8ba4b0_17.conda
+https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-ng-12.1.0-ha89aaad_16.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/libgfortran-ng-7.5.0-ha8ba4b0_17.conda
+https://conda.anaconda.org/conda-forge/linux-64/libgomp-12.1.0-h8d9b700_16.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/mkl-2021.4.0-h06a4308_640.conda
+https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-2_gnu.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/libgcc-ng-12.1.0-h8d9b700_16.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/libastra-2.1.0-hefdcf68_4.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/libffi-3.3-he6710b0_2.conda
+https://repo.anaconda.com/pkgs/main/linux-64/ncurses-6.3-h7f8727e_2.conda
+https://conda.anaconda.org/conda-forge/linux-64/openssl-1.1.1o-h166bdaf_0.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/xz-5.2.5-h7f8727e_1.conda
+https://repo.anaconda.com/pkgs/main/linux-64/zlib-1.2.12-h7f8727e_2.conda
+https://repo.anaconda.com/pkgs/main/linux-64/readline-8.1.2-h7f8727e_1.conda
+https://repo.anaconda.com/pkgs/main/linux-64/tk-8.6.12-h1ccaba5_0.conda
+https://repo.anaconda.com/pkgs/main/linux-64/sqlite-3.38.3-hc218d9a_0.conda
+https://repo.anaconda.com/pkgs/main/linux-64/python-3.7.13-h12debd9_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/python_abi-3.7-2_cp37m.tar.bz2
+https://repo.anaconda.com/pkgs/main/noarch/six-1.16.0-pyhd3eb1b0_1.conda
+https://repo.anaconda.com/pkgs/main/noarch/wheel-0.37.1-pyhd3eb1b0_0.conda
+https://conda.anaconda.org/conda-forge/linux-64/certifi-2022.6.15-py37h89c1867_0.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/mkl-service-2.4.0-py37h7f8727e_0.conda
+https://repo.anaconda.com/pkgs/main/linux-64/numpy-base-1.21.5-py37ha15fc14_3.conda
+https://repo.anaconda.com/pkgs/main/linux-64/setuptools-61.2.0-py37h06a4308_0.conda
+https://repo.anaconda.com/pkgs/main/linux-64/pip-21.2.2-py37h06a4308_0.conda
+https://repo.anaconda.com/pkgs/main/linux-64/mkl_fft-1.3.1-py37hd3c417c_0.conda
+https://repo.anaconda.com/pkgs/main/linux-64/mkl_random-1.2.2-py37h51133e4_0.conda
+https://repo.anaconda.com/pkgs/main/linux-64/numpy-1.21.5-py37h6c91a56_3.conda
+https://conda.anaconda.org/savu-dep/linux-64/ccpi-regulariser-2022.06-np121py37_0.tar.bz2
+https://conda.anaconda.org/savu-dep/linux-64/pypwt-0.9_10.2-py37hadde398_0.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/scipy-1.7.3-py37hc147768_0.conda
+https://conda.anaconda.org/savu-dep/linux-64/tomophantom-2022.05-np121py37_0.tar.bz2
+https://conda.anaconda.org/conda-forge/linux-64/astra-toolbox-2.1.0-py37hb9c9857_0.tar.bz2
+https://conda.anaconda.org/savu-dep/linux-64/tomobar-2022.06-py37he0f2a6c_0.tar.bz2
