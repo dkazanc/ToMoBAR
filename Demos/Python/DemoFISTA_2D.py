@@ -77,10 +77,11 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = P,         # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset  = 0.001,         # Center of Rotation scalar
+                    CenterRotOffset = 0.0,           # Center of Rotation scalar
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
+
 
 FBPrec = RectoolsDIR.FBP(noisy_sino) # perform FBP reconstruction
 
@@ -91,6 +92,31 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
 plt.title('FBP reconstruction')
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%Reconstructing with SIRT method %%%%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+# set parameters and initiate a class object
+Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
+                    DetectorsDimV = None,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = 0.0,          # Center of Rotation scalar
+                    AnglesVec = angles_rad,          # A vector of projection angles in radians
+                    ObjSize = N_size,                # Reconstructed object dimensions (scalar)
+                    datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
+                    device_projector='gpu')
+
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : noisy_sino} # data dictionary
+_algorithm_ = {'iterations' : 300}
+
+RecSIRT = Rectools.SIRT(_data_, _algorithm_) # SIRT reconstruction
+
+plt.figure()
+plt.rcParams.update({'font.size': 20})
+plt.imshow(RecSIRT, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.title('SIRT reconstruction')
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA method (ASTRA used for projection)")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
@@ -98,7 +124,7 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimension
                     DetectorsDimV = None,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar
+                    CenterRotOffset = 0.0,          # Center of Rotation scalar
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS

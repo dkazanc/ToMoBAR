@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-A class based on using ASTRA toolbox to perform projection/bakprojection of 2D/3D
-data using parallel beam geometry
-- SIRT algorithm from ASTRA
-- CGLS algorithm from ASTRA
+"""Series of classes that wrapping ASTRA toolbox to perform projection/backprojection
+and reconstruction of of 2D/3D parallel beam data.
 
 GPLv3 license (ASTRA toolbox)
 @author: Daniil Kazantsev: https://github.com/dkazanc
+Changelog:
+    07.04.22 - major OOP reformating of all classes and adding multigpu device control
 """
 import numpy as np
 
@@ -69,335 +68,392 @@ def vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOff
         vectors[i,9:12] = vec_temp[:] # Vector from detector pixel (0,0) to (1,0)
     return vectors
 
-class AstraTools:
-    """2D parallel beam projection/backprojection class based on ASTRA toolbox"""
-    def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, device):
-        self.DetectorsDim = DetectorsDim
-        self.AnglesVec = AnglesVec
-        self.ObjSize = ObjSize
-        if CenterRotOffset is None:
-            'scalar geometry since parallel_vec is not implemented for CPU ASTRA modules yet?'
-            self.proj_geom = astra.create_proj_geom('parallel', 1.0, DetectorsDim, AnglesVec)
-        else:
-            # define astra vector geometry (default)
-            vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
-            self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
-        self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
-        if device == 'cpu':
-            self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
-            self.device = 1
-        elif device == 'gpu':
-            self.proj_id = astra.create_projector('cuda', self.proj_geom, self.vol_geom) # for GPU
-            self.device = 0
-        else:
-            print ("Select between 'cpu' or 'gpu' for device")
-        # add optomo operator
-        self.A_optomo = astra.OpTomo(self.proj_id)
+def parse_device_argument(device_int_or_string):
+    """Convert a cpu/gpu string or integer gpu number into a tuple."""
+    if isinstance(device_int_or_string, int):
+        return "gpu", device_int_or_string
+    elif device_int_or_string == 'gpu':
+        return "gpu", 0
+    elif device_int_or_string == 'cpu':
+        return "cpu", -1
+    else:
+        raise ValueError('Unknown device {0}. Expecting either "cpu" or "gpu" strings OR the gpu device integer'\
+                         .format(device_int_or_string))
 
-    def forwproj(self, image):
-        """Applying forward projection"""
-        sinogram_id, sinogram = astra.create_sino(image, self.proj_id)
-        astra.data2d.delete(sinogram_id)
-        astra.data2d.delete(self.proj_id)
-        return sinogram
-    def backproj(self, sinogram):
-        """Applying backprojection"""
-        rec_id, image = astra.create_backprojection(sinogram, self.proj_id)
-        astra.data2d.delete(self.proj_id)
-        astra.data2d.delete(rec_id)
-        return image
-    def fbp2D(self, sinogram):
-        """perform FBP reconstruction"""
-        rec_id = astra.data2d.create( '-vol', self.vol_geom)
-        # Create a data object to hold the sinogram data
-        sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
-
-        if self.device == 1:
-            cfg = astra.astra_dict('FBP')
-            cfg['ProjectorId'] = self.proj_id
-        else:
-            cfg = astra.astra_dict('FBP_CUDA')
-        cfg['ReconstructionDataId'] = rec_id
-        cfg['ProjectionDataId'] = sinogram_id
-        cfg['FilterType'] = 'Ram-Lak'
-
-        # Create and run the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        astra.algorithm.run(alg_id)
-        # Get the result
-        recFBP = astra.data2d.get(rec_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data2d.delete(rec_id)
-        astra.data2d.delete(sinogram_id)
-        astra.data2d.delete(self.proj_id)
-        return recFBP
-    def sirt2D(self, sinogram, iterations):
-        """perform SIRT reconstruction"""
-        rec_id = astra.data2d.create( '-vol', self.vol_geom)
-        # Create a data object to hold the sinogram data
-        sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
-
-        if self.device == 1:
-            cfg = astra.astra_dict('SIRT')
-            cfg['ProjectorId'] = self.proj_id
-        else:
-            cfg = astra.astra_dict('SIRT_CUDA')
-        cfg['ReconstructionDataId'] = rec_id
-        cfg['ProjectionDataId'] = sinogram_id
-
-        # Create and run the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        astra.algorithm.run(alg_id, iterations)
-        # Get the result
-        recSIRT = astra.data2d.get(rec_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data2d.delete(rec_id)
-        astra.data2d.delete(sinogram_id)
-        astra.data2d.delete(self.proj_id)
-        return recSIRT
-    def cgls2D(self, sinogram, iterations):
-        """perform CGLS reconstruction"""
-        rec_id = astra.data2d.create( '-vol', self.vol_geom)
-        # Create a data object to hold the sinogram data
-        sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
-
-        if self.device == 1:
-            cfg = astra.astra_dict('CGLS')
-            cfg['ProjectorId'] = self.proj_id
-        else:
-            cfg = astra.astra_dict('CGLS_CUDA')
-        cfg['ReconstructionDataId'] = rec_id
-        cfg['ProjectionDataId'] = sinogram_id
-
-        # Create and run the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        astra.algorithm.run(alg_id, iterations)
-        # Get the result
-        recCGLS = astra.data2d.get(rec_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data2d.delete(rec_id)
-        astra.data2d.delete(sinogram_id)
-        astra.data2d.delete(self.proj_id)
-        return recCGLS
-
-class AstraToolsOS:
-    """
-    2D ordered subset parallel beam projection/backprojection class based
-    on ASTRA toolbox
-    """
-    def __init__(self, DetectorsDim, AnglesVec, CenterRotOffset, ObjSize, OS, device):
-        self.DetectorsDim = DetectorsDim
-        self.AnglesVec = AnglesVec
-        self.ObjSize = ObjSize
-
-        ################ arrange ordered-subsets ################
-        import numpy as np
-        AnglesTot = np.size(AnglesVec) # total number of angles
-        self.NumbProjBins = (int)(np.ceil(float(AnglesTot)/float(OS))) # get the number of projections per bin (subset)
-        self.newInd_Vec = np.zeros([OS,self.NumbProjBins],dtype='int') # 2D array of OS-sorted indeces
-        for sub_ind in range(OS):
+def _setOS_indices(self):
+        AnglesTot = np.size(self.AnglesVec) # total number of angles
+        self.NumbProjBins = (int)(np.ceil(float(AnglesTot)/float(self.OS_number))) # get the number of projections per bin (subset)
+        self.newInd_Vec = np.zeros([self.OS_number,self.NumbProjBins],dtype='int') # 2D array of OS-sorted indeces
+        for sub_ind in range(self.OS_number):
             ind_sel = 0
             for proj_ind in range(self.NumbProjBins):
                 indexS = ind_sel + sub_ind
                 if (indexS < AnglesTot):
                     self.newInd_Vec[sub_ind,proj_ind] = indexS
-                    ind_sel += OS
+                    ind_sel += self.OS_number
 
-        # create full ASTRA geometry (to calculate Lipshitz constant)
-        vectors = vec_geom_init2D(AnglesVec, 1.0, CenterRotOffset)
-        self.proj_geom = astra.create_proj_geom('parallel_vec', DetectorsDim, vectors)
-        self.vol_geom = astra.create_vol_geom(ObjSize, ObjSize)
-        if device == 'cpu':
-            self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
-            self.device = 1
-        elif device == 'gpu':
-            self.proj_id = astra.create_projector('cuda', self.proj_geom, self.vol_geom) # for GPU
-            self.device = 0
+def _set_geometry2d(self):
+        if self.CenterRotOffset is None:
+            'scalar geometry since parallel_vec is not implemented for CPU ASTRA modules yet?'
+            self.proj_geom = astra.create_proj_geom('parallel', 1.0, self.DetectorsDimH, self.AnglesVec)
         else:
-            print ("Select between 'cpu' or 'gpu' for device")
+            # define astra vector geometry (default)
+            vectors = vec_geom_init2D(self.AnglesVec, 1.0, self.CenterRotOffset)
+            self.proj_geom = astra.create_proj_geom('parallel_vec', self.DetectorsDimH, vectors)
+
+        if self.device_projector == 'cpu':
+            self.proj_id = astra.create_projector('line', self.proj_geom, self.vol_geom) # for CPU
+        else:
+            self.proj_id = astra.create_projector('cuda', self.proj_geom, self.vol_geom) # for GPU
+        # optomo operator is used for ADMM algorithm only
+        self.A_optomo = astra.OpTomo(self.proj_id)
+
+def _set_OS_geometry2d(self):
+        # organising ordered-subsets accelerated 2d projection geometry
+        _setOS_indices(self)
+
         # create OS-specific ASTRA geometry
         self.proj_geom_OS = {}
         self.proj_id_OS = {}
-        for sub_ind in range(OS):
+        for sub_ind in range(self.OS_number):
             self.indVec = self.newInd_Vec[sub_ind,:] # OS-specific indices
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
             anglesOS = self.AnglesVec[self.indVec] # OS-specific angles
 
-            if np.ndim(CenterRotOffset) == 0: # CenterRotOffset is a _scalar_
-                    vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset)
-                    #self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel', 1.0, DetectorsDim, anglesOS)
-            else: # CenterRotOffset is a _vector_
-                vectorsOS = vec_geom_init2D(anglesOS, 1.0, CenterRotOffset[self.indVec])
-            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel_vec', DetectorsDim, vectorsOS)
-            if self.device == 1:
+            if np.ndim(self.CenterRotOffset) == 0:
+                # CenterRotOffset is a _scalar_
+                vectorsOS = vec_geom_init2D(anglesOS, 1.0, self.CenterRotOffset)
+            else:
+                # CenterRotOffset is a _vector_
+                vectorsOS = vec_geom_init2D(anglesOS, 1.0, self.CenterRotOffset[self.indVec])
+            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel_vec', self.DetectorsDimH, vectorsOS)
+
+            if self.device_projector == 'cpu':
                 self.proj_id_OS[sub_ind] = astra.create_projector('line', self.proj_geom_OS[sub_ind], self.vol_geom) # for CPU
-            if self.device == 0:
+            else:
                 self.proj_id_OS[sub_ind] = astra.create_projector('cuda', self.proj_geom_OS[sub_ind], self.vol_geom) # for GPU
 
-    def forwprojOS(self, image, no_os):
-        """Applying forward projection for a specific subset"""
-        sinogram_id, sinogram = astra.create_sino(image, self.proj_id_OS[no_os])
-        astra.data2d.delete(sinogram_id)
-        astra.data2d.delete(self.proj_id_OS[no_os])
-        return sinogram
-    def backprojOS(self, sinogram, no_os):
-        """Applying backprojection for a specific subset"""
-        rec_id, image = astra.create_backprojection(sinogram, self.proj_id_OS[no_os])
-        astra.data2d.delete(rec_id)
-        astra.data2d.delete(self.proj_id_OS[no_os])
-        return image
-    def forwproj(self, image):
-        """Applying forward projection"""
-        sinogram_id, sinogram = astra.create_sino(image, self.proj_id)
-        astra.data2d.delete(sinogram_id)
-        astra.data2d.delete(self.proj_id)
-        return sinogram
-    def backproj(self, sinogram):
-        """Applying backprojection"""
-        rec_id, image = astra.create_backprojection(sinogram, self.proj_id)
-        astra.data2d.delete(self.proj_id)
-        astra.data2d.delete(rec_id)
-        return image
-
-class AstraTools3D:
-    """3D parallel beam projection/backprojection class based on ASTRA toolbox"""
-    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize):
-        self.ObjSize = ObjSize
-        self.DetectorsDimV = DetRowCount
-        # define astra type geometry (scalar)
-        # self.proj_geom = astra.create_proj_geom('parallel3d', 1.0, 1.0, DetRowCount, DetColumnCount, AnglesVec):
-        # define astra vector geometry
-        vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
-        self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
-        if type(ObjSize) == tuple:
-            Y,X,Z = [int(i) for i in ObjSize]
-        else:
-            Y=X=ObjSize
-            Z=DetRowCount
-        self.vol_geom = astra.create_vol_geom(Y,X,Z)
+def _set_geometry3d(self):
+        vectors = vec_geom_init3D(self.AnglesVec, 1.0, 1.0, self.CenterRotOffset)
+        self.proj_geom = astra.create_proj_geom('parallel3d_vec', self.DetectorsDimV, self.DetectorsDimH, vectors)
+        # optomo operator is used for ADMM algorithm only
         self.proj_id = astra.create_projector('cuda3d', self.proj_geom, self.vol_geom) # for GPU
         self.A_optomo = astra.OpTomo(self.proj_id)
 
-    def forwproj(self, object3D):
-        """Applying forward projection"""
-        proj_id, proj_data = astra.create_sino3d_gpu(object3D, self.proj_geom, self.vol_geom)
-        astra.data3d.delete(proj_id)
-        return proj_data
-    def backproj(self, proj_data):
-        """Applying backprojection"""
-        rec_id, object3D = astra.create_backprojection3d_gpu(proj_data, self.proj_geom, self.vol_geom)
-        astra.data3d.delete(rec_id)
-        return object3D
-    def sirt3D(self, sinogram, iterations):
-        """perform SIRT reconstruction"""
-        sinogram_id = astra.data3d.create("-sino", self.proj_geom, sinogram)
-        # Create a data object for the reconstruction
-        rec_id = astra.data3d.create('-vol', self.vol_geom)
+def _set_OS_geometry3d(self):
+        # organising ordered-subsets accelerated 3d projection geometry
+        _setOS_indices(self)
 
-        cfg = astra.astra_dict('SIRT3D_CUDA')
-        cfg['ReconstructionDataId'] = rec_id
-        cfg['ProjectionDataId'] = sinogram_id
-
-        # Create the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        # This will have a runtime in the order of 10 seconds.
-        astra.algorithm.run(alg_id, iterations)
-
-        # Get the result
-        recSIRT = astra.data3d.get(rec_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data3d.delete(rec_id)
-        astra.data3d.delete(sinogram_id)
-        return recSIRT
-    def cgls3D(self, sinogram, iterations):
-        """perform CGLS reconstruction"""
-        sinogram_id = astra.data3d.create("-sino", self.proj_geom, sinogram)
-        # Create a data object for the reconstruction
-        rec_id = astra.data3d.create('-vol', self.vol_geom)
-
-        cfg = astra.astra_dict('CGLS3D_CUDA')
-        cfg['ReconstructionDataId'] = rec_id
-        cfg['ProjectionDataId'] = sinogram_id
-
-        # Create the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        # This will have a runtime in the order of 10 seconds.
-        astra.algorithm.run(alg_id, iterations)
-
-        # Get the result
-        recCGLS = astra.data3d.get(rec_id)
-
-        astra.algorithm.delete(alg_id)
-        astra.data3d.delete(rec_id)
-        astra.data3d.delete(sinogram_id)
-        return recCGLS
-
-class AstraToolsOS3D:
-    """
-    3D ordered subset parallel beam projection/backprojection class based
-    on ASTRA toolbox
-    """
-    def __init__(self, DetColumnCount, DetRowCount, AnglesVec, CenterRotOffset, ObjSize, OS):
-        self.ObjSize = ObjSize
-        self.DetectorsDimV = DetRowCount
-        if type(ObjSize) == tuple:
-            Y,X,Z = [int(i) for i in ObjSize]
-        else:
-            Y=X=ObjSize
-            Z=DetRowCount
-        self.vol_geom = astra.create_vol_geom(Y,X,Z)
-
-        ################ arrange ordered-subsets ################
-        import numpy as np
-        AnglesTot = np.size(AnglesVec) # total number of angles
-        self.NumbProjBins = (int)(np.ceil(float(AnglesTot)/float(OS))) # get the number of projections per bin (subset)
-        self.newInd_Vec = np.zeros([OS,self.NumbProjBins],dtype='int') # 2D array of OS-sorted indeces
-        for sub_ind in range(OS):
-            ind_sel = 0
-            for proj_ind in range(self.NumbProjBins):
-                indexS = ind_sel + sub_ind
-                if (indexS < AnglesTot):
-                    self.newInd_Vec[sub_ind,proj_ind] = indexS
-                    ind_sel += OS
-
-        # create full ASTRA geometry (to calculate Lipshitz constant)
-        vectors = vec_geom_init3D(AnglesVec, 1.0, 1.0, CenterRotOffset)
-        self.proj_geom = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
         # create OS-specific ASTRA geometry
         self.proj_geom_OS = {}
-        for sub_ind in range(OS):
+        for sub_ind in range(self.OS_number):
             self.indVec = self.newInd_Vec[sub_ind,:]
             if (self.indVec[self.NumbProjBins-1] == 0):
                 self.indVec = self.indVec[:-1] #shrink vector size
-            anglesOS = AnglesVec[self.indVec] # OS-specific angles
+            anglesOS = self.AnglesVec[self.indVec] # OS-specific angles
 
-            if np.ndim(CenterRotOffset) == 0: # CenterRotOffset is a _scalar_
-                vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, CenterRotOffset)
+            if np.ndim(self.CenterRotOffset) == 0: # CenterRotOffset is a _scalar_
+                vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, self.CenterRotOffset)
             else: # CenterRotOffset is a _vector_
-                vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, CenterRotOffset[self.indVec])
-            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d_vec', DetRowCount, DetColumnCount, vectors)
+                vectors = vec_geom_init3D(anglesOS, 1.0, 1.0, self.CenterRotOffset[self.indVec])
+            self.proj_geom_OS[sub_ind] = astra.create_proj_geom('parallel3d_vec', self.DetectorsDimV, self.DetectorsDimH, vectors)
+        return self.proj_geom_OS
+
+#######################Reconstruction Parent classes##########################
+class Astra2D:
+    def __init__(self, DetectorsDimH, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
+        """
+        ------------------------------------------------------------------------------
+        Parent 2D parallel beam projection/backprojection class based on ASTRA toolbox
+        ------------------------------------------------------------------------------
+        Parameters of the class:
+        * DetectorsDimH     # Horizontal detector dimension
+        * AnglesVec         # Array of projection angles in radians
+        * CenterRotOffset   # The Centre of Rotation scalar or a vector
+        * ObjSize,          # Reconstructed object dimensions (scalar)
+        * OS_number         # the total number of subsets for iterative reconstruction
+        * device_projector  # a 'cpu' or 'gpu' string
+        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number
+        """
+        self.DetectorsDimH = DetectorsDimH
+        self.AnglesVec = AnglesVec
+        self.CenterRotOffset = CenterRotOffset
+        self.ObjSize = ObjSize
+        self.OS_number = OS_number
+        self.device_projector = device_projector
+        self.GPUdevice_index = GPUdevice_index
+        # create astra geometry
+        self.vol_geom = astra.create_vol_geom(self.ObjSize, self.ObjSize)
+
+        # set projection geometries
+        if self.OS_number != 1:
+            # ordered-subsets accelerated parallel beam projection geometry
+            _set_OS_geometry2d(self)
+        else:
+            # traditional full data parallel beam projection geometry
+            _set_geometry2d(self)
+
+    def runAstraRecon(self, sinogram, method, iterations, os_index):
+        # set ASTRA configuration for 2D reconstructor
+        if self.OS_number != 1:
+            # ordered-subsets
+            sinogram_id = astra.data2d.create("-sino", self.proj_geom_OS[os_index], sinogram)
+        else:
+            # traditional geometry
+            sinogram_id = astra.data2d.create('-sino', self.proj_geom, sinogram)
+
+        # Create a data object for the reconstruction
+        rec_id = astra.data2d.create('-vol', self.vol_geom)
+
+        # Create algorithm object
+        cfg = astra.astra_dict(method)
+        if self.device_projector == 'cpu':
+            if self.OS_number != 1:
+                cfg['ProjectorId'] = self.proj_id_OS[os_index]
+            else:
+                cfg['ProjectorId'] = self.proj_id
+        else:
+            cfg['option'] = {'GPUindex': self.GPUdevice_index}
+        cfg['ReconstructionDataId'] = rec_id
+        cfg['ProjectionDataId'] = sinogram_id
+        if (method == 'FBP' or method == 'FBP_CUDA'):
+            cfg['FilterType'] = 'Ram-Lak'
+
+        # Create the algorithm object from the configuration structure
+        alg_id = astra.algorithm.create(cfg)
+        astra.algorithm.run(alg_id, iterations)
+
+        # Get the result
+        recon_slice = astra.data2d.get(rec_id)
+
+        astra.algorithm.delete(alg_id)
+        astra.data2d.delete(rec_id)
+        astra.data2d.delete(sinogram_id)
+        if self.OS_number != 1:
+            astra.data2d.delete(self.proj_id_OS)
+        else:
+            astra.data2d.delete(self.proj_id)
+        return recon_slice
+
+    def runAstraProj(self, image, os_index, method):
+        # set ASTRA configuration for 2D projector
+        if isinstance(image, np.ndarray):
+            rec_id = astra.data2d.link('-vol', self.vol_geom, image)
+        else:
+            rec_id = image
+        if self.OS_number != 1:
+            # ordered-subsets
+            sinogram_id = astra.data2d.create('-sino', self.proj_geom_OS[os_index], 0)
+        else:
+            # traditional full data parallel beam projection geometry
+            sinogram_id = astra.data2d.create('-sino', self.proj_geom, 0)
+
+        # Create algorithm object
+        cfg = astra.astra_dict(method)
+        if self.device_projector == 'cpu':
+            if self.OS_number != 1:
+                cfg['ProjectorId'] = self.proj_id_OS[os_index]
+            else:
+                cfg['ProjectorId'] = self.proj_id
+        else:
+            cfg['option'] = {'GPUindex': self.GPUdevice_index}
+        cfg['VolumeDataId'] = rec_id
+        cfg['ProjectionDataId'] = sinogram_id
+
+        # Create the algorithm object from the configuration structure
+        alg_id = astra.algorithm.create(cfg)
+        astra.algorithm.run(alg_id)
+
+        # Get the result
+        sinogram = astra.data2d.get(sinogram_id)
+
+        astra.algorithm.delete(alg_id)
+        astra.data2d.delete(rec_id)
+        if self.OS_number != 1:
+            astra.data2d.delete(self.proj_id_OS)
+        else:
+            astra.data2d.delete(self.proj_id)
+        astra.data2d.delete(sinogram_id)
+        return sinogram
+
+class Astra3D:
+    def __init__(self, DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
+        """
+        ------------------------------------------------------------------------------
+        Parent 3D parallel beam projection/backprojection class based on ASTRA toolbox
+        ------------------------------------------------------------------------------       
+        Parameters of the class:
+        * DetectorsDimH     # Horizontal detector dimension
+        * DetectorsDimV     # Vertical detector dimension
+        * AnglesVec         # Array of projection angles in radians
+        * CenterRotOffset   # The Centre of Rotation scalar or a vector
+        * ObjSize,          # Reconstructed object dimensions (scalar)
+        * OS_number         # the total number of subsets for iterative reconstruction
+        * device_projector  # a 'cpu' or 'gpu' string
+        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number
+        """
+        self.DetectorsDimV = DetectorsDimV
+        self.DetectorsDimH = DetectorsDimH
+        self.AnglesVec = AnglesVec
+        self.CenterRotOffset = CenterRotOffset
+        self.ObjSize = ObjSize
+        self.OS_number = OS_number
+        self.device_projector = device_projector
+        self.GPUdevice_index = GPUdevice_index
+
+        if isinstance(self.ObjSize, tuple):
+            Y,X,Z = [int(i) for i in self.ObjSize]
+        else:
+            Y=X=self.ObjSize
+            Z=self.DetectorsDimV
+        self.vol_geom = astra.create_vol_geom(Y,X,Z)
+        # set projection geometries
+        if self.OS_number != 1:
+            # traditional full data parallel beam projection geometry
+            _set_OS_geometry3d(self)
+        else:
+            # ordered-subsets accelerated parallel beam projection geometry
+            _set_geometry3d(self)
+
+    def runAstraRecon(self, proj_data, method, iterations, os_index):
+        # set ASTRA configuration for 3D reconstructor
+        if self.OS_number != 1:
+            # traditional full data parallel beam projection geometry
+            proj_id = astra.data3d.create("-sino", self.proj_geom_OS[os_index], proj_data)
+        else:
+            # ordered-subsets
+            proj_id = astra.data3d.create("-sino", self.proj_geom, proj_data)
+
+        # Create a data object for the reconstruction
+        rec_id = astra.data3d.create('-vol', self.vol_geom)
+
+        # Create algorithm object
+        cfg = astra.astra_dict(method)
+        cfg['option'] = {'GPUindex': self.GPUdevice_index}
+        cfg['ReconstructionDataId'] = rec_id
+        cfg['ProjectionDataId'] = proj_id
+
+        # Create the algorithm object from the configuration structure
+        alg_id = astra.algorithm.create(cfg)
+        astra.algorithm.run(alg_id, iterations)
+
+        # Get the result
+        recon_volume = astra.data3d.get(rec_id)
+
+        astra.algorithm.delete(alg_id)
+        astra.data3d.delete(rec_id)
+        astra.data3d.delete(proj_id)
+        return recon_volume
+
+    def runAstraProj(self, volume_data, os_index):
+         # set ASTRA configuration for 3D projector
+        if isinstance(volume_data, np.ndarray):
+            volume_id = astra.data3d.link('-vol', self.vol_geom, volume_data)
+        else:
+            volume_id = volume_data
+        if self.OS_number != 1:
+            # traditional full data parallel beam projection geometry
+            proj_id = astra.data3d.create('-sino', self.proj_geom_OS[os_index], 0)
+        else:
+            # ordered-subsets
+            proj_id = astra.data3d.create('-sino', self.proj_geom, 0)
+
+        # Create algorithm object
+        algString = 'FP3D_CUDA'
+        cfg = astra.astra_dict(algString)
+        cfg['option'] = {'GPUindex': self.GPUdevice_index}
+        cfg['VolumeDataId'] = volume_id
+        cfg['ProjectionDataId'] = proj_id
+
+        # Create the algorithm object from the configuration structure
+        alg_id = astra.algorithm.create(cfg)
+        astra.algorithm.run(alg_id)
+
+        # Get the result
+        proj_volume = astra.data3d.get(proj_id)
+
+        astra.algorithm.delete(alg_id)
+        astra.data3d.delete(volume_id)
+        astra.data3d.delete(proj_id)
+        return proj_volume
+
+#####################Reconstruction Children classes#########################
+class AstraTools(Astra2D):
+    def __init__(self, DetectorsDimH, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
+        """
+        2D parallel beam projection/backprojection class based on ASTRA toolbox
+        """
+        super().__init__(DetectorsDimH, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
+
+    def forwproj(self, image):
+        astra_method = 'FP_CUDA' # 2d forward projection
+        if self.device_projector == 'cpu':
+            astra_method = 'FP'
+        return Astra2D.runAstraProj(self, image, None, astra_method)
+    def backproj(self, sinogram):
+        astra_method = 'BP_CUDA' # 2D back projection
+        if self.device_projector == 'cpu':
+            astra_method = 'BP'
+        return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, None)
+    def fbp2D(self, sinogram):
+        astra_method = 'FBP_CUDA' # 2D FBP reconstruction
+        if self.device_projector == 'cpu':
+            astra_method = 'FBP'
+        return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, None)
+    def sirt2D(self, sinogram, iterations):
+        astra_method = 'SIRT_CUDA' # perform 2D SIRT reconstruction
+        if self.device_projector == 'cpu':
+            astra_method = 'SIRT'
+        return Astra2D.runAstraRecon(self, sinogram, astra_method, iterations, None)
+    def cgls2D(self, sinogram, iterations):
+        astra_method = 'CGLS_CUDA' # perform 2D CGLS reconstruction
+        if self.device_projector == 'cpu':
+            astra_method = 'CGLS'
+        return Astra2D.runAstraRecon(self, sinogram, astra_method, iterations, None)
+
+class AstraToolsOS(Astra2D):
+    def __init__(self, DetectorsDimH, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
+        """
+        2D parallel ordered-subsets beam projection/backprojection class
+        """
+        super().__init__(DetectorsDimH, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
+
+    def forwprojOS(self, image, os_index):
+        astra_method = 'FP_CUDA' # 2d forward projection
+        if self.device_projector == 'cpu':
+            astra_method = 'FP'
+        return Astra2D.runAstraProj(self, image, os_index, astra_method)
+    def backprojOS(self, sinogram, os_index):
+        astra_method = 'BP_CUDA' # 2D back projection
+        if self.device_projector == 'cpu':
+            astra_method = 'BP'
+        return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, os_index)
+
+class AstraTools3D(Astra3D):
+    def __init__(self, DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
+        """
+        3D parallel beam projection/backprojection class based on ASTRA toolbox
+        """
+        super().__init__(DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
+        
     def forwproj(self, object3D):
-        """Applying forward projection"""
-        proj_id, proj_data = astra.create_sino3d_gpu(object3D, self.proj_geom, self.vol_geom)
-        astra.data3d.delete(proj_id)
-        return proj_data
+        return Astra3D.runAstraProj(self, object3D, None) # 3D forward projection
     def backproj(self, proj_data):
-        """Applying backprojection"""
-        rec_id, object3D = astra.create_backprojection3d_gpu(proj_data, self.proj_geom, self.vol_geom)
-        astra.data3d.delete(rec_id)
-        return object3D
-    def forwprojOS(self, object3D, no_os):
-        """Applying forward projection to a specific subset"""
-        proj_id, proj_data = astra.create_sino3d_gpu(object3D, self.proj_geom_OS[no_os], self.vol_geom)
-        astra.data3d.delete(proj_id)
-        return proj_data
-    def backprojOS(self, proj_data, no_os):
-        """Applying back-projection to a specific subset"""
-        rec_id, object3D = astra.create_backprojection3d_gpu(proj_data, self.proj_geom_OS[no_os], self.vol_geom)
-        astra.data3d.delete(rec_id)
-        return object3D
+        return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, None) # 3D backprojection
+    def sirt3D(self, proj_data, iterations):
+        return Astra3D.runAstraRecon(self, proj_data, 'SIRT3D_CUDA', iterations, None) #3D SIRT reconstruction
+    def cgls3D(self, proj_data, iterations):
+        return Astra3D.runAstraRecon(self, proj_data, 'CGLS3D_CUDA', iterations, None) #3D CGLS reconstruction
+
+class AstraToolsOS3D(Astra3D):
+    def __init__(self, DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index):
+        """
+        3D ordered subset parallel beam projection/backprojection class
+        """
+        super().__init__(DetectorsDimH, DetectorsDimV, AnglesVec, CenterRotOffset, ObjSize, OS_number, device_projector, GPUdevice_index)
+        
+    def forwprojOS(self, object3D, os_index):
+        return Astra3D.runAstraProj(self, object3D, os_index) # 3d forward projection of a specific subset
+    def backprojOS(self, proj_data, os_index):
+        return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, os_index) # 3d back-projection of a specific subset

@@ -1,6 +1,10 @@
 name: linux
 
-on: [push]
+on:
+  pull_request:
+    # Sequence of patterns matched against refs/heads
+    branches:
+      - main
 
 jobs:
   build-linux:
@@ -9,19 +13,9 @@ jobs:
       matrix:
         include:
           # 18.04 supports CUDA 10.1+ (gxx <= 8)
-          #- os: ubuntu-18.04
-          #  cuda: "10.1"
-          #  gcc: 8
-          # 16.04 supports CUDA 8+
           - os: ubuntu-18.04
             cuda: "10.1"
-            gcc: 7
-          #- os: ubuntu-16.04
-          #  cuda: "9.2"
-          #  gcc: 7
-          #- os: ubuntu-16.04
-          #  cuda: "9.1"
-          #  gcc: 6
+            gcc: 8
       max-parallel: 5
     env:
       build_dir: "build"

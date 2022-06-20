@@ -67,9 +67,7 @@ _noise_ =  {'noise_type' : 'Poisson',
             'noise_sigma' : 8000, # noise amplitude
             'noise_seed' : 0}
 
-
 projData3D_analyt_noise = _Artifacts_(projData3D_analyt, **_noise_)
-
 
 intens_max = 45
 sliceSel = int(0.5*N_size)
@@ -92,7 +90,7 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,              # Center of Rotation scalar or a vector
+                    CenterRotOffset = 0.0,              # Center of Rotation scalar or a vector
                     AnglesVec = angles_rad,              # A vector of projection angles in radians
                     ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
@@ -196,7 +194,7 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,        # Vertical detector dimension (3D case)
-                    CenterRotOffset = None,          # Center of Rotation scalar or a vector 
+                    CenterRotOffset = 0.0,           # Center of Rotation scalar or a vector
                     AnglesVec = angles_rad,          # A vector of projection angles in radians
                     ObjSize = N_size,                # Reconstructed object dimensions (scalar)
                     datafidelity='LS',               # Data fidelity, choose from LS, KL, PWLS
@@ -251,7 +249,6 @@ plt.subplot(133)
 plt.imshow(RecFISTA_os_reg[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D FISTA-OS regularised reconstruction, sagittal view')
 plt.show()
-
 
 # calculate errors 
 Qtools = QualityTools(phantom_tm, RecFISTA_os)
@@ -325,7 +322,6 @@ plt.subplot(133)
 plt.imshow(RecFISTA_kl_os_reg[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D FISTA-KL-OS regularised reconstruction, sagittal view')
 plt.show()
-
 
 # calculate errors 
 Qtools = QualityTools(phantom_tm, RecFISTA_kl_os)
