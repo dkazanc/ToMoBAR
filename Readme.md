@@ -47,9 +47,9 @@
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Python conda:
-Install ToMoBAR and basic dependencies into a new environment using the provided [file](https://github.com/dkazanc/ToMoBAR/blob/master/conda-recipe/tomobar_env.txt):
+Install ToMoBAR and its basic dependencies into a new environment using the provided [file](https://github.com/dkazanc/ToMoBAR/blob/master/conda-recipe/tomobar_env_20_06_22.txt):
 ```
-conda create --name tomobar --file conda-recipe/tomobar_env.txt
+conda create --name tomobar --file conda-recipe/tomobar_env_20_06_22.txt
 ```
 
 Install the ToMoBAR package from one of conda channels bellow:
@@ -72,11 +72,11 @@ For building on Linux, modify and run the following [script](https://github.com/
 ### MultiGPU capability
 ToMoBAR can be used by running in parallel across multiple GPU devices on a PC or a compute node of a cluster. In order to initiate a parallel run on multiple GPUs you will need an MPI library, such as, [mpi4py](https://mpi4py.readthedocs.io/en/stable/). See this [demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py).
 
-### Matlab (is not currently supported)
+### Matlab (is not currently actively supported)
 Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
-### How to use ToMoBAR in Python:
-Detailed information about methods and parameters can be obtained with:
+## How to use ToMoBAR in Python:
+Detailed information about the methods and its parameters can be obtained with:
 ```
 from tomobar.methodsIR import RecToolsIR
 help(RecToolsIR)
@@ -84,7 +84,7 @@ from tomobar.methodsDIR import RecToolsDIR
 help(RecToolsIR)
 ```
 
-A typical setup for iterative reconstruction would include three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`
+A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`
 <div align="left">
   <img src="docs/images/tomobar_pres.png" width="620">  
 </div>
