@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-A reconstruction class for direct reconstructon methods.
+"""A reconstruction class for direct reconstructon methods.
 
 -- Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
 -- Forward/Backward projection (ASTRA)
@@ -36,24 +35,21 @@ def filtersinc3D(projection3D):
     r = rn1*(np.dot(rn2, np.linalg.pinv(rd_c)))**2
     multiplier = (1.0/projectionsNum)
     f = scipy.fftpack.fftshift(r)
-    filtered = np.zeros(np.shape(projection3D))
+    # making a 2d filter for projection 
+    f_2d = np.float32(np.zeros((DetectorsLengthV,DetectorsLengthH)))
+    f_2d[0::,:] = np.float32(f)
+    
+    filtered = np.float32(np.zeros(np.shape(projection3D)))
 
-    for j in range(0,DetectorsLengthV):
-        for i in range(0,projectionsNum):
-            IMG = scipy.fftpack.fft(projection3D[j,i,:])
-            fimg = IMG*f
-            filtered[j,i,:] = multiplier*np.real(scipy.fftpack.ifft(fimg))
-    return np.float32(filtered)
+    for i in range(0,projectionsNum):
+        IMG = scipy.fftpack.fft2(projection3D[:,i,:])
+        fimg = IMG*f
+        filtered[:,i,:] = np.float32(multiplier*np.real(scipy.fftpack.ifft2(fimg)))
+    return filtered
 
 def filtersinc2D(sinogram):
     import scipy.fftpack
-    # applies filters toa sinogram in order to achieve FBP
-    # Data format [Projections, DetectorHoriz]
-    # adopted from Matlabs code by  Waqas Akram
-    #"a":	This parameter varies the filter magnitude response.
-    #When "a" is very small (a<<1), the response approximates |w|
-    #As "a" is increased, the filter response starts to
-    #roll off at high frequencies.
+    # applies filters to __2D projection data__ in order to achieve FBP
     a = 1.1
     [projectionsNum, DetectorsLengthH] = np.shape(sinogram)
     w =  np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
