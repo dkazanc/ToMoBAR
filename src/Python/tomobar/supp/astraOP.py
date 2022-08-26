@@ -319,10 +319,10 @@ class Astra3D:
     def runAstraRecon(self, proj_data, method, iterations, os_index):
         # set ASTRA configuration for 3D reconstructor
         if self.OS_number != 1:
-            # traditional full data parallel beam projection geometry
+            # ordered-subsets
             proj_id = astra.data3d.create("-sino", self.proj_geom_OS[os_index], proj_data)
         else:
-            # ordered-subsets
+            # traditional full data parallel beam projection geometry
             proj_id = astra.data3d.create("-sino", self.proj_geom, proj_data)
 
         # Create a data object for the reconstruction
@@ -353,10 +353,10 @@ class Astra3D:
         else:
             volume_id = volume_data
         if self.OS_number != 1:
-            # traditional full data parallel beam projection geometry
+            # ordered-subsets
             proj_id = astra.data3d.create('-sino', self.proj_geom_OS[os_index], 0)
         else:
-            # ordered-subsets
+            # traditional full data parallel beam projection geometry
             proj_id = astra.data3d.create('-sino', self.proj_geom, 0)
 
         # Create algorithm object
