@@ -44,7 +44,6 @@ def filtersinc3D(projection3D):
         IMG = scipy.fftpack.fft2(projection3D[:,i,:])
         fimg = IMG*f_2d
         filtered[:,i,:] = np.real(scipy.fftpack.ifft2(fimg))
-
     return multiplier*filtered
 
 def filtersinc3D_cupy(projection3D):
