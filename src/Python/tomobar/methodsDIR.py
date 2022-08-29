@@ -249,15 +249,15 @@ class RecToolsDIR:
         return FBP_rec
     def FBP3D_cupy(self, projection3d):
         """
-        3D reconstruction using CuPy API to keep the data in GPU memory for FFT filtering
-        and backprojection
+        3D reconstruction using CuPy API to keep the data in the GPU memory for FFT filtering
+        and backprojection afterwards using gpulink in Astra
         """
         # perform FBP using custom filtration
         Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
         import cupy as cp
         projection3d_gpu = cp.asarray(projection3d) # move data to GPU
         
-        projection3d_filtered_gpu = filtersinc3D_cupy(projection3d_gpu) # filter data on a GPU and keep the result on gpu
+        projection3d_filtered_gpu = filtersinc3D_cupy(projection3d_gpu) # FFT filter data on the GPU; keep the result on GPU
         del(projection3d_gpu)
         # need to replace it with passing the CuPy object to astra directly (GPULink)
         FBP_rec = Atools.backproj(projection3d_filtered_gpu.get()) # backproject
