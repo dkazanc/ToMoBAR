@@ -25,7 +25,7 @@ def filtersinc3D(projection3D):
     #roll off at high frequencies.
     a = 1.1
     [DetectorsLengthV, projectionsNum, DetectorsLengthH] = np.shape(projection3D)
-    w =  np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
+    w = np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
 
     rn1 = np.abs(2.0/a*np.sin(a*w/2.0))
     rn2 = np.sin(a*w/2.0)
@@ -53,7 +53,7 @@ def filtersinc3D_cupy(projection3D):
     # Output: Filtered GPU stored CuPy projection data array
     a = 1.1
     [DetectorsLengthV, projectionsNum, DetectorsLengthH] = np.shape(projection3D)
-    w =  np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
+    w = np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
 
     rn1 = np.abs(2.0/a*np.sin(a*w/2.0))
     rn2 = np.sin(a*w/2.0)
@@ -81,7 +81,7 @@ def filtersinc2D(sinogram):
     # applies filters to __2D projection data__ in order to achieve FBP
     a = 1.1
     [projectionsNum, DetectorsLengthH] = np.shape(sinogram)
-    w =  np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
+    w = np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
 
     rn1 = np.abs(2.0/a*np.sin(a*w/2.0))
     rn2 = np.sin(a*w/2.0)
