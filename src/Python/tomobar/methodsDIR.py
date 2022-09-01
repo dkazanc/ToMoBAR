@@ -78,7 +78,6 @@ def filtersinc3D_cupy(projection3D):
 
 
 def filtersinc2D(sinogram):
-    import scipy.fftpack
     # applies filters to __2D projection data__ in order to achieve FBP
     a = 1.1
     [projectionsNum, DetectorsLengthH] = np.shape(sinogram)
@@ -246,19 +245,20 @@ class RecToolsDIR:
             Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
             filtered_sino = filtersinc3D(sinogram) # filtering sinogram
             FBP_rec = Atools.backproj(filtered_sino) # backproject
+            del(filtered_sino)
         return FBP_rec
     def FBP3D_cupy(self, projection3d):
         """
-        3D reconstruction using CuPy API to keep the data in the GPU memory for FFT filtering
-        and backprojection afterwards using gpulink in Astra
+        3D reconstruction using CuPy API to keep the data in GPU memory for FFT filtering
+        and backprojection
         """
-        # perform FBP using custom filtration
         Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
         import cupy as cp
         projection3d_gpu = cp.asarray(projection3d) # move data to GPU
-        
-        projection3d_filtered_gpu = filtersinc3D_cupy(projection3d_gpu) # FFT filter data on the GPU; keep the result on GPU
-        del(projection3d_gpu)
-        # need to replace it with passing the CuPy object to astra directly (GPULink)
-        FBP_rec = Atools.backproj(projection3d_filtered_gpu.get()) # backproject
+        projection3d_filtered_gpu = filtersinc3D_cupy(projection3d_gpu) # filter data on a GPU and keep the result on gpu
+        del(projection3d_gpu) # delete the raw data
+        cp._default_memory_pool.free_all_blocks()
+        # Using GPULink Astra capability to pass a pointer to GPU memory
+        FBP_rec = Atools.backprojCuPy(projection3d_filtered_gpu) # backproject while keeping data on a GPU
+        cp._default_memory_pool.free_all_blocks()
         return FBP_rec

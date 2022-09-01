@@ -347,67 +347,40 @@ class Astra3D:
         return recon_volume
     
     def runAstraReconCuPy(self, proj_data, method, iterations, os_index):
-        # set ASTRA configuration for 3D reconstructor
-        """
+        # set ASTRA configuration for 3D reconstructor using CuPy arrays
         if self.OS_number != 1:
             # ordered-subsets
-            proj_id = astra.data3d.create("-sino", self.proj_geom_OS[os_index], proj_data)
+            projector_id = astra.create_projector('cuda3d', self.proj_geom_OS[os_index], self.vol_geom)
         else:
             # traditional full data parallel beam projection geometry
-            proj_id = astra.data3d.create("-sino", self.proj_geom, proj_data)
-        """
+            projector_id = astra.create_projector('cuda3d', self.proj_geom, self.vol_geom)
 
+
+        proj_link = astra.data3d.GPULink(proj_data.data.ptr, *proj_data.shape[::-1],4*proj_data.shape[2])
+        proj_id = astra.data3d.link('-proj3d', self.proj_geom, proj_link)
+        
         # Create a data object for the reconstruction
         rec_id = astra.data3d.create('-vol', self.vol_geom)
-        
-        proj_link = astra.data3d.GPULink(proj_data.data.ptr, *proj_data.shape[::-1],4*proj_data.shape[2])
-
-        proj_id = astra.data3d.link('-proj3d', self.proj_geom, proj_link)
         
         # Create algorithm object
         cfg = astra.astra_dict(method)
         cfg['option'] = {'GPUindex': self.GPUdevice_index}
-        cfg['ReconstructionDataId'] = rec_id
         cfg['ProjectionDataId'] = proj_id
+        cfg['ReconstructionDataId'] = rec_id
+        cfg['ProjectorId'] = projector_id
 
         # Create the algorithm object from the configuration structure
         alg_id = astra.algorithm.create(cfg)
         astra.algorithm.run(alg_id, iterations)
 
-        # Get the result
+        # Get the result (this will copy the data back to the host)
         recon_volume = astra.data3d.get(rec_id)
 
         astra.algorithm.delete(alg_id)
         astra.data3d.delete(rec_id)
         astra.data3d.delete(proj_id)
-        """
-        vol_geom = astra.create_vol_geom(128, 128, 128)
-        angles = np.linspace(0, 2 * np.pi, 180, False)
-        proj_geom = astra.create_proj_geom('cone', 1.0, 1.0, 128, 192, angles,
-        1000, 0)
-        
-        projector_id = astra.create_projector('cuda3d', proj_geom, vol_geom)
-        
-        # create an empty array here, but can also use a pre-existing one
-        proj = cp.zeros(astra.geom_size(proj_geom), dtype=cp.float32)
-        proj_link = astra.data3d.GPULink(proj.data.ptr, *proj.shape[::-1],
-        4*proj.shape[2])
-        
-        proj_id = astra.data3d.link('-proj3d', proj_geom, proj_link)
-        
-        # create an empty output volume here, but could also use a cupy array
-        link again
-        vol_id = astra.data3d.create('-vol', vol_geom)
-        
-        cfg = astra.creators.astra_dict('BP3D_CUDA')
-        cfg['ProjectionDataId'] = proj_id
-        cfg['ReconstructionDataId'] = vol_id
-        cfg['ProjectorId'] = projector_id
-        bp_id = astra.algorithm.create(cfg)
-        astra.algorithm.run(bp_id)
-        """
         return recon_volume
-
+    
     def runAstraProj(self, volume_data, os_index):
          # set ASTRA configuration for 3D projector
         if isinstance(volume_data, np.ndarray):
