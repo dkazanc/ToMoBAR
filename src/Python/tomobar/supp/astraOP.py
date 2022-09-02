@@ -319,10 +319,10 @@ class Astra3D:
     def runAstraRecon(self, proj_data, method, iterations, os_index):
         # set ASTRA configuration for 3D reconstructor
         if self.OS_number != 1:
-            # traditional full data parallel beam projection geometry
+            # ordered-subsets
             proj_id = astra.data3d.create("-sino", self.proj_geom_OS[os_index], proj_data)
         else:
-            # ordered-subsets
+            # traditional full data parallel beam projection geometry
             proj_id = astra.data3d.create("-sino", self.proj_geom, proj_data)
 
         # Create a data object for the reconstruction
@@ -345,7 +345,42 @@ class Astra3D:
         astra.data3d.delete(rec_id)
         astra.data3d.delete(proj_id)
         return recon_volume
+    
+    def runAstraReconCuPy(self, proj_data, method, iterations, os_index):
+        # set ASTRA configuration for 3D reconstructor using CuPy arrays
+        if self.OS_number != 1:
+            # ordered-subsets
+            projector_id = astra.create_projector('cuda3d', self.proj_geom_OS[os_index], self.vol_geom)
+        else:
+            # traditional full data parallel beam projection geometry
+            projector_id = astra.create_projector('cuda3d', self.proj_geom, self.vol_geom)
 
+
+        proj_link = astra.data3d.GPULink(proj_data.data.ptr, *proj_data.shape[::-1],4*proj_data.shape[2])
+        proj_id = astra.data3d.link('-proj3d', self.proj_geom, proj_link)
+        
+        # Create a data object for the reconstruction
+        rec_id = astra.data3d.create('-vol', self.vol_geom)
+        
+        # Create algorithm object
+        cfg = astra.astra_dict(method)
+        cfg['option'] = {'GPUindex': self.GPUdevice_index}
+        cfg['ProjectionDataId'] = proj_id
+        cfg['ReconstructionDataId'] = rec_id
+        cfg['ProjectorId'] = projector_id
+
+        # Create the algorithm object from the configuration structure
+        alg_id = astra.algorithm.create(cfg)
+        astra.algorithm.run(alg_id, iterations)
+
+        # Get the result (this will copy the data back to the host)
+        recon_volume = astra.data3d.get(rec_id)
+
+        astra.algorithm.delete(alg_id)
+        astra.data3d.delete(rec_id)
+        astra.data3d.delete(proj_id)
+        return recon_volume
+    
     def runAstraProj(self, volume_data, os_index):
          # set ASTRA configuration for 3D projector
         if isinstance(volume_data, np.ndarray):
@@ -353,10 +388,10 @@ class Astra3D:
         else:
             volume_id = volume_data
         if self.OS_number != 1:
-            # traditional full data parallel beam projection geometry
+            # ordered-subsets
             proj_id = astra.data3d.create('-sino', self.proj_geom_OS[os_index], 0)
         else:
-            # ordered-subsets
+            # traditional full data parallel beam projection geometry
             proj_id = astra.data3d.create('-sino', self.proj_geom, 0)
 
         # Create algorithm object
@@ -441,6 +476,8 @@ class AstraTools3D(Astra3D):
         return Astra3D.runAstraProj(self, object3D, None) # 3D forward projection
     def backproj(self, proj_data):
         return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, None) # 3D backprojection
+    def backprojCuPy(self, proj_data):
+        return Astra3D.runAstraReconCuPy(self, proj_data, 'BP3D_CUDA', 1, None) # 3D backprojection using CuPy array
     def sirt3D(self, proj_data, iterations):
         return Astra3D.runAstraRecon(self, proj_data, 'SIRT3D_CUDA', iterations, None) #3D SIRT reconstruction
     def cgls3D(self, proj_data, iterations):

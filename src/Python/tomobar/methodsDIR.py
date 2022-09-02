@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-A reconstruction class for direct reconstructon methods.
+"""A reconstruction class for direct reconstructon methods.
 
 -- Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
 -- Forward/Backward projection (ASTRA)
@@ -14,9 +13,9 @@ import numpy as np
 from tomobar.supp.astraOP import AstraTools
 from tomobar.supp.astraOP import AstraTools3D
 from tomobar.supp.astraOP import parse_device_argument
+import scipy.fftpack
 
 def filtersinc3D(projection3D):
-    import scipy.fftpack
     # applies filters to __3D projection data__ in order to achieve FBP
     # Data format [DetectorVert, Projections, DetectorHoriz]
     # adopted from Matlabs code by  Waqas Akram
@@ -26,7 +25,7 @@ def filtersinc3D(projection3D):
     #roll off at high frequencies.
     a = 1.1
     [DetectorsLengthV, projectionsNum, DetectorsLengthH] = np.shape(projection3D)
-    w =  np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
+    w = np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
 
     rn1 = np.abs(2.0/a*np.sin(a*w/2.0))
     rn2 = np.sin(a*w/2.0)
@@ -36,27 +35,53 @@ def filtersinc3D(projection3D):
     r = rn1*(np.dot(rn2, np.linalg.pinv(rd_c)))**2
     multiplier = (1.0/projectionsNum)
     f = scipy.fftpack.fftshift(r)
-    filtered = np.zeros(np.shape(projection3D))
+    # making a 2d filter for projection
+    f_2d = np.zeros((DetectorsLengthV,DetectorsLengthH), dtype='float32')
+    f_2d[0::,:] = f
+    filtered = np.zeros(np.shape(projection3D), dtype='float32')
 
-    for j in range(0,DetectorsLengthV):
-        for i in range(0,projectionsNum):
-            IMG = scipy.fftpack.fft(projection3D[j,i,:])
-            fimg = IMG*f
-            filtered[j,i,:] = multiplier*np.real(scipy.fftpack.ifft(fimg))
-    return np.float32(filtered)
+    for i in range(0,projectionsNum):
+        IMG = scipy.fftpack.fft2(projection3D[:,i,:])
+        fimg = IMG*f_2d
+        filtered[:,i,:] = np.real(scipy.fftpack.ifft2(fimg))
+    return multiplier*filtered
+
+def filtersinc3D_cupy(projection3D):
+    import cupy as cp
+    # applies filters to __3D projection data__ in order to achieve FBP (using CuPy)
+    # Input: projection data must be a CuPy object
+    # Output: Filtered GPU stored CuPy projection data array
+    a = 1.1
+    [DetectorsLengthV, projectionsNum, DetectorsLengthH] = np.shape(projection3D)
+    w = np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
+
+    rn1 = np.abs(2.0/a*np.sin(a*w/2.0))
+    rn2 = np.sin(a*w/2.0)
+    rd = (a*w)/2.0
+    rd_c = np.zeros([1,DetectorsLengthH])
+    rd_c[0,:] = rd
+    r = rn1*(np.dot(rn2, np.linalg.pinv(rd_c)))**2
+    multiplier = (1.0/projectionsNum)
+    f = scipy.fftpack.fftshift(r)
+    # making a 2d filter for projection 
+    f_2d = np.zeros((DetectorsLengthV,DetectorsLengthH), dtype='float32')
+    f_2d[0::,:] = f
+    filter_gpu = cp.asarray(f_2d)
+    
+    filtered = cp.zeros(cp.shape(projection3D), dtype='float32')
+
+    for i in range(0,projectionsNum):
+        IMG = cp.fft.fft2(projection3D[:,i,:])
+        fimg = IMG*filter_gpu
+        filtered[:,i,:] = cp.real(cp.fft.ifft2(fimg))
+    return multiplier*filtered
+
 
 def filtersinc2D(sinogram):
-    import scipy.fftpack
-    # applies filters toa sinogram in order to achieve FBP
-    # Data format [Projections, DetectorHoriz]
-    # adopted from Matlabs code by  Waqas Akram
-    #"a":	This parameter varies the filter magnitude response.
-    #When "a" is very small (a<<1), the response approximates |w|
-    #As "a" is increased, the filter response starts to
-    #roll off at high frequencies.
+    # applies filters to __2D projection data__ in order to achieve FBP
     a = 1.1
     [projectionsNum, DetectorsLengthH] = np.shape(sinogram)
-    w =  np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
+    w = np.linspace(-np.pi,np.pi-(2*np.pi)/DetectorsLengthH, DetectorsLengthH,dtype='float32')
 
     rn1 = np.abs(2.0/a*np.sin(a*w/2.0))
     rn2 = np.sin(a*w/2.0)
@@ -92,7 +117,7 @@ class RecToolsDIR:
         self.DetectorsDimV = DetectorsDimV
         self.AnglesVec = AnglesVec
         self.CenterRotOffset = CenterRotOffset
-        self.OS_number = 1       
+        self.OS_number = 1
         self.device_projector, self.GPUdevice_index = parse_device_argument(device_projector)
         
         if DetectorsDimV is None:
@@ -220,4 +245,21 @@ class RecToolsDIR:
             Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
             filtered_sino = filtersinc3D(sinogram) # filtering sinogram
             FBP_rec = Atools.backproj(filtered_sino) # backproject
+            del(filtered_sino)
+        return FBP_rec
+    def FBP3D_cupy(self, projection3d):
+        """
+        3D reconstruction using CuPy API to keep the data in GPU memory for FFT filtering
+        and backprojection
+        """
+        Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
+        import cupy as cp
+        projection3d_gpu = cp.asarray(projection3d) # move data to GPU
+        projection3d_filtered_gpu = filtersinc3D_cupy(projection3d_gpu) # filter data on a GPU and keep the result on gpu
+        del(projection3d_gpu) # delete the raw data
+        cp._default_memory_pool.free_all_blocks()
+        # Using GPULink Astra capability to pass a pointer to GPU memory
+        FBP_rec = Atools.backprojCuPy(projection3d_filtered_gpu) # backproject while keeping data on a GPU
+        del(projection3d_filtered_gpu)
+        cp._default_memory_pool.free_all_blocks()
         return FBP_rec
