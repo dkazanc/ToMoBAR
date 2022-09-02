@@ -35,7 +35,7 @@ def filtersinc3D(projection3D):
     r = rn1*(np.dot(rn2, np.linalg.pinv(rd_c)))**2
     multiplier = (1.0/projectionsNum)
     f = scipy.fftpack.fftshift(r)
-    # making a 2d filter for projection 
+    # making a 2d filter for projection
     f_2d = np.zeros((DetectorsLengthV,DetectorsLengthH), dtype='float32')
     f_2d[0::,:] = f
     filtered = np.zeros(np.shape(projection3D), dtype='float32')

@@ -3,12 +3,12 @@
 """
 GPLv3 license (ASTRA toolbox)
 
-Script to generate 3D analytical phantoms and their projection data with added 
+Script to generate 3D analytical phantoms and their projection data with added
 noise and then reconstruct using 3D FBP and 3D FBP with filtering on a GPU using CuPy
 
-Dependencies: 
+Dependencies:
     * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
+    * CCPi-RGL toolkit (for regularisation), install with
     conda install ccpi-regulariser -c ccpi -c conda-forge
     or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
     * TomoPhantom, https://github.com/dkazanc/TomoPhantom
@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tomophantom
 from tomophantom import TomoP3D
+from tomobar.methodsDIR import RecToolsDIR
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
@@ -42,7 +43,6 @@ projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles,
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%Reconstructing with 3D FBP method (slice-by-slice ) %%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
                     CenterRotOffset = None,              # Center of Rotation scalar or a vector
@@ -58,7 +58,7 @@ print("FBP 3D reconstruction slice-by-slice in {} seconds".format(Run_time))
 
 sliceSel = int(0.5*N_size)
 max_val = 1
-plt.figure() 
+plt.figure()
 plt.subplot(131)
 plt.imshow(FBPrec[sliceSel,:,:],vmin=0, vmax=max_val)
 plt.title('3D FBP Reconstruction, axial view')
@@ -78,7 +78,6 @@ del(FBPrec)
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%Reconstructing with 3D FBP method %%%%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
                     CenterRotOffset = 0.0,               # Center of Rotation scalar or a vector
