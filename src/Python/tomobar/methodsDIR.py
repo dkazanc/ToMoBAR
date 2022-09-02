@@ -260,5 +260,6 @@ class RecToolsDIR:
         cp._default_memory_pool.free_all_blocks()
         # Using GPULink Astra capability to pass a pointer to GPU memory
         FBP_rec = Atools.backprojCuPy(projection3d_filtered_gpu) # backproject while keeping data on a GPU
+        del(projection3d_filtered_gpu)
         cp._default_memory_pool.free_all_blocks()
         return FBP_rec
