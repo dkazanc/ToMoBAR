@@ -11,29 +11,24 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        miniconda-version: latest
-        activate-environment: tomobar
-        python-version: 3.10
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
         python-version: '3.10'
 
-      - name: Install dependencies with Conda
-        run: |
-          $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
-          conda config --set anaconda_upload no
-          export VERSION=`date +%Y.%m` 
+    - name: Install dependencies with Conda
+      run: |
+        $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
+        conda config --set anaconda_upload no
+        export VERSION=`date +%Y.%m` 
 
-      - name: Decrypt a secret
-        run: ./.scripts/decrypt_secret.sh
-        env:
-          LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
+    - name: Decrypt a secret
+      run: ./.scripts/decrypt_secret.sh
+      env:
+        LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
 
-      - name: Upload the tested package to conda cloud
-        run: |
-          chmod +x ./.scripts/conda_upload.sh
-          ./.scripts/conda_upload.sh
+    - name: Upload the tested package to conda cloud
+      run: |
+        chmod +x ./.scripts/conda_upload.sh
+        ./.scripts/conda_upload.sh
