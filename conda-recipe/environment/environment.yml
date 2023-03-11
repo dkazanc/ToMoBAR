@@ -1,0 +1,20 @@
+name: tomobar
+channels:
+  - conda-forge
+  - anaconda
+dependencies:
+  - conda-forge::numpy
+  - conda-forge::scipy
+  - conda-forge::python
+  - conda-forge::pytest
+  - conda-forge::pytest-xdist
+  - conda-forge::pytest-cov
+  - conda-forge::flake8
+  - conda-forge::pyproject-flake8
+  - conda-forge::pydocstyle
+  - conda-forge::imageio
+  - conda-forge::toml
+  - conda-forge::setuptools
+  - anaconda::ipython  
+  - anaconda::conda-build
+  - anaconda::anaconda-client
