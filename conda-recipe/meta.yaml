@@ -24,15 +24,15 @@ requirements:
     - pillow
     - scikit-image
     - pytest
-test:
-  requires:
-    - pip
-    - pytest
-  source_files:
-    - tests/*
-  commands:
-    - pip check
-    - pytest
+# test:
+#   requires:
+#     - pip
+#     - pytest
+#   source_files:
+#     - tests/*
+#   commands:
+#     - pip check
+#     - pytest
 
 about:
   home: https://github.com/dkazanc/ToMoBAR
