@@ -4,7 +4,6 @@ channels:
   - anaconda
 dependencies:
   - conda-forge::numpy
-  - conda-forge::scipy
   - conda-forge::python
   - conda-forge::pytest
   - conda-forge::pytest-xdist
@@ -12,8 +11,6 @@ dependencies:
   - conda-forge::flake8
   - conda-forge::pyproject-flake8
   - conda-forge::pydocstyle
-  - conda-forge::imageio
-  - conda-forge::toml
   - conda-forge::setuptools
   - anaconda::ipython  
   - anaconda::conda-build
