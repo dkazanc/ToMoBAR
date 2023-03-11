@@ -40,11 +40,6 @@ try:
 except ImportError:
     print('____! Wavelet package pywpt is missing, please install !____')
 
-try:
-    from tomobar.supp.addmodules import RING_WEIGHTS
-except ImportError:
-    print('____! RING_WEIGHTS C-module failed on import !____')
-
 def smooth(y, box_pts):
     # a function to smooth 1D signal
     box = np.ones(box_pts)/box_pts

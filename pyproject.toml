@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "setuptools-git-versioning"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["tomobar"]
+
+[tool.setuptools-git-versioning]
+enabled = true
+
+[project]
+name = "tomobar"
+description = "TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software"
+readme = "Readme.md"
+license = {text = "GPLv3"}
+authors = [
+    {name = "Daniil Kazantsev", email = "daniil.kazantsev@diamond.ac.uk"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GPLv3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.9",
+    "Environment :: GPU :: NVIDIA CUDA"
+]
+requires-python = ">=3.9"
+dynamic = ["version"]
+dependencies = [
+    "numpy",
+    "scipy",
+    "pillow",
+    "scikit-image"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "pytest-xdist",
+  "flake8",
+  "pyproject-flake8",
+  "pydocstyle",
+  "toml",
+  "imageio",
+  "h5py"
+]
+
+
+[project.urls]
+"Repository" = "https://github.com/dkazanc/ToMoBAR"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = [
+   "-vv", 
+   "-ra", 
+   "-q",
+   "--tb=native",
+   "--cov-report=term", 
+   "--cov-report=xml:cov.xml",
+]
+testpaths = [
+    "tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::pytest.PytestUnknownMarkWarning",
+    "ignore::scipy.stats.ConstantInputWarning",
+]
+
+[tool.coverage.run]
+data_file = "/tmp/tomobar.coverage"
+
+[tool.coverage.paths]
+# Tests are run from installed location, map back to the src directory
+source = [
+    "tomobar",
+    "**/site-packages/"
+]
+
+[tool.mypy]
+# Ignore missing stubs for modules we use
+ignore_missing_imports = true
+
+[tool.isort]
+profile = "black"
+float_to_top = true
+
+[tool.pydocstyle]
+convention = "google"
+add-ignore = [
+    "D100", # Ignore missing docstrings in public modules
+    "D104", # Ignore missing docstrings in public packages
+    "D418", # Ignore missing docstrings in dunder methods; See: https://github.com/PyCQA/pydocstyle/issues/525
+]
+
+[tool.flake8]
+# Make flake8 respect black's line length (default 88),
+max-line-length = 88
+extend-ignore = [
+    "E203",  
+    "F811"  
+]
+per-file-ignores = [
+    "*pyi:E302"
+]
