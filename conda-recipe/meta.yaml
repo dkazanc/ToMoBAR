@@ -5,12 +5,22 @@ package:
   version: {{ environ['VERSION'] }}
 
 source:
-  path: ..
+  path: ../
 
 build:
   preserve_egg_dir: False
   number: 0
 
+test:
+  requires:
+    - pip
+    - pytest
+  source_files:
+    - tests/*
+  commands:
+    - pip check
+    - pytest
+    
 requirements:
   host:
     - python
@@ -24,15 +34,7 @@ requirements:
     - pillow
     - scikit-image
     - pytest
-# test:
-#   requires:
-#     - pip
-#     - pytest
-#   source_files:
-#     - tests/*
-#   commands:
-#     - pip check
-#     - pytest
+
 
 about:
   home: https://github.com/dkazanc/ToMoBAR

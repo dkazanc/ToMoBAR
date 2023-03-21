@@ -1,6 +1,6 @@
 name: tomobar_conda_upload
 
-on: [push, pull_request, pull_request_target]
+on: [push]
 
 jobs:
   build-linux:
@@ -20,8 +20,6 @@ jobs:
     - name: Install dependencies with Conda
       run: |
         $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
-        conda config --set anaconda_upload no
-        export VERSION=`date +%Y.%m` 
 
     - name: Decrypt a secret
       run: ./.scripts/decrypt_secret.sh

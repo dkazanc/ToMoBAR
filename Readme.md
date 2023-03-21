@@ -63,7 +63,6 @@ conda install -c savu-dep tomobar
 export VERSION=`date +%Y.%m` (unix) / set VERSION=2020.10 (Windows)
 conda build conda-recipe/ --numpy 1.15 --python 3.7
 conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
-conda install tomobar --use-local --force-reinstall # if Python2
 ```
 
 ### Python development environment
