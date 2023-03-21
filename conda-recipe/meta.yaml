@@ -1,34 +1,46 @@
+{% set name = "tomobar" %}
+
 package:
-  name: tomobar
+  name: {{ name|lower }}
   version: {{ environ['VERSION'] }}
+
+source:
+  path: ../
 
 build:
   preserve_egg_dir: False
   number: 0
-  script_env:
-    - VERSION
 
 test:
+  requires:
+    - pip
+    - pytest
   source_files:
-    - ./test/
+    - tests/*
   commands:
-    - python -c "import os; print (os.getcwd())"
-    - python -m unittest discover -s test
-
+    - pip check
+    - pytest
+    
 requirements:
-  build:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
     - python
     - numpy
     - setuptools
-    - cython
-    - cmake
-  run:
     - scipy
-    - python
-    - numpy
-    - libgcc-ng # [unix]
+    - pillow
+    - scikit-image
+    - pytest
+
 
 about:
   home: https://github.com/dkazanc/ToMoBAR
-  license:  GPLv3
   summary: 'TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software'
+  description: |
+    A collection of direct and iterative methods for parallel beam tomography
+extra:
+  recipe-maintainers:
+    - dkazanc

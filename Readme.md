@@ -20,7 +20,7 @@
  * A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods available in ASTRA
  * Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities
  * Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
- * Access to multi-GPU capability through mpi4py
+ * Access to multi-GPU capability through mpi4py library
  * Demos to reconstruct synthetic and also real data (provided) [4-6]
 
 <div align="center">
@@ -36,7 +36,7 @@
  * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method; data fidelities: PWLS, Kullback-Leibler, Huber, Group-Huber[2], Students't [3,4], and SWLS [5] to deal with noise and imaging artifacts (rings, streaks).
 
 ### General software prerequisites
- * Python or [MATLAB](http://www.mathworks.com/products/matlab/)
+ * Python or [MATLAB](http://www.mathworks.com/products/matlab/) (not actively maintained currently)
 
 ### Software dependencies
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations
@@ -63,11 +63,14 @@ conda install -c savu-dep tomobar
 export VERSION=`date +%Y.%m` (unix) / set VERSION=2020.10 (Windows)
 conda build conda-recipe/ --numpy 1.15 --python 3.7
 conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
-conda install tomobar --use-local --force-reinstall # if Python2
 ```
 
-### Python standalone
-For building on Linux, modify and run the following [script](https://github.com/dkazanc/ToMoBAR/blob/master/run.sh)
+### Python development environment
+* Clone the repository from GitHub page
+* Install dependencies from the environment file
+* Alternatively you can install from the existing explicit file
+* Activate the environment with :code:`conda activate tomobar`
+* From the root directory install the enviroment in development mode with :code:`pip install -e .[dev]`
 
 ### MultiGPU capability
 ToMoBAR can be used by running in parallel across multiple GPU devices on a PC or a compute node of a cluster. In order to initiate a parallel run on multiple GPUs you will need an MPI library, such as, [mpi4py](https://mpi4py.readthedocs.io/en/stable/). See this [demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py).
@@ -76,12 +79,12 @@ ToMoBAR can be used by running in parallel across multiple GPU devices on a PC o
 Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
 ## How to use ToMoBAR in Python:
-Detailed information about the methods and its parameters can be obtained with:
+Detailed information about the methods and parameters can be obtained with:
 ```
 from tomobar.methodsIR import RecToolsIR
 help(RecToolsIR)
 from tomobar.methodsDIR import RecToolsDIR
-help(RecToolsIR)
+help(RecToolsDIR)
 ```
 
 A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`

@@ -1,8 +1,3 @@
-set -xe
-cp -rv "$RECIPE_DIR/../test" "$SRC_DIR/"
+#!/bin/bash
 
-cd $SRC_DIR
-
-cmake -G "Unix Makefiles" $RECIPE_DIR/../ -DBUILD_PYTHON_WRAPPER=ON -DCONDA_BUILD=ON -DCMAKE_BUILD_TYPE="Release" -DLIBRARY_LIB=$CONDA_PREFIX/lib -DLIBRARY_INC=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$PREFIX
-
-make install
+python -m pip install .

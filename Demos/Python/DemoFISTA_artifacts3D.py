@@ -255,33 +255,6 @@ plt.imshow(RecFISTA_Huber_TV[:,:,sliceSel],vmin=0, vmax=max_val)
 plt.title('3D Huber Rec, sagittal')
 plt.show()
 
-# adding RING minimisation component (better model for data with rings - different from GH!)
-#data.update({'huber_threshold' : None})
-_data_.update({'ring_weights_threshold' : 2.0})
-_data_.update({'ring_tuple_halfsizes' : (9,7,9)})
-
-# Run FISTA reconstrucion algorithm with 3D regularisation and a better ring model
-RecFISTA_HuberRING_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
-
-Qtools = QualityTools(phantom_tm, RecFISTA_HuberRING_TV)
-RMSE_FISTA_HUBER_RING_TV = Qtools.rmse()
-print("RMSE for FISTA-OS-Huber-Ring-TV is {}".format(RMSE_FISTA_HUBER_RING_TV))
-
-sliceSel = int(0.5*N_size)
-max_val = 1
-plt.figure() 
-plt.subplot(131)
-plt.imshow(RecFISTA_HuberRING_TV[sliceSel,:,:],vmin=0, vmax=max_val)
-plt.title('3D HuberRing Rec, axial')
-
-plt.subplot(132)
-plt.imshow(RecFISTA_HuberRING_TV[:,sliceSel,:],vmin=0, vmax=max_val)
-plt.title('3D HuberRing Rec, coronal')
-
-plt.subplot(133)
-plt.imshow(RecFISTA_HuberRING_TV[:,:,sliceSel],vmin=0, vmax=max_val)
-plt.title('3D HuberRing Rec, sagittal')
-plt.show()
 #%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA-OS-SWLS-TV using tomobar")
