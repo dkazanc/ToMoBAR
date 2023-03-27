@@ -4,7 +4,7 @@
 GPLv3 license (ASTRA toolbox)
 
 Script to generate 3D analytical phantoms and their projection data with added
-noise and then reconstruct using 3D FBP and 3D FBP with filtering on a GPU using CuPy
+noise and then reconstruct using FBP while keeping the data in CuPy arrays
 
 Dependencies:
     * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
@@ -12,6 +12,7 @@ Dependencies:
     conda install ccpi-regulariser -c ccpi -c conda-forge
     or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
     * TomoPhantom, https://github.com/dkazanc/TomoPhantom
+    * CuPy package 
 
 @author: Daniil Kazantsev
 """
@@ -19,6 +20,7 @@ import timeit
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import cupy as cp
 import tomophantom
 from tomophantom import TomoP3D
 from tomobar.methodsDIR import RecToolsDIR

@@ -10,6 +10,19 @@ Changelog:
 """
 import numpy as np
 
+gpu_enabled = False
+try:
+    import cupy as xp
+    try:
+        xp.cuda.Device(0).compute_capability
+        gpu_enabled = True  # CuPy is installed and GPU is available
+    except xp.cuda.runtime.CUDARuntimeError:
+        import numpy as xp
+        print("CuPy is installed but GPU device inaccessible")
+except ImportError:
+    import numpy as xp
+    print("CuPy is not installed")
+
 try:
     import astra
 except:
@@ -346,7 +359,20 @@ class Astra3D:
         astra.data3d.delete(proj_id)
         return recon_volume
     
-    def runAstraReconCuPy(self, proj_data, method, iterations, os_index):
+    def runAstraBackprojCuPy(self, 
+                            proj_data: xp.ndarray, 
+                            method: str, 
+                            os_index: int) -> xp.ndarray:
+        """3d back-projection using ASTRA's GPULink functionality for CuPy arrays
+
+        Args:
+            proj_data (xp.ndarray): 3d projection data as a CuPy array
+            method (str): Only BP is available so far.
+            os_index (int): the number of ordered subsets.
+            
+        Returns:
+            xp.ndarray: A CuPy array containing back-projected volume.
+        """
         # set ASTRA configuration for 3D reconstructor using CuPy arrays
         if self.OS_number != 1:
             # ordered-subsets
@@ -357,10 +383,12 @@ class Astra3D:
 
 
         proj_link = astra.data3d.GPULink(proj_data.data.ptr, *proj_data.shape[::-1],4*proj_data.shape[2])
-        proj_id = astra.data3d.link('-proj3d', self.proj_geom, proj_link)
-        
-        # Create a data object for the reconstruction
-        rec_id = astra.data3d.create('-vol', self.vol_geom)
+        proj_id = astra.data3d.link('-proj3d', self.proj_geom, proj_link)       
+  
+        # create a CuPy array with ASTRA link to it
+        recon_volume = xp.zeros(astra.geom_size(self.vol_geom), dtype=np.float32)
+        rec_link = astra.data3d.GPULink(recon_volume.data.ptr, *recon_volume.shape[::-1], 4*recon_volume.shape[2])
+        rec_id = astra.data3d.link('-vol', self.vol_geom, rec_link)
         
         # Create algorithm object
         cfg = astra.astra_dict(method)
@@ -371,10 +399,7 @@ class Astra3D:
 
         # Create the algorithm object from the configuration structure
         alg_id = astra.algorithm.create(cfg)
-        astra.algorithm.run(alg_id, iterations)
-
-        # Get the result (this will copy the data back to the host)
-        recon_volume = astra.data3d.get(rec_id)
+        astra.algorithm.run(alg_id, 1)
 
         astra.algorithm.delete(alg_id)
         astra.data3d.delete(rec_id)
@@ -407,6 +432,48 @@ class Astra3D:
 
         # Get the result
         proj_volume = astra.data3d.get(proj_id)
+
+        astra.algorithm.delete(alg_id)
+        astra.data3d.delete(volume_id)
+        astra.data3d.delete(proj_id)
+        return proj_volume
+
+    def runAstraProjCuPy(self, 
+                         volume_data: xp.ndarray, 
+                         os_index: int) -> xp.ndarray:
+        """3d forward projector using ASTRA's GPULink functionality for CuPy arrays
+
+        Args:
+            volume_data (xp.ndarray): the input 3d volume as a CuPy array
+            os_index (int): the number of ordered subsets.
+
+        Returns:
+            xp.ndarray: projected volume array as a cupy array
+        """            
+        # Enable GPUlink to the volume
+        volume_link = astra.data3d.GPULink(volume_data.data.ptr, *volume_data.shape[::-1], 4*volume_data.shape[2])
+        volume_id = astra.data3d.link('-vol', self.vol_geom, volume_link)               
+      
+        if self.OS_number != 1:
+            # ordered-subsets
+            proj_id = astra.data3d.create('-sino', self.proj_geom_OS[os_index], 0)
+        else:
+            # traditional full data parallel beam projection geometry
+            # Enabling GPUlink to the created empty CuPy array
+            proj_volume = xp.zeros(astra.geom_size(self.proj_geom), dtype=np.float32)
+            gpu_link_sino = astra.data3d.GPULink(proj_volume.data.ptr, *proj_volume.shape[::-1], 4*proj_volume.shape[2])
+            proj_id = astra.data3d.link('-sino', self.proj_geom, gpu_link_sino)
+
+        # Create algorithm object
+        algString = 'FP3D_CUDA'
+        cfg = astra.astra_dict(algString)
+        cfg['option'] = {'GPUindex': self.GPUdevice_index}
+        cfg['VolumeDataId'] = volume_id
+        cfg['ProjectionDataId'] = proj_id
+
+        # Create the algorithm object from the configuration structure
+        alg_id = astra.algorithm.create(cfg)
+        astra.algorithm.run(alg_id)
 
         astra.algorithm.delete(alg_id)
         astra.data3d.delete(volume_id)
@@ -474,10 +541,12 @@ class AstraTools3D(Astra3D):
         
     def forwproj(self, object3D):
         return Astra3D.runAstraProj(self, object3D, None) # 3D forward projection
+    def forwprojCuPy(self, object3D):
+        return Astra3D.runAstraProjCuPy(self, object3D, None) # 3D forward projection using CuPy array    
     def backproj(self, proj_data):
         return Astra3D.runAstraRecon(self, proj_data, 'BP3D_CUDA', 1, None) # 3D backprojection
     def backprojCuPy(self, proj_data):
-        return Astra3D.runAstraReconCuPy(self, proj_data, 'BP3D_CUDA', 1, None) # 3D backprojection using CuPy array
+        return Astra3D.runAstraBackprojCuPy(self, proj_data, 'BP3D_CUDA', None) # 3D backprojection using CuPy array
     def sirt3D(self, proj_data, iterations):
         return Astra3D.runAstraRecon(self, proj_data, 'SIRT3D_CUDA', iterations, None) #3D SIRT reconstruction
     def cgls3D(self, proj_data, iterations):

@@ -146,7 +146,7 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         if 'verbose' not in _algorithm_:
             _algorithm_['verbose'] = 'on'
     # ----------  deal with _regularisation_  --------------
-    if len(_regularisation_) > 0:        
+    if len(_regularisation_) > 0:
         if 'method' not in _regularisation_:
             _regularisation_['method'] = None
         # regularisation parameter  (main)
@@ -204,7 +204,9 @@ def dict_check(self, _data_, _algorithm_, _regularisation_):
         # choose the type of the device for the regulariser
         if 'device_regulariser' not in _regularisation_:
             _regularisation_['device_regulariser'] = 'cpu'
-
+    else:
+        _regularisation_['method'] = None
+        
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_['iterations'],0)
     # The proximal operator of the chosen regulariser
@@ -316,8 +318,8 @@ class RecToolsIR:
               CenterRotOffset,   # The Centre of Rotation scalar or a vector
               AnglesVec,         # Array of projection angles in radians
               ObjSize,           # Reconstructed object dimensions (scalar)
-              datafidelity,      # Data fidelity, choose from LS, KL, PWLS, SWLS
-              device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+              datafidelity = "LS",      # Data fidelity, choose from LS, KL, PWLS, SWLS
+              device_projector = 'gpu'  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
               ):
         if isinstance(ObjSize,tuple):
             raise ValueError(" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")

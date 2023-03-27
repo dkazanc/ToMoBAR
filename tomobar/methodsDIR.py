@@ -125,26 +125,61 @@ class RecToolsDIR:
             self.geom = '2D'
         else:
             self.geom = '3D'
-    def FORWPROJ(self, image):
+    def FORWPROJ(self, 
+                 data):
+        """Module to perform forward projection of 2d/3d data array
+
+        Args:
+            data (ndarray): 2d or 3d array to project, either numpy or cupy
+        Returns:
+            ndarray: Forward projected array either numpy or cupy
+        """
+        # perform check here if the given array is numpy or not 
+        # if not we assume that it is CuPy (loose assumption of course)
+        if isinstance(data, np.ndarray):
+            data_not_numpyarray = False
+        else:
+            data_not_numpyarray = True
         if (self.geom == '2D'):
             from tomobar.supp.astraOP import AstraTools
             Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-            sinogram = Atools.forwproj(image)
+            projdata = Atools.forwproj(data)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
             Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
-            sinogram = Atools.forwproj(image)
-        return sinogram
-    def BACKPROJ(self, sinogram):
+            if data_not_numpyarray:
+                projdata = Atools.forwprojCuPy(data)
+            else:
+                projdata = Atools.forwproj(data)
+        return projdata 
+    def BACKPROJ(self, 
+                 projdata):
+        """Module to perform back-projection of 2d/3d data array
+
+        Args:
+            projdata (ndarray): 2d or 3d array to backproject, either numpy or cupy
+
+        Returns:
+            ndarray: backprojected array either numpy or cupy
+        """
+        # perform check here if the given array is numpy or not 
+        # if not we assume that it is CuPy (loose assumption of course)
+        if isinstance(projdata, np.ndarray):
+            data_not_numpyarray = False
+        else:
+            data_not_numpyarray = True        
         if (self.geom == '2D'):
             from tomobar.supp.astraOP import AstraTools
             Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-            image = Atools.backproj(sinogram)
+            backproj = Atools.backproj(projdata)
         if (self.geom == '3D'):
             from tomobar.supp.astraOP import AstraTools3D
             Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
-            image = Atools.backproj(sinogram)
-        return image
+            if data_not_numpyarray:
+                backproj = Atools.backprojCuPy(projdata)
+            else:
+                backproj = Atools.backproj(projdata)
+        return backproj
     def FOURIER(self, sinogram, method='linear'):
         """
         2D Reconstruction using Fourier slice theorem (scipy required)
