@@ -69,11 +69,11 @@ def filtersinc2D(sinogram):
     return np.float32(filtered)
 
 class RecToolsDIR:
-    """ Class for reconstruction using DIRect methods (FBP and Fourier)"""
+    """ A class for reconstruction using DIRect methods (FBP and Fourier)"""
     def __init__(self,
               DetectorsDimH,    # DetectorsDimH # detector dimension (horizontal)
               DetectorsDimV,    # DetectorsDimV # detector dimension (vertical) for 3D case only
-              CenterRotOffset,  # Centre of Rotation (CoR) scalar
+              CenterRotOffset,  # Centre of Rotation (CoR) scalar or a vector
               AnglesVec,        # Array of angles in radians
               ObjSize,          # A scalar to define reconstructed object dimensions
               device_projector  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
@@ -85,15 +85,20 @@ class RecToolsDIR:
         self.DetectorsDimH = DetectorsDimH
         self.DetectorsDimV = DetectorsDimV
         self.AnglesVec = AnglesVec
-        self.CenterRotOffset = CenterRotOffset
+        if CenterRotOffset is not None:
+            self.CenterRotOffset = CenterRotOffset
+        else:
+            self.CenterRotOffset = 0.0
         self.OS_number = 1
         self.device_projector, self.GPUdevice_index = parse_device_argument(device_projector)
         
         if DetectorsDimV is None:
             #2D geometry
             self.geom = '2D'
+            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object            
         else:
-            self.geom = '3D'
+            self.geom = '3D'            
+            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object            
     def FORWPROJ(self, 
                  data):
         """Module to perform forward projection of 2d/3d data array
@@ -110,16 +115,12 @@ class RecToolsDIR:
         else:
             data_not_numpyarray = True
         if (self.geom == '2D'):
-            from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-            projdata = Atools.forwproj(data)
+            projdata = self.Atools.forwproj(data)
         if (self.geom == '3D'):
-            from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
             if data_not_numpyarray:
-                projdata = Atools.forwprojCuPy(data)
+                projdata = self.Atools.forwprojCuPy(data)
             else:
-                projdata = Atools.forwproj(data)
+                projdata = self.Atools.forwproj(data)
         return projdata 
     def BACKPROJ(self, 
                  projdata):
@@ -136,18 +137,14 @@ class RecToolsDIR:
         if isinstance(projdata, np.ndarray):
             data_not_numpyarray = False
         else:
-            data_not_numpyarray = True        
+            data_not_numpyarray = True
         if (self.geom == '2D'):
-            from tomobar.supp.astraOP import AstraTools
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-            backproj = Atools.backproj(projdata)
+            backproj = self.Atools.backproj(projdata)
         if (self.geom == '3D'):
-            from tomobar.supp.astraOP import AstraTools3D
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
             if data_not_numpyarray:
-                backproj = Atools.backprojCuPy(projdata)
+                backproj = self.Atools.backprojCuPy(projdata)
             else:
-                backproj = Atools.backproj(projdata)
+                backproj = self.Atools.backproj(projdata)
         return backproj
     def FOURIER(self, sinogram, method='linear'):
         """
@@ -231,24 +228,15 @@ class RecToolsDIR:
         image = recon[int(((self.DetectorsDimH-self.ObjSize)/2)+1):self.DetectorsDimH-int(((self.DetectorsDimH-self.ObjSize)/2)-1),int(((self.DetectorsDimH-self.ObjSize)/2)):self.DetectorsDimH-int(((self.DetectorsDimH-self.ObjSize)/2))]
         return image
     def FBP(self, sinogram):
-        if (self.geom == '2D'):
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
+        if (self.geom == '2D'):            
             'dealing with FBP 2D not working for parallel_vec geometry and CPU'
             if (self.device_projector == 'gpu'):
-                FBP_rec = Atools.fbp2D(sinogram) # GPU reconstruction
+                FBP_rec = self.Atools.fbp2D(sinogram) # GPU reconstruction
             else:
                 filtered_sino = filtersinc2D(sinogram) # filtering sinogram
-                FBP_rec = Atools.backproj(filtered_sino) # backproject
-        if ((self.geom == '3D') and (self.CenterRotOffset is None)):
-            FBP_rec = np.zeros((self.DetectorsDimV, self.ObjSize, self.ObjSize), dtype='float32')
-            Atools = AstraTools(self.DetectorsDimH, self.AnglesVec-np.pi, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-            for i in range(0, self.DetectorsDimV):
-                FBP_rec[i,:,:] = Atools.fbp2D(np.flipud(sinogram[i,:,:]))
-        if ((self.geom == '3D') and (self.CenterRotOffset is not None)):
-            # perform FBP using custom filtration
-            Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
-            filtered_sino = filtersinc3D(sinogram) # filtering sinogram
-            FBP_rec = Atools.backproj(filtered_sino) # backproject
-            del(filtered_sino)
+                FBP_rec = self.Atools.backproj(filtered_sino) # backproject
+        if (self.geom == '3D'):
+            filtered_sino = filtersinc3D(sinogram) # filtering projection data
+            FBP_rec = self.Atools.backproj(filtered_sino) # 3d backproject
         return FBP_rec
     

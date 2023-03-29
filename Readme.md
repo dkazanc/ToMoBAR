@@ -7,7 +7,7 @@
         </td>
         <td>
         <font size="5"><b> TOmographic MOdel-BAsed Reconstruction software <a href="https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf">PAPER (CT Meeting 2020)</a></b></font>     
-        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a Python and Matlab (not currently maintained) library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability. ToMoBAR offers you a selection of various data models and regularisers resulting in complex objectives for tomographic reconstruction. ToMoBAR can handle multi-GPU parallel reconstruction in Python and recently device-to-device CuPy operations. </font></br>
+        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a Python and Matlab (not maintained atm) library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability. ToMoBAR offers you a selection of various data models and regularisers resulting in complex objectives for tomographic reconstruction. ToMoBAR can handle multi-GPU parallel reconstruction in Python and also device-to-device methods operating on CuPy arrays. </font></br>
         </td>
     </tr>
 </table>
@@ -21,7 +21,7 @@
  * Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities
  * Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
  * [Access to multi-GPU capability through mpi4py library](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py)
- * CuPy driven [forward/backward projectors](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/DemoFBP_CuPy_3D.py) to enable faster device-to-device operations and in GPU memory protoyping
+ * CuPy driven [forward/backward projectors](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/Demo_CuPy_3D.py) to enable faster device-to-device operations and all in GPU memory protoyping of algorithms
  * Demos to reconstruct synthetic and also real data (provided) [4-6]
 
 <div align="center">
@@ -49,11 +49,6 @@
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Python conda:
-Install ToMoBAR and its basic dependencies into a new environment using the provided [file](https://github.com/dkazanc/ToMoBAR/blob/master/conda-recipe/tomobar_env_20_06_22.txt):
-```
-conda create --name tomobar --file conda-recipe/tomobar_env_20_06_22.txt
-```
-
 Install the ToMoBAR package from one of conda channels bellow:
 ```
 conda install -c dkazanc tomobar
@@ -62,9 +57,14 @@ conda install -c savu-dep tomobar
 
  or build using provided conda recipe:
 ```
-export VERSION=`date +%Y.%m` (unix) / set VERSION=2020.10 (Windows)
-conda build conda-recipe/ --numpy 1.15 --python 3.7
+export VERSION=`date +%Y.%m` (unix) / set VERSION=2023.04 (Windows)
+conda build conda-recipe/ --numpy 1.23 --python 3.10
 conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
+```
+
+Install ToMoBAR and its basic dependencies into a new environment using the provided [file](https://github.com/dkazanc/ToMoBAR/blob/master/conda-recipe/tomobar_env_20_06_22.txt):
+```
+conda create --name tomobar --file conda-recipe/tomobar_env_20_06_22.txt
 ```
 
 ### Python development environment
@@ -76,7 +76,7 @@ conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
 ### MultiGPU capability
 ToMoBAR can be used by running in parallel across multiple GPU devices on a PC or a compute node of a cluster. In order to initiate a parallel run on multiple GPUs you will need an MPI library, such as, [mpi4py](https://mpi4py.readthedocs.io/en/stable/). See this [demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py).
 
-### Matlab (is not currently actively supported)
+### Matlab (is not currently supported)
 Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
 ## How to use ToMoBAR in Python:

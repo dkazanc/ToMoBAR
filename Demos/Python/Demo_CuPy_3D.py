@@ -3,16 +3,13 @@
 """
 GPLv3 license (ASTRA toolbox)
 
-Script to generate 3D analytical phantoms and their projection data with added
-noise and then reconstruct using FBP while keeping the data in CuPy arrays
+Script that demonstrates the reconstruction of CuPy arrays while keeping 
+the data on the GPU (device-to-device)
 
 Dependencies:
     * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
     * TomoPhantom, https://github.com/dkazanc/TomoPhantom
-    * CuPy package 
+    * CuPy package
 
 @author: Daniil Kazantsev
 """
@@ -29,7 +26,7 @@ from tomobar.methodsCuPy import RecToolsCuPy
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
 model = 13 # select a model number from the library
-N_size = 128 # Define phantom dimensions using a scalar value (cubic phantom)
+N_size = 256 # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
 
@@ -45,9 +42,8 @@ angles_rad = angles*(np.pi/180.0)
 print ("Generate 3D analytical projection data with TomoPhantom")
 projData3D_analyt= TomoP3D.ModelSino(model, N_size, Horiz_det, Vert_det, angles, path_library3D)
 
-# transfer numpy array to CuPy array
-projData3D_analyt_cupy = cp.asarray(projData3D_analyt)
-#%%
+# transfering numpy array to CuPy array
+projData3D_analyt_cupy = cp.asarray(np.swapaxes(projData3D_analyt,0,1))
 #%%
 # It is recommend to re-run twice in order to get the optimal time
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -61,7 +57,7 @@ RecToolsCP = RecToolsCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector d
                     device_projector='gpu')
 
 tic=timeit.default_timer()
-FBPrec_cupy = RecToolsCP.FBP3D_cupy(projData3D_analyt_cupy)
+FBPrec_cupy = RecToolsCP.FBP3D(projData3D_analyt_cupy)
 toc=timeit.default_timer()
 Run_time = toc - tic
 print("FBP 3D reconstruction with FFT filtering using CuPy (GPU) in {} seconds".format(Run_time))
@@ -88,38 +84,65 @@ plt.show()
 print("Min {} and Max {} of the volume".format(np.min(FBPrec_cupy), np.max(FBPrec_cupy)))
 del(FBPrec_cupy)
 #%%
-
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print ("%%%%%%%%%%%Reconstructing with 3D FBP method %%%%%%%%%%%%%%%")
+print ("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
+RecToolsCP = RecToolsCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
                     CenterRotOffset = 0.0,               # Center of Rotation scalar or a vector
                     AnglesVec = angles_rad,              # A vector of projection angles in radians
                     ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
-tic=timeit.default_timer()
-FBPrec = RectoolsDIR.FBP(projData3D_analyt) #perform 3D FBP with filtering on a CPU
-toc=timeit.default_timer()
-Run_time = toc - tic
-print("FBP 3D reconstruction with FFT filtering on a CPU done in {} seconds".format(Run_time))
+LWrec_cupy = RecToolsCP.Landweber(projData3D_analyt_cupy,
+                                  iterations = 1500,
+                                  tau_step=1e-05)
+
+lwrec = cp.asnumpy(LWrec_cupy)
 
 sliceSel = int(0.5*N_size)
-max_val = 1
 plt.figure() 
 plt.subplot(131)
-plt.imshow(FBPrec[sliceSel,:,:],vmin=0, vmax=max_val)
-plt.title('3D FBP Reconstruction, axial view')
+plt.imshow(lwrec[sliceSel,:,:])
+plt.title('3D Landweber Reconstruction, axial view')
 
 plt.subplot(132)
-plt.imshow(FBPrec[:,sliceSel,:],vmin=0, vmax=max_val)
-plt.title('3D FBP Reconstruction, coronal view')
+plt.imshow(lwrec[:,sliceSel,:])
+plt.title('3D Landweber Reconstruction, coronal view')
 
 plt.subplot(133)
-plt.imshow(FBPrec[:,:,sliceSel],vmin=0, vmax=max_val)
-plt.title('3D FBP Reconstruction, sagittal view')
+plt.imshow(lwrec[:,:,sliceSel])
+plt.title('3D Landweber Reconstruction, sagittal view')
 plt.show()
+#%%
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%% Reconstructing using SIRT algorithm %%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+RecToolsCP = RecToolsCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
+                    DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = 0.0,               # Center of Rotation scalar or a vector
+                    AnglesVec = angles_rad,              # A vector of projection angles in radians
+                    ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
+                    device_projector='gpu')
 
-print("Min {} and Max {} of the volume".format(np.min(FBPrec), np.max(FBPrec)))
-del(FBPrec)
+SIRTrec_cupy = RecToolsCP.SIRT(projData3D_analyt_cupy,
+                               iterations = 300)
+
+sirt_rec = cp.asnumpy(SIRTrec_cupy)
+
+sliceSel = int(0.5*N_size)
+plt.figure() 
+plt.subplot(131)
+plt.imshow(sirt_rec[sliceSel,:,:])
+plt.title('3D SIRT Reconstruction, axial view')
+
+plt.subplot(132)
+plt.imshow(sirt_rec[:,sliceSel,:])
+plt.title('3D SIRT Reconstruction, coronal view')
+
+plt.subplot(133)
+plt.imshow(sirt_rec[:,:,sliceSel])
+plt.title('3D SIRT Reconstruction, sagittal view')
+plt.show()
+#%%
