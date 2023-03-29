@@ -3,7 +3,7 @@
 """
 GPLv3 license (ASTRA toolbox)
 
-Script that demonstrates the reconstruction of CuPy arrays while keeping 
+Script that demonstrates the reconstruction of CuPy arrays while keeping
 the data on the GPU (device-to-device)
 
 Dependencies:

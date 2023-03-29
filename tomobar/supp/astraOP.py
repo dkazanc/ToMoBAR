@@ -10,15 +10,13 @@ Changelog:
 """
 import numpy as np
 
-gpu_enabled = False
 try:
     import cupy as xp
     try:
         xp.cuda.Device(0).compute_capability
-        gpu_enabled = True  # CuPy is installed and GPU is available
     except xp.cuda.runtime.CUDARuntimeError:
         import numpy as xp
-        print("CuPy is installed but GPU device inaccessible")
+        print("CuPy is installed but the GPU device is inaccessible")
 except ImportError:
     import numpy as xp
     print("CuPy is not installed")
@@ -455,8 +453,10 @@ class Astra3D:
         volume_id = astra.data3d.link('-vol', self.vol_geom, volume_link)               
       
         if self.OS_number != 1:
-            # ordered-subsets
-            proj_id = astra.data3d.create('-sino', self.proj_geom_OS[os_index], 0)
+            # ordered-subsets approach
+            proj_volume = xp.zeros(astra.geom_size(self.proj_geom_OS), dtype=np.float32)
+            gpu_link_sino = astra.data3d.GPULink(proj_volume.data.ptr, *proj_volume.shape[::-1], 4*proj_volume.shape[2])
+            proj_id = astra.data3d.link('-sino', self.proj_geom_OS, gpu_link_sino)
         else:
             # traditional full data parallel beam projection geometry
             # Enabling GPUlink to the created empty CuPy array

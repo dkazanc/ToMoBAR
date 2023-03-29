@@ -15,7 +15,7 @@ try:
     import cupy as cp
     import cupyx
 except ImportError:
-    raise ImportError("CuPy package is required, please install")
+    print("CuPy package is required, please install")
 
 import astra
 
@@ -67,7 +67,7 @@ def _filtersinc3D_cupy(projection3D):
         )
     )
 
-class RecToolsCuPy(RecToolsDIR):
+class RecToolsCuPy(RecToolsDIR,RecToolsIR):
     def __init__(self,
                 DetectorsDimH,     # Horizontal detector dimension
                 DetectorsDimV,     # Vertical detector dimension (3D case)
@@ -77,7 +77,6 @@ class RecToolsCuPy(RecToolsDIR):
                 device_projector = 'gpu'  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
     ):
         super().__init__(DetectorsDimH, DetectorsDimV, CenterRotOffset, AnglesVec, ObjSize, device_projector)
-        
     def FBP3D(self, data : cp.ndarray) -> cp.ndarray:
         """Filtered backprojection on a CuPy array using a custom built filter
 
@@ -94,8 +93,6 @@ class RecToolsCuPy(RecToolsDIR):
         reconstruction = self.Atools.backprojCuPy(data) # 3d backprojecting
         cp._default_memory_pool.free_all_blocks()
         return reconstruction
-    
-    
     def Landweber(self,
                   data : cp.ndarray,
                   iterations : int = 1500,
@@ -120,7 +117,6 @@ class RecToolsCuPy(RecToolsDIR):
         
         cp._default_memory_pool.free_all_blocks()
         return x_rec
-    
     def SIRT(self,
              data : cp.ndarray,
              iterations : int = 100) -> cp.ndarray:
@@ -146,7 +142,7 @@ class RecToolsCuPy(RecToolsDIR):
         
         # perform iterations
         for iter_no in range(iterations):
-            x_rec += C * self.Atools.backprojCuPy(R * (data - self.Atools.forwprojCuPy(x_rec)))        
+            x_rec += C * self.Atools.backprojCuPy(R * (data - self.Atools.forwprojCuPy(x_rec)))
         
         cp._default_memory_pool.free_all_blocks()
-        return x_rec    
+        return x_rec

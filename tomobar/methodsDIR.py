@@ -3,8 +3,8 @@
 """A reconstruction class for direct reconstructon methods.
 
 -- Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
--- Forward/Backward projection (ASTRA)
--- Filtered Back Projection (ASTRA)
+-- Forward/Backward projection (ASTRA and ASTRA with CuPy)
+-- Filtered Back Projection (ASTRA and ASTRA with CuPy)
 
 @author: Daniil Kazantsev
 """
@@ -91,14 +91,28 @@ class RecToolsDIR:
             self.CenterRotOffset = 0.0
         self.OS_number = 1
         self.device_projector, self.GPUdevice_index = parse_device_argument(device_projector)
-        
         if DetectorsDimV is None:
             #2D geometry
             self.geom = '2D'
-            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object            
+            # initiate 2D ASTRA class object
+            self.Atools = AstraTools(self.DetectorsDimH,
+                                     self.AnglesVec,
+                                     self.CenterRotOffset,
+                                     self.ObjSize,
+                                     self.OS_number,
+                                     self.device_projector,
+                                     self.GPUdevice_index)
         else:
-            self.geom = '3D'            
-            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object            
+            self.geom = '3D'
+            # initiate 3D ASTRA class object            
+            self.Atools = AstraTools3D(self.DetectorsDimH,
+                                       self.DetectorsDimV,
+                                       self.AnglesVec,
+                                       self.CenterRotOffset,
+                                       self.ObjSize,
+                                       self.OS_number,
+                                       self.device_projector,
+                                       self.GPUdevice_index)
     def FORWPROJ(self, 
                  data):
         """Module to perform forward projection of 2d/3d data array
@@ -109,18 +123,11 @@ class RecToolsDIR:
             ndarray: Forward projected array either numpy or cupy
         """
         # perform check here if the given array is numpy or not 
-        # if not we assume that it is CuPy (loose assumption of course)
+        # if not we assume that it is a CuPy array (loose assumption of course)
         if isinstance(data, np.ndarray):
-            data_not_numpyarray = False
-        else:
-            data_not_numpyarray = True
-        if (self.geom == '2D'):
             projdata = self.Atools.forwproj(data)
-        if (self.geom == '3D'):
-            if data_not_numpyarray:
-                projdata = self.Atools.forwprojCuPy(data)
-            else:
-                projdata = self.Atools.forwproj(data)
+        else:
+            projdata = self.Atools.forwprojCuPy(data)
         return projdata 
     def BACKPROJ(self, 
                  projdata):
@@ -133,18 +140,11 @@ class RecToolsDIR:
             ndarray: backprojected array either numpy or cupy
         """
         # perform check here if the given array is numpy or not 
-        # if not we assume that it is CuPy (loose assumption of course)
+        # if not we assume that it is a CuPy array (loose assumption of course)
         if isinstance(projdata, np.ndarray):
-            data_not_numpyarray = False
-        else:
-            data_not_numpyarray = True
-        if (self.geom == '2D'):
             backproj = self.Atools.backproj(projdata)
-        if (self.geom == '3D'):
-            if data_not_numpyarray:
-                backproj = self.Atools.backprojCuPy(projdata)
-            else:
-                backproj = self.Atools.backproj(projdata)
+        else:
+            backproj = self.Atools.backprojCuPy(projdata)
         return backproj
     def FOURIER(self, sinogram, method='linear'):
         """
@@ -166,17 +166,6 @@ class RecToolsDIR:
 
         # Fourier transform the rows of the sinogram, move the DC component to the row's centre
         sinogram_fft_rows=scipy.fftpack.fftshift(scipy.fftpack.fft(scipy.fftpack.ifftshift(sinogram,axes=1)),axes=1)
-
-        """
-        V  = 100
-        plt.figure()
-        plt.subplot(121)
-        plt.title("Sinogram rows FFT (real)")
-        plt.imshow(np.real(sinogram_fft_rows),vmin=-V,vmax=V)
-        plt.subplot(122)
-        plt.title("Sinogram rows FFT (imag)")
-        plt.imshow(np.imag(sinogram_fft_rows),vmin=-V,vmax=V)
-        """
         # Coordinates of sinogram FFT-ed rows' samples in 2D FFT space
         a = -self.AnglesVec
         r=np.arange(self.DetectorsDimH) - self.DetectorsDimH/2
@@ -190,37 +179,8 @@ class RecToolsDIR:
         dstx,dsty=np.meshgrid(np.arange(self.DetectorsDimH),np.arange(self.DetectorsDimH))
         dstx=dstx.flatten()
         dsty=dsty.flatten()
-
-        """
-        V = 100
-        plt.figure()
-        plt.title("Sinogram samples in 2D FFT (abs)")
-        plt.scatter(srcx, srcy,c=np.absolute(sinogram_fft_rows.flatten()), marker='.', edgecolor='none', vmin=-V, vmax=V)
-        """
         # Interpolate the 2D Fourier space grid from the transformed sinogram rows
         fft2=scipy.interpolate.griddata((srcy,srcx), sinogram_fft_rows.flatten(), (dsty,dstx), method, fill_value=0.0).reshape((self.DetectorsDimH,self.DetectorsDimH))
-        """
-        plt.figure()
-        plt.suptitle("FFT2 space")
-        plt.subplot(221)
-        plt.title("Recon (real)")
-        plt.imshow(np.real(fft2),vmin=-V,vmax=V)
-        plt.subplot(222)
-        plt.title("Recon (imag)")
-        plt.imshow(np.imag(fft2),vmin=-V,vmax=V)
-        """
-
-        """
-        # Show 2D FFT of target, just for comparison
-        expected_fft2=scipy.fftpack.fftshift(scipy.fftpack.fft2(scipy.fftpack.ifftshift(phantom_2D)))
-
-        plt.subplot(223)
-        plt.title("Expected (real)")
-        plt.imshow(np.real(expected_fft2),vmin=-V,vmax=V)
-        plt.subplot(224)
-        plt.title("Expected (imag)")
-        plt.imshow(np.imag(expected_fft2),vmin=-V,vmax=V)
-        """
         # Transform from 2D Fourier space back to a reconstruction of the target
         recon=np.real(scipy.fftpack.fftshift(scipy.fftpack.ifft2(scipy.fftpack.ifftshift(fft2))))
 
