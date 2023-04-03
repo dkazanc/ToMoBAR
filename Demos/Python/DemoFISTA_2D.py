@@ -108,7 +108,7 @@ Rectools = RecToolsIR(DetectorsDimH = P,             # Horizontal detector dimen
 _data_ = {'projection_norm_data' : noisy_sino} # data dictionary
 _algorithm_ = {'iterations' : 300}
 
-RecSIRT = Rectools.SIRT(_data_, _algorithm_) # SIRT reconstruction
+RecSIRT = Rectools.SIRT(_data_,_algorithm_) # SIRT reconstruction
 
 plt.figure()
 plt.rcParams.update({'font.size': 20})
@@ -136,7 +136,7 @@ lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to in
 _algorithm_ = {'iterations' : 300,
                'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
-RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
+RecFISTA = Rectools.FISTA(_data_, _algorithm_)
 plt.figure()
 plt.imshow(RecFISTA, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
@@ -190,7 +190,7 @@ lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to in
 # Run FISTA-OS reconstrucion algorithm without regularisation
 _algorithm_ = {'iterations' : 30,
                'lipschitz_const' : lc}
-RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
+RecFISTA_os = Rectools.FISTA(_data_, _algorithm_)
 #
 # adding regularisation
 _regularisation_ = {'method' : 'PD_TV',
@@ -242,7 +242,7 @@ lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to in
 # Run FISTA-OS reconstrucion algorithm without regularisation
 _algorithm_ = {'iterations' : 50,
                'lipschitz_const' : lc*0.3}
-RecFISTA_os_kl = Rectools.FISTA(_data_, _algorithm_, {})
+RecFISTA_os_kl = Rectools.FISTA(_data_, _algorithm_)
 
 # adding regularisation
 _regularisation_ = {'method' : 'PD_TV',

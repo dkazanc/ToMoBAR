@@ -20,13 +20,13 @@ import numpy as np
 import cupy as cp
 import tomophantom
 from tomophantom import TomoP3D
-from tomobar.methodsDIR import RecToolsDIR
-from tomobar.methodsCuPy import RecToolsCuPy
+from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
 model = 13 # select a model number from the library
-N_size = 256 # Define phantom dimensions using a scalar value (cubic phantom)
+N_size = 128 # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
 
@@ -49,7 +49,7 @@ projData3D_analyt_cupy = cp.asarray(np.swapaxes(projData3D_analyt,0,1))
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%Reconstructing with 3D FBP-CuPy method %%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
+RecToolsCP = RecToolsDIRCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
                     CenterRotOffset = 0.0,               # Center of Rotation scalar or a vector
                     AnglesVec = angles_rad,              # A vector of projection angles in radians
@@ -87,16 +87,16 @@ del(FBPrec_cupy)
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
+RecToolsCP = RecToolsIRCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
                     CenterRotOffset = 0.0,               # Center of Rotation scalar or a vector
                     AnglesVec = angles_rad,              # A vector of projection angles in radians
                     ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
-LWrec_cupy = RecToolsCP.Landweber(projData3D_analyt_cupy,
-                                  iterations = 1500,
-                                  tau_step=1e-05)
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : projData3D_analyt_cupy} # data dictionary
+LWrec_cupy = RecToolsCP.Landweber(_data_)
 
 lwrec = cp.asnumpy(LWrec_cupy)
 
@@ -115,19 +115,21 @@ plt.imshow(lwrec[:,:,sliceSel])
 plt.title('3D Landweber Reconstruction, sagittal view')
 plt.show()
 #%%
-#%%
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("%%%%%%%%%% Reconstructing using SIRT algorithm %%%%%%%%%%%%%")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
+RecToolsCP = RecToolsIRCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
                     DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
                     CenterRotOffset = 0.0,               # Center of Rotation scalar or a vector
                     AnglesVec = angles_rad,              # A vector of projection angles in radians
                     ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
                     device_projector='gpu')
 
-SIRTrec_cupy = RecToolsCP.SIRT(projData3D_analyt_cupy,
-                               iterations = 300)
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : projData3D_analyt_cupy} # data dictionary
+_algorithm_ = {'iterations' : 300,
+               'nonnegativity' : True}
+SIRTrec_cupy = RecToolsCP.SIRT(_data_, _algorithm_)
 
 sirt_rec = cp.asnumpy(SIRTrec_cupy)
 
@@ -144,5 +146,38 @@ plt.title('3D SIRT Reconstruction, coronal view')
 plt.subplot(133)
 plt.imshow(sirt_rec[:,:,sliceSel])
 plt.title('3D SIRT Reconstruction, sagittal view')
+plt.show()
+#%%
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print ("%%%%%%%%%% Reconstructing using CGLS algorithm %%%%%%%%%%%%%")
+print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+RecToolsCP = RecToolsIRCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector dimension
+                    DetectorsDimV = Vert_det,            # Vertical detector dimension (3D case)
+                    CenterRotOffset = 0.0,               # Center of Rotation scalar or a vector
+                    AnglesVec = angles_rad,              # A vector of projection angles in radians
+                    ObjSize = N_size,                    # Reconstructed object dimensions (scalar)
+                    device_projector='gpu')
+
+# prepare dictionaries with parameters:
+_data_ = {'projection_norm_data' : projData3D_analyt_cupy} # data dictionary
+_algorithm_ = {'iterations' : 25,
+               'nonnegativity' : True}
+CGLSrec_cupy = RecToolsCP.CGLS(_data_, _algorithm_)
+
+cgls_rec = cp.asnumpy(CGLSrec_cupy)
+
+sliceSel = int(0.5*N_size)
+plt.figure() 
+plt.subplot(131)
+plt.imshow(cgls_rec[sliceSel,:,:])
+plt.title('3D CGLS Reconstruction, axial view')
+
+plt.subplot(132)
+plt.imshow(cgls_rec[:,sliceSel,:])
+plt.title('3D CGLS Reconstruction, coronal view')
+
+plt.subplot(133)
+plt.imshow(cgls_rec[:,:,sliceSel])
+plt.title('3D CGLS Reconstruction, sagittal view')
 plt.show()
 #%%

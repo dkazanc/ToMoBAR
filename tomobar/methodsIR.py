@@ -24,21 +24,22 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 from numpy import linalg as LA
 from tomobar.supp.astraOP import parse_device_argument
+from tomobar.supp.dicts import dicts_check
 
 try:
     from ccpi.filters.regularisers import ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV
 except ImportError:
-    print('____! CCPi-regularisation package is missing, please install !____')
+    print('____! CCPi-regularisation package is missing, please install to support regularisation !____')
 
 try:
     import scipy.sparse.linalg
 except ImportError:
-    print('____! Scipy toolbox package is missing, please install !____')
+    print('____! Scipy toolbox package is missing, please install for ADMM !____')
 
 try:
     from pypwt import Wavelets
 except ImportError:
-    print('____! Wavelet package pywpt is missing, please install !____')
+    print('____! Wavelet package pywpt is missing, please install for wavelet regularisation !____')
 
 def smooth(y, box_pts):
     # a function to smooth 1D signal
@@ -72,140 +73,6 @@ def circ_mask(X, diameter):
     else:
         X_masked = np.multiply(X,mask)
     return X_masked
-
-def dict_check(self, _data_, _algorithm_, _regularisation_):
-    # checking and initialising all required parameters here:
-    # ---------- deal with _data_ dictionary --------------
-    # projection normalised _data_
-    if 'projection_norm_data' not in _data_:
-          raise NameError("No input 'projection_norm_data' have been provided")
-    # projection normalised raw data as PWLS-model weights
-    if ('projection_raw_data' not in _data_) and ((self.datafidelity == 'PWLS') or (self.datafidelity == 'SWLS')):
-          raise NameError("No input 'projection_raw_data', has to be provided for PWLS or SWLS data fidelity")
-    if ('OS_number' not in _data_) or (_data_['OS_number'] is None):
-        _data_['OS_number'] = 1 # classical approach (default)
-    self.OS_number = _data_['OS_number']
-    if self.geom == '2D':
-        from tomobar.supp.astraOP import AstraTools, AstraToolsOS
-        self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, 1, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-        self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class OS object
-    else:
-        from tomobar.supp.astraOP import AstraTools3D, AstraToolsOS3D
-        self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, 1 , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
-        self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class OS object
-    # SWLS related parameter (ring supression)
-    if ('beta_SWLS' not in _data_) and (self.datafidelity == 'SWLS'):
-        _data_['beta_SWLS'] = 0.1*np.ones(self.DetectorsDimH)
-    # Huber data model to supress artifacts
-    if 'huber_threshold' not in _data_:
-        _data_['huber_threshold'] = None
-    # Students#t data model to supress artifacts
-    if 'studentst_threshold' not in _data_:
-        _data_['studentst_threshold'] = None
-    # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more strength
-    if 'ring_huber_power' not in _data_:
-        _data_['ring_huber_power'] = 1.75
-    # Group-Huber data model to supress full rings of the same intensity
-    if 'ringGH_lambda' not in _data_:
-        _data_['ringGH_lambda'] = None
-    # Group-Huber data model acceleration factor (use carefully to avoid divergence)
-    if 'ringGH_accelerate' not in _data_:
-        _data_['ringGH_accelerate'] = 50
-    # ----------  deal with _algorithm_  --------------
-    if len(_algorithm_) > 0:
-        if 'lipschitz_const' not in _algorithm_:
-            # if not provided calculate Lipschitz constant automatically
-            _algorithm_['lipschitz_const'] = RecToolsIR.powermethod(self, _data_)
-        # iterations number for the selected reconstruction algorithm
-        if 'iterations' not in _algorithm_:
-            if _data_['OS_number'] == 1:
-                _algorithm_['iterations'] = 400 #classical
-            else:
-                _algorithm_['iterations'] = 20 # Ordered - Subsets
-        # ADMM -algorithm  augmented Lagrangian parameter
-        if 'ADMM_rho_const' not in _algorithm_:
-            _algorithm_['ADMM_rho_const'] = 1000.0
-        # ADMM over-relaxation parameter to accelerate convergence
-        if 'ADMM_relax_par' not in _algorithm_:
-            _algorithm_['ADMM_relax_par'] = 1.0
-        # initialise an algorithm with an array
-        if 'initialise' not in _algorithm_:
-            _algorithm_['initialise'] = None
-        # ENABLE or DISABLE the nonnegativity for algorithm
-        if 'nonnegativity' not in _algorithm_:
-            _algorithm_['nonnegativity'] = 'ENABLE'
-        if _algorithm_['nonnegativity'] == 'ENABLE':
-            self.nonneg_regul = 1 # enable nonnegativity for regularisers
-        else:
-            self.nonneg_regul = 0 # disable nonnegativity for regularisers
-        if 'mask_diameter' not in _algorithm_:
-            _algorithm_['mask_diameter'] = 1.0
-        # tolerance to stop OUTER algorithm iterations earlier
-        if 'tolerance' not in _algorithm_:
-            _algorithm_['tolerance'] = 0.0
-        if 'verbose' not in _algorithm_:
-            _algorithm_['verbose'] = 'on'
-    # ----------  deal with _regularisation_  --------------
-    if len(_regularisation_) > 0:
-        if 'method' not in _regularisation_:
-            _regularisation_['method'] = None
-        # regularisation parameter  (main)
-        if 'regul_param' not in _regularisation_:
-            _regularisation_['regul_param'] = 0.001
-        # regularisation parameter second (LLT_ROF)
-        if 'regul_param2' not in _regularisation_:
-            _regularisation_['regul_param2'] = 0.001
-        # set the number of inner (regularisation) iterations
-        if 'iterations' not in _regularisation_:
-            _regularisation_['iterations'] = 150
-        # tolerance to stop inner regularisation iterations prematurely
-        if 'tolerance' not in _regularisation_:
-            _regularisation_['tolerance'] = 0.0
-        # time marching step to ensure convergence for gradient based methods: ROF_TV, LLT_ROF,  NDF, Diff4th
-        if 'time_marching_step' not in _regularisation_:
-            _regularisation_['time_marching_step'] = 0.005
-        #  TGV specific parameter for the 1st order term
-        if 'TGV_alpha1' not in _regularisation_:
-            _regularisation_['TGV_alpha1'] = 1.0
-        #  TGV specific parameter for the 2тв order term
-        if 'TGV_alpha2' not in _regularisation_:
-            _regularisation_['TGV_alpha2'] = 2.0
-        # Primal-dual parameter for convergence (TGV specific)
-        if 'PD_LipschitzConstant' not in _regularisation_:
-            _regularisation_['PD_LipschitzConstant'] = 12.0
-        # edge (noise) threshold parameter for NDF and DIFF4th models
-        if 'edge_threhsold' not in _regularisation_:
-            _regularisation_['edge_threhsold'] = 0.001
-        # NDF specific penalty type: Huber (default), Perona, Tukey
-        if 'NDF_penalty' not in _regularisation_:
-            _regularisation_['NDF_penalty'] = 'Huber'
-            self.NDF_method = 1
-        else:
-            if _regularisation_['NDF_penalty'] == 'Huber':
-                self.NDF_method = 1
-            elif _regularisation_['NDF_penalty'] == 'Perona':
-                self.NDF_method = 2
-            elif _regularisation_['NDF_penalty'] == 'Tukey':
-                self.NDF_method = 3
-            else:
-                raise NameError("For NDF_penalty choose Huber, Perona or Tukey")
-        # NLTV penalty related weights, , the array of i-related indices
-        if 'NLTV_H_i' not in _regularisation_:
-            _regularisation_['NLTV_H_i'] = 0
-        # NLTV penalty related weights, , the array of i-related indices
-        if 'NLTV_H_j' not in _regularisation_:
-            _regularisation_['NLTV_H_j'] = 0
-        # NLTV-specific penalty type, the array of Weights
-        if 'NLTV_Weights' not in _regularisation_:
-            _regularisation_['NLTV_Weights'] = 0
-        # 0/1 - TV specific isotropic/anisotropic choice
-        if 'methodTV' not in _regularisation_:
-            _regularisation_['methodTV'] = 0
-        # choose the type of the device for the regulariser
-        if 'device_regulariser' not in _regularisation_:
-            _regularisation_['device_regulariser'] = 'cpu'
-    else:
-        _regularisation_['method'] = None
         
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_['iterations'],0)
@@ -267,59 +134,20 @@ class RecToolsIR:
       *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
       *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
 
-    Parameters for reconstruction algorithms are extracted from 3 dictionaries:
-      _data_ :
-            --projection_norm_data # the flat/dark field normalised -log projection data: sinogram or 3D data
-            --projection_raw_data # for PWLS and SWLS models you also need to provide the raw data
-            --OS_number # the number of subsets, if None or 1 - classical (full data) algorithm
-            --huber_threshold # threshold for Huber function to apply to data model (supress outliers)
-            --studentst_threshold # threshold for Students't function to apply to data model (supress outliers)
-            --ring_huber_power # defines the strength of Huber penalty to supress artifacts 1 = Huber, > 1 more penalising
-            --ringGH_lambda # a parameter for Group-Huber data model to supress full rings of the same intensity
-            --ringGH_accelerate # Group-Huber data model acceleration factor (use carefully to avoid divergence, 50 default)
-            --beta_SWLS # a regularisation parameter for stripe-weighted LS model (given as a vector size of DetectorsDimH)
-     _algorithm_ :
-            --iterations # the number of the reconstruction algorithm iterations
-            --initialise # initialisation for the algorithm (array)
-            --nonnegativity # ENABLE (default) or DISABLE the nonnegativity for algorithms
-            --mask_diameter # set to 1.0 to enable a circular mask diameter, < 1.0 to shrink the mask
-            --lipschitz_const # Lipschitz constant for FISTA algorithm, if not given will be calculated for each call
-            --ADMM_rho_const # only for ADMM algorithm augmented Lagrangian parameter
-            --ADMM_relax_par # ADMM-specific over relaxation parameter for convergence speed
-            --tolerance # tolerance to terminate reconstruction algorithm iterations earlier, default 0.0
-            --verbose # mode to print iterations number and other messages ('on' by default, 'off' to suppress)
-     _regularisation_ :
-            --method # select a regularisation method: ROF_TV,FGP_TV,PD_TV,SB_TV,LLT_ROF,TGV,NDF,Diff4th,NLTV /
-              you can also add WAVELET regularisation by adding WAVELETS to any method above, e.g. ROF_TV_WAVELETS
-            --regul_param # main regularisation parameter for all methods
-            --iterations # the number of inner (regularisation) iterations
-            --device_regulariser #  Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-            --edge_threhsold # edge (noise) threshold parameter for NDF and DIFF4th models
-            --tolerance # tolerance to stop inner regularisation iterations prematurely
-            --time_marching_step # a step to ensure convergence for gradient-based methods: ROF_TV,LLT_ROF,NDF,Diff4th
-            --regul_param2 # second regularisation parameter (LLT_ROF or when using WAVELETS)
-            --TGV_alpha1 # TGV specific parameter for the 1st order term
-            --TGV_alpha2 # TGV specific parameter for the 2nd order term
-            --PD_LipschitzConstant # Primal-dual parameter for convergence (PD_TV and TGV specific)
-            --NDF_penalty # NDF-method specific penalty type: Huber (default), Perona, Tukey
-            --NLTV_H_i # NLTV penalty related weights, , the array of i-related indices
-            --NLTV_H_j # NLTV penalty related weights, , the array of j-related indices
-            --NLTV_Weights # NLTV-specific penalty type, the array of Weights
-            --methodTV # 0/1 - TV specific isotropic/anisotropic choice
-
-    Accepted data shapes (the input data must be provided in this fixed order):
-        2D - [Angles, DetectorsDimH]
-        3D - [DetectorsDimV, Angles, DetectorsDimH]
+    Parameters for reconstruction algorithms are extracted from 3 dictionaries: _data_, _algorithm_ and _regularisation_.
+    To list all accepted parameters for those dictionaries do:
+     > from tomobar.supp.dicts import dicts_check
+     > help(dicts_check)
     ----------------------------------------------------------------------------------------------------------
     """
     def __init__(self,
-              DetectorsDimH,     # Horizontal detector dimension
-              DetectorsDimV,     # Vertical detector dimension (3D case)
-              CenterRotOffset,   # The Centre of Rotation scalar or a vector
-              AnglesVec,         # Array of projection angles in radians
-              ObjSize,           # Reconstructed object dimensions (scalar)
-              datafidelity = "LS",      # Data fidelity, choose from LS, KL, PWLS, SWLS
-              device_projector = 'gpu'  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+                DetectorsDimH,     # Horizontal detector dimension
+                DetectorsDimV,     # Vertical detector dimension (3D case)
+                CenterRotOffset,   # The Centre of Rotation scalar or a vector
+                AnglesVec,         # Array of projection angles in radians
+                ObjSize,           # Reconstructed object dimensions (scalar)
+                datafidelity = "LS",      # Data fidelity, choose from LS, KL, PWLS, SWLS
+                device_projector = 'gpu'  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
               ):
         if isinstance(ObjSize,tuple):
             raise ValueError(" Reconstruction is currently available for square or cubic objects only, please provide a scalar ")
@@ -345,11 +173,21 @@ class RecToolsIR:
             # Creating Astra class specific to 3D parallel geometry
             self.geom = '3D'
 
-    def SIRT(self, _data_, _algorithm_):
+    def SIRT(self,
+            _data_ : dict,
+            _algorithm_ : dict = {}) -> np.ndarray:
+        """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
+
+        Args:
+            _data_ (dict): Data dictionary, where input data provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+
+        Returns:
+            np.ndarray: SIRT-reconstructed numpy array
+        """
         ######################################################################
         # parameters check and initialisation
-        _algorithm_['lipschitz_const'] = 0 # bypass Lipshitz const calculations
-        dict_check(self, _data_, _algorithm_, {})
+        dicts_check(self, _data_, _algorithm_, method_run = "SIRT")
         ######################################################################
         #SIRT reconstruction algorithm from ASTRA
         if (self.geom == '2D'):
@@ -358,11 +196,21 @@ class RecToolsIR:
             SIRT_rec = self.Atools.sirt3D(_data_['projection_norm_data'], _algorithm_['iterations'])
         return SIRT_rec
 
-    def CGLS(self, _data_, _algorithm_):
+    def CGLS(self,
+            _data_ : dict,
+            _algorithm_ : dict = {}) -> np.ndarray:
+        """Conjugate Gradient Least Squares from ASTRA toolbox.
+
+        Args:
+            _data_ (dict): Data dictionary, where input data provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+
+        Returns:
+            np.ndarray: CGLS-reconstructed numpy array
+        """        
         ######################################################################
         # parameters check and initialisation
-        _algorithm_['lipschitz_const'] = 0 # bypass Lipshitz const calculations
-        dict_check(self, _data_, _algorithm_, {})
+        dicts_check(self, _data_, _algorithm_, method_run = "CGLS")
         ######################################################################
         #CGLS reconstruction algorithm from ASTRA
         if (self.geom == '2D'):
@@ -371,11 +219,20 @@ class RecToolsIR:
             CGLS_rec = self.Atools.cgls3D(_data_['projection_norm_data'], _algorithm_['iterations'])
         return CGLS_rec
 
-    def powermethod(self, _data_):
-        # power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix)
-        # projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored
-        dict_check(self, _data_, {}, {}) # sets ASTRA geometry
-        niter = 15 # number of power method iterations (normally enough to converge)
+    def powermethod(self,
+                    _data_ : dict,
+                    _algorithm_ : dict = {}) -> float:
+        """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
+        projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
+
+        Args:
+            _data_ (_type_): Data dictionary, where input data provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+
+        Returns:
+            float: the Lipschitz constant
+        """
+        dicts_check(self, _data_, _algorithm_, method_run = "power")        
         s = 1.0
 
         if (self.geom == '2D'):
@@ -390,7 +247,7 @@ class RecToolsIR:
             y = self.Atools.forwproj(x1)
             if (self.datafidelity == 'PWLS'):
                 y = np.multiply(sqweight, y)
-            for iter in range(0,niter):
+            for iter in range(0,_algorithm_['iterations']):
                 x1 = self.Atools.backproj(y)
                 s = LA.norm(x1)
                 x1 = x1/s
@@ -405,7 +262,7 @@ class RecToolsIR:
                     y = np.multiply(sqweight[self.AtoolsOS.newInd_Vec[0,:],:], y)
                 else:
                     y = np.multiply(sqweight[:,self.AtoolsOS.newInd_Vec[0,:],:], y)
-            for iter in range(0,niter):
+            for iter in range(0,_algorithm_['iterations']):
                 x1 = self.AtoolsOS.backprojOS(y,0)
                 s = LA.norm(x1)
                 x1 = x1/s
@@ -417,10 +274,24 @@ class RecToolsIR:
                         y = np.multiply(sqweight[:,self.AtoolsOS.newInd_Vec[0,:],:], y)
         return s
 
-    def FISTA(self, _data_, _algorithm_, _regularisation_):
+    def FISTA(self, 
+              _data_ : dict,
+              _algorithm_ : dict = {},
+              _regularisation_ : dict = {}) -> np.ndarray:
+        """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
+        data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
+
+        Args:
+            _data_ (dict): Data dictionary, where input data provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+            _regularisation_ (dict, optional): Regularisation dictionary.
+
+        Returns:
+            np.ndarray: FISTA-reconstructed numpy array
+        """
         ######################################################################
         # parameters check and initialisation
-        dict_check(self, _data_, _algorithm_, _regularisation_)
+        dicts_check(self, _data_, _algorithm_, _regularisation_)
         ######################################################################
 
         L_const_inv = 1.0/_algorithm_['lipschitz_const'] # inverted Lipschitz constant
@@ -619,10 +490,24 @@ class RecToolsIR:
 #*****************************FISTA ends here*********************************#
 
 #**********************************ADMM***************************************#
-    def ADMM(self, _data_, _algorithm_, _regularisation_):
+    def ADMM(self,
+            _data_ : dict,
+            _algorithm_ : dict = {},
+            _regularisation_ : dict = {}) -> np.ndarray:
+        """Alternating Directions Method of Multipliers with various types of regularisation and
+        data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
+
+        Args:
+            _data_ (dict): Data dictionary, where input data provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+            _regularisation_ (dict, optional): Regularisation dictionary.
+
+        Returns:
+            np.ndarray: ADMM-reconstructed numpy array
+        """        
         ######################################################################
         # parameters check and initialisation
-        dict_check(self, _data_, _algorithm_, _regularisation_)
+        dicts_check(self, _data_, _algorithm_, _regularisation_, method_run = "ADMM")
         ######################################################################
 
         def ADMM_Ax(x):

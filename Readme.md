@@ -22,7 +22,7 @@
  * Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
  * [Access to multi-GPU capability through mpi4py library](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py)
  * CuPy driven [forward/backward projectors](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/Demo_CuPy_3D.py) to enable faster device-to-device operations and all in GPU memory protoyping of algorithms
- * Demos to reconstruct synthetic and also real data (provided) [4-6]
+ * [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos) to reconstruct synthetic and also real data [4-6]
 
 <div align="center">
   <img src="docs/images/recsFISTA_stud.png" width="550">
@@ -80,15 +80,13 @@ ToMoBAR can be used by running in parallel across multiple GPU devices on a PC o
 Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
 ## How to use ToMoBAR in Python:
-Detailed information about the methods and parameters can be obtained with:
-```
-from tomobar.methodsIR import RecToolsIR
-help(RecToolsIR)
-from tomobar.methodsDIR import RecToolsDIR
-help(RecToolsDIR)
-```
+Please check [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
 
-A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`
+A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`. To list all accepted parameters for dictionaries do: 
+```
+from tomobar.supp.dicts import dicts_check
+help(dicts_check)
+```
 <div align="left">
   <img src="docs/images/tomobar_pres.png" width="620">  
 </div>
