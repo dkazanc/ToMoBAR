@@ -175,19 +175,19 @@ class RecToolsIR:
 
     def SIRT(self,
             _data_ : dict,
-            _algorithm_ : dict = {}) -> np.ndarray:
+            _algorithm_ : dict = None) -> np.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
 
         Args:
-            _data_ (dict): Data dictionary, where input data provided.
-            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
 
         Returns:
             np.ndarray: SIRT-reconstructed numpy array
         """
         ######################################################################
         # parameters check and initialisation
-        dicts_check(self, _data_, _algorithm_, method_run = "SIRT")
+        (_data_, _algorithm_, _regularisation_) = dicts_check(self, _data_, _algorithm_, method_run = "SIRT")
         ######################################################################
         #SIRT reconstruction algorithm from ASTRA
         if (self.geom == '2D'):
@@ -198,19 +198,19 @@ class RecToolsIR:
 
     def CGLS(self,
             _data_ : dict,
-            _algorithm_ : dict = {}) -> np.ndarray:
+            _algorithm_ : dict = None) -> np.ndarray:
         """Conjugate Gradient Least Squares from ASTRA toolbox.
 
         Args:
-            _data_ (dict): Data dictionary, where input data provided.
-            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
 
         Returns:
             np.ndarray: CGLS-reconstructed numpy array
         """        
         ######################################################################
         # parameters check and initialisation
-        dicts_check(self, _data_, _algorithm_, method_run = "CGLS")
+        (_data_, _algorithm_, _regularisation_) = dicts_check(self, _data_, _algorithm_, method_run = "CGLS")
         ######################################################################
         #CGLS reconstruction algorithm from ASTRA
         if (self.geom == '2D'):
@@ -221,33 +221,31 @@ class RecToolsIR:
 
     def powermethod(self,
                     _data_ : dict,
-                    _algorithm_ : dict = {}) -> float:
+                    _algorithm_ : dict = None) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
         projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
 
         Args:
-            _data_ (_type_): Data dictionary, where input data provided.
-            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+            _data_ (_type_): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
 
         Returns:
             float: the Lipschitz constant
         """
-        dicts_check(self, _data_, _algorithm_, method_run = "power")        
+        (_data_, _algorithm_, _regularisation_) = dicts_check(self, _data_, _algorithm_, method_run = "power")
         s = 1.0
-
         if (self.geom == '2D'):
             x1 = np.float32(np.random.randn(self.ObjSize,self.ObjSize))
         else:
             x1 = np.float32(np.random.randn(self.DetectorsDimV,self.ObjSize,self.ObjSize))
         if (self.datafidelity == 'PWLS'):
                 sqweight = _data_['projection_raw_data']
-
         if (self.OS_number == 1):
             # non-OS approach
             y = self.Atools.forwproj(x1)
             if (self.datafidelity == 'PWLS'):
                 y = np.multiply(sqweight, y)
-            for iter in range(0,_algorithm_['iterations']):
+            for iter in range(0, _algorithm_['iterations']):
                 x1 = self.Atools.backproj(y)
                 s = LA.norm(x1)
                 x1 = x1/s
@@ -276,14 +274,14 @@ class RecToolsIR:
 
     def FISTA(self, 
               _data_ : dict,
-              _algorithm_ : dict = {},
-              _regularisation_ : dict = {}) -> np.ndarray:
+              _algorithm_ : dict = None,
+              _regularisation_ : dict = None) -> np.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
         data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
 
         Args:
-            _data_ (dict): Data dictionary, where input data provided.
-            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
             _regularisation_ (dict, optional): Regularisation dictionary.
 
         Returns:
@@ -291,13 +289,13 @@ class RecToolsIR:
         """
         ######################################################################
         # parameters check and initialisation
-        dicts_check(self, _data_, _algorithm_, _regularisation_)
+        (_data_, _algorithm_, _regularisation_) = dicts_check(self, _data_, _algorithm_, _regularisation_, method_run = "FISTA")
         ######################################################################
 
         L_const_inv = 1.0/_algorithm_['lipschitz_const'] # inverted Lipschitz constant
         if (self.geom == '2D'):
             # 2D reconstruction
-            # initialise the solution
+            # initialise the solution            
             if (np.size(_algorithm_['initialise']) == self.ObjSize**2):
                 # the object has been initialised with an array
                 X = _algorithm_['initialise']
@@ -492,14 +490,14 @@ class RecToolsIR:
 #**********************************ADMM***************************************#
     def ADMM(self,
             _data_ : dict,
-            _algorithm_ : dict = {},
-            _regularisation_ : dict = {}) -> np.ndarray:
+            _algorithm_ : dict = None,
+            _regularisation_ : dict = None) -> np.ndarray:
         """Alternating Directions Method of Multipliers with various types of regularisation and
         data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
 
         Args:
-            _data_ (dict): Data dictionary, where input data provided.
-            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters provided.
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
             _regularisation_ (dict, optional): Regularisation dictionary.
 
         Returns:
@@ -507,7 +505,7 @@ class RecToolsIR:
         """        
         ######################################################################
         # parameters check and initialisation
-        dicts_check(self, _data_, _algorithm_, _regularisation_, method_run = "ADMM")
+        (_data_, _algorithm_, _regularisation_) = dicts_check(self, _data_, _algorithm_, _regularisation_, method_run = "ADMM")
         ######################################################################
 
         def ADMM_Ax(x):

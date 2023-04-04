@@ -160,7 +160,7 @@ RecToolsCP = RecToolsIRCuPy(DetectorsDimH = Horiz_det,     # Horizontal detector
 
 # prepare dictionaries with parameters:
 _data_ = {'projection_norm_data' : projData3D_analyt_cupy} # data dictionary
-_algorithm_ = {'iterations' : 25,
+_algorithm_ = {'iterations' : 20,
                'nonnegativity' : True}
 CGLSrec_cupy = RecToolsCP.CGLS(_data_, _algorithm_)
 

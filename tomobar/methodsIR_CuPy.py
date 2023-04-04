@@ -52,7 +52,7 @@ class RecToolsIRCuPy(RecToolsIR):
         super().__init__(DetectorsDimH, DetectorsDimV, CenterRotOffset, AnglesVec, ObjSize, datafidelity, device_projector)    
     def Landweber(self,
                   _data_ : dict,
-                  _algorithm_ : dict = {}) -> cp.ndarray:
+                  _algorithm_ : dict = None) -> cp.ndarray:
         """Using Landweber iterative technique to reconstruct projection data given as a CuPy array.
            We perform the following iterations: x_k+1 = x_k - tau*A.T(A(x_k) - b)
 
@@ -65,7 +65,7 @@ class RecToolsIRCuPy(RecToolsIR):
         """
         ######################################################################
         # parameters check and initialisation
-        dicts_check(self, _data_, _algorithm_, method_run = "Landweber")
+        (_data_, _algorithm_, _regularisation_) = dicts_check(self, _data_, _algorithm_, method_run = "Landweber")
         ######################################################################                              
         
         _data_['projection_norm_data'] = cp.ascontiguousarray(cp.swapaxes(_data_['projection_norm_data'], 0, 1))
@@ -80,7 +80,7 @@ class RecToolsIRCuPy(RecToolsIR):
         return x_rec
     def SIRT(self,
             _data_ : dict,
-            _algorithm_ : dict = {}) -> cp.ndarray:
+            _algorithm_ : dict = None) -> cp.ndarray:
         """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to 
            reconstruct projection data given as a CuPy array.
            We perform the following iterations:: x_k+1 = C*A.T*R(b - A(x_k))
@@ -94,7 +94,7 @@ class RecToolsIRCuPy(RecToolsIR):
         """
         ######################################################################
         # parameters check and initialisation
-        dicts_check(self, _data_, _algorithm_, method_run = "SIRT")
+        (_data_, _algorithm_, _regularisation_) = dicts_check(self, _data_, _algorithm_, method_run = "SIRT")
         ######################################################################          
         epsilon = 1e-8
         _data_['projection_norm_data'] = cp.ascontiguousarray(cp.swapaxes(_data_['projection_norm_data'], 0, 1))
@@ -115,7 +115,7 @@ class RecToolsIRCuPy(RecToolsIR):
         return x_rec
     def CGLS(self,
             _data_ : dict,
-            _algorithm_ : dict = {}) -> cp.ndarray:
+            _algorithm_ : dict = None) -> cp.ndarray:
         """Using CGLS iterative technique to reconstruct projection data given as a CuPy array.
            We aim to solve the system of the normal equations A.T*A*x = A.T*b.
 
@@ -128,16 +128,37 @@ class RecToolsIRCuPy(RecToolsIR):
         """
         ######################################################################
         # parameters check and initialisation
-        dicts_check(self, _data_, _algorithm_, method_run = "CGLS")
+        (_data_, _algorithm_, _regularisation_) = dicts_check(self, _data_, _algorithm_, method_run = "CGLS")
         ######################################################################          
         _data_['projection_norm_data'] = cp.ascontiguousarray(cp.swapaxes(_data_['projection_norm_data'], 0, 1))       
+        data_shape_3d = cp.shape(_data_['projection_norm_data'])
         
         # Prepare for CG iterations.
         x_rec = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=np.float32) # initialisation
+        x_shape_3d = cp.shape(x_rec)
+        x_rec = cp.ravel(x_rec, order='C') # vectorise
         d = self.Atools.backprojCuPy(_data_['projection_norm_data'])
         d = cp.ravel(d, order='C')
         normr2 = cp.inner(d,d)
-
+        r = cp.ravel(_data_['projection_norm_data'], order='C')
         
+        # perform CG iterations
+        for iter_no in range(_algorithm_['iterations']):
+            # Update x_rec and r vectors:
+            Ad = self.Atools.forwprojCuPy(cp.reshape(d, newshape=x_shape_3d, order='C'))
+            Ad = cp.ravel(Ad, order='C')
+            alpha = normr2/cp.inner(Ad,Ad)
+            x_rec += alpha*d
+            r -= alpha*Ad            
+            s = self.Atools.backprojCuPy(cp.reshape(r, newshape=data_shape_3d, order='C'))
+            s = cp.ravel(s, order='C')
+            # Update d vector
+            normr2_new = cp.inner(s,s)
+            beta = normr2_new/normr2
+            normr2 = normr2_new.copy()
+            d = s + beta*d
+            if _algorithm_['nonnegativity']:
+                x_rec[x_rec < 0.0] = 0.0
+            
         cp._default_memory_pool.free_all_blocks()
-        return x_rec    
+        return cp.reshape(x_rec, newshape=x_shape_3d, order='C')

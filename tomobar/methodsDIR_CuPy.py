@@ -13,7 +13,6 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 import cupy as cp
 import cupyx
-import astra
 
 from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsDIR import RecToolsDIR

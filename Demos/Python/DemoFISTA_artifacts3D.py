@@ -21,6 +21,9 @@ from tomophantom import TomoP3D
 from tomophantom.supp.qualitymetrics import QualityTools
 from tomophantom.supp.artifacts import _Artifacts_
 
+from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsDIR import RecToolsDIR
+
 print ("Building 3D phantom using TomoPhantom software")
 tic=timeit.default_timer()
 model = 14 # select a model number from the library
@@ -111,7 +114,6 @@ plt.title('Tangentogram view')
 plt.show()
 #%%
 # initialise tomobar DIRECT reconstruction class ONCE
-from tomobar.methodsDIR import RecToolsDIR
 RectoolsDIR = RecToolsDIR(DetectorsDimH = Horiz_det,  # Horizontal detector dimension
                     DetectorsDimV = Vert_det,         # Vertical detector dimension (3D case)
                     CenterRotOffset  = None,          # Centre of Rotation scalar
@@ -179,7 +181,6 @@ print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print ("Reconstructing with FISTA-OS method using tomobar")
 print ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # initialise tomobar ITERATIVE reconstruction class ONCE
-from tomobar.methodsIR import RecToolsIR
 Rectools = RecToolsIR(DetectorsDimH = Horiz_det,      # Horizontal detector dimension
                     DetectorsDimV = Vert_det,         # Vertical detector dimension (3D case)
                     CenterRotOffset  = None,          # Center of Rotation scalar
@@ -269,7 +270,7 @@ Rectools = RecToolsIR(DetectorsDimH = Horiz_det,      # Horizontal detector dime
 
 _data_ = {'projection_norm_data' : projData3D_analyt_noisy,
           'projection_raw_data' : projData3D_raw/np.max(projData3D_raw),
-          'beta_SWLS' : 2.5*np.ones(Horiz_det),
+          'beta_SWLS' : 2.5,
           'OS_number' : 10} # data dictionary
 
 lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to initialise)
@@ -277,6 +278,12 @@ lc = Rectools.powermethod(_data_) # calculate Lipschitz constant (run once to in
 _algorithm_ = {'iterations' : 20,
                'mask_diameter' : 0.95,
                'lipschitz_const' : lc}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {'method' : 'PD_TV',
+                    'regul_param' :0.0003,
+                    'iterations' : 80,
+                    'device_regulariser': 'gpu'}
 
 # Run FISTA reconstrucion algorithm with 3D regularisation
 RecFISTA_SWLS_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
