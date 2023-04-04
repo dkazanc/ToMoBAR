@@ -90,7 +90,7 @@ class RecToolsDIR:
         else:
             self.CenterRotOffset = 0.0
         self.OS_number = 1
-        self.datafidelity  = "None"
+        self.datafidelity = "None"
         self.device_projector, self.GPUdevice_index = parse_device_argument(device_projector)
         if DetectorsDimV is None:
             #2D geometry

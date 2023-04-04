@@ -1,4 +1,5 @@
 import numpy as np
+from tomobar.supp.astraOP import AstraTools, AstraToolsOS, AstraTools3D, AstraToolsOS3D
 
 def dicts_check(self, 
                _data_ : dict,
@@ -72,13 +73,37 @@ def dicts_check(self,
             _data_['OS_number'] = 1 # classical approach (default)
         self.OS_number = _data_['OS_number']
         if self.geom == '2D':
-            from tomobar.supp.astraOP import AstraTools, AstraToolsOS
-            self.Atools = AstraTools(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, 1, self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class object
-            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number , self.device_projector, self.GPUdevice_index) # initiate 2D ASTRA class OS object
-        else:
-            from tomobar.supp.astraOP import AstraTools3D, AstraToolsOS3D
-            self.Atools = AstraTools3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, 1 , self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class object
-            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH, self.DetectorsDimV, self.AnglesVec, self.CenterRotOffset, self.ObjSize, self.OS_number, self.device_projector, self.GPUdevice_index) # initiate 3D ASTRA class OS object
+            self.Atools = AstraTools(self.DetectorsDimH,
+                                     self.AnglesVec,
+                                     self.CenterRotOffset,
+                                     self.ObjSize,
+                                     1,
+                                     self.device_projector,
+                                     self.GPUdevice_index) # initiate 2D ASTRA class object
+            self.AtoolsOS = AstraToolsOS(self.DetectorsDimH,
+                                         self.AnglesVec,
+                                         self.CenterRotOffset,
+                                         self.ObjSize,
+                                         self.OS_number,
+                                         self.device_projector,
+                                         self.GPUdevice_index) # initiate 2D ASTRA class OS object
+        else:            
+            self.Atools = AstraTools3D(self.DetectorsDimH,
+                                       self.DetectorsDimV,
+                                       self.AnglesVec,
+                                       self.CenterRotOffset,
+                                       self.ObjSize,
+                                       1,
+                                       self.device_projector,
+                                       self.GPUdevice_index) # initiate 3D ASTRA class object
+            self.AtoolsOS = AstraToolsOS3D(self.DetectorsDimH,
+                                           self.DetectorsDimV,
+                                           self.AnglesVec,
+                                           self.CenterRotOffset,
+                                           self.ObjSize,
+                                           self.OS_number,
+                                           self.device_projector,
+                                           self.GPUdevice_index) # initiate 3D ASTRA class OS object
         if method_run == "FISTA":
             if self.datafidelity == 'SWLS':
                 if (_data_.get("beta_SWLS") is None):

@@ -72,7 +72,7 @@ lc = RectoolsIterative.powermethod(_data_) # calculate Lipschitz constant (run o
 _algorithm_ = {'iterations' : 2,
                'lipschitz_const' : lc}
 # Run FISTA reconstrucion algorithm without regularisation
-Rec = RectoolsIterative.FISTA(_data_, _algorithm_, {})
+Rec = RectoolsIterative.FISTA(_data_, _algorithm_)
 print ("Done...")
 print ("--------------------------------------------------------------")
 print ("Perform REGULARISED iterative recon (FISTA) of 2D slice (cpu)")
@@ -137,7 +137,7 @@ _algorithm_ = {'iterations' : 2,
 # Run FISTA reconstrucion algorithm without regularisation
 print ("--------------------------------------------------------------")
 print ("Perform iterative recon (FISTA) of 2D slice (gpu)")
-Rec = RectoolsIterative.FISTA(_data_, _algorithm_, {})
+Rec = RectoolsIterative.FISTA(_data_, _algorithm_)
 print ("Done...")
 
 print ("--------------------------------------------------------------")
