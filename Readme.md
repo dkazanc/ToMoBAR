@@ -7,7 +7,7 @@
         </td>
         <td>
         <font size="5"><b> TOmographic MOdel-BAsed Reconstruction software <a href="https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf">PAPER (CT Meeting 2020)</a></b></font>     
-        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a Python and Matlab (not currently maintained) library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability. ToMoBAR offers you a selection of various data models and regularisers resulting in complex objectives for tomographic reconstruction. ToMoBAR can handle multi-GPU parallel reconstruction through mpi4py package in Python. </font></br>
+        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a Python and Matlab (not maintained atm) library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability. ToMoBAR offers you a selection of various data models and regularisers resulting in complex objectives for tomographic reconstruction. ToMoBAR can handle multi-GPU parallel reconstruction in Python and also device-to-device methods operating on CuPy arrays. </font></br>
         </td>
     </tr>
 </table>
@@ -20,8 +20,9 @@
  * A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods available in ASTRA
  * Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities
  * Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
- * Access to multi-GPU capability through mpi4py library
- * Demos to reconstruct synthetic and also real data (provided) [4-6]
+ * [Access to multi-GPU capability through mpi4py library](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py)
+ * CuPy driven [forward/backward projectors](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/Demo_CuPy_3D.py) to enable faster device-to-device operations and all in GPU memory protoyping of algorithms
+ * [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos) to reconstruct synthetic and also real data [4-6]
 
 <div align="center">
   <img src="docs/images/recsFISTA_stud.png" width="550">
@@ -44,14 +45,10 @@
  * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation [7]
  * Wavelet toolbox [pypwt](https://github.com/pierrepaleo/pypwt) if wavelet regularisation is used (optional)
  * [mpi4py](https://mpi4py.readthedocs.io/en/stable/) for multi-GPU reconstruction control
+ * [cupy](https://cupy.dev/) for GPU memory device-to-device operability
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Python conda:
-Install ToMoBAR and its basic dependencies into a new environment using the provided [file](https://github.com/dkazanc/ToMoBAR/blob/master/conda-recipe/tomobar_env_20_06_22.txt):
-```
-conda create --name tomobar --file conda-recipe/tomobar_env_20_06_22.txt
-```
-
 Install the ToMoBAR package from one of conda channels bellow:
 ```
 conda install -c dkazanc tomobar
@@ -60,34 +57,36 @@ conda install -c savu-dep tomobar
 
  or build using provided conda recipe:
 ```
-export VERSION=`date +%Y.%m` (unix) / set VERSION=2020.10 (Windows)
-conda build conda-recipe/ --numpy 1.15 --python 3.7
+export VERSION=`date +%Y.%m` (unix) / set VERSION=2023.04 (Windows)
+conda build conda-recipe/ --numpy 1.23 --python 3.10
 conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
+```
+
+Install ToMoBAR and its basic dependencies into a new environment using the provided [file](https://github.com/dkazanc/ToMoBAR/blob/master/conda-recipe/tomobar_env_20_06_22.txt):
+```
+conda create --name tomobar --file conda-recipe/tomobar_env_20_06_22.txt
 ```
 
 ### Python development environment
 * Clone the repository from GitHub page
-* Install dependencies from the environment file
-* Alternatively you can install from the existing explicit file
+* Install dependencies from the environment file (or from explicit list file)
 * Activate the environment with :code:`conda activate tomobar`
 * From the root directory install the enviroment in development mode with :code:`pip install -e .[dev]`
 
 ### MultiGPU capability
 ToMoBAR can be used by running in parallel across multiple GPU devices on a PC or a compute node of a cluster. In order to initiate a parallel run on multiple GPUs you will need an MPI library, such as, [mpi4py](https://mpi4py.readthedocs.io/en/stable/). See this [demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py).
 
-### Matlab (is not currently actively supported)
+### Matlab (is not currently supported)
 Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
 ## How to use ToMoBAR in Python:
-Detailed information about the methods and parameters can be obtained with:
-```
-from tomobar.methodsIR import RecToolsIR
-help(RecToolsIR)
-from tomobar.methodsDIR import RecToolsDIR
-help(RecToolsDIR)
-```
+Please check [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
 
-A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`
+A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`. To list all accepted parameters for dictionaries do: 
+```
+from tomobar.supp.dicts import dicts_check
+help(dicts_check)
+```
 <div align="left">
   <img src="docs/images/tomobar_pres.png" width="620">  
 </div>
