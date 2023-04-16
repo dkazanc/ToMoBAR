@@ -20,6 +20,8 @@ jobs:
     - name: Install dependencies with Conda
       run: |
         $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
+        $CONDA/bin/conda list
+        
 
     - name: Decrypt a secret
       run: ./.scripts/decrypt_secret.sh

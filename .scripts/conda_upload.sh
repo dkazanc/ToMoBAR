@@ -17,6 +17,8 @@ export CONDA_BLD_PATH=~/conda-bld
 #conda build . --numpy=1.21 --python=3.10
 #conda build . --numpy=1.22 --python=3.10
 
+conda install -c astra-toolbox astra-toolbox
+
 for python_ver in 3.9 3.10; do   
     for numpy_ver in 1.21 1.22 1.23 1.24; do
         export VERSION=`date +%Y.%m`"_py"$python_ver"_np"$numpy_ver
