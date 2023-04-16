@@ -10,9 +10,7 @@
 """
 
 import numpy as np
-from tomobar.supp.astraOP import AstraTools
-from tomobar.supp.astraOP import AstraTools3D
-from tomobar.supp.astraOP import parse_device_argument
+from tomobar.supp.astraOP import AstraTools, AstraTools3D, parse_device_argument
 import scipy.fftpack
 
 

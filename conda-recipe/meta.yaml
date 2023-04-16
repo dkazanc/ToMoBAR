@@ -35,7 +35,6 @@ requirements:
     - scikit-image
     - pytest
 
-
 about:
   home: https://github.com/dkazanc/ToMoBAR
   summary: 'TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software'
