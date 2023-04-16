@@ -19,8 +19,7 @@ test:
     - tests/*
   commands:
     - pip check
-    - pytest
-    
+    - pytest    
 requirements:
   host:
     - python
@@ -34,7 +33,6 @@ requirements:
     - pillow
     - scikit-image
     - pytest
-
 
 about:
   home: https://github.com/dkazanc/ToMoBAR
