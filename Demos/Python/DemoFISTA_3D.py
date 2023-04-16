@@ -68,7 +68,7 @@ projData3D_analyt = TomoP3D.ModelSino(
 # adding noise
 _noise_ = {
     "noise_type": "Poisson",
-    "noise_sigma": 8000,  # noise amplitude
+    "noise_amplitude": 8000,
     "noise_seed": 0,
 }
 

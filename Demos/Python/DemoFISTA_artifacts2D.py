@@ -59,13 +59,13 @@ from tomophantom.supp.artifacts import _Artifacts_
 # forming dictionaries with artifact types
 _noise_ = {
     "noise_type": "Poisson",
-    "noise_sigma": 5000,  # noise amplitude
+    "noise_amplitude": 5000,
     "noise_seed": 0,
     "noise_prelog": True,
 }
 
 # misalignment dictionary
-_sinoshifts_ = {"sinoshifts_maxamplitude": 10}
+_sinoshifts_ = {"datashifts_maxamplitude_pixel": 10}
 [[sino_misalign, sino_misalign_raw], shifts] = _Artifacts_(
     sino_an, **_noise_, **_sinoshifts_
 )
@@ -195,25 +195,16 @@ _data_.update({"huber_threshold": 7.0})
 print(" Run FISTA reconstrucion algorithm with regularisation and Huber data...")
 RecFISTA_Huber_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
-print("Adding a better model for data with rings...")
-_data_.update({"ring_weights_threshold": 3.5, "ring_tuple_halfsizes": (9, 7, 0)})
-
-RecFISTA_HuberRing_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
-
 plt.figure()
 maxval = 1.3
-plt.subplot(131)
+plt.subplot(121)
 plt.imshow(RecFISTA_LS_reg, vmin=0, vmax=maxval, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
 plt.title("FISTA-PWLS-TV reconstruction")
-plt.subplot(132)
+plt.subplot(122)
 plt.imshow(RecFISTA_Huber_reg, vmin=0, vmax=maxval, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
 plt.title("FISTA-Huber-TV reconstruction")
-plt.subplot(133)
-plt.imshow(RecFISTA_HuberRing_reg, vmin=0, vmax=maxval, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
-plt.title("FISTA-HuberRing-TV reconstruction")
 plt.show()
 
 # calculate errors
@@ -221,11 +212,8 @@ Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_LS_reg[indicesROI])
 RMSE_FISTA_LS_TV = Qtools.rmse()
 Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_Huber_reg[indicesROI])
 RMSE_FISTA_HUBER_TV = Qtools.rmse()
-Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_HuberRing_reg[indicesROI])
-RMSE_FISTA_HUBERRING_TV = Qtools.rmse()
 print("RMSE for FISTA-PWLS-TV reconstruction is {}".format(RMSE_FISTA_LS_TV))
 print("RMSE for FISTA-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
-print("RMSE for FISTA-OS-HuberRing-TV is {}".format(RMSE_FISTA_HUBERRING_TV))
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing using FISTA-OS-SWLS method (tomobar)")
@@ -244,10 +232,11 @@ RectoolsIR = RecToolsIR(
 
 # prepare dictionaries with parameters
 # data dictionary
+del _data_
 _data_ = {
     "projection_norm_data": sino_artifacts,
     "projection_raw_data": sino_artifacts_raw / np.max(sino_artifacts_raw),
-    "beta_SWLS": 1.0 * np.ones(P),
+    "beta_SWLS": 0.05,
     "OS_number": 10,
 }
 lc = RectoolsIR.powermethod(
@@ -267,7 +256,7 @@ _regularisation_ = {
 RecFISTA_SWLS = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
 # adding Huber data fidelity threshold to remove zingers
-_data_.update({"huber_threshold": 30.0})
+_data_.update({"huber_threshold": 60.0})
 
 RecFISTA_SWLS_Huber = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
 
@@ -294,17 +283,28 @@ print("RMSE for FISTA-SWLS-Huber-TV is {}".format(RMSE_FISTA_SWLS_HUBER_TV))
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing using FISTA-Group-Huber method (tomobar)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+RectoolsIR = RecToolsIR(
+    DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimV=None,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
+    device_projector="gpu",
+)
+
 # prepare dictionaries with parameters:
 _data_ = {
     "projection_norm_data": sino_artifacts,
     "projection_raw_data": sino_artifacts_raw / np.max(sino_artifacts_raw),
-    "huber_threshold": 7.0,
+    "huber_threshold": 15,
     "ringGH_lambda": 0.001,
-    "ringGH_accelerate": 10,
+    "ringGH_accelerate": 13,
     "OS_number": 10,
 }
 
-_algorithm_ = {"iterations": 30, "mask_diameter": 0.9, "lipschitz_const": lc}
+_algorithm_ = {"iterations": 50, "mask_diameter": 0.9, "lipschitz_const": lc}
 
 # Run FISTA reconstrucion algorithm with regularisation
 RecFISTA_LS_GH_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
@@ -323,6 +323,16 @@ print("RMSE for FISTA-PWLS-GH-TV reconstruction is {}".format(RMSE_FISTA_LS_GH_T
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing using FISTA-students't method (tomobar)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+RectoolsIR = RecToolsIR(
+    DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimV=None,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
+    device_projector="gpu",
+)
 # prepare dictionaries with parameters:
 _data_ = {
     "projection_norm_data": sino_artifacts,

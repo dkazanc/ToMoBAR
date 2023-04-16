@@ -61,7 +61,7 @@ plt.title("{}" "{}".format("Analytical sinogram of model no.", model))
 # forming dictionaries with artifact types
 _noise_ = {
     "noise_type": "Poisson",
-    "noise_sigma": 5000,  # noise amplitude
+    "noise_amplitude": 5000,
     "noise_seed": 0,
 }
 
