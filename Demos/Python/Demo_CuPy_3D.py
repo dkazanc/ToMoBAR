@@ -45,7 +45,7 @@ projData3D_analyt = TomoP3D.ModelSino(
 )
 
 # transfering numpy array to CuPy array
-projData3D_analyt_cupy = cp.asarray(np.swapaxes(projData3D_analyt, 0, 1))
+projData3D_analyt_cupy = cp.asarray(np.swapaxes(projData3D_analyt, 0, 1), order="C")
 # %%
 # It is recommend to re-run twice in order to get the optimal time
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")

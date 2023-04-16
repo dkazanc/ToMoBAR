@@ -1,12 +1,13 @@
 import numpy as np
 from tomobar.supp.astraOP import AstraTools, AstraToolsOS, AstraTools3D, AstraToolsOS3D
-
+import typing
+from typing import Union
 
 def dicts_check(
     self,
     _data_: dict,
-    _algorithm_: dict = None,
-    _regularisation_: dict = None,
+    _algorithm_: Union[dict, None] = None,
+    _regularisation_: Union[dict, None] = None,
     method_run: str = "FISTA",
 ) -> tuple:
     """Function that checks the given dictionaties and populates its parameters.
