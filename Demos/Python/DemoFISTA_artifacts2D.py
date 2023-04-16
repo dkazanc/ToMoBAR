@@ -284,6 +284,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing using FISTA-Group-Huber method (tomobar)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
+
 RectoolsIR = RecToolsIR(
     DetectorsDimH=P,  # Horizontal detector dimension
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
@@ -324,6 +325,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing using FISTA-students't method (tomobar)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR import RecToolsIR
+
 RectoolsIR = RecToolsIR(
     DetectorsDimH=P,  # Horizontal detector dimension
     DetectorsDimV=None,  # Vertical detector dimension (3D case)

@@ -10,7 +10,17 @@
 """
 
 import numpy as np
-from tomobar.supp.astraOP import AstraTools, AstraTools3D, parse_device_argument
+
+astra_enabled = False
+try:
+    import astra
+    from tomobar.supp.astraOP import AstraTools, AstraTools3D
+
+    astra_enabled = True
+except ImportError:
+    print("____! Astra-toolbox package is missing, please install !____")
+
+from tomobar.supp.astraOP import parse_device_argument
 import scipy.fftpack
 
 
@@ -112,29 +122,31 @@ class RecToolsDIR:
         if DetectorsDimV is None:
             # 2D geometry
             self.geom = "2D"
-            # initiate 2D ASTRA class object
-            self.Atools = AstraTools(
-                self.DetectorsDimH,
-                self.AnglesVec,
-                self.CenterRotOffset,
-                self.ObjSize,
-                self.OS_number,
-                self.device_projector,
-                self.GPUdevice_index,
-            )
+            if astra_enabled:
+                # initiate 2D ASTRA class object
+                self.Atools = AstraTools(
+                    self.DetectorsDimH,
+                    self.AnglesVec,
+                    self.CenterRotOffset,
+                    self.ObjSize,
+                    self.OS_number,
+                    self.device_projector,
+                    self.GPUdevice_index,
+                )
         else:
             self.geom = "3D"
-            # initiate 3D ASTRA class object
-            self.Atools = AstraTools3D(
-                self.DetectorsDimH,
-                self.DetectorsDimV,
-                self.AnglesVec,
-                self.CenterRotOffset,
-                self.ObjSize,
-                self.OS_number,
-                self.device_projector,
-                self.GPUdevice_index,
-            )
+            if astra_enabled:
+                # initiate 3D ASTRA class object
+                self.Atools = AstraTools3D(
+                    self.DetectorsDimH,
+                    self.DetectorsDimV,
+                    self.AnglesVec,
+                    self.CenterRotOffset,
+                    self.ObjSize,
+                    self.OS_number,
+                    self.device_projector,
+                    self.GPUdevice_index,
+                )
 
     def FORWPROJ(self, data):
         """Module to perform forward projection of 2d/3d data array

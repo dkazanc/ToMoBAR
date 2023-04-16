@@ -7,9 +7,7 @@ from tomobar.methodsIR import RecToolsIR
 ###############################################################################
 class TestTomobar(unittest.TestCase):
     def test_tomobarDIR(self):
-        model = 4  # select a model
         N_size = 64  # set dimension of the phantom
-
         # create sinogram analytically
         angles_num = int(0.5 * np.pi * N_size)
         # angles number

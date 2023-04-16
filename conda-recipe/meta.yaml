@@ -19,8 +19,7 @@ test:
     - tests/*
   commands:
     - pip check
-    - pytest
-    
+    - pytest    
 requirements:
   host:
     - python

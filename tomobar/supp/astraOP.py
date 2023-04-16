@@ -26,7 +26,7 @@ except ImportError:
 
 try:
     import astra
-except:
+except ImportError:
     print("____! Astra-toolbox package is missing, please install !____")
 
 
