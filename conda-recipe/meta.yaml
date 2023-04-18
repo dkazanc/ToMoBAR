@@ -15,6 +15,9 @@ test:
   requires:
     - pip
     - pytest
+  imports:
+    - tomobar
+    - tomobar.supp
   source_files:
     - tests/*
   commands:
