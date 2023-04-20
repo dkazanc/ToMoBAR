@@ -35,12 +35,19 @@ def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
     module = load_cuda_module("generate_filtersync")
     filter_prep = module.get_function("generate_filtersinc")
 
+    # prepearing a ramp-like filter to apply to every projection
+    module = load_cuda_module("generate_filtersync")
+    filter_prep = module.get_function("generate_filtersinc")
+
+    # Use real FFT to save space and time
+    proj_f = cupyx.scipy.fft.rfft(projection3D, axis=-1, norm="backward", overwrite_x=True)
+
     # generating the filter here so we can schedule/allocate while FFT is keeping the GPU busy
     a = 1.1
-    f = cp.empty((1, 1, DetectorsLengthH // 2 + 1), dtype=np.float32)
+    f = cp.empty((1, 1, DetectorsLengthH//2+1), dtype=np.float32)
     bx = 256
     # because FFT is linear, we can apply the FFT scaling + multiplier in the filter
-    multiplier = 1.0 / projectionsNum / DetectorsLengthV / DetectorsLengthH
+    multiplier = 1.0 / projectionsNum / DetectorsLengthH
     filter_prep(
         grid=(1, 1, 1),
         block=(bx, 1, 1),
@@ -48,18 +55,10 @@ def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
         shared_mem=bx * 4,
     )
 
-    # Use real FFT to save space and time
-    proj_f = cupyx.scipy.fft.rfft2(
-        projection3D, axes=(1, 2), norm="backward", overwrite_x=True
-    )
-
-    # proj_f = cupyx.scipy.fft.rfft(projection3D, axis=-1, norm="backward", overwrite_x=True)
-    proj_f *= f  # filtering
-    # return cupyx.scipy.fft.irfft(proj_f, projection3D.shape[2], axis=-1, norm="forward", overwrite_x=True)
-    return cupyx.scipy.fft.irfft2(
-        proj_f, projection3D.shape[1:], axes=(1, 2), norm="forward", overwrite_x=True
-    )
-
+    # actual filtering
+    proj_f *= f
+    
+    return cupyx.scipy.fft.irfft(proj_f, projection3D.shape[2], axis=-1, norm="forward", overwrite_x=True)
 
 class RecToolsDIRCuPy(RecToolsDIR):
     def __init__(

@@ -70,7 +70,7 @@ print(
     )
 )
 
-# bring data from the device to host
+# bring data from the device to the host
 FBPrec_cupy = cp.asnumpy(FBPrec_cupy)
 
 sliceSel = int(0.5 * N_size)

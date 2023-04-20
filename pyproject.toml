@@ -3,7 +3,13 @@ requires = ["setuptools>=42", "wheel", "setuptools-git-versioning"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["tomobar", "tomobar.supp"]
+include-package-data = true
+packages = ["tomobar",
+            "tomobar.supp",
+            "tomobar.cuda_kernels"]
+
+[tool.setuptools.package-data]
+tomobar = ["*.cu", "*.cuh"]  # include cuda kernels in package
 
 [tool.setuptools-git-versioning]
 enabled = true
