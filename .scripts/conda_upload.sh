@@ -16,6 +16,7 @@ export CONDA_BLD_PATH=~/conda-bld
 #    done
 # done
 
+export VERSION=`date +%Y.%m`
 conda build .
 
 # upload packages to conda
