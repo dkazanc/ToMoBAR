@@ -53,7 +53,6 @@ Install the ToMoBAR package from one of conda channels bellow:
 ```
 conda install -c httomo tomobar
 ```
-
  or build using provided conda recipe:
 ```
 export VERSION=$(date +%Y.%m) (unix) / set VERSION=2023.04 (Windows)
@@ -74,10 +73,10 @@ ToMoBAR can be used by running in parallel across multiple GPU devices on a PC o
 Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
 ## How to use ToMoBAR in Python:
-Please check [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
+Please check [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python) and also [Documetation](https://dkazanc.github.io/ToMoBAR/) with more detailed recipies how to run.
 
 A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`. To list all accepted parameters for dictionaries do: 
-```
+```python
 from tomobar.supp.dicts import dicts_check
 help(dicts_check)
 ```
