@@ -11,18 +11,22 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.10'
+      - name: Checkout repository code
+        uses: actions/checkout@v3
+        with:
+          ref: "main"
+          fetch-depth: 0
+
+      # setup Python 3.9
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
 
     - name: Install dependencies with Conda
       run: |
         $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
-        $CONDA/bin/conda install -n base conda-libmamba-solver
         $CONDA/bin/conda list
-        
 
     - name: Decrypt a secret
       run: ./.scripts/decrypt_secret.sh

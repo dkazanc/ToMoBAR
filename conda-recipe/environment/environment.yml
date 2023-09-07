@@ -12,6 +12,6 @@ dependencies:
   - conda-forge::pyproject-flake8
   - conda-forge::pydocstyle
   - conda-forge::setuptools
-  - anaconda::ipython  
+  - anaconda::ipython
   - anaconda::conda-build
   - anaconda::anaconda-client
