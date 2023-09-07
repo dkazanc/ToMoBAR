@@ -50,20 +50,19 @@
 
 ### Python conda:
 Install the ToMoBAR package from one of conda channels bellow:
-```console
-conda install -c dkazanc tomobar
-conda install -c savu-dep tomobar
 ```
-
+conda install -c httomo tomobar
+```
  or build using provided conda recipe:
-```console
-export VERSION=`date +%Y.%m` (unix) / set VERSION=2023.04 (Windows)
+```
+export VERSION=$(date +%Y.%m) (unix) / set VERSION=2023.04 (Windows)
 conda build conda-recipe/ --numpy 1.23 --python 3.10
 conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
 ```
+
 ### Python development environment
 * Clone the repository from GitHub page
-* Install dependencies from the environment file (or from explicit list file)
+* Install dependencies from the [environment](https://github.com/dkazanc/ToMoBAR/tree/master/conda-recipe/environment/environment.yml) file
 * Activate the environment with :code:`conda activate tomobar`
 * From the root directory install the enviroment in development mode with :code:`pip install -e .[dev]`
 
