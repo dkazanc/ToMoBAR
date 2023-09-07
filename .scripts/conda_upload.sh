@@ -19,7 +19,7 @@ $CONDA/bin/conda install -c conda-forge mamba
 for python_ver in 3.9; do   
     for numpy_ver in 1.21; do
         export VERSION=`date +%Y.%m`"_py"$python_ver"_np"$numpy_ver
-        mamba build . --numpy $numpy_ver --python $python_ver
+        $CONDA/bin/conda build . --numpy $numpy_ver --python $python_ver
    done
 done
 

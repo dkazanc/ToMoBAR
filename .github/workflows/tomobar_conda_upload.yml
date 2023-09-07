@@ -2,9 +2,10 @@ name: tomobar_conda_upload
 
 on: [push]
 
+
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     defaults:
       run:
@@ -14,8 +15,8 @@ jobs:
       - name: Checkout repository code
         uses: actions/checkout@v3
         with:
+          ref: "main"
           fetch-depth: 0
-          ref: ${{ github.ref_name }}
 
       # setup Python 3.9
       - name: Setup Python 3.9
@@ -23,16 +24,11 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Install dependencies with Conda
-        run: |
-          $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
-          $CONDA/bin/conda list
-
       - name: Decrypt a secret
         run: ./.scripts/decrypt_secret.sh
         env:
           LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
-
+          
       - name: Upload the tested package to conda cloud
         run: |
           chmod +x ./.scripts/conda_upload.sh
