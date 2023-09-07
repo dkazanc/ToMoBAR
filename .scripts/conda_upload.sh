@@ -9,14 +9,7 @@ mkdir ~/conda-bld
 conda config --set anaconda_upload no
 export CONDA_BLD_PATH=~/conda-bld
 
-#for python_ver in 3.9 3.10; do   
-#    for numpy_ver in 1.21 1.22 1.23 1.24; do
-#        export VERSION=`date +%Y.%m`"_py"$python_ver"_np"$numpy_ver
-#        conda build . --numpy $numpy_ver --python $python_ver
-#    done
-# done
-
-export VERSION=`date +%Y.%m`
+export VERSION=$(date +%Y.%m)
 conda build .
 
 # upload packages to conda

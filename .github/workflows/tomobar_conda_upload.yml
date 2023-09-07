@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     defaults:
       run:
@@ -29,6 +29,8 @@ jobs:
         LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
 
     - name: Upload the tested package to conda cloud
+      env:
+        LABEL: main
       run: |
         chmod +x ./.scripts/conda_upload.sh
         ./.scripts/conda_upload.sh
