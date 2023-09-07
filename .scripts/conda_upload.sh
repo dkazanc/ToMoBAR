@@ -12,15 +12,12 @@ export CONDA_BLD_PATH=~/conda-bld
 #export VERSION=$(date +%Y.%m)
 for python_ver in 3.9 3.10; do
     for numpy_ver in 1.24; do
-        export VERSION=$(date +%Y.%m)"_py"$python_ver"_np"$numpy_ver
+        export VERSION=$(date +%Y.%m)_py$python_ver
         conda build . --numpy $numpy_ver --python $python_ver
    done
 done
 
 #conda build .
-
-$CONDA/bin/conda install conda-build
-$CONDA/bin/conda install -c anaconda anaconda-client
 
 # upload packages to conda
 find $CONDA_BLD_PATH/$OS -name *.tar.bz2 | while read file
