@@ -52,6 +52,7 @@
 Install the ToMoBAR package from one of conda channels bellow:
 ```
 conda install -c httomo tomobar
+conda install -c dkazanc tomobar # for some Win builds
 ```
  or build using provided conda recipe:
 ```
