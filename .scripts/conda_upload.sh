@@ -5,10 +5,6 @@ USER=dkazanc
 OS=linux-64
 CONDA_TOKEN=$(cat $HOME/.secrets/my_secret.json)
 
-
-$CONDA/bin/conda install -c conda-forge conda-build
-$CONDA/bin/conda install -c conda-forge anaconda-client
-
 mkdir ~/conda-bld
 conda config --set anaconda_upload no
 export CONDA_BLD_PATH=~/conda-bld
