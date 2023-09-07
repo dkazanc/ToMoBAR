@@ -1,7 +1,6 @@
 name: tomobar
 channels:
   - conda-forge
-  - anaconda
 dependencies:
   - conda-forge::numpy
   - conda-forge::python
@@ -12,6 +11,6 @@ dependencies:
   - conda-forge::pyproject-flake8
   - conda-forge::pydocstyle
   - conda-forge::setuptools
-  - anaconda::ipython
-  #- anaconda::conda-build
-  #- anaconda::anaconda-client
+  - conda-forge::ipython
+  #- conda-forge::conda-build
+  #- conda-forge::anaconda-client
