@@ -2,7 +2,6 @@ name: tomobar_conda_upload
 
 on: [push]
 
-
 jobs:
   build-linux:
     runs-on: ubuntu-20.04

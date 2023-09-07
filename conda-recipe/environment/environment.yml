@@ -12,5 +12,5 @@ dependencies:
   - conda-forge::pydocstyle
   - conda-forge::setuptools
   - conda-forge::ipython
-  #- conda-forge::conda-build
-  #- conda-forge::anaconda-client
+  - conda-forge::conda-build
+  - conda-forge::anaconda-client
