@@ -23,19 +23,19 @@ jobs:
         with:
           python-version: 3.9
 
-    - name: Install dependencies with Conda
-      run: |
-        $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
-        $CONDA/bin/conda list
+      - name: Install dependencies with Conda
+        run: |
+          $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
+          $CONDA/bin/conda list
 
-    - name: Decrypt a secret
-      run: ./.scripts/decrypt_secret.sh
-      env:
-        LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
+      - name: Decrypt a secret
+        run: ./.scripts/decrypt_secret.sh
+        env:
+          LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
 
-    - name: Upload the tested package to conda cloud
-      env:
-        LABEL: main
-      run: |
-        chmod +x ./.scripts/conda_upload.sh
-        ./.scripts/conda_upload.sh
+      - name: Upload the tested package to conda cloud
+        env:
+          LABEL: main
+        run: |
+          chmod +x ./.scripts/conda_upload.sh
+          ./.scripts/conda_upload.sh
