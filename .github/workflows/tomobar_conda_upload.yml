@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository code
         uses: actions/checkout@v3
         with:
-          ref: "main"
+          ref: "master"
           fetch-depth: 0
 
       # setup Python 3.9
@@ -28,7 +28,7 @@ jobs:
         run: ./.scripts/decrypt_secret.sh
         env:
           LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
-          
+
       - name: Upload the tested package to conda cloud
         run: |
           chmod +x ./.scripts/conda_upload.sh
