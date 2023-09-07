@@ -20,6 +20,7 @@ jobs:
     - name: Install dependencies with Conda
       run: |
         $CONDA/bin/conda env update --file conda-recipe/environment/environment.yml --name base
+        $CONDA/bin/conda install -n base conda-libmamba-solver
         $CONDA/bin/conda list
         
 
