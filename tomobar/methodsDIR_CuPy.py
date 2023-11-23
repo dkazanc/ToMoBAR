@@ -16,6 +16,7 @@ import cupyx
 
 from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsDIR import RecToolsDIR
+from tomobar.supp.suppTools import _check_kwargs, _apply_circular_mask
 
 
 def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
@@ -60,6 +61,7 @@ def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
     
     return cupyx.scipy.fft.irfft(proj_f, projection3D.shape[2], axis=-1, norm="forward", overwrite_x=True)
 
+ 
 class RecToolsDIRCuPy(RecToolsDIR):
     def __init__(
         self,
@@ -79,12 +81,16 @@ class RecToolsDIRCuPy(RecToolsDIR):
             device_projector,
         )
 
-    def FBP3D(self, data: cp.ndarray) -> cp.ndarray:
+    def FBP3D(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Filtered backprojection on a CuPy array using a custom built SINC filter
 
         Args:
             data : cp.ndarray
                 Projection data as a CuPy array.
+            kwargs: dict
+                Optional parameters:
+                1. recon_mask_radius - zero the values outside the circular mask
+                of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
 
         Returns:
             cp.ndarray
@@ -95,5 +101,5 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )  # filter the data on the GPU and keep the result there
         data = cp.ascontiguousarray(cp.swapaxes(data, 0, 1))
         reconstruction = self.Atools.backprojCuPy(data)  # 3d backprojecting
-        cp._default_memory_pool.free_all_blocks()
-        return reconstruction
+        cp._default_memory_pool.free_all_blocks()        
+        return _check_kwargs(reconstruction, **kwargs)

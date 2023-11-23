@@ -25,36 +25,13 @@ import numpy as np
 from numpy import linalg as LA
 from tomobar.supp.astraOP import parse_device_argument
 from tomobar.supp.dicts import dicts_check
-
-try:
-    from ccpi.filters.regularisers import (
-        ROF_TV,
-        FGP_TV,
-        PD_TV,
-        SB_TV,
-        LLT_ROF,
-        TGV,
-        NDF,
-        Diff4th,
-        NLTV,
-    )
-except ImportError:
-    print(
-        "____! CCPi-regularisation package is missing, please install to support regularisation !____"
-    )
+from tomobar.supp.suppTools import circ_mask
+from tomobar.regularisers import prox_regul
 
 try:
     import scipy.sparse.linalg
 except ImportError:
     print("____! Scipy toolbox package is missing, please install for ADMM !____")
-
-try:
-    from pypwt import Wavelets
-except ImportError:
-    print(
-        "____! Wavelet package pywpt is missing, please install for wavelet regularisation !____"
-    )
-
 
 def smooth(y, box_pts):
     # a function to smooth 1D signal
@@ -68,151 +45,6 @@ def merge_3_dicts(x, y, z):
     merg.update(y)
     merg.update(z)
     return merg
-
-
-def circ_mask(X, diameter):
-    # applying a circular mask to the reconstructed image/volume
-    # Make the 'diameter' smaller than 1.0 in order to shrink it
-    obj_shape = np.shape(X)
-    X_masked = np.float32(np.zeros(obj_shape))
-    if np.ndim(X) == 2:
-        objsize = obj_shape[0]
-    elif np.ndim(X) == 3:
-        objsize = obj_shape[1]
-    else:
-        print("Object input size is wrong for the mask to apply to")
-    c = np.linspace(
-        -(objsize * (1.0 / diameter)) / 2.0, (objsize * (1.0 / diameter)) / 2.0, objsize
-    )
-    x, y = np.meshgrid(c, c)
-    mask = np.float32(np.array((x**2 + y**2 < (objsize / 2.0) ** 2)))
-    if np.ndim(X) == 3:
-        for z in range(0, obj_shape[0]):
-            X_masked[z, :, :] = np.multiply(X[z, :, :], mask)
-    else:
-        X_masked = np.multiply(X, mask)
-    return X_masked
-
-
-def prox_regul(self, X, _regularisation_):
-    info_vec = (_regularisation_["iterations"], 0)
-    # The proximal operator of the chosen regulariser
-    if "ROF_TV" in _regularisation_["method"]:
-        # Rudin - Osher - Fatemi Total variation method
-        (X, info_vec) = ROF_TV(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["time_marching_step"],
-            _regularisation_["tolerance"],
-            self.GPUdevice_index,
-        )
-    if "FGP_TV" in _regularisation_["method"]:
-        # Fast-Gradient-Projection Total variation method
-        (X, info_vec) = FGP_TV(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["tolerance"],
-            _regularisation_["methodTV"],
-            self.nonneg_regul,
-            self.GPUdevice_index,
-        )
-    if "PD_TV" in _regularisation_["method"]:
-        # Primal-Dual (PD) Total variation method by Chambolle-Pock
-        (X, info_vec) = PD_TV(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["tolerance"],
-            _regularisation_["methodTV"],
-            self.nonneg_regul,
-            _regularisation_["PD_LipschitzConstant"],
-            self.GPUdevice_index,
-        )
-    if "SB_TV" in _regularisation_["method"]:
-        # Split Bregman Total variation method
-        (X, info_vec) = SB_TV(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["tolerance"],
-            _regularisation_["methodTV"],
-            self.GPUdevice_index,
-        )
-    if "LLT_ROF" in _regularisation_["method"]:
-        # Lysaker-Lundervold-Tai + ROF Total variation method
-        (X, info_vec) = LLT_ROF(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["regul_param2"],
-            _regularisation_["iterations"],
-            _regularisation_["time_marching_step"],
-            _regularisation_["tolerance"],
-            self.GPUdevice_index,
-        )
-    if "TGV" in _regularisation_["method"]:
-        # Total Generalised Variation method
-        (X, info_vec) = TGV(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["TGV_alpha1"],
-            _regularisation_["TGV_alpha2"],
-            _regularisation_["iterations"],
-            _regularisation_["PD_LipschitzConstant"],
-            _regularisation_["tolerance"],
-            self.GPUdevice_index,
-        )
-    if "NDF" in _regularisation_["method"]:
-        # Nonlinear isotropic diffusion method
-        (X, info_vec) = NDF(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["edge_threhsold"],
-            _regularisation_["iterations"],
-            _regularisation_["time_marching_step"],
-            self.NDF_method,
-            _regularisation_["tolerance"],
-            self.GPUdevice_index,
-        )
-    if "Diff4th" in _regularisation_["method"]:
-        # Anisotropic diffusion of higher order
-        (X, info_vec) = Diff4th(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["edge_threhsold"],
-            _regularisation_["iterations"],
-            _regularisation_["time_marching_step"],
-            _regularisation_["tolerance"],
-            self.GPUdevice_index,
-        )
-    if "NLTV" in _regularisation_["method"]:
-        # Non-local Total Variation
-        X = NLTV(
-            X,
-            _regularisation_["NLTV_H_i"],
-            _regularisation_["NLTV_H_j"],
-            _regularisation_["NLTV_H_j"],
-            _regularisation_["NLTV_Weights"],
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-        )
-    if "WAVELETS" in _regularisation_["method"]:
-        if X.ndim == 2:
-            W = Wavelets(X, "db5", 3)
-            W.forward()
-            W.soft_threshold(_regularisation_["regul_param2"])
-            W.inverse()
-            X = W.image
-        else:
-            for i in range(np.shape(X)[0]):
-                W = Wavelets(X[i, :, :], "db5", 3)
-                W.forward()
-                W.soft_threshold(_regularisation_["regul_param2"])
-                W.inverse()
-                X[i, :, :] = W.image
-    return (X, info_vec)
-
 
 class RecToolsIR:
     """
@@ -332,7 +164,7 @@ class RecToolsIR:
         projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
 
         Args:
-            _data_ (_type_): Data dictionary, where input data is provided.
+            _data_ (dict): Data dictionary, where input data is provided.
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
 
         Returns:
@@ -714,8 +546,8 @@ class RecToolsIR:
                     ##### The proximal operator of the chosen regulariser #####
                     (X, info_vec) = prox_regul(self, X, _regularisation_)
                     ###########################################################
-                t = (1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5
                 # updating t variable
+                t = (1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5
                 X_t = X + ((t_old - 1.0) / t) * (X - X_old)  # updating X
             if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
                 r = np.maximum((np.abs(r) - _data_["ringGH_lambda"]), 0.0) * np.sign(

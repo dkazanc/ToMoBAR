@@ -18,7 +18,7 @@ def dicts_check(
         _data_ (dict):  Data dictionary inspects the following parameters bellow. Please note that this is for
         iterative methods only, for direct methods the input is simply an array.
             --projection_norm_data: the -log(normalised) projection data; a 2D sinogram or a 3D data array
-                ! Provide input data in this particular order: !
+                ! Provide input data with the dimensions in this particular order: !
                 2D - (Angles, DetectorsHorizontal)
                 3D - (DetectorsVertical, Angles, DetectorsHorizontal)
             --projection_raw_data: raw data for PWLS and SWLS models. FISTA-related parameter.

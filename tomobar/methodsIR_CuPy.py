@@ -17,9 +17,7 @@ import astra
 
 from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsIR import RecToolsIR
-from tomobar.methodsDIR import RecToolsDIR
 from tomobar.supp.dicts import dicts_check
-
 
 class RecToolsIRCuPy(RecToolsIR):
     """
@@ -200,3 +198,62 @@ class RecToolsIRCuPy(RecToolsIR):
 
         cp._default_memory_pool.free_all_blocks()
         return cp.reshape(x_rec, newshape=x_shape_3d, order="C")
+
+    
+    def FISTA(self, _data_: dict, _algorithm_: dict, _regularisation_: dict) -> cp.ndarray:
+        """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
+        data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
+
+        Args:
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
+            _regularisation_ (dict, optional): Regularisation dictionary.
+
+        Returns:
+            cp.ndarray: FISTA-reconstructed numpy array
+        """
+        from tomobar.regularisersCuPy import prox_regul
+        
+        
+        (_data_, _algorithm_, _regularisation_) = dicts_check(
+                self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
+            )
+                
+        L_const_inv = cp.float32(1.0 / _algorithm_["lipschitz_const"]) # inverted Lipschitz constant
+        if self.geom == "2D":
+            # 2D reconstruction
+            print("2D recon not yet enabled")
+        else:
+            # initialise the solution
+            X = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=np.float32
+        ) 
+        
+        # re-initialise with CuPy array
+        _data_["projection_norm_data"] = cp.ascontiguousarray(
+            cp.swapaxes(_data_["projection_norm_data"], 0, 1)
+        )
+
+        t = cp.float32(1.0)
+        X_t = cp.copy(X)
+        # FISTA iterations
+        for iter_no in range(_algorithm_["iterations"]):    
+            X_old = X
+            t_old = t
+            
+            res = self.Atools.forwprojCuPy(X_t) - _data_["projection_norm_data"]                    
+            # full gradient
+            grad_fidelity = self.Atools.backprojCuPy(res)
+            X = X_t - L_const_inv * grad_fidelity
+        
+            if _algorithm_["nonnegativity"]:
+                X[X < 0.0] = 0.0
+            
+            if _regularisation_["method"] is not None:
+                ##### The proximal operator of the chosen regulariser #####
+                X = prox_regul(self, X, _regularisation_)
+            
+            t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
+            X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
+            del res
+        cp._default_memory_pool.free_all_blocks()
+        return X

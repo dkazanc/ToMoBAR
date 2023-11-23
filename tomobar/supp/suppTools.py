@@ -318,3 +318,64 @@ def autocropper(data, addbox, backgr_pix1):
         :, crop_up_vert:crop_down_vert, crop_left_horiz:crop_right_horiz
     ]
     return cropped_data
+
+def _apply_circular_mask(data, recon_mask_radius, axis=2):
+    """Applies a circular mask of a certain radius to zero the values outside tha mask
+
+    Args:
+        data (cp or np ndarray): reconstructed volume
+        recon_mask_radius (float): radius size
+
+    Returns:
+        cp or np ndarray: recon volume after mask applied
+    """
+    try:
+        import cupy as xp
+        try:
+            xp.cuda.Device(0).compute_capability
+        except xp.cuda.runtime.CUDARuntimeError:
+            import numpy as xp
+            print("CuPy is installed but GPU device inaccessible")
+    except ImportError:
+        import numpy as xp
+
+    recon_size = data.shape[axis]
+    Y, X = xp.ogrid[:recon_size, :recon_size]
+    half_size = recon_size // 2
+    dist_from_center = xp.sqrt((X - half_size)**2 + (Y-half_size)**2)       
+    if recon_mask_radius <= 1.0:
+        mask = dist_from_center <= half_size - abs(half_size - half_size/recon_mask_radius)
+    else:
+        mask = dist_from_center <= half_size + abs(half_size - half_size/recon_mask_radius)
+    data *= mask
+    return data
+
+def _check_kwargs(reconstruction, **kwargs):
+    # Iterating over optional parameters:
+    for key, value in kwargs.items():
+        if key == "recon_mask_radius":
+            _apply_circular_mask(reconstruction, value)
+    return reconstruction
+
+def circ_mask(X, diameter):
+    # applying a circular mask to the reconstructed image/volume
+    # Make the 'diameter' smaller than 1.0 in order to shrink it
+    obj_shape = np.shape(X)
+    X_masked = np.float32(np.zeros(obj_shape))
+    if np.ndim(X) == 2:
+        objsize = obj_shape[0]
+    elif np.ndim(X) == 3:
+        objsize = obj_shape[1]
+    else:
+        print("Object input size is wrong for the mask to apply to")
+    c = np.linspace(
+        -(objsize * (1.0 / diameter)) / 2.0, (objsize * (1.0 / diameter)) / 2.0, objsize
+    )
+    x, y = np.meshgrid(c, c)
+    mask = np.float32(np.array((x**2 + y**2 < (objsize / 2.0) ** 2)))
+    if np.ndim(X) == 3:
+        for z in range(0, obj_shape[0]):
+            X_masked[z, :, :] = np.multiply(X[z, :, :], mask)
+    else:
+        X_masked = np.multiply(X, mask)
+    return X_masked
