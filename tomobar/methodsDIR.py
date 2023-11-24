@@ -90,7 +90,22 @@ def filtersinc2D(sinogram):
 
 
 class RecToolsDIR:
-    """A class for reconstruction using DIRect methods (FBP and Fourier)"""
+    """----------------------------------------------------------------------------------------------------------
+    A class for reconstruction using DIRect methods (FBP and Fourier)
+    ----------------------------------------------------------------------------------------------------------
+    Parameters of the class function main specifying the projection geometry:
+      *DetectorsDimH,     # Horizontal detector dimension
+      *DetectorsDimV,     # Vertical detector dimension for 3D case
+      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar or a vector
+      *AnglesVec,         # A vector of projection angles in radians
+      *ObjSize,           # Reconstructed object dimensions (a scalar)
+      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+
+        Provide INPUT data with the dimensions in this particular order: 
+        2D - (Angles, DetectorsHorizontal)
+        3D - (DetectorsVertical, Angles, DetectorsHorizontal)
+    ----------------------------------------------------------------------------------------------------------
+    """    
 
     def __init__(
         self,
@@ -242,15 +257,15 @@ class RecToolsDIR:
         ]
         return image
 
-    def FBP(self, sinogram):
+    def FBP(self, data):
         if self.geom == "2D":
             "dealing with FBP 2D not working for parallel_vec geometry and CPU"
             if self.device_projector == "gpu":
-                FBP_rec = self.Atools.fbp2D(sinogram)  # GPU reconstruction
+                FBP_rec = self.Atools.fbp2D(data)  # GPU reconstruction
             else:
-                filtered_sino = filtersinc2D(sinogram)  # filtering sinogram
+                filtered_sino = filtersinc2D(data)  # filtering sinogram
                 FBP_rec = self.Atools.backproj(filtered_sino)  # backproject
         if self.geom == "3D":
-            filtered_sino = filtersinc3D(sinogram)  # filtering projection data
+            filtered_sino = filtersinc3D(data)  # filtering projection data
             FBP_rec = self.Atools.backproj(filtered_sino)  # 3d backproject
         return FBP_rec

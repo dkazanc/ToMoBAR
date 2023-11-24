@@ -96,9 +96,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
             cp.ndarray
                 The FBP reconstructed volume as a CuPy array.
         """
+        # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(
             data
-        )  # filter the data on the GPU and keep the result there
+        )
         data = cp.ascontiguousarray(cp.swapaxes(data, 0, 1))
         reconstruction = self.Atools.backprojCuPy(data)  # 3d backprojecting
         cp._default_memory_pool.free_all_blocks()        

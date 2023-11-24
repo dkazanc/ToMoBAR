@@ -2,13 +2,11 @@ from unittest import mock
 import cupy as cp
 from cupy.cuda import nvtx
 import numpy as np
-import pytest
 from numpy.testing import assert_allclose
 
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 eps = 1e-06
-@cp.testing.gpu
 def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
     detX=cp.shape(data_cupy)[2]
     detY=cp.shape(data_cupy)[1]
@@ -28,7 +26,6 @@ def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
-@cp.testing.gpu
 def test_rec_FBP_mask_cupy(data_cupy, angles, ensure_clean_memory):
     detX=cp.shape(data_cupy)[2]
     detY=cp.shape(data_cupy)[1]
