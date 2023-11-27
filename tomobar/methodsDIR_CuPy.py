@@ -15,9 +15,8 @@ import cupy as cp
 import cupyx
 
 from tomobar.cuda_kernels import load_cuda_module
-from tomobar.methodsDIR import RecToolsDIR
-from tomobar.supp.suppTools import _check_kwargs, _apply_circular_mask
-
+from tomobar.recon_base import RecTools
+from tomobar.supp.suppTools import _check_kwargs
 
 def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
     """Applies a SINC filter to 3D projection data
@@ -62,15 +61,16 @@ def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
     return cupyx.scipy.fft.irfft(proj_f, projection3D.shape[2], axis=-1, norm="forward", overwrite_x=True)
 
  
-class RecToolsDIRCuPy(RecToolsDIR):
+class RecToolsDIRCuPy(RecTools):
     def __init__(
         self,
-        DetectorsDimH,  # Horizontal detector dimension
-        DetectorsDimV,  # Vertical detector dimension (3D case)
-        CenterRotOffset,  # The Centre of Rotation scalar or a vector
-        AnglesVec,  # Array of projection angles in radians
-        ObjSize,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+        DetectorsDimH,      # Horizontal detector dimension
+        DetectorsDimV,      # Vertical detector dimension (3D case)
+        CenterRotOffset,    # The Centre of Rotation scalar or a vector
+        AnglesVec,          # Array of projection angles in radians
+        ObjSize,            # Reconstructed object dimensions (scalar)
+        device_projector=0,     # set an index (integer) of a specific GPU device
+        data_axis_labels=None,  # the input data axis labels
     ):
         super().__init__(
             DetectorsDimH,
@@ -79,6 +79,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             AnglesVec,
             ObjSize,
             device_projector,
+            data_axis_labels = data_axis_labels, # inherit from the base class
         )
 
     def FBP3D(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
@@ -96,6 +97,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
             cp.ndarray
                 The FBP reconstructed volume as a CuPy array.
         """
+        # get the input data into the right format dimension-wise
+        for swap_tuple in self.data_swap_list:
+            if swap_tuple is not None:
+                data = cp.swapaxes(data, swap_tuple[0], swap_tuple[1])                        
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(
             data

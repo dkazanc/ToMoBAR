@@ -23,9 +23,9 @@ GPLv3 license (ASTRA toolbox)
 
 import numpy as np
 from numpy import linalg as LA
-from tomobar.supp.astraOP import parse_device_argument
 from tomobar.supp.dicts import dicts_check
 from tomobar.supp.suppTools import circ_mask
+from tomobar.recon_base import RecTools
 from tomobar.regularisers import prox_regul
 
 try:
@@ -39,14 +39,13 @@ def smooth(y, box_pts):
     y_smooth = np.convolve(y, box, mode="same")
     return y_smooth
 
-
 def merge_3_dicts(x, y, z):
     merg = x.copy()
     merg.update(y)
     merg.update(z)
     return merg
 
-class RecToolsIR:
+class RecToolsIR(RecTools):
     """
     ----------------------------------------------------------------------------------------------------------
     A class for iterative reconstruction algorithms (FISTA and ADMM) using ASTRA toolbox and CCPi-RGL toolkit
@@ -59,6 +58,7 @@ class RecToolsIR:
       *ObjSize,           # Reconstructed object dimensions (a scalar)
       *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
       *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+      *data_axis_labels   # set the order of axis labels of the input data, e.g. ['detY', 'angles', 'detX']
 
     Parameters for reconstruction algorithms are extracted from 3 dictionaries: _data_, _algorithm_ and _regularisation_.
     To list all accepted parameters for those dictionaries do:
@@ -69,42 +69,29 @@ class RecToolsIR:
 
     def __init__(
         self,
-        DetectorsDimH,  # Horizontal detector dimension
-        DetectorsDimV,  # Vertical detector dimension (3D case)
-        CenterRotOffset,  # The Centre of Rotation scalar or a vector
-        AnglesVec,  # Array of projection angles in radians
-        ObjSize,  # Reconstructed object dimensions (scalar)
+        DetectorsDimH,      # Horizontal detector dimension
+        DetectorsDimV,      # Vertical detector dimension (3D case), 0 or None for 2D case
+        CenterRotOffset,    # The Centre of Rotation scalar or a vector
+        AnglesVec,          # Array of projection angles in radians
+        ObjSize,            # Reconstructed object dimensions (scalar)
         datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
         device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-    ):
-        if isinstance(ObjSize, tuple):
-            raise ValueError(
-                " Reconstruction is currently available for square or cubic objects only, please provide a scalar "
-            )
-        self.ObjSize = ObjSize
-        self.datafidelity = datafidelity
-        self.DetectorsDimV = DetectorsDimV
-        self.DetectorsDimH = DetectorsDimH
-        self.AnglesVec = AnglesVec
-        self.angles_number = len(AnglesVec)
-        self.device_projector, self.GPUdevice_index = parse_device_argument(
-            device_projector
+        data_axis_labels=None, # the input data axis labels
+    ):       
+        super().__init__(
+            DetectorsDimH,
+            DetectorsDimV,
+            CenterRotOffset,
+            AnglesVec,
+            ObjSize,
+            device_projector=device_projector,
+            data_axis_labels=data_axis_labels, # inherit from the base class
         )
-
-        if CenterRotOffset is None:
-            self.CenterRotOffset = 0.0
-        else:
-            self.CenterRotOffset = CenterRotOffset
 
         if datafidelity not in ["LS", "PWLS", "SWLS", "KL"]:
             raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
-
-        if DetectorsDimV is None:
-            self.geom = "2D"
-        else:
-            # Creating Astra class specific to 3D parallel geometry
-            self.geom = "3D"
-
+        self.datafidelity = datafidelity
+        
     def SIRT(self, _data_: dict, _algorithm_: dict = None) -> np.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
 

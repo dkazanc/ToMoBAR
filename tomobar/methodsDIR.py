@@ -10,21 +10,11 @@
 """
 
 import numpy as np
+from tomobar.recon_base import RecTools
 
-astra_enabled = False
-try:
-    import astra
-    from tomobar.supp.astraOP import AstraTools, AstraTools3D
-
-    astra_enabled = True
-except ImportError:
-    print("____! Astra-toolbox package is missing, please install !____")
-
-from tomobar.supp.astraOP import parse_device_argument
 import scipy.fftpack
 
-
-def filtersinc3D(projection3D):
+def _filtersinc3D(projection3D):
     # applies filters to __3D projection data__ in order to achieve FBP
     # Data format [DetectorVert, Projections, DetectorHoriz]
     # adopted from Matlabs code by  Waqas Akram
@@ -60,8 +50,7 @@ def filtersinc3D(projection3D):
         filtered[:, i, :] = np.real(scipy.fftpack.ifft2(fimg))
     return multiplier * filtered
 
-
-def filtersinc2D(sinogram):
+def _filtersinc2D(sinogram):
     # applies filters to __2D projection data__ in order to achieve FBP
     a = 1.1
     [projectionsNum, DetectorsLengthH] = np.shape(sinogram)
@@ -89,79 +78,39 @@ def filtersinc2D(sinogram):
     return np.float32(filtered)
 
 
-class RecToolsDIR:
+class RecToolsDIR(RecTools):
     """----------------------------------------------------------------------------------------------------------
     A class for reconstruction using DIRect methods (FBP and Fourier)
     ----------------------------------------------------------------------------------------------------------
     Parameters of the class function main specifying the projection geometry:
       *DetectorsDimH,     # Horizontal detector dimension
-      *DetectorsDimV,     # Vertical detector dimension for 3D case
+      *DetectorsDimV,     # Vertical detector dimension for 3D case, 0 or None for 2D case
       *CenterRotOffset,   # The Centre of Rotation (CoR) scalar or a vector
       *AnglesVec,         # A vector of projection angles in radians
       *ObjSize,           # Reconstructed object dimensions (a scalar)
-      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-
-        Provide INPUT data with the dimensions in this particular order: 
-        2D - (Angles, DetectorsHorizontal)
-        3D - (DetectorsVertical, Angles, DetectorsHorizontal)
-    ----------------------------------------------------------------------------------------------------------
-    """    
+      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device     
+      *data_axis_labels   # set the order of axis labels of the input data, e.g. ['detY', 'angles', 'detX']
+    ---------------------------------------------------------------------------------------------------------- """    
 
     def __init__(
         self,
-        DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
-        DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-        CenterRotOffset,  # Centre of Rotation (CoR) scalar or a vector
-        AnglesVec,  # Array of angles in radians
-        ObjSize,  # A scalar to define reconstructed object dimensions
-        device_projector,  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+        DetectorsDimH,      # DetectorsDimH # detector dimension (horizontal)
+        DetectorsDimV,      # DetectorsDimV # detector dimension (vertical) for 3D case only
+        CenterRotOffset,    # Centre of Rotation (CoR) scalar or a vector
+        AnglesVec,          # Array of angles in radians
+        ObjSize,            # A scalar to define reconstructed object dimensions
+        device_projector='gpu',# Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+        data_axis_labels=None, # the input data axis labels
     ):
-        if isinstance(ObjSize, tuple):
-            raise (
-                " Reconstruction is currently available for square or cubic objects only, provide a scalar "
-            )
-        else:
-            self.ObjSize = ObjSize  # size of the object
-        self.DetectorsDimH = DetectorsDimH
-        self.DetectorsDimV = DetectorsDimV
-        self.AnglesVec = AnglesVec
-        if CenterRotOffset is not None:
-            self.CenterRotOffset = CenterRotOffset
-        else:
-            self.CenterRotOffset = 0.0
-        self.OS_number = 1
-        self.datafidelity = "None"
-        self.device_projector, self.GPUdevice_index = parse_device_argument(
-            device_projector
+        super().__init__(
+            DetectorsDimH,
+            DetectorsDimV,
+            CenterRotOffset,
+            AnglesVec,
+            ObjSize,
+            device_projector=device_projector,
+            data_axis_labels=data_axis_labels, # inherit from the base class
         )
-        if DetectorsDimV is None:
-            # 2D geometry
-            self.geom = "2D"
-            if astra_enabled:
-                # initiate 2D ASTRA class object
-                self.Atools = AstraTools(
-                    self.DetectorsDimH,
-                    self.AnglesVec,
-                    self.CenterRotOffset,
-                    self.ObjSize,
-                    self.OS_number,
-                    self.device_projector,
-                    self.GPUdevice_index,
-                )
-        else:
-            self.geom = "3D"
-            if astra_enabled:
-                # initiate 3D ASTRA class object
-                self.Atools = AstraTools3D(
-                    self.DetectorsDimH,
-                    self.DetectorsDimV,
-                    self.AnglesVec,
-                    self.CenterRotOffset,
-                    self.ObjSize,
-                    self.OS_number,
-                    self.device_projector,
-                    self.GPUdevice_index,
-                )
 
     def FORWPROJ(self, data):
         """Module to perform forward projection of 2d/3d data array
@@ -258,14 +207,19 @@ class RecToolsDIR:
         return image
 
     def FBP(self, data):
+        # get the input data into the right format dimension-wise
+        for swap_tuple in self.data_swap_list:
+            if swap_tuple is not None:
+                data = np.swapaxes(data, swap_tuple[0], swap_tuple[1])
         if self.geom == "2D":
             "dealing with FBP 2D not working for parallel_vec geometry and CPU"
             if self.device_projector == "gpu":
                 FBP_rec = self.Atools.fbp2D(data)  # GPU reconstruction
             else:
-                filtered_sino = filtersinc2D(data)  # filtering sinogram
+                filtered_sino = _filtersinc2D(data)  # filtering sinogram
                 FBP_rec = self.Atools.backproj(filtered_sino)  # backproject
         if self.geom == "3D":
-            filtered_sino = filtersinc3D(data)  # filtering projection data
+            filtered_sino = _filtersinc3D(data)  # filtering projection data
             FBP_rec = self.Atools.backproj(filtered_sino)  # 3d backproject
         return FBP_rec
+    

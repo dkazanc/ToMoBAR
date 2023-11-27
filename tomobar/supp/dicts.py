@@ -1,7 +1,19 @@
 import numpy as np
-from tomobar.supp.astraOP import AstraTools, AstraToolsOS, AstraTools3D, AstraToolsOS3D
+from tomobar.supp.astraOP import AstraToolsOS, AstraToolsOS3D
 import typing
 from typing import Union
+
+try:
+    import cupy as xp
+    try:
+        xp.cuda.Device(0).compute_capability
+        gpu_enabled = True  # CuPy is installed and GPU is available
+    except xp.cuda.runtime.CUDARuntimeError:
+        import numpy as xp        
+        #print("CuPy is installed but GPU device inaccessible")
+except ImportError:
+    import numpy as xp
+    #print("CuPy is not installed")
 
 
 def dicts_check(
@@ -18,9 +30,6 @@ def dicts_check(
         _data_ (dict):  Data dictionary inspects the following parameters bellow. Please note that this is for
         iterative methods only, for direct methods the input is simply an array.
             --projection_norm_data: the -log(normalised) projection data; a 2D sinogram or a 3D data array
-                ! Provide input data with the dimensions in this particular order: !
-                2D - (Angles, DetectorsHorizontal)
-                3D - (DetectorsVertical, Angles, DetectorsHorizontal)
             --projection_raw_data: raw data for PWLS and SWLS models. FISTA-related parameter.
             --OS_number: the number of ordered subsets, if None or 1 is a classical (full data) algorithm. FISTA. Defaults to 1.
             --huber_threshold: a threshold for Huber function to apply to data model (supress outliers). FISTA.
@@ -69,26 +78,24 @@ def dicts_check(
     else:
         # -------- dealing with _data_ dictionary ------------
         if _data_.get("projection_norm_data") is None:
-            raise NameError("No input 'projection_norm_data' have been provided")
+            raise NameError("No input 'projection_norm_data' has been provided")
         # projection raw data for PWLS/SWLS type data models
         if _data_.get("projection_raw_data") is None:
             if (self.datafidelity == "PWLS") or (self.datafidelity == "SWLS"):
                 raise NameError(
                     "No input 'projection_raw_data' provided for PWLS or SWLS data fidelity"
                 )
+        # do the axis swap if required: 
+        for swap_tuple in self.data_swap_list:
+            if swap_tuple is not None:
+                _data_["projection_norm_data"] = xp.swapaxes(_data_["projection_norm_data"], swap_tuple[0], swap_tuple[1])
+                if _data_.get("projection_raw_data") is not None:
+                    _data_["projection_raw_data"] = xp.swapaxes(_data_["projection_raw_data"], swap_tuple[0], swap_tuple[1])
+        
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # classical approach (default)
         self.OS_number = _data_["OS_number"]
-        if self.geom == "2D":
-            self.Atools = AstraTools(
-                self.DetectorsDimH,
-                self.AnglesVec,
-                self.CenterRotOffset,
-                self.ObjSize,
-                1,
-                self.device_projector,
-                self.GPUdevice_index,
-            )  # initiate 2D ASTRA class object
+        if self.geom == "2D":            
             self.AtoolsOS = AstraToolsOS(
                 self.DetectorsDimH,
                 self.AnglesVec,
@@ -99,16 +106,6 @@ def dicts_check(
                 self.GPUdevice_index,
             )  # initiate 2D ASTRA class OS object
         else:
-            self.Atools = AstraTools3D(
-                self.DetectorsDimH,
-                self.DetectorsDimV,
-                self.AnglesVec,
-                self.CenterRotOffset,
-                self.ObjSize,
-                1,
-                self.device_projector,
-                self.GPUdevice_index,
-            )  # initiate 3D ASTRA class object
             self.AtoolsOS = AstraToolsOS3D(
                 self.DetectorsDimH,
                 self.DetectorsDimV,

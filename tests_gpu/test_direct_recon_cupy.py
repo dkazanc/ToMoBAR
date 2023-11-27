@@ -18,6 +18,7 @@ def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="gpu",
+        data_axis_labels=['angles', 'detY', 'detX'], # set the labels of the input data
     )
     FBPrec_cupy = RecToolsCP.FBP3D(data_cupy)
     recon_data = FBPrec_cupy.get()
@@ -37,10 +38,11 @@ def test_rec_FBP_mask_cupy(data_cupy, angles, ensure_clean_memory):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="gpu",
+        data_axis_labels=['angles', 'detY', 'detX'], # set the labels of the input data
     )
     FBPrec_cupy = RecToolsCP.FBP3D(data_cupy, recon_mask_radius = 0.7)
     recon_data = FBPrec_cupy.get()
     assert_allclose(np.min(recon_data), -0.0129751, rtol=eps)
     assert_allclose(np.max(recon_data), 0.0340156, rtol=eps)
     assert recon_data.dtype == np.float32
-    assert recon_data.shape == (128, 160, 160)    
+    assert recon_data.shape == (128, 160, 160)

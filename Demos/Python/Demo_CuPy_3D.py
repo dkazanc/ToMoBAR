@@ -26,7 +26,7 @@ from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()
 model = 13  # select a model number from the library
-N_size = 350  # Define phantom dimensions using a scalar value (cubic phantom)
+N_size = 128  # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
 
@@ -45,7 +45,7 @@ projData3D_analyt = TomoP3D.ModelSino(
 )
 
 # transfering numpy array to CuPy array
-projData3D_analyt_cupy = cp.asarray(np.swapaxes(projData3D_analyt, 0, 1), order="C")
+projData3D_analyt_cupy = cp.asarray(projData3D_analyt, order="C")
 # %%
 # It is recommend to re-run twice in order to get the optimal time
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -93,7 +93,7 @@ print(
     "Min {} and Max {} of the volume".format(np.min(FBPrec_cupy), np.max(FBPrec_cupy))
 )
 del FBPrec_cupy
-# # %%
+#%%
 # print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # print("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
 # print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")

@@ -379,3 +379,51 @@ def circ_mask(X, diameter):
     else:
         X_masked = np.multiply(X, mask)
     return X_masked
+
+def __get_swap_tuple(data_axis_labels, labels_order):
+    swap_tuple = None
+    for in_l1, str_1 in enumerate(labels_order):
+        for in_l2, str_2 in enumerate(data_axis_labels):
+            if str_1 == str_2:
+                # get the indices only IF the order is different
+                if in_l1 != in_l2:
+                    swap_tuple = (in_l1, in_l2)
+                    return swap_tuple
+    return swap_tuple
+
+def swap_data_axis_to_accepted(data_axis_labels,
+                               labels_order=['detY', 'angles', 'detX']):
+    """A module to ensure that the input tomographic data is prepeared for reconstruction
+    in the axis order required.
+
+    Args:
+        data_axis_labels (list):  a list of data labels, e.g. given as ['angles', 'detX', 'detY']
+        labels_order (list, optional): the required (fixed) order of axis labels for data. Defaults to ['angles', 'detX', 'detY'].
+    
+    Returns:
+    ------
+    list
+        A list of two tuples for input data swaping axis. If both are None, then no swapping needed.
+    """
+    swap_tuple2 = None
+    # check if the labels names are the accepted ones
+    for str_1 in data_axis_labels:
+        if str_1 not in labels_order:
+            raise ValueError(f'Axis title "{str_1}" is not valid, please use one of these: "angles", "detX", or "detY"')
+    
+    # check the order and produce a swapping tuple if needed
+    swap_tuple1 = __get_swap_tuple(data_axis_labels, labels_order)
+                
+    if swap_tuple1 is not None:
+        # swap elements in the list and check the list again
+        data_axis_labels[swap_tuple1[0]], data_axis_labels[swap_tuple1[1]] = data_axis_labels[swap_tuple1[1]], data_axis_labels[swap_tuple1[0]]      
+        swap_tuple2 = __get_swap_tuple(data_axis_labels, labels_order)    
+  
+    if swap_tuple2 is not None:
+        # swap elements in the list
+        data_axis_labels[swap_tuple2[0]], data_axis_labels[swap_tuple2[1]] = data_axis_labels[swap_tuple2[1]], data_axis_labels[swap_tuple2[0]]
+    
+    return [swap_tuple1, swap_tuple2]
+    
+    
+    

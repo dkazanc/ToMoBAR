@@ -121,6 +121,40 @@ plt.imshow(FBPrec[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FBP Reconstruction, sagittal view")
 plt.show()
 # %%
+from tomobar.methodsIR import RecToolsIR
+
+RecTools = RecToolsIR(
+        DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+        DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
+        CenterRotOffset=None,  # Center of Rotation scalar or a vector
+        AnglesVec=angles_rad,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
+        device_projector="gpu",
+        data_axis_labels=['detY', 'angles', 'detX'], # set the labels of the input data
+    )
+
+_data_ = {"projection_norm_data": projData3D_analyt_noise}  # data dictionary
+_algorithm_ = {"iterations": 200}
+
+Iter_rec = RecTools.SIRT(_data_, _algorithm_)
+
+max_val = 1
+plt.figure()
+plt.subplot(131)
+plt.imshow(Iter_rec[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("3D SIRT Reconstruction, axial view")
+
+plt.subplot(132)
+plt.imshow(Iter_rec[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("3D SIRT Reconstruction, coronal view")
+
+plt.subplot(133)
+plt.imshow(Iter_rec[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("3D SIRT Reconstruction, sagittal view")
+plt.show()
+
+#%%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA method (ASTRA used for projection)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
