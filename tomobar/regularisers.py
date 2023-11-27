@@ -32,7 +32,8 @@ try:
 except ImportError:
     print(
         "____! Wavelet package pywpt is missing, please install for wavelet regularisation !____"
-    )    
+    )
+
 
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_["iterations"], 0)

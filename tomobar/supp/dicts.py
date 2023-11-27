@@ -5,15 +5,18 @@ from typing import Union
 
 try:
     import cupy as xp
+
     try:
         xp.cuda.Device(0).compute_capability
         gpu_enabled = True  # CuPy is installed and GPU is available
     except xp.cuda.runtime.CUDARuntimeError:
-        import numpy as xp        
-        #print("CuPy is installed but GPU device inaccessible")
+        import numpy as xp
+
+        # print("CuPy is installed but GPU device inaccessible")
 except ImportError:
     import numpy as xp
-    #print("CuPy is not installed")
+
+    # print("CuPy is not installed")
 
 
 def dicts_check(
@@ -85,17 +88,21 @@ def dicts_check(
                 raise NameError(
                     "No input 'projection_raw_data' provided for PWLS or SWLS data fidelity"
                 )
-        # do the axis swap if required: 
+        # do the axis swap if required:
         for swap_tuple in self.data_swap_list:
             if swap_tuple is not None:
-                _data_["projection_norm_data"] = xp.swapaxes(_data_["projection_norm_data"], swap_tuple[0], swap_tuple[1])
+                _data_["projection_norm_data"] = xp.swapaxes(
+                    _data_["projection_norm_data"], swap_tuple[0], swap_tuple[1]
+                )
                 if _data_.get("projection_raw_data") is not None:
-                    _data_["projection_raw_data"] = xp.swapaxes(_data_["projection_raw_data"], swap_tuple[0], swap_tuple[1])
-        
+                    _data_["projection_raw_data"] = xp.swapaxes(
+                        _data_["projection_raw_data"], swap_tuple[0], swap_tuple[1]
+                    )
+
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # classical approach (default)
         self.OS_number = _data_["OS_number"]
-        if self.geom == "2D":            
+        if self.geom == "2D":
             self.AtoolsOS = AstraToolsOS(
                 self.DetectorsDimH,
                 self.AnglesVec,

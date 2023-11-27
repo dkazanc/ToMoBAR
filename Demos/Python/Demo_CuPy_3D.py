@@ -61,7 +61,7 @@ RecToolsCP = RecToolsDIRCuPy(
 )
 
 tic = timeit.default_timer()
-FBPrec_cupy = RecToolsCP.FBP3D(projData3D_analyt_cupy, recon_mask_radius = 0.9)
+FBPrec_cupy = RecToolsCP.FBP3D(projData3D_analyt_cupy, recon_mask_radius=0.9)
 toc = timeit.default_timer()
 Run_time = toc - tic
 print(
@@ -93,7 +93,7 @@ print(
     "Min {} and Max {} of the volume".format(np.min(FBPrec_cupy), np.max(FBPrec_cupy))
 )
 del FBPrec_cupy
-#%%
+# %%
 # print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # print("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
 # print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -216,8 +216,8 @@ _regularisation_ = {
 }
 start_time = timeit.default_timer()
 RecFISTA = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_)
-txtstr = "%s = %.3fs" % ('elapsed time',timeit.default_timer() - start_time)
-print (txtstr)
+txtstr = "%s = %.3fs" % ("elapsed time", timeit.default_timer() - start_time)
+print(txtstr)
 
 fista_rec_np = cp.asnumpy(RecFISTA)
 

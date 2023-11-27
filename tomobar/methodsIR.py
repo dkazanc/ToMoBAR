@@ -33,17 +33,20 @@ try:
 except ImportError:
     print("____! Scipy toolbox package is missing, please install for ADMM !____")
 
+
 def smooth(y, box_pts):
     # a function to smooth 1D signal
     box = np.ones(box_pts) / box_pts
     y_smooth = np.convolve(y, box, mode="same")
     return y_smooth
 
+
 def merge_3_dicts(x, y, z):
     merg = x.copy()
     merg.update(y)
     merg.update(z)
     return merg
+
 
 class RecToolsIR(RecTools):
     """
@@ -69,15 +72,15 @@ class RecToolsIR(RecTools):
 
     def __init__(
         self,
-        DetectorsDimH,      # Horizontal detector dimension
-        DetectorsDimV,      # Vertical detector dimension (3D case), 0 or None for 2D case
-        CenterRotOffset,    # The Centre of Rotation scalar or a vector
-        AnglesVec,          # Array of projection angles in radians
-        ObjSize,            # Reconstructed object dimensions (scalar)
+        DetectorsDimH,  # Horizontal detector dimension
+        DetectorsDimV,  # Vertical detector dimension (3D case), 0 or None for 2D case
+        CenterRotOffset,  # The Centre of Rotation scalar or a vector
+        AnglesVec,  # Array of projection angles in radians
+        ObjSize,  # Reconstructed object dimensions (scalar)
         datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
         device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-        data_axis_labels=None, # the input data axis labels
-    ):       
+        data_axis_labels=None,  # the input data axis labels
+    ):
         super().__init__(
             DetectorsDimH,
             DetectorsDimV,
@@ -85,13 +88,13 @@ class RecToolsIR(RecTools):
             AnglesVec,
             ObjSize,
             device_projector=device_projector,
-            data_axis_labels=data_axis_labels, # inherit from the base class
+            data_axis_labels=data_axis_labels,  # inherit from the base class
         )
 
         if datafidelity not in ["LS", "PWLS", "SWLS", "KL"]:
             raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
         self.datafidelity = datafidelity
-        
+
     def SIRT(self, _data_: dict, _algorithm_: dict = None) -> np.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
 

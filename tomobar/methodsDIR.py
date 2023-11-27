@@ -14,6 +14,7 @@ from tomobar.recon_base import RecTools
 
 import scipy.fftpack
 
+
 def _filtersinc3D(projection3D):
     # applies filters to __3D projection data__ in order to achieve FBP
     # Data format [DetectorVert, Projections, DetectorHoriz]
@@ -49,6 +50,7 @@ def _filtersinc3D(projection3D):
         fimg = IMG * f_2d
         filtered[:, i, :] = np.real(scipy.fftpack.ifft2(fimg))
     return multiplier * filtered
+
 
 def _filtersinc2D(sinogram):
     # applies filters to __2D projection data__ in order to achieve FBP
@@ -88,19 +90,20 @@ class RecToolsDIR(RecTools):
       *CenterRotOffset,   # The Centre of Rotation (CoR) scalar or a vector
       *AnglesVec,         # A vector of projection angles in radians
       *ObjSize,           # Reconstructed object dimensions (a scalar)
-      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device     
+      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
       *data_axis_labels   # set the order of axis labels of the input data, e.g. ['detY', 'angles', 'detX']
-    ---------------------------------------------------------------------------------------------------------- """    
+    ----------------------------------------------------------------------------------------------------------
+    """
 
     def __init__(
         self,
-        DetectorsDimH,      # DetectorsDimH # detector dimension (horizontal)
-        DetectorsDimV,      # DetectorsDimV # detector dimension (vertical) for 3D case only
-        CenterRotOffset,    # Centre of Rotation (CoR) scalar or a vector
-        AnglesVec,          # Array of angles in radians
-        ObjSize,            # A scalar to define reconstructed object dimensions
-        device_projector='gpu',# Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-        data_axis_labels=None, # the input data axis labels
+        DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
+        DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+        CenterRotOffset,  # Centre of Rotation (CoR) scalar or a vector
+        AnglesVec,  # Array of angles in radians
+        ObjSize,  # A scalar to define reconstructed object dimensions
+        device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+        data_axis_labels=None,  # the input data axis labels
     ):
         super().__init__(
             DetectorsDimH,
@@ -109,7 +112,7 @@ class RecToolsDIR(RecTools):
             AnglesVec,
             ObjSize,
             device_projector=device_projector,
-            data_axis_labels=data_axis_labels, # inherit from the base class
+            data_axis_labels=data_axis_labels,  # inherit from the base class
         )
 
     def FORWPROJ(self, data):
@@ -222,4 +225,3 @@ class RecToolsDIR(RecTools):
             filtered_sino = _filtersinc3D(data)  # filtering projection data
             FBP_rec = self.Atools.backproj(filtered_sino)  # 3d backproject
         return FBP_rec
-    

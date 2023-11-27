@@ -319,6 +319,7 @@ def autocropper(data, addbox, backgr_pix1):
     ]
     return cropped_data
 
+
 def _apply_circular_mask(data, recon_mask_radius, axis=2):
     """Applies a circular mask of a certain radius to zero the values outside tha mask
 
@@ -331,10 +332,12 @@ def _apply_circular_mask(data, recon_mask_radius, axis=2):
     """
     try:
         import cupy as xp
+
         try:
             xp.cuda.Device(0).compute_capability
         except xp.cuda.runtime.CUDARuntimeError:
             import numpy as xp
+
             print("CuPy is installed but GPU device inaccessible")
     except ImportError:
         import numpy as xp
@@ -342,13 +345,18 @@ def _apply_circular_mask(data, recon_mask_radius, axis=2):
     recon_size = data.shape[axis]
     Y, X = xp.ogrid[:recon_size, :recon_size]
     half_size = recon_size // 2
-    dist_from_center = xp.sqrt((X - half_size)**2 + (Y-half_size)**2)       
+    dist_from_center = xp.sqrt((X - half_size) ** 2 + (Y - half_size) ** 2)
     if recon_mask_radius <= 1.0:
-        mask = dist_from_center <= half_size - abs(half_size - half_size/recon_mask_radius)
+        mask = dist_from_center <= half_size - abs(
+            half_size - half_size / recon_mask_radius
+        )
     else:
-        mask = dist_from_center <= half_size + abs(half_size - half_size/recon_mask_radius)
+        mask = dist_from_center <= half_size + abs(
+            half_size - half_size / recon_mask_radius
+        )
     data *= mask
     return data
+
 
 def _check_kwargs(reconstruction, **kwargs):
     # Iterating over optional parameters:
@@ -356,6 +364,7 @@ def _check_kwargs(reconstruction, **kwargs):
         if key == "recon_mask_radius":
             _apply_circular_mask(reconstruction, value)
     return reconstruction
+
 
 def circ_mask(X, diameter):
     # applying a circular mask to the reconstructed image/volume
@@ -380,6 +389,7 @@ def circ_mask(X, diameter):
         X_masked = np.multiply(X, mask)
     return X_masked
 
+
 def __get_swap_tuple(data_axis_labels, labels_order):
     swap_tuple = None
     for in_l1, str_1 in enumerate(labels_order):
@@ -391,15 +401,17 @@ def __get_swap_tuple(data_axis_labels, labels_order):
                     return swap_tuple
     return swap_tuple
 
-def swap_data_axis_to_accepted(data_axis_labels,
-                               labels_order=['detY', 'angles', 'detX']):
+
+def swap_data_axis_to_accepted(
+    data_axis_labels, labels_order=["detY", "angles", "detX"]
+):
     """A module to ensure that the input tomographic data is prepeared for reconstruction
     in the axis order required.
 
     Args:
         data_axis_labels (list):  a list of data labels, e.g. given as ['angles', 'detX', 'detY']
         labels_order (list, optional): the required (fixed) order of axis labels for data. Defaults to ['angles', 'detX', 'detY'].
-    
+
     Returns:
     ------
     list
@@ -409,21 +421,26 @@ def swap_data_axis_to_accepted(data_axis_labels,
     # check if the labels names are the accepted ones
     for str_1 in data_axis_labels:
         if str_1 not in labels_order:
-            raise ValueError(f'Axis title "{str_1}" is not valid, please use one of these: "angles", "detX", or "detY"')
-    
+            raise ValueError(
+                f'Axis title "{str_1}" is not valid, please use one of these: "angles", "detX", or "detY"'
+            )
+
     # check the order and produce a swapping tuple if needed
     swap_tuple1 = __get_swap_tuple(data_axis_labels, labels_order)
-                
+
     if swap_tuple1 is not None:
         # swap elements in the list and check the list again
-        data_axis_labels[swap_tuple1[0]], data_axis_labels[swap_tuple1[1]] = data_axis_labels[swap_tuple1[1]], data_axis_labels[swap_tuple1[0]]      
-        swap_tuple2 = __get_swap_tuple(data_axis_labels, labels_order)    
-  
+        data_axis_labels[swap_tuple1[0]], data_axis_labels[swap_tuple1[1]] = (
+            data_axis_labels[swap_tuple1[1]],
+            data_axis_labels[swap_tuple1[0]],
+        )
+        swap_tuple2 = __get_swap_tuple(data_axis_labels, labels_order)
+
     if swap_tuple2 is not None:
         # swap elements in the list
-        data_axis_labels[swap_tuple2[0]], data_axis_labels[swap_tuple2[1]] = data_axis_labels[swap_tuple2[1]], data_axis_labels[swap_tuple2[0]]
-    
+        data_axis_labels[swap_tuple2[0]], data_axis_labels[swap_tuple2[1]] = (
+            data_axis_labels[swap_tuple2[1]],
+            data_axis_labels[swap_tuple2[0]],
+        )
+
     return [swap_tuple1, swap_tuple2]
-    
-    
-    

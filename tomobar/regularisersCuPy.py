@@ -19,6 +19,7 @@ except ImportError:
         "____! CCPi-regularisation package (CuPy part needed only) is missing, please install !____"
     )
 
+
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_["iterations"], 0)
     # The proximal operator of the chosen regulariser
@@ -33,7 +34,7 @@ def prox_regul(self, X, _regularisation_):
             self.GPUdevice_index,
         )
     if "PD_TV" in _regularisation_["method"]:
-        # Primal-Dual (PD) Total variation method by Chambolle-Pock               
+        # Primal-Dual (PD) Total variation method by Chambolle-Pock
         X_prox = PD_TV_cupy(
             X,
             _regularisation_["regul_param"],

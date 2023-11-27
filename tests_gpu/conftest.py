@@ -7,9 +7,11 @@ import cupy as cp
 
 CUR_DIR = os.path.abspath(os.path.dirname(__file__))
 
+
 @pytest.fixture(scope="session")
 def test_data_path():
     return os.path.join(CUR_DIR, "test_data")
+
 
 # only load from disk once per session, and we use np.copy for the elements,
 # to ensure data in this loaded file stays as originally loaded
@@ -17,6 +19,7 @@ def test_data_path():
 def data_file(test_data_path):
     in_file = os.path.join(test_data_path, "normalised_data.npz")
     return np.load(in_file)
+
 
 @pytest.fixture
 def ensure_clean_memory():
@@ -31,13 +34,16 @@ def ensure_clean_memory():
 def data(data_file):
     return np.copy(data_file["data_norm"])
 
+
 @pytest.fixture
 def data_cupy(data):
     return cp.asarray(data)
 
+
 @pytest.fixture
 def angles(data_file):
     return np.copy(data_file["angles"])
+
 
 @pytest.fixture
 def angles_cupy(angles):

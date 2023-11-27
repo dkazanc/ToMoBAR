@@ -7,9 +7,11 @@ from numpy.testing import assert_allclose
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 eps = 1e-06
+
+
 def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
-    detX=cp.shape(data_cupy)[2]
-    detY=cp.shape(data_cupy)[1]
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
     N_size = detX
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
@@ -18,7 +20,7 @@ def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="gpu",
-        data_axis_labels=['angles', 'detY', 'detX'], # set the labels of the input data
+        data_axis_labels=["angles", "detY", "detX"],  # set the labels of the input data
     )
     FBPrec_cupy = RecToolsCP.FBP3D(data_cupy)
     recon_data = FBPrec_cupy.get()
@@ -27,9 +29,10 @@ def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
+
 def test_rec_FBP_mask_cupy(data_cupy, angles, ensure_clean_memory):
-    detX=cp.shape(data_cupy)[2]
-    detY=cp.shape(data_cupy)[1]
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
     N_size = detX
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
@@ -38,9 +41,9 @@ def test_rec_FBP_mask_cupy(data_cupy, angles, ensure_clean_memory):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="gpu",
-        data_axis_labels=['angles', 'detY', 'detX'], # set the labels of the input data
+        data_axis_labels=["angles", "detY", "detX"],  # set the labels of the input data
     )
-    FBPrec_cupy = RecToolsCP.FBP3D(data_cupy, recon_mask_radius = 0.7)
+    FBPrec_cupy = RecToolsCP.FBP3D(data_cupy, recon_mask_radius=0.7)
     recon_data = FBPrec_cupy.get()
     assert_allclose(np.min(recon_data), -0.0129751, rtol=eps)
     assert_allclose(np.max(recon_data), 0.0340156, rtol=eps)
