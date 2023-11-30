@@ -7,7 +7,7 @@ from tomobar.methodsDIR import RecToolsDIR
 eps = 1e-06
 
 
-def test_rec_FBP2D_1(data, angles):
+def test_FBP2D_1(data, angles):
     detX = np.shape(data)[2]
     detY = 0
     data2D = data[:, 60, :]
@@ -28,7 +28,7 @@ def test_rec_FBP2D_1(data, angles):
     assert FBPrec.shape == (160, 160)
 
 
-def test_rec_FBP3D_1(data, angles):
+def test_FBP3D_1(data, angles):
     detX = np.shape(data)[2]
     detY = np.shape(data)[1]
     N_size = detX

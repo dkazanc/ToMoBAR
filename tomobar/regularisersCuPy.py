@@ -9,7 +9,6 @@ https://github.com/vais-ral/CCPi-Regularisation-Toolkit
 GPLv3 license (ASTRA toolbox)
 @author: Daniil Kazantsev: https://github.com/dkazanc
 """
-import cupy as cp
 
 try:
     from ccpi.filters.regularisersCuPy import ROF_TV as ROF_TV_cupy
@@ -18,7 +17,7 @@ except ImportError:
     print(
         "____! CCPi-regularisation package (CuPy part needed only) is missing, please install !____"
     )
-
+    
 
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_["iterations"], 0)
@@ -40,9 +39,9 @@ def prox_regul(self, X, _regularisation_):
             _regularisation_["regul_param"],
             _regularisation_["iterations"],
             _regularisation_["tolerance"],
-            cp.int(_regularisation_["methodTV"]),
-            cp.int(self.nonneg_regul),
-            cp.float32(_regularisation_["PD_LipschitzConstant"]),
+            _regularisation_["methodTV"],
+            self.nonneg_regul,
+            _regularisation_["PD_LipschitzConstant"],
             self.GPUdevice_index,
         )
     return X_prox

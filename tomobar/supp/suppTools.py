@@ -403,14 +403,14 @@ def __get_swap_tuple(data_axis_labels, labels_order):
 
 
 def swap_data_axis_to_accepted(
-    data_axis_labels, labels_order=["detY", "angles", "detX"]
+    data_axis_labels, labels_order
 ):
     """A module to ensure that the input tomographic data is prepeared for reconstruction
     in the axis order required.
 
     Args:
         data_axis_labels (list):  a list of data labels, e.g. given as ['angles', 'detX', 'detY']
-        labels_order (list, optional): the required (fixed) order of axis labels for data. Defaults to ['angles', 'detX', 'detY'].
+        labels_order (list): the required (fixed) order of axis labels for data, e.g. ["detY", "angles", "detX"].
 
     Returns:
     ------

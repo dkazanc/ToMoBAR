@@ -86,8 +86,10 @@ class RecToolsDIRCuPy(RecTools):
             device_projector,
             data_axis_labels=data_axis_labels,  # inherit from the base class
         )
+        if DetectorsDimV == 0 or DetectorsDimV is None:
+            raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
-    def FBP3D(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
+    def FBP(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Filtered backprojection on a CuPy array using a custom built SINC filter
 
         Args:
@@ -95,8 +97,8 @@ class RecToolsDIRCuPy(RecTools):
                 Projection data as a CuPy array.
             kwargs: dict
                 Optional parameters:
-                1. recon_mask_radius - zero the values outside the circular mask
-                of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
+                - recon_mask_radius: float
+                    zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
 
         Returns:
             cp.ndarray

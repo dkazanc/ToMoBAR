@@ -58,10 +58,11 @@ RecToolsCP = RecToolsDIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
+    data_axis_labels=["detY", "angles", "detX"], # axes labels 
 )
 
 tic = timeit.default_timer()
-FBPrec_cupy = RecToolsCP.FBP3D(projData3D_analyt_cupy, recon_mask_radius=0.9)
+FBPrec_cupy = RecToolsCP.FBP(projData3D_analyt_cupy, recon_mask_radius=0.9)
 toc = timeit.default_timer()
 Run_time = toc - tic
 print(
@@ -94,72 +95,72 @@ print(
 )
 del FBPrec_cupy
 # %%
-# print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# print("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
-# print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# RecToolsCP = RecToolsIRCuPy(
-#     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-#     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-#     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-#     AnglesVec=angles_rad,  # A vector of projection angles in radians
-#     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-#     device_projector="gpu",
-# )
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+RecToolsCP = RecToolsIRCuPy(
+    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
+    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    device_projector="gpu",
+)
 
-# # prepare dictionaries with parameters:
-# _data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
-# LWrec_cupy = RecToolsCP.Landweber(_data_)
+# prepare dictionaries with parameters:
+_data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
+LWrec_cupy = RecToolsCP.Landweber(_data_)
 
-# lwrec = cp.asnumpy(LWrec_cupy)
+lwrec = cp.asnumpy(LWrec_cupy)
 
-# sliceSel = int(0.5 * N_size)
-# plt.figure()
-# plt.subplot(131)
-# plt.imshow(lwrec[sliceSel, :, :])
-# plt.title("3D Landweber Reconstruction, axial view")
+sliceSel = int(0.5 * N_size)
+plt.figure()
+plt.subplot(131)
+plt.imshow(lwrec[sliceSel, :, :])
+plt.title("3D Landweber Reconstruction, axial view")
 
-# plt.subplot(132)
-# plt.imshow(lwrec[:, sliceSel, :])
-# plt.title("3D Landweber Reconstruction, coronal view")
+plt.subplot(132)
+plt.imshow(lwrec[:, sliceSel, :])
+plt.title("3D Landweber Reconstruction, coronal view")
 
-# plt.subplot(133)
-# plt.imshow(lwrec[:, :, sliceSel])
-# plt.title("3D Landweber Reconstruction, sagittal view")
-# plt.show()
-# # %%
-# print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# print("%%%%%%%%%% Reconstructing using SIRT algorithm %%%%%%%%%%%%%")
-# print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# RecToolsCP = RecToolsIRCuPy(
-#     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-#     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-#     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-#     AnglesVec=angles_rad,  # A vector of projection angles in radians
-#     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-#     device_projector="gpu",
-# )
+plt.subplot(133)
+plt.imshow(lwrec[:, :, sliceSel])
+plt.title("3D Landweber Reconstruction, sagittal view")
+plt.show()
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%%%%%%% Reconstructing using SIRT algorithm %%%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+RecToolsCP = RecToolsIRCuPy(
+    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
+    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    device_projector="gpu",
+)
 
-# # prepare dictionaries with parameters:
-# _data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
-# _algorithm_ = {"iterations": 300, "nonnegativity": True}
-# SIRTrec_cupy = RecToolsCP.SIRT(_data_, _algorithm_)
+# prepare dictionaries with parameters:
+_data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
+_algorithm_ = {"iterations": 300, "nonnegativity": True}
+SIRTrec_cupy = RecToolsCP.SIRT(_data_, _algorithm_)
 
-# sirt_rec = cp.asnumpy(SIRTrec_cupy)
+sirt_rec = cp.asnumpy(SIRTrec_cupy)
 
-# sliceSel = int(0.5 * N_size)
-# plt.figure()
-# plt.subplot(131)
-# plt.imshow(sirt_rec[sliceSel, :, :])
-# plt.title("3D SIRT Reconstruction, axial view")
+sliceSel = int(0.5 * N_size)
+plt.figure()
+plt.subplot(131)
+plt.imshow(sirt_rec[sliceSel, :, :])
+plt.title("3D SIRT Reconstruction, axial view")
 
-# plt.subplot(132)
-# plt.imshow(sirt_rec[:, sliceSel, :])
-# plt.title("3D SIRT Reconstruction, coronal view")
+plt.subplot(132)
+plt.imshow(sirt_rec[:, sliceSel, :])
+plt.title("3D SIRT Reconstruction, coronal view")
 
-# plt.subplot(133)
-# plt.imshow(sirt_rec[:, :, sliceSel])
-# plt.title("3D SIRT Reconstruction, sagittal view")
-# plt.show()
+plt.subplot(133)
+plt.imshow(sirt_rec[:, :, sliceSel])
+plt.title("3D SIRT Reconstruction, sagittal view")
+plt.show()
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using CGLS algorithm %%%%%%%%%%%%%")
@@ -195,6 +196,9 @@ plt.imshow(cgls_rec[:, :, sliceSel])
 plt.title("3D CGLS Reconstruction, sagittal view")
 plt.show()
 # %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%%%%%%% Reconstructing using FISTA algorithm %%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecToolsCP = RecToolsIRCuPy(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
@@ -204,10 +208,55 @@ RecToolsCP = RecToolsIRCuPy(
     device_projector="gpu",
 )
 
+# prepare dictionaries with parameters:
+_data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
+lc = RecToolsCP.powermethod(
+_data_
+)
+_algorithm_ = {"iterations": 300, "lipschitz_const":  lc.get()}
+
+start_time = timeit.default_timer()
+RecFISTA = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_={})
+txtstr = "%s = %.3fs" % ("elapsed time", timeit.default_timer() - start_time)
+print(txtstr)
+
+fista_rec_np = cp.asnumpy(RecFISTA)
+
+sliceSel = int(0.5 * N_size)
+plt.figure()
+plt.subplot(131)
+plt.imshow(fista_rec_np[sliceSel, :, :])
+plt.title("3D FISTA Reconstruction, axial view")
+
+plt.subplot(132)
+plt.imshow(fista_rec_np[:, sliceSel, :])
+plt.title("3D FISTA Reconstruction, coronal view")
+
+plt.subplot(133)
+plt.imshow(fista_rec_np[:, :, sliceSel])
+plt.title("3D FISTA Reconstruction, sagittal view")
+plt.show()
+del RecFISTA
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%% Reconstructing using regularised FISTA algorithm %%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# NOTE that you'd need to install CuPy modules for the regularisers from the regularisation toolkit
+RecToolsCP = RecToolsIRCuPy(
+    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
+    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    device_projector="gpu",
+)
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
-_algorithm_ = {"iterations": 200, "lipschitz_const": 50000.346}
+lc = RecToolsCP.powermethod(
+_data_
+)
+_algorithm_ = {"iterations": 300, "lipschitz_const":  lc.get()}
 _regularisation_ = {
     "method": "PD_TV",
     "regul_param": 0.001,
@@ -236,4 +285,3 @@ plt.imshow(fista_rec_np[:, :, sliceSel])
 plt.title("3D FISTA Reconstruction, sagittal view")
 plt.show()
 del RecFISTA
-# %%

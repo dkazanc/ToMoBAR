@@ -1,7 +1,10 @@
 name: tomobar
 channels:
   - conda-forge
+  - astra-toolbox
 dependencies:
+  - astra-toolbox::astra-toolbox
+  - conda-forge::cupy
   - conda-forge::numpy
   - conda-forge::python
   - conda-forge::pytest

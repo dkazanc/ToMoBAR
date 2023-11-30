@@ -1,9 +1,6 @@
-import unittest
-import numpy as np
 import pytest
 
 from tomobar.supp.suppTools import swap_data_axis_to_accepted
-
 
 @pytest.mark.parametrize("labels", [["detY", "angles", "detX"]])
 def test_swap_data_axis_to_accepted1(labels):

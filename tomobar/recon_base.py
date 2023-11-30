@@ -3,9 +3,6 @@
 """the base reconstruction class.
 @author: Daniil Kazantsev
 """
-
-import numpy as np
-
 astra_enabled = False
 try:
     import astra
@@ -45,8 +42,8 @@ class RecTools:
         data_axis_labels=None,  # the input data axis labels
     ):
         if isinstance(ObjSize, tuple):
-            raise (
-                " Reconstruction is currently available for square or cubic objects only, provide a scalar "
+            raise ValueError(
+                " Reconstruction is currently available for square or cubic objects only, please provide a scalar"
             )
         else:
             self.ObjSize = ObjSize  # size of the object

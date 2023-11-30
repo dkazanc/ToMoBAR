@@ -64,8 +64,8 @@ conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
 ### Python development environment
 * Clone the repository from GitHub page
 * Install dependencies from the [environment](https://github.com/dkazanc/ToMoBAR/tree/master/conda-recipe/environment/environment.yml) file
-* Activate the environment with :code:`conda activate tomobar`
-* From the root directory install the enviroment in development mode with :code:`pip install -e .[dev]`
+* Activate the environment with ```conda activate tomobar```
+* From the root directory install the enviroment in development mode with ```pip install -e .[dev]```
 
 ### MultiGPU capability
 ToMoBAR can be used by running in parallel across multiple GPU devices on a PC or a compute node of a cluster. In order to initiate a parallel run on multiple GPUs you will need an MPI library, such as, [mpi4py](https://mpi4py.readthedocs.io/en/stable/). See this [demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py).

@@ -9,7 +9,7 @@ https://github.com/vais-ral/CCPi-Regularisation-Toolkit
 GPLv3 license (ASTRA toolbox)
 @author: Daniil Kazantsev: https://github.com/dkazanc
 """
-
+import numpy as np
 try:
     from ccpi.filters.regularisers import (
         ROF_TV,

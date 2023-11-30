@@ -1,6 +1,4 @@
-from unittest import mock
 import cupy as cp
-from cupy.cuda import nvtx
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -8,8 +6,7 @@ from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 eps = 1e-06
 
-
-def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
+def test_FBP3Dcupy(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
@@ -22,7 +19,7 @@ def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
         device_projector="gpu",
         data_axis_labels=["angles", "detY", "detX"],  # set the labels of the input data
     )
-    FBPrec_cupy = RecToolsCP.FBP3D(data_cupy)
+    FBPrec_cupy = RecToolsCP.FBP(data_cupy)
     recon_data = FBPrec_cupy.get()
     assert_allclose(np.min(recon_data), -0.014693323, rtol=eps)
     assert_allclose(np.max(recon_data), 0.0340156, rtol=eps)
@@ -30,7 +27,7 @@ def test_rec_FBPcupy(data_cupy, angles, ensure_clean_memory):
     assert recon_data.shape == (128, 160, 160)
 
 
-def test_rec_FBP_mask_cupy(data_cupy, angles, ensure_clean_memory):
+def test_FBP3D_mask_cupy(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
@@ -43,7 +40,7 @@ def test_rec_FBP_mask_cupy(data_cupy, angles, ensure_clean_memory):
         device_projector="gpu",
         data_axis_labels=["angles", "detY", "detX"],  # set the labels of the input data
     )
-    FBPrec_cupy = RecToolsCP.FBP3D(data_cupy, recon_mask_radius=0.7)
+    FBPrec_cupy = RecToolsCP.FBP(data_cupy, recon_mask_radius=0.7)
     recon_data = FBPrec_cupy.get()
     assert_allclose(np.min(recon_data), -0.0129751, rtol=eps)
     assert_allclose(np.max(recon_data), 0.0340156, rtol=eps)

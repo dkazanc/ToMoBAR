@@ -11,19 +11,14 @@ try:
         gpu_enabled = True  # CuPy is installed and GPU is available
     except xp.cuda.runtime.CUDARuntimeError:
         import numpy as xp
-
-        # print("CuPy is installed but GPU device inaccessible")
 except ImportError:
     import numpy as xp
-
-    # print("CuPy is not installed")
-
 
 def dicts_check(
     self,
     _data_: dict,
-    _algorithm_: Union[dict, None] = None,
-    _regularisation_: Union[dict, None] = None,
+    _algorithm_: dict = {},
+    _regularisation_: dict = {},
     method_run: str = "FISTA",
 ) -> tuple:
     """Function that checks the given dictionaties and populates its parameters.
@@ -41,7 +36,7 @@ def dicts_check(
             --ringGH_accelerate: Group-Huber data model acceleration factor (use carefully to avoid divergence. FISTA. Defaults to 50.
             --beta_SWLS: a regularisation parameter for stripe-weighted LS model. FISTA. Defaults to 0.1.
         ----------------------------------------------------------------------------------------------------------
-        _algorithm_ (dict, optional): Algorithm dictionary inspects the following parameters. Defaults to None.
+        _algorithm_ (dict, optional): Algorithm dictionary inspects the following parameters. Defaults to {}.
             --iterations: the number of iterations for the reconstruction algorithm.
             --initialise: initialisation for the algorithm (given as an array)
             --nonnegativity: enables the nonnegativity for algorithms. Defaults to False.
@@ -52,7 +47,7 @@ def dicts_check(
             --tolerance: tolerance to terminate reconstruction algorithm (FISTA, ADMM) iterations earlier, Defaults to 0.0.
             --verbose: mode to print iterations number and other messages ('on' by default, 'off' to suppress)
         ----------------------------------------------------------------------------------------------------------
-        _regularisation_ (dict, optional): Regularisation dictionary. Available for FISTA and ADMM algorithms. Defaults to None.
+        _regularisation_ (dict, optional): Regularisation dictionary. Available for FISTA and ADMM algorithms. Defaults to {}.
             --method: select a regularisation method: ROF_TV, FGP_TV, PD_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV.
                  You can also add WAVELET regularisation by adding WAVELETS to any method above, e.g., ROF_TV_WAVELETS
             --regul_param: the main regularisation parameter for regularisers to control the amount of smoothing. Defaults to 0.001.
@@ -88,6 +83,7 @@ def dicts_check(
                 raise NameError(
                     "No input 'projection_raw_data' provided for PWLS or SWLS data fidelity"
                 )
+        self.data_swapped = False
         # do the axis swap if required:
         for swap_tuple in self.data_swap_list:
             if swap_tuple is not None:
@@ -98,31 +94,12 @@ def dicts_check(
                     _data_["projection_raw_data"] = xp.swapaxes(
                         _data_["projection_raw_data"], swap_tuple[0], swap_tuple[1]
                     )
+                self.data_swapped = True
 
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # classical approach (default)
         self.OS_number = _data_["OS_number"]
-        if self.geom == "2D":
-            self.AtoolsOS = AstraToolsOS(
-                self.DetectorsDimH,
-                self.AnglesVec,
-                self.CenterRotOffset,
-                self.ObjSize,
-                self.OS_number,
-                self.device_projector,
-                self.GPUdevice_index,
-            )  # initiate 2D ASTRA class OS object
-        else:
-            self.AtoolsOS = AstraToolsOS3D(
-                self.DetectorsDimH,
-                self.DetectorsDimV,
-                self.AnglesVec,
-                self.CenterRotOffset,
-                self.ObjSize,
-                self.OS_number,
-                self.device_projector,
-                self.GPUdevice_index,
-            )  # initiate 3D ASTRA class OS object
+
         if method_run == "FISTA":
             if self.datafidelity == "SWLS":
                 if _data_.get("beta_SWLS") is None:
@@ -145,8 +122,6 @@ def dicts_check(
             if "ringGH_accelerate" not in _data_:
                 _data_["ringGH_accelerate"] = 50
     # ----------  dealing with _algorithm_  --------------
-    if _algorithm_ is None:
-        _algorithm_ = {}  # initialise dictionary here
     if method_run in {"SIRT", "CGLS", "power", "ADMM", "Landweber"}:
         _algorithm_["lipschitz_const"] = 0  # bypass Lipshitz const calculation bellow
         if _algorithm_.get("iterations") is None:
@@ -195,8 +170,7 @@ def dicts_check(
     if "verbose" not in _algorithm_:
         _algorithm_["verbose"] = "on"
     # ----------  deal with _regularisation_  --------------
-    if _regularisation_ is None:
-        _regularisation_ = {}  # initialise dictionary here
+    if bool(_regularisation_) is False:
         _regularisation_["method"] = None
     if method_run in {"FISTA", "ADMM"}:
         # regularisation parameter  (main)
@@ -255,3 +229,33 @@ def dicts_check(
         if "device_regulariser" not in _regularisation_:
             _regularisation_["device_regulariser"] = "gpu"
     return (_data_, _algorithm_, _regularisation_)
+
+
+def reinitialise_atools_OS(self, _data_: dict):
+    """reinitialises OS geometry by overwriting existing Atools
+
+    Args:
+        _data_ (dict): data dictionary
+    """
+    if self.geom == "2D":
+        self.Atools = AstraToolsOS(
+            self.DetectorsDimH,
+            self.AnglesVec,
+            self.CenterRotOffset,
+            self.ObjSize,
+            _data_["OS_number"],
+            self.device_projector,
+            self.GPUdevice_index,
+        )  # initiate 2D ASTRA class OS object
+    else:
+        self.Atools = AstraToolsOS3D(
+            self.DetectorsDimH,
+            self.DetectorsDimV,
+            self.AnglesVec,
+            self.CenterRotOffset,
+            self.ObjSize,
+            _data_["OS_number"],
+            self.device_projector,
+            self.GPUdevice_index,
+        )  # initiate 3D ASTRA class OS object
+    return  _data_
