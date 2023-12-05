@@ -227,6 +227,12 @@ class RecToolsIRCuPy(RecTools):
 
         if self.datafidelity == "PWLS":
             sqweight = _data_["projection_raw_data"]
+            # do the axis swap if required:
+            for swap_tuple in self.data_swap_list:
+                if swap_tuple is not None:
+                    sqweight = np.swapaxes(
+                        sqweight, swap_tuple[0], swap_tuple[1]
+                    )            
         if _data_["OS_number"] == 1:
             # non-OS approach
             y = self.Atools.forwprojCuPy(x1)

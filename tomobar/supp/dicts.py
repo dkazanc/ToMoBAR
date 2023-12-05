@@ -83,7 +83,6 @@ def dicts_check(
                 raise NameError(
                     "No input 'projection_raw_data' provided for PWLS or SWLS data fidelity"
                 )
-        self.data_swapped = False
         # do the axis swap if required:
         for swap_tuple in self.data_swap_list:
             if swap_tuple is not None:
@@ -94,7 +93,6 @@ def dicts_check(
                     _data_["projection_raw_data"] = xp.swapaxes(
                         _data_["projection_raw_data"], swap_tuple[0], swap_tuple[1]
                     )
-                self.data_swapped = True
 
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # classical approach (default)

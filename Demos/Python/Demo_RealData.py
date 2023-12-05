@@ -41,11 +41,9 @@ darks2[:, 0, :] = darks[:]
 # normalise the data, required format is [detectorsHoriz, Projections, Slices]
 data_norm = normaliser(dataRaw, flats2, darks2, log="log", method="mean")
 dataRaw = np.float32(np.divide(dataRaw, np.max(dataRaw).astype(float)))
+detectorHoriz = np.size(data_norm, 0)
+data_labels2D = ["detX", "angles"] # set data labels
 
-data_norm = np.swapaxes(data_norm, 0, 2)
-dataRaw = np.swapaxes(dataRaw, 0, 2)
-
-detectorHoriz = np.size(data_norm, 2)
 N_size = 1000
 slice_to_recon = 19  # select which slice to reconstruct
 angles_rad = angles[:, 0] * (np.pi / 180.0)
@@ -62,9 +60,10 @@ RectoolsDIR = RecToolsDIR(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
+    data_axis_labels=data_labels2D,
 )
 
-FBPrec = RectoolsDIR.FBP(data_norm[slice_to_recon, :, :])
+FBPrec = RectoolsDIR.FBP(data_norm[:, :, slice_to_recon])
 
 fig = plt.figure()
 plt.imshow(FBPrec[100:900, 100:900], vmin=0, vmax=0.004, cmap="gray")
@@ -85,14 +84,15 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
+    data_axis_labels=data_labels2D,
 )
 
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": data_norm[
-        slice_to_recon, :, :
+        :, :, slice_to_recon
     ],  # Normalised projection data
-    "projection_raw_data": dataRaw[slice_to_recon, :, :],  # Raw projection data
+    "projection_raw_data": dataRaw[:, :, slice_to_recon],  # Raw projection data
     "OS_number": 6,  # The number of subsets
 }
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
@@ -233,11 +233,12 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="KL",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
+    data_axis_labels=data_labels2D,
 )
 
 # prepare dictionaries with parameters:
 _data_ = {
-    "projection_norm_data": data_norm[slice_to_recon, :, :],
+    "projection_norm_data": data_norm[:, :, slice_to_recon],
     "OS_number": 6,
 }  # data dictionary
 
@@ -265,8 +266,41 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA KL-OS-GH-TV  method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+
+# set parameters and initiate a class object
+Rectools = RecToolsIR(
+    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimV=None,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="KL",  # Data fidelity, choose from LS, KL, PWLS
+    device_projector="gpu",
+    data_axis_labels=data_labels2D,
+)
+
+# prepare dictionaries with parameters:
 # adding Group-Huber data model
-_data_.update({"ringGH_lambda": 0.000001, "ringGH_accelerate": 15})
+_data_ = {
+    "projection_norm_data": data_norm[:, :, slice_to_recon],
+    "OS_number": 6,
+    "ringGH_lambda": 0.000001,
+    "ringGH_accelerate": 15
+}  # data dictionary
+
+lc = Rectools.powermethod(
+    _data_
+)  # calculate Lipschitz constant (run once to initialise)
+_algorithm_ = {"iterations": 50, "lipschitz_const": lc * 0.7}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {
+    "method": "PD_TV",
+    "regul_param": 0.000002,
+    "iterations": 80,
+    "device_regulariser": "gpu",
+}
 
 RecFISTA_KL_GH_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
@@ -312,14 +346,15 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="SWLS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
+    data_axis_labels=data_labels2D,
 )
 
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": data_norm[
-        slice_to_recon, :, :
+        :, :, slice_to_recon
     ],  # Normalised projection data
-    "projection_raw_data": dataRaw[slice_to_recon, :, :],  # Raw projection data
+    "projection_raw_data": dataRaw[:, :, slice_to_recon],  # Raw projection data
     "beta_SWLS": 0.2 * np.ones(detectorHoriz),  #  a parameter for SWLS model
     "OS_number": 6,  # The number of subsets
 }

@@ -129,6 +129,29 @@ def test_power2D(data, angles):
     )
     assert_allclose(lc, 27550.467, rtol=eps)
 
+def test_power_swap2D(data, angles):
+    detX = np.shape(data)[2]
+    detY = 0
+    data2D = data[:, 60, :]
+    data2D = np.swapaxes(data2D, 0, 1)
+    N_size = detX
+    RecTools = RecToolsIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+        data_axis_labels=["detX", "angles"],  # set the labels of the input data
+    )
+    _data_ = {"projection_norm_data": data2D}  # data dictionary
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(
+    _data_
+    )
+    assert_allclose(lc, 27550.467, rtol=eps)    
+
 def test_powerOS_2D(data, angles):
     detX = np.shape(data)[2]
     detY = 0
@@ -149,7 +172,56 @@ def test_powerOS_2D(data, angles):
     lc = RecTools.powermethod(
     _data_
     )
-    assert_allclose(lc, 5510.867, rtol=eps)    
+    assert_allclose(lc, 5510.867, rtol=eps)
+
+def test_powerOS_swap_2D(data, angles):
+    detX = np.shape(data)[2]
+    detY = 0
+    data2D = data[:, 60, :]
+    data2D = np.swapaxes(data2D, 0, 1)
+    N_size = detX
+    RecTools = RecToolsIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+        data_axis_labels=["detX", "angles"],  # set the labels of the input data
+    )
+    _data_ = {"projection_norm_data": data2D, "OS_number" : 5}  # data dictionary
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(
+    _data_
+    )
+    assert_allclose(lc, 5510.867, rtol=eps)
+
+def test_powerOS_PWLS_2D(data, angles):
+    detX = np.shape(data)[2]
+    detY = 0
+    data2D = data[:, 60, :]
+    data2D = np.swapaxes(data2D, 0, 1)
+    N_size = detX
+    RecTools = RecToolsIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="PWLS",
+        device_projector=0,  # define the device
+        data_axis_labels=["detX", "angles"],  # set the labels of the input data
+    )
+    _data_ = {"projection_norm_data": data2D,
+              "projection_raw_data": data2D,
+               "OS_number" : 5}  # data dictionary
+    
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(
+    _data_
+    )
+    assert_allclose(lc, 2561.9653, rtol=eps)    
 
 def test_FISTA2D(data, angles):
     detX = np.shape(data)[2]
