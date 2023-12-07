@@ -23,29 +23,7 @@ requirements:
     - setuptools
     - pillow
     - pytest
-
-test:
-  requires:
-    - pip
-    - pytest
-  imports:
-    - tomobar
-    - tomobar.supp
-  commands:
-    - pip check
-requirements:
-  host:
-    - python
-    - pip
-    - setuptools
-  run:
-    - python={{ python }}
-    - numpy={{ numpy }}
-    - setuptools
-    - pillow
-    - scikit-image
-    - pytest
-
+    
 about:
   home: https://github.com/dkazanc/ToMoBAR
   summary: 'TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software'
