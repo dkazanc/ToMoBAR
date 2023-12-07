@@ -193,6 +193,7 @@ def _set_geometry3d(self):
         "cuda3d", self.proj_geom, self.vol_geom
     )  # for GPU
     self.A_optomo = astra.OpTomo(self.proj_id)
+    return self.proj_geom, self.A_optomo
 
 
 def _set_OS_geometry3d(self):
@@ -262,7 +263,7 @@ class Astra2D:
             # traditional full data parallel beam projection geometry
             _set_geometry2d(self)
 
-    def runAstraRecon(self, sinogram, method, iterations, os_index):
+    def runAstraBackproj(self, sinogram, method, iterations, os_index):
         # set ASTRA configuration for 2D reconstructor
         if self.OS_number != 1:
             # ordered-subsets
@@ -391,13 +392,13 @@ class Astra3D:
         self.vol_geom = astra.create_vol_geom(Y, X, Z)
         # set projection geometries
         if self.OS_number != 1:
-            # traditional full data parallel beam projection geometry
-            _set_OS_geometry3d(self)
-        else:
             # ordered-subsets accelerated parallel beam projection geometry
-            _set_geometry3d(self)
+            self.proj_geom_OS = _set_OS_geometry3d(self)
+        else:
+            # traditional full data parallel beam projection geometry
+            self.proj_geom, self.A_optomo = _set_geometry3d(self)
 
-    def runAstraRecon(self, proj_data, method, iterations, os_index):
+    def runAstraBackproj(self, proj_data, method, iterations, os_index):
         # set ASTRA configuration for 3D reconstructor
         if self.OS_number != 1:
             # ordered-subsets
@@ -443,21 +444,23 @@ class Astra3D:
             xp.ndarray: A CuPy array containing back-projected volume.
         """
         # set ASTRA configuration for 3D reconstructor using CuPy arrays
+        proj_link = astra.data3d.GPULink(
+            proj_data.data.ptr, *proj_data.shape[::-1], 4 * proj_data.shape[2]
+        )
         if self.OS_number != 1:
             # ordered-subsets
             projector_id = astra.create_projector(
                 "cuda3d", self.proj_geom_OS[os_index], self.vol_geom
+            )
+            proj_id = astra.data3d.link(
+                "-proj3d", self.proj_geom_OS[os_index], proj_link
             )
         else:
             # traditional full data parallel beam projection geometry
             projector_id = astra.create_projector(
                 "cuda3d", self.proj_geom, self.vol_geom
             )
-
-        proj_link = astra.data3d.GPULink(
-            proj_data.data.ptr, *proj_data.shape[::-1], 4 * proj_data.shape[2]
-        )
-        proj_id = astra.data3d.link("-proj3d", self.proj_geom, proj_link)
+            proj_id = astra.data3d.link("-proj3d", self.proj_geom, proj_link)
 
         # create a CuPy array with ASTRA link to it
         recon_volume = xp.zeros(astra.geom_size(self.vol_geom), dtype=np.float32)
@@ -532,15 +535,19 @@ class Astra3D:
 
         if self.OS_number != 1:
             # ordered-subsets approach
-            proj_volume = xp.zeros(astra.geom_size(self.proj_geom_OS), dtype=np.float32)
+            proj_volume = xp.zeros(
+                astra.geom_size(self.proj_geom_OS[os_index]), dtype=xp.float32
+            )
             gpu_link_sino = astra.data3d.GPULink(
                 proj_volume.data.ptr, *proj_volume.shape[::-1], 4 * proj_volume.shape[2]
             )
-            proj_id = astra.data3d.link("-sino", self.proj_geom_OS, gpu_link_sino)
+            proj_id = astra.data3d.link(
+                "-sino", self.proj_geom_OS[os_index], gpu_link_sino
+            )
         else:
             # traditional full data parallel beam projection geometry
             # Enabling GPUlink to the created empty CuPy array
-            proj_volume = xp.zeros(astra.geom_size(self.proj_geom), dtype=np.float32)
+            proj_volume = xp.zeros(astra.geom_size(self.proj_geom), dtype=xp.float32)
             gpu_link_sino = astra.data3d.GPULink(
                 proj_volume.data.ptr, *proj_volume.shape[::-1], 4 * proj_volume.shape[2]
             )
@@ -598,25 +605,25 @@ class AstraTools(Astra2D):
         astra_method = "BP_CUDA"  # 2D back projection
         if self.device_projector == "cpu":
             astra_method = "BP"
-        return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, None)
+        return Astra2D.runAstraBackproj(self, sinogram, astra_method, 1, None)
 
     def fbp2D(self, sinogram):
         astra_method = "FBP_CUDA"  # 2D FBP reconstruction
         if self.device_projector == "cpu":
             astra_method = "FBP"
-        return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, None)
+        return Astra2D.runAstraBackproj(self, sinogram, astra_method, 1, None)
 
     def sirt2D(self, sinogram, iterations):
         astra_method = "SIRT_CUDA"  # perform 2D SIRT reconstruction
         if self.device_projector == "cpu":
             astra_method = "SIRT"
-        return Astra2D.runAstraRecon(self, sinogram, astra_method, iterations, None)
+        return Astra2D.runAstraBackproj(self, sinogram, astra_method, iterations, None)
 
     def cgls2D(self, sinogram, iterations):
         astra_method = "CGLS_CUDA"  # perform 2D CGLS reconstruction
         if self.device_projector == "cpu":
             astra_method = "CGLS"
-        return Astra2D.runAstraRecon(self, sinogram, astra_method, iterations, None)
+        return Astra2D.runAstraBackproj(self, sinogram, astra_method, iterations, None)
 
 
 class AstraToolsOS(Astra2D):
@@ -653,7 +660,7 @@ class AstraToolsOS(Astra2D):
         astra_method = "BP_CUDA"  # 2D back projection
         if self.device_projector == "cpu":
             astra_method = "BP"
-        return Astra2D.runAstraRecon(self, sinogram, astra_method, 1, os_index)
+        return Astra2D.runAstraBackproj(self, sinogram, astra_method, 1, os_index)
 
 
 class AstraTools3D(Astra3D):
@@ -691,7 +698,7 @@ class AstraTools3D(Astra3D):
         )  # 3D forward projection using CuPy array
 
     def backproj(self, proj_data):
-        return Astra3D.runAstraRecon(
+        return Astra3D.runAstraBackproj(
             self, proj_data, "BP3D_CUDA", 1, None
         )  # 3D backprojection
 
@@ -701,12 +708,12 @@ class AstraTools3D(Astra3D):
         )  # 3D backprojection using CuPy array
 
     def sirt3D(self, proj_data, iterations):
-        return Astra3D.runAstraRecon(
+        return Astra3D.runAstraBackproj(
             self, proj_data, "SIRT3D_CUDA", iterations, None
         )  # 3D SIRT reconstruction
 
     def cgls3D(self, proj_data, iterations):
-        return Astra3D.runAstraRecon(
+        return Astra3D.runAstraBackproj(
             self, proj_data, "CGLS3D_CUDA", iterations, None
         )  # 3D CGLS reconstruction
 
@@ -742,7 +749,17 @@ class AstraToolsOS3D(Astra3D):
             self, object3D, os_index
         )  # 3d forward projection of a specific subset
 
+    def forwprojOSCuPy(self, object3D, os_index):
+        return Astra3D.runAstraProjCuPy(
+            self, object3D, os_index
+        )  # 3D forward projection using CuPy array for a specific subset
+
     def backprojOS(self, proj_data, os_index):
-        return Astra3D.runAstraRecon(
+        return Astra3D.runAstraBackproj(
             self, proj_data, "BP3D_CUDA", 1, os_index
         )  # 3d back-projection of a specific subset
+
+    def backprojOSCuPy(self, proj_data, os_index):
+        return Astra3D.runAstraBackprojCuPy(
+            self, proj_data, "BP3D_CUDA", os_index
+        )  # 3d back-projection using CuPy array for a specific subset

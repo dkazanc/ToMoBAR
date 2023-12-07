@@ -15,7 +15,8 @@ import cupy as cp
 import cupyx
 
 from tomobar.cuda_kernels import load_cuda_module
-from tomobar.methodsDIR import RecToolsDIR
+from tomobar.recon_base import RecTools
+from tomobar.supp.suppTools import _check_kwargs, _data_swap
 
 
 def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
@@ -40,11 +41,13 @@ def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
     filter_prep = module.get_function("generate_filtersinc")
 
     # Use real FFT to save space and time
-    proj_f = cupyx.scipy.fft.rfft(projection3D, axis=-1, norm="backward", overwrite_x=True)
+    proj_f = cupyx.scipy.fft.rfft(
+        projection3D, axis=-1, norm="backward", overwrite_x=True
+    )
 
     # generating the filter here so we can schedule/allocate while FFT is keeping the GPU busy
     a = 1.1
-    f = cp.empty((1, 1, DetectorsLengthH//2+1), dtype=np.float32)
+    f = cp.empty((1, 1, DetectorsLengthH // 2 + 1), dtype=np.float32)
     bx = 256
     # because FFT is linear, we can apply the FFT scaling + multiplier in the filter
     multiplier = 1.0 / projectionsNum / DetectorsLengthH
@@ -57,10 +60,13 @@ def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
 
     # actual filtering
     proj_f *= f
-    
-    return cupyx.scipy.fft.irfft(proj_f, projection3D.shape[2], axis=-1, norm="forward", overwrite_x=True)
 
-class RecToolsDIRCuPy(RecToolsDIR):
+    return cupyx.scipy.fft.irfft(
+        proj_f, projection3D.shape[2], axis=-1, norm="forward", overwrite_x=True
+    )
+
+
+class RecToolsDIRCuPy(RecTools):
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
@@ -68,7 +74,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         CenterRotOffset,  # The Centre of Rotation scalar or a vector
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+        device_projector=0,  # set an index (integer) of a specific GPU device
+        data_axis_labels=None,  # the input data axis labels
     ):
         super().__init__(
             DetectorsDimH,
@@ -77,23 +84,29 @@ class RecToolsDIRCuPy(RecToolsDIR):
             AnglesVec,
             ObjSize,
             device_projector,
+            data_axis_labels=data_axis_labels,  # inherit from the base class
         )
+        if DetectorsDimV == 0 or DetectorsDimV is None:
+            raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
-    def FBP3D(self, data: cp.ndarray) -> cp.ndarray:
+    def FBP(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Filtered backprojection on a CuPy array using a custom built SINC filter
 
         Args:
             data : cp.ndarray
                 Projection data as a CuPy array.
+            kwargs: dict
+                Optional parameters:
+                - recon_mask_radius: float
+                    zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
 
         Returns:
             cp.ndarray
                 The FBP reconstructed volume as a CuPy array.
         """
-        data = _filtersinc3D_cupy(
-            data
-        )  # filter the data on the GPU and keep the result there
+        # filter the data on the GPU and keep the result there
+        data = _filtersinc3D_cupy(_data_swap(data, self.data_swap_list))
         data = cp.ascontiguousarray(cp.swapaxes(data, 0, 1))
         reconstruction = self.Atools.backprojCuPy(data)  # 3d backprojecting
         cp._default_memory_pool.free_all_blocks()
-        return reconstruction
+        return _check_kwargs(reconstruction, **kwargs)

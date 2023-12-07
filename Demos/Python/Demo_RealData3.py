@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 sinogram = np.load("../../data/sinoi23_13282.npy")
 angles_rad = np.load("../../data/sinoi23_13282_angles.npy")
 
+data_labels2D = ["detX", "angles"]  # set the input data labels
 detectorHoriz, angles_number = np.shape(sinogram)
 N_size = 950
 plt.figure(1)
@@ -42,9 +43,10 @@ RectoolsDIR = RecToolsDIR(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
+    data_axis_labels=data_labels2D,
 )
 
-FBPrec = RectoolsDIR.FBP(np.transpose(sinogram))
+FBPrec = RectoolsDIR.FBP(sinogram)
 
 fig = plt.figure()
 plt.imshow(FBPrec, vmin=0, vmax=0.005, cmap="gray")
@@ -65,11 +67,12 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
+    data_axis_labels=data_labels2D,
 )
 
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": np.transpose(sinogram),  # Normalised projection data
+    "projection_norm_data": sinogram,  # Normalised projection data
     "OS_number": 6,  # The number of subsets
 }
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
