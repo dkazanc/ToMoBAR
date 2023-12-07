@@ -24,12 +24,10 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 from numpy import linalg as LA
 from tomobar.supp.dicts import dicts_check, reinitialise_atools_OS
-from tomobar.supp.suppTools import circ_mask
+from tomobar.supp.suppTools import circ_mask, _data_swap
 from tomobar.recon_base import RecTools
 from tomobar.regularisers import prox_regul
 from tomobar.supp.astraOP import AstraToolsOS, AstraToolsOS3D
-import typing
-from typing import Union
 
 
 try:
@@ -72,7 +70,7 @@ class RecToolsIR(RecTools):
       *ObjSize,           # Reconstructed object dimensions (a scalar)
       *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
       *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-      *data_axis_labels   # set the order of axis labels of the input data, e.g. ['detY', 'angles', 'detX']
+      *data_axis_labels   # set the order of axes labels of the input data, e.g. ['detY', 'angles', 'detX']
 
     Parameters for reconstruction algorithms are extracted from 3 dictionaries: _data_, _algorithm_ and _regularisation_.
     To list all accepted parameters for those dictionaries do:
@@ -189,11 +187,8 @@ class RecToolsIR(RecTools):
         if self.datafidelity == "PWLS":
             sqweight = _data_["projection_raw_data"]
             # do the axis swap if required:
-            for swap_tuple in self.data_swap_list:
-                if swap_tuple is not None:
-                    sqweight = np.swapaxes(
-                        sqweight, swap_tuple[0], swap_tuple[1]
-                    )
+            sqweight = _data_swap(sqweight, self.data_swap_list)
+ 
         if _data_["OS_number"] == 1:
             # non-OS approach
             y = self.Atools.forwproj(x1)
@@ -339,111 +334,110 @@ class RecToolsIR(RecTools):
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
                         indVec = indVec[:-1]  # shrink vector size
-                    if _data_["OS_number"] != 1:
-                        # OS-reduced residuals
-                        if self.geom == "2D":
-                            if self.datafidelity == "LS":
-                                # 2D Least-squares (LS) data fidelity - OS (linear)
-                                res = (
+                    # OS-reduced residuals
+                    if self.geom == "2D":
+                        if self.datafidelity == "LS":
+                            # 2D Least-squares (LS) data fidelity - OS (linear)
+                            res = (
+                                self.Atools.forwprojOS(X_t, sub_ind)
+                                - _data_["projection_norm_data"][indVec, :]
+                            )
+                        if self.datafidelity == "PWLS":
+                            # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
+                            res = np.multiply(
+                                _data_["projection_raw_data"][indVec, :],
+                                (
                                     self.Atools.forwprojOS(X_t, sub_ind)
                                     - _data_["projection_norm_data"][indVec, :]
+                                ),
+                            )
+                        if self.datafidelity == "SWLS":
+                            # 2D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
+                            res = (
+                                self.Atools.forwprojOS(X_t, sub_ind)
+                                - _data_["projection_norm_data"][indVec, :]
+                            )
+                            for det_index in range(self.DetectorsDimH):
+                                wk = _data_["projection_raw_data"][
+                                    indVec, det_index
+                                ]
+                                res[:, det_index] = (
+                                    np.multiply(wk, res[:, det_index])
+                                    - 1.0
+                                    / (np.sum(wk) + _data_["beta_SWLS"][det_index])
+                                    * (wk.dot(res[:, det_index]))
+                                    * wk
                                 )
-                            if self.datafidelity == "PWLS":
-                                # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
-                                res = np.multiply(
-                                    _data_["projection_raw_data"][indVec, :],
-                                    (
-                                        self.Atools.forwprojOS(X_t, sub_ind)
-                                        - _data_["projection_norm_data"][indVec, :]
-                                    ),
-                                )
-                            if self.datafidelity == "SWLS":
-                                # 2D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
-                                res = (
+                        if self.datafidelity == "KL":
+                            # 2D Kullback-Leibler (KL) data fidelity - OS
+                            tmp = self.Atools.forwprojOS(X_t, sub_ind)
+                            res = np.divide(
+                                tmp - _data_["projection_norm_data"][indVec, :],
+                                tmp + 1.0,
+                            )
+                        # ring removal part for Group-Huber (GH) fidelity (2D)
+                        if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
+                            res[:, 0:None] = (
+                                res[:, 0:None]
+                                + _data_["ringGH_accelerate"] * r_x[:, 0]
+                            )
+                    else:  # 3D
+                        if self.datafidelity == "LS":
+                            # 3D Least-squares (LS) data fidelity - OS (linear)
+                            res = (
+                                self.Atools.forwprojOS(X_t, sub_ind)
+                                - _data_["projection_norm_data"][:, indVec, :]
+                            )
+                        if self.datafidelity == "PWLS":
+                            # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
+                            res = np.multiply(
+                                _data_["projection_raw_data"][:, indVec, :],
+                                (
                                     self.Atools.forwprojOS(X_t, sub_ind)
-                                    - _data_["projection_norm_data"][indVec, :]
-                                )
-                                for det_index in range(self.DetectorsDimH):
+                                    - _data_["projection_norm_data"][:, indVec, :]
+                                ),
+                            )
+                        if self.datafidelity == "SWLS":
+                            # 3D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
+                            res = (
+                                self.Atools.forwprojOS(X_t, sub_ind)
+                                - _data_["projection_norm_data"][:, indVec, :]
+                            )
+                            for detVert_index in range(self.DetectorsDimV):
+                                for detHorz_index in range(self.DetectorsDimH):
                                     wk = _data_["projection_raw_data"][
-                                        indVec, det_index
+                                        detVert_index, indVec, detHorz_index
                                     ]
-                                    res[:, det_index] = (
-                                        np.multiply(wk, res[:, det_index])
+                                    res[detVert_index, :, detHorz_index] = (
+                                        np.multiply(
+                                            wk, res[detVert_index, :, detHorz_index]
+                                        )
                                         - 1.0
-                                        / (np.sum(wk) + _data_["beta_SWLS"][det_index])
-                                        * (wk.dot(res[:, det_index]))
+                                        / (
+                                            np.sum(wk)
+                                            + _data_["beta_SWLS"][detHorz_index]
+                                        )
+                                        * (
+                                            wk.dot(
+                                                res[detVert_index, :, detHorz_index]
+                                            )
+                                        )
                                         * wk
                                     )
-                            if self.datafidelity == "KL":
-                                # 2D Kullback-Leibler (KL) data fidelity - OS
-                                tmp = self.Atools.forwprojOS(X_t, sub_ind)
-                                res = np.divide(
-                                    tmp - _data_["projection_norm_data"][indVec, :],
-                                    tmp + 1.0,
+                        if self.datafidelity == "KL":
+                            # 3D Kullback-Leibler (KL) data fidelity - OS
+                            tmp = self.Atools.forwprojOS(X_t, sub_ind)
+                            res = np.divide(
+                                tmp - _data_["projection_norm_data"][:, indVec, :],
+                                tmp + 1.0,
+                            )
+                        # GH - fidelity part (3D)
+                        if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
+                            for ang_index in range(len(indVec)):
+                                res[:, ang_index, :] = (
+                                    res[:, ang_index, :]
+                                    + _data_["ringGH_accelerate"] * r_x
                                 )
-                            # ring removal part for Group-Huber (GH) fidelity (2D)
-                            if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
-                                res[:, 0:None] = (
-                                    res[:, 0:None]
-                                    + _data_["ringGH_accelerate"] * r_x[:, 0]
-                                )
-                        else:  # 3D
-                            if self.datafidelity == "LS":
-                                # 3D Least-squares (LS) data fidelity - OS (linear)
-                                res = (
-                                    self.Atools.forwprojOS(X_t, sub_ind)
-                                    - _data_["projection_norm_data"][:, indVec, :]
-                                )
-                            if self.datafidelity == "PWLS":
-                                # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
-                                res = np.multiply(
-                                    _data_["projection_raw_data"][:, indVec, :],
-                                    (
-                                        self.Atools.forwprojOS(X_t, sub_ind)
-                                        - _data_["projection_norm_data"][:, indVec, :]
-                                    ),
-                                )
-                            if self.datafidelity == "SWLS":
-                                # 3D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
-                                res = (
-                                    self.Atools.forwprojOS(X_t, sub_ind)
-                                    - _data_["projection_norm_data"][:, indVec, :]
-                                )
-                                for detVert_index in range(self.DetectorsDimV):
-                                    for detHorz_index in range(self.DetectorsDimH):
-                                        wk = _data_["projection_raw_data"][
-                                            detVert_index, indVec, detHorz_index
-                                        ]
-                                        res[detVert_index, :, detHorz_index] = (
-                                            np.multiply(
-                                                wk, res[detVert_index, :, detHorz_index]
-                                            )
-                                            - 1.0
-                                            / (
-                                                np.sum(wk)
-                                                + _data_["beta_SWLS"][detHorz_index]
-                                            )
-                                            * (
-                                                wk.dot(
-                                                    res[detVert_index, :, detHorz_index]
-                                                )
-                                            )
-                                            * wk
-                                        )
-                            if self.datafidelity == "KL":
-                                # 3D Kullback-Leibler (KL) data fidelity - OS
-                                tmp = self.Atools.forwprojOS(X_t, sub_ind)
-                                res = np.divide(
-                                    tmp - _data_["projection_norm_data"][:, indVec, :],
-                                    tmp + 1.0,
-                                )
-                            # GH - fidelity part (3D)
-                            if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
-                                for ang_index in range(len(indVec)):
-                                    res[:, ang_index, :] = (
-                                        res[:, ang_index, :]
-                                        + _data_["ringGH_accelerate"] * r_x
-                                    )
                 else:  # CLASSICAL all-data approach
                     if self.datafidelity == "LS":
                         # full residual for LS fidelity

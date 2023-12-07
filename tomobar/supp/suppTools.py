@@ -10,6 +10,21 @@ Supplementary data tools:
           Gerard Jover Pujol https://github.com/IararIV/
 """
 import numpy as np
+import typing
+from typing import Union
+
+try:
+    import cupy as xp
+
+    try:
+        xp.cuda.Device(0).compute_capability
+    except xp.cuda.runtime.CUDARuntimeError:
+        import numpy as xp
+
+        print("CuPy is installed but GPU device inaccessible")
+except ImportError:
+    import numpy as xp
+
 
 try:
     from skimage.transform import downscale_local_mean
@@ -173,48 +188,75 @@ def DFFC(data, flats, darks, downsample, nrPArepetions):
 
     return [clean_DFFC, EFF, EFF_denoised]
 
+def normaliser(data: np.array, 
+               flats: np.array, 
+               darks: np.array, 
+               log: bool = True,
+               method: str="mean",
+               axis: int=0,
+               **kwargs) -> np.ndarray:
+    """Data normalisation module
 
-def normaliser(data, flats, darks, log, method, dyn_downsample=2, dyn_iterations=10):
+    Args:
+        data (np.array): 3d numpy array of raw data.        
+        flats (np.array): 2d numpy array for flat field.
+        darks (np.array): 2d numpy array for darks field.
+        log (bool, optional): Take negative log. Defaults to True.
+        method (str, optional): Normalisation method, choose "mean", "median" or "dynamic". Defaults to "mean".
+        axis (int, optional): Define the ANGLES axis.
+        dyn_downsample (int, optional): Parameter for "dynamic" method. Defaults to 2.
+        dyn_iterations (int, optional): Parameter for "dynamic" method. Defaults to 10.
+        
+
+    Raises:
+        NameError: method error
+
+    Returns:
+        np.ndarray: 3d numpy array of normalised data
     """
-    data normaliser which assumes data/flats/darks to be in the following format:
-    [detectorsVertical, Projections, detectorsHoriz] or
-    [detectorsHoriz, Projections, detectorsVertical]
-    """
-    data_norm = np.zeros(np.shape(data), dtype="float32")
-    [detectorsX, ProjectionsNum, detectorsY] = np.shape(
-        data
-    )  # get the number of projection angles
+    if np.ndim(data) == 2:
+        raise NameError(
+            "Normalisation is implemented for 3d data input"
+        )
     if darks is None:
         darks = np.zeros(np.shape(flats), dtype="float32")
     if method is None or method == "mean":
-        flats = np.mean(flats, 1)  # mean across flats
-        darks = np.mean(darks, 1)  # mean across darks
+        flats = np.mean(flats, axis)  # mean across flats
+        darks = np.mean(darks, axis)  # mean across darks
     elif method == "median":
-        flats = np.median(flats, 1)  # median across flats
-        darks = np.median(darks, 1)  # median across darks
+        flats = np.median(flats, axis)  # median across flats
+        darks = np.median(darks, axis)  # median across darks
     elif method == "dynamic":
         # dynamic flat field normalisation according to the paper of Vincent Van Nieuwenhove
+        for key, value in kwargs.items():
+            if key == "dyn_downsample":
+                dyn_downsample_v = value
+            else:
+                dyn_downsample_v = 2
+            if key == "dyn_iterations":
+                dyn_iterations_v = value
+            else:
+                dyn_iterations_v = 10                
         [data_norm, EFF, EFF_filt] = DFFC(
-            data, flats, darks, dyn_downsample, dyn_iterations
+            data, flats, darks, downsample=dyn_downsample_v, nrPArepetions = dyn_iterations_v
         )
     else:
         raise NameError(
             "Please select an appropriate method for normalisation: mean, median or dynamic"
         )
-
     if method != "dynamic":
         denom = flats - darks
         denom[
             (np.where(denom <= 0.0))
         ] = 1.0  # remove zeros/negatives in the denominator if any
-        for i in range(0, ProjectionsNum):
-            projection2D = data[:, i, :]
-            nomin = projection2D - darks  # get nominator
-            nomin[(np.where(nomin < 0.0))] = 1.0  # remove negatives
-            fraction = np.true_divide(nomin, denom)
-            data_norm[:, i, :] = fraction.astype(float)
+        if axis == 1:
+            denom = denom[:,np.newaxis,:]
+            darks = darks[:,np.newaxis,:]
+        nomin = data - darks  # get nominator
+        nomin[(np.where(nomin < 0.0))] = 1.0  # remove negatives
+        data_norm = np.true_divide(nomin, denom)
 
-    if log is not None:
+    if log:
         # calculate negative log (avoiding of log(0) (= inf) and > 1.0 (negative val))
         data_norm[data_norm > 0.0] = -np.log(data_norm[data_norm > 0.0])
         data_norm[data_norm < 0.0] = 0.0  # remove negative values
@@ -330,18 +372,6 @@ def _apply_circular_mask(data, recon_mask_radius, axis=2):
     Returns:
         cp or np ndarray: recon volume after mask applied
     """
-    try:
-        import cupy as xp
-
-        try:
-            xp.cuda.Device(0).compute_capability
-        except xp.cuda.runtime.CUDARuntimeError:
-            import numpy as xp
-
-            print("CuPy is installed but GPU device inaccessible")
-    except ImportError:
-        import numpy as xp
-
     recon_size = data.shape[axis]
     Y, X = xp.ogrid[:recon_size, :recon_size]
     half_size = recon_size // 2
@@ -424,23 +454,42 @@ def swap_data_axis_to_accepted(
             raise ValueError(
                 f'Axis title "{str_1}" is not valid, please use one of these: "angles", "detX", or "detY"'
             )
+    data_axis_labels_copy = data_axis_labels.copy()
 
     # check the order and produce a swapping tuple if needed
-    swap_tuple1 = __get_swap_tuple(data_axis_labels, labels_order)
+    swap_tuple1 = __get_swap_tuple(data_axis_labels_copy, labels_order)
 
     if swap_tuple1 is not None:
         # swap elements in the list and check the list again
-        data_axis_labels[swap_tuple1[0]], data_axis_labels[swap_tuple1[1]] = (
-            data_axis_labels[swap_tuple1[1]],
-            data_axis_labels[swap_tuple1[0]],
+        data_axis_labels_copy[swap_tuple1[0]], data_axis_labels_copy[swap_tuple1[1]] = (
+            data_axis_labels_copy[swap_tuple1[1]],
+            data_axis_labels_copy[swap_tuple1[0]],
         )
-        swap_tuple2 = __get_swap_tuple(data_axis_labels, labels_order)
+        swap_tuple2 = __get_swap_tuple(data_axis_labels_copy, labels_order)
 
     if swap_tuple2 is not None:
         # swap elements in the list
-        data_axis_labels[swap_tuple2[0]], data_axis_labels[swap_tuple2[1]] = (
-            data_axis_labels[swap_tuple2[1]],
-            data_axis_labels[swap_tuple2[0]],
+        data_axis_labels_copy[swap_tuple2[0]], data_axis_labels_copy[swap_tuple2[1]] = (
+            data_axis_labels_copy[swap_tuple2[1]],
+            data_axis_labels_copy[swap_tuple2[0]],
         )
 
     return [swap_tuple1, swap_tuple2]
+
+def _data_swap(data: xp.ndarray,
+              data_swap_list: list) -> xp.ndarray:
+    """Swap data labels based on the provided list of tuples
+
+    Args:
+        data (xp.ndarray): Numpy or CuPu 2D or 3D array
+        data_swap_list (list): List of tuples to swap to
+
+    Returns:
+        xp.ndarray: swapped array to the desired format
+    """
+    for swap_tuple in data_swap_list:
+        if swap_tuple is not None:
+            data = xp.swapaxes(
+                data, swap_tuple[0], swap_tuple[1]
+            )
+    return data

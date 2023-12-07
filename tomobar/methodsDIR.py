@@ -11,6 +11,7 @@
 
 import numpy as np
 from tomobar.recon_base import RecTools
+from tomobar.supp.suppTools import _data_swap
 
 import scipy.fftpack
 
@@ -211,9 +212,7 @@ class RecToolsDIR(RecTools):
 
     def FBP(self, data):
         # get the input data into the right format dimension-wise
-        for swap_tuple in self.data_swap_list:
-            if swap_tuple is not None:
-                data = np.swapaxes(data, swap_tuple[0], swap_tuple[1])
+        data = _data_swap(data, self.data_swap_list)
         if self.geom == "2D":
             "dealing with FBP 2D not working for parallel_vec geometry and CPU"
             if self.device_projector == "gpu":

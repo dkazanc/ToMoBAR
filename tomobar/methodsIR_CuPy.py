@@ -16,7 +16,8 @@ import astra
 
 from tomobar.recon_base import RecTools
 from tomobar.supp.dicts import dicts_check, reinitialise_atools_OS
-
+from tomobar.supp.suppTools import _data_swap
+from tomobar.regularisersCuPy import prox_regul
 
 class RecToolsIRCuPy(RecTools):
     """
@@ -228,11 +229,8 @@ class RecToolsIRCuPy(RecTools):
         if self.datafidelity == "PWLS":
             sqweight = _data_["projection_raw_data"]
             # do the axis swap if required:
-            for swap_tuple in self.data_swap_list:
-                if swap_tuple is not None:
-                    sqweight = np.swapaxes(
-                        sqweight, swap_tuple[0], swap_tuple[1]
-                    )            
+            sqweight = _data_swap(sqweight, self.data_swap_list)
+
         if _data_["OS_number"] == 1:
             # non-OS approach
             y = self.Atools.forwprojCuPy(x1)
@@ -281,14 +279,14 @@ class RecToolsIRCuPy(RecTools):
             # 2D reconstruction
             raise ValueError("2D CuPy reconstruction is not yet supported")
         # initialise the solution
-        X = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=cp.float32)
+        X = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=cp.float32)      
 
         (_data_, _algorithm_, _regularisation_) = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
 
-        if _regularisation_["method"] is not None:
-            from tomobar.regularisersCuPy import prox_regul
+        if _data_["OS_number"] > 1:
+             _data_ = reinitialise_atools_OS(self, _data_)
 
         L_const_inv = cp.float32(
             1.0 / _algorithm_["lipschitz_const"]
@@ -301,23 +299,48 @@ class RecToolsIRCuPy(RecTools):
         X_t = cp.copy(X)
         # FISTA iterations
         for iter_no in range(_algorithm_["iterations"]):
-            X_old = X
-            t_old = t
+            # loop over subsets (OS)
+            for sub_ind in range(_data_["OS_number"]):            
+                X_old = X
+                t_old = t
+                if _data_["OS_number"] > 1:
+                    # select a specific set of indeces for the subset (OS)
+                    indVec = self.Atools.newInd_Vec[sub_ind, :]
+                    if indVec[self.Atools.NumbProjBins - 1] == 0:
+                        indVec = indVec[:-1]  # shrink vector size
+                    if self.datafidelity == "LS":
+                        # 3D Least-squares (LS) data fidelity - OS (linear)
+                        res = (
+                            self.Atools.forwprojOSCuPy(X_t, sub_ind)
+                            - _data_["projection_norm_data"][:, indVec, :]
+                        )
+                    if self.datafidelity == "PWLS":
+                        # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
+                        res = np.multiply(
+                            _data_["projection_raw_data"][:, indVec, :],
+                            (
+                                self.Atools.forwprojOSCuPy(X_t, sub_ind)
+                                - _data_["projection_norm_data"][:, indVec, :]
+                            ),
+                        )
+                    # OS reduced gradient
+                    grad_fidelity = self.Atools.backprojOSCuPy(res, sub_ind)
+                else:
+                    # full gradient
+                    res = self.Atools.forwprojCuPy(X_t) - _data_["projection_norm_data"]
+                    grad_fidelity = self.Atools.backprojCuPy(res)
 
-            res = self.Atools.forwprojCuPy(X_t) - _data_["projection_norm_data"]
-            # full gradient
-            grad_fidelity = self.Atools.backprojCuPy(res)
-            X = X_t - L_const_inv * grad_fidelity
+                X = X_t - L_const_inv * grad_fidelity
 
-            if _algorithm_["nonnegativity"]:
-                X[X < 0.0] = 0.0
+                if _algorithm_["nonnegativity"]:
+                    X[X < 0.0] = 0.0
 
-            if _regularisation_["method"] is not None:
-                ##### The proximal operator of the chosen regulariser #####
-                X = prox_regul(self, X, _regularisation_)
+                if _regularisation_["method"] is not None:
+                    ##### The proximal operator of the chosen regulariser #####
+                    X = prox_regul(self, X, _regularisation_)
 
-            t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
-            X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
-            del res
+                t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
+                X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
+                del res
         cp._default_memory_pool.free_all_blocks()
         return X

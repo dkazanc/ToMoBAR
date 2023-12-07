@@ -16,12 +16,16 @@
 |--------|-------------------|
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/dkazanc/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/dkazanc/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/dkazanc/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/dkazanc/tomobar/badges/downloads.svg)](https://anaconda.org/dkazanc/tomobar/) |
 
+### NEW in ToMoBAR v.23.12:
+- CuPy-enabled 3D FISTA-OS with regularisation all in-device implementation. It can be an order of magnitude faster than the non-CuPy version.
+- With class initialisation one can specify axes labels and the input data will be automatically passed in the right format. See this [Demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/DemoFISTA_3D.py).
+
 ### Software includes:
  * A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods available in ASTRA
  * Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities
  * Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
- * [Access to multi-GPU capability through mpi4py library](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py)
  * CuPy driven [forward/backward projectors](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/Demo_CuPy_3D.py) to enable faster device-to-device operations and all in GPU memory protoyping of algorithms
+* [Access to multi-GPU capability through mpi4py library](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py)
  * [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos) to reconstruct synthetic and also real data [4-6]
 
 <div align="center">
@@ -49,14 +53,13 @@
  * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
 
 ### Python conda:
-Install the ToMoBAR package from one of conda channels bellow:
+Install the ToMoBAR package into the existing conda [environment](https://github.com/dkazanc/ToMoBAR/tree/master/conda-recipe/environment/environment.yml):
 ```
 conda install -c httomo tomobar
-conda install -c dkazanc tomobar # for some Win builds
 ```
- or build using provided conda recipe:
+ or build using the provided conda recipe:
 ```
-export VERSION=$(date +%Y.%m) (unix) / set VERSION=2023.04 (Windows)
+export VERSION=$(date +%Y.%m) (unix) / set VERSION=2024.01 (Windows)
 conda build conda-recipe/ --numpy 1.23 --python 3.10
 conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
 ```
@@ -66,6 +69,7 @@ conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
 * Install dependencies from the [environment](https://github.com/dkazanc/ToMoBAR/tree/master/conda-recipe/environment/environment.yml) file
 * Activate the environment with ```conda activate tomobar```
 * From the root directory install the enviroment in development mode with ```pip install -e .[dev]```
+* Run tests: `pytest tests/`
 
 ### MultiGPU capability
 ToMoBAR can be used by running in parallel across multiple GPU devices on a PC or a compute node of a cluster. In order to initiate a parallel run on multiple GPUs you will need an MPI library, such as, [mpi4py](https://mpi4py.readthedocs.io/en/stable/). See this [demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py).
