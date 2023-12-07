@@ -28,7 +28,7 @@ from tomobar.supp.suppTools import circ_mask, _data_swap
 from tomobar.recon_base import RecTools
 from tomobar.regularisers import prox_regul
 from tomobar.supp.astraOP import AstraToolsOS, AstraToolsOS3D
-
+from typing import Union
 
 try:
     import scipy.sparse.linalg
@@ -48,15 +48,6 @@ def merge_3_dicts(x, y, z):
     merg.update(y)
     merg.update(z)
     return merg
-
-
-__all__ = [
-    "SIRT",
-    "CGLS",
-    "FISTA",
-    "ADMM",
-    "powermethod",
-]
 
 
 class RecToolsIR(RecTools):
@@ -106,7 +97,7 @@ class RecToolsIR(RecTools):
             raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
         self.datafidelity = datafidelity
 
-    def SIRT(self, _data_: dict, _algorithm_: dict = {}) -> np.ndarray:
+    def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> np.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
 
         Args:
@@ -118,22 +109,22 @@ class RecToolsIR(RecTools):
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_, _algorithm_, _regularisation_) = dicts_check(
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
         ######################################################################
         # SIRT reconstruction algorithm from ASTRA
         if self.geom == "2D":
             SIRT_rec = self.Atools.sirt2D(
-                _data_["projection_norm_data"], _algorithm_["iterations"]
+                _data_upd_["projection_norm_data"], _algorithm_upd_["iterations"]
             )
         if self.geom == "3D":
             SIRT_rec = self.Atools.sirt3D(
-                _data_["projection_norm_data"], _algorithm_["iterations"]
+                _data_upd_["projection_norm_data"], _algorithm_upd_["iterations"]
             )
         return SIRT_rec
 
-    def CGLS(self, _data_: dict, _algorithm_: dict = {}) -> np.ndarray:
+    def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> np.ndarray:
         """Conjugate Gradient Least Squares from ASTRA toolbox.
 
         Args:
@@ -145,18 +136,18 @@ class RecToolsIR(RecTools):
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_, _algorithm_, _regularisation_) = dicts_check(
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         ######################################################################
         # CGLS reconstruction algorithm from ASTRA
         if self.geom == "2D":
             CGLS_rec = self.Atools.cgls2D(
-                _data_["projection_norm_data"], _algorithm_["iterations"]
+                _data_upd_["projection_norm_data"], _algorithm_upd_["iterations"]
             )
         if self.geom == "3D":
             CGLS_rec = self.Atools.cgls3D(
-                _data_["projection_norm_data"], _algorithm_["iterations"]
+                _data_upd_["projection_norm_data"], _algorithm_upd_["iterations"]
             )
         return CGLS_rec
 
@@ -194,7 +185,7 @@ class RecToolsIR(RecTools):
             y = self.Atools.forwproj(x1)
             if self.datafidelity == "PWLS":
                 y = np.multiply(sqweight, y)
-            for iter in range(power_iterations):
+            for iterations in range(power_iterations):
                 x1 = self.Atools.backproj(y)
                 s = LA.norm(np.ravel(x1), axis=0)
                 x1 = x1 / s
@@ -209,7 +200,7 @@ class RecToolsIR(RecTools):
                     y = np.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
                 else:
                     y = np.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
-            for iter in range(power_iterations):
+            for iterations in range(power_iterations):
                 x1 = self.Atools.backprojOS(y, 0)
                 s = LA.norm(np.ravel(x1), axis=0)
                 x1 = x1 / s
@@ -222,7 +213,10 @@ class RecToolsIR(RecTools):
         return s
 
     def FISTA(
-        self, _data_: dict, _algorithm_: dict = {}, _regularisation_: dict = {}
+        self,
+        _data_: dict,
+        _algorithm_: Union[dict, None] = None,
+        _regularisation_: Union[dict, None] = None,
     ) -> np.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
         data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
@@ -237,22 +231,22 @@ class RecToolsIR(RecTools):
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_, _algorithm_, _regularisation_) = dicts_check(
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
-        if _data_["OS_number"] > 1:
-            _data_ = reinitialise_atools_OS(self, _data_)
+        if _data_upd_["OS_number"] > 1:
+            _data_upd_ = reinitialise_atools_OS(self, _data_upd_)
         ######################################################################
 
         L_const_inv = (
-            1.0 / _algorithm_["lipschitz_const"]
+            1.0 / _algorithm_upd_["lipschitz_const"]
         )  # inverted Lipschitz constant
         if self.geom == "2D":
             # 2D reconstruction
             # initialise the solution
-            if np.size(_algorithm_["initialise"]) == self.ObjSize**2:
+            if np.size(_algorithm_upd_["initialise"]) == self.ObjSize**2:
                 # the object has been initialised with an array
-                X = _algorithm_["initialise"]
+                X = _algorithm_upd_["initialise"]
             else:
                 X = np.zeros(
                     (self.ObjSize, self.ObjSize), "float32"
@@ -262,9 +256,9 @@ class RecToolsIR(RecTools):
             )  # 1D array of sparse "ring" variables (GH)
         if self.geom == "3D":
             # initialise the solution
-            if np.size(_algorithm_["initialise"]) == self.ObjSize**3:
+            if np.size(_algorithm_upd_["initialise"]) == self.ObjSize**3:
                 # the object has been initialised with an array
-                X = _algorithm_["initialise"]
+                X = _algorithm_upd_["initialise"]
             else:
                 X = np.zeros(
                     (self.DetectorsDimV, self.ObjSize, self.ObjSize), "float32"
@@ -280,19 +274,19 @@ class RecToolsIR(RecTools):
         X_t = np.copy(X)
         r_x = r.copy()
         # Outer FISTA iterations
-        for iter_no in range(_algorithm_["iterations"]):
+        for iter_no in range(_algorithm_upd_["iterations"]):
             r_old = r
             # Do GH fidelity pre-calculations using the full projections dataset for OS version
             if (
-                (_data_["OS_number"] != 1)
-                and (_data_["ringGH_lambda"] is not None)
+                (_data_upd_["OS_number"] != 1)
+                and (_data_upd_["ringGH_lambda"] is not None)
                 and (iter_no > 0)
             ):
                 if self.geom == "2D":
                     vec = np.zeros((self.DetectorsDimH))
                 else:
                     vec = np.zeros((self.DetectorsDimV, self.DetectorsDimH))
-                for sub_ind in range(_data_["OS_number"]):
+                for sub_ind in range(_data_upd_["OS_number"]):
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
@@ -300,20 +294,21 @@ class RecToolsIR(RecTools):
                     if self.geom == "2D":
                         res = (
                             self.Atools.forwprojOS(X_t, sub_ind)
-                            - _data_["projection_norm_data"][indVec, :]
+                            - _data_upd_["projection_norm_data"][indVec, :]
                         )
                         res[:, 0:None] = (
-                            res[:, 0:None] + _data_["ringGH_accelerate"] * r_x[:, 0]
+                            res[:, 0:None] + _data_upd_["ringGH_accelerate"] * r_x[:, 0]
                         )
-                        vec = vec + (1.0 / (_data_["OS_number"])) * res.sum(axis=0)
+                        vec = vec + (1.0 / (_data_upd_["OS_number"])) * res.sum(axis=0)
                     else:
                         res = (
                             self.Atools.forwprojOS(X_t, sub_ind)
-                            - _data_["projection_norm_data"][:, indVec, :]
+                            - _data_upd_["projection_norm_data"][:, indVec, :]
                         )
                         for ang_index in range(len(indVec)):
                             res[:, ang_index, :] = (
-                                res[:, ang_index, :] + _data_["ringGH_accelerate"] * r_x
+                                res[:, ang_index, :]
+                                + _data_upd_["ringGH_accelerate"] * r_x
                             )
                         vec = res.sum(axis=1)
                 if self.geom == "2D":
@@ -322,10 +317,10 @@ class RecToolsIR(RecTools):
                     r = r_x - np.multiply(L_const_inv, vec)
 
             # loop over subsets (OS)
-            for sub_ind in range(_data_["OS_number"]):
+            for sub_ind in range(_data_upd_["OS_number"]):
                 X_old = X
                 t_old = t
-                if _data_["OS_number"] > 1:
+                if _data_upd_["OS_number"] > 1:
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
@@ -336,29 +331,31 @@ class RecToolsIR(RecTools):
                             # 2D Least-squares (LS) data fidelity - OS (linear)
                             res = (
                                 self.Atools.forwprojOS(X_t, sub_ind)
-                                - _data_["projection_norm_data"][indVec, :]
+                                - _data_upd_["projection_norm_data"][indVec, :]
                             )
                         if self.datafidelity == "PWLS":
                             # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                             res = np.multiply(
-                                _data_["projection_raw_data"][indVec, :],
+                                _data_upd_["projection_raw_data"][indVec, :],
                                 (
                                     self.Atools.forwprojOS(X_t, sub_ind)
-                                    - _data_["projection_norm_data"][indVec, :]
+                                    - _data_upd_["projection_norm_data"][indVec, :]
                                 ),
                             )
                         if self.datafidelity == "SWLS":
                             # 2D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
                             res = (
                                 self.Atools.forwprojOS(X_t, sub_ind)
-                                - _data_["projection_norm_data"][indVec, :]
+                                - _data_upd_["projection_norm_data"][indVec, :]
                             )
                             for det_index in range(self.DetectorsDimH):
-                                wk = _data_["projection_raw_data"][indVec, det_index]
+                                wk = _data_upd_["projection_raw_data"][
+                                    indVec, det_index
+                                ]
                                 res[:, det_index] = (
                                     np.multiply(wk, res[:, det_index])
                                     - 1.0
-                                    / (np.sum(wk) + _data_["beta_SWLS"][det_index])
+                                    / (np.sum(wk) + _data_upd_["beta_SWLS"][det_index])
                                     * (wk.dot(res[:, det_index]))
                                     * wk
                                 )
@@ -366,39 +363,40 @@ class RecToolsIR(RecTools):
                             # 2D Kullback-Leibler (KL) data fidelity - OS
                             tmp = self.Atools.forwprojOS(X_t, sub_ind)
                             res = np.divide(
-                                tmp - _data_["projection_norm_data"][indVec, :],
+                                tmp - _data_upd_["projection_norm_data"][indVec, :],
                                 tmp + 1.0,
                             )
                         # ring removal part for Group-Huber (GH) fidelity (2D)
-                        if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
+                        if (_data_upd_["ringGH_lambda"] is not None) and (iter_no > 0):
                             res[:, 0:None] = (
-                                res[:, 0:None] + _data_["ringGH_accelerate"] * r_x[:, 0]
+                                res[:, 0:None]
+                                + _data_upd_["ringGH_accelerate"] * r_x[:, 0]
                             )
                     else:  # 3D
                         if self.datafidelity == "LS":
                             # 3D Least-squares (LS) data fidelity - OS (linear)
                             res = (
                                 self.Atools.forwprojOS(X_t, sub_ind)
-                                - _data_["projection_norm_data"][:, indVec, :]
+                                - _data_upd_["projection_norm_data"][:, indVec, :]
                             )
                         if self.datafidelity == "PWLS":
                             # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                             res = np.multiply(
-                                _data_["projection_raw_data"][:, indVec, :],
+                                _data_upd_["projection_raw_data"][:, indVec, :],
                                 (
                                     self.Atools.forwprojOS(X_t, sub_ind)
-                                    - _data_["projection_norm_data"][:, indVec, :]
+                                    - _data_upd_["projection_norm_data"][:, indVec, :]
                                 ),
                             )
                         if self.datafidelity == "SWLS":
                             # 3D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)
                             res = (
                                 self.Atools.forwprojOS(X_t, sub_ind)
-                                - _data_["projection_norm_data"][:, indVec, :]
+                                - _data_upd_["projection_norm_data"][:, indVec, :]
                             )
                             for detVert_index in range(self.DetectorsDimV):
                                 for detHorz_index in range(self.DetectorsDimH):
-                                    wk = _data_["projection_raw_data"][
+                                    wk = _data_upd_["projection_raw_data"][
                                         detVert_index, indVec, detHorz_index
                                     ]
                                     res[detVert_index, :, detHorz_index] = (
@@ -408,7 +406,7 @@ class RecToolsIR(RecTools):
                                         - 1.0
                                         / (
                                             np.sum(wk)
-                                            + _data_["beta_SWLS"][detHorz_index]
+                                            + _data_upd_["beta_SWLS"][detHorz_index]
                                         )
                                         * (wk.dot(res[detVert_index, :, detHorz_index]))
                                         * wk
@@ -417,37 +415,43 @@ class RecToolsIR(RecTools):
                             # 3D Kullback-Leibler (KL) data fidelity - OS
                             tmp = self.Atools.forwprojOS(X_t, sub_ind)
                             res = np.divide(
-                                tmp - _data_["projection_norm_data"][:, indVec, :],
+                                tmp - _data_upd_["projection_norm_data"][:, indVec, :],
                                 tmp + 1.0,
                             )
                         # GH - fidelity part (3D)
-                        if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
+                        if (_data_upd_["ringGH_lambda"] is not None) and (iter_no > 0):
                             for ang_index in range(len(indVec)):
                                 res[:, ang_index, :] = (
                                     res[:, ang_index, :]
-                                    + _data_["ringGH_accelerate"] * r_x
+                                    + _data_upd_["ringGH_accelerate"] * r_x
                                 )
                 else:  # CLASSICAL all-data approach
                     if self.datafidelity == "LS":
                         # full residual for LS fidelity
-                        res = self.Atools.forwproj(X_t) - _data_["projection_norm_data"]
+                        res = (
+                            self.Atools.forwproj(X_t)
+                            - _data_upd_["projection_norm_data"]
+                        )
                     if self.datafidelity == "PWLS":
                         # full gradient for the PWLS fidelity
                         res = np.multiply(
-                            _data_["projection_raw_data"],
+                            _data_upd_["projection_raw_data"],
                             (
                                 self.Atools.forwproj(X_t)
-                                - _data_["projection_norm_data"]
+                                - _data_upd_["projection_norm_data"]
                             ),
                         )
                     if self.datafidelity == "KL":
                         # Kullback-Leibler (KL) data fidelity
                         tmp = self.Atools.forwproj(X_t)
-                        res = np.divide(tmp - _data_["projection_norm_data"], tmp + 1.0)
-                    if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
+                        res = np.divide(
+                            tmp - _data_upd_["projection_norm_data"], tmp + 1.0
+                        )
+                    if (_data_upd_["ringGH_lambda"] is not None) and (iter_no > 0):
                         if self.geom == "2D":
                             res[0:None, :] = (
-                                res[0:None, :] + _data_["ringGH_accelerate"] * r_x[:, 0]
+                                res[0:None, :]
+                                + _data_upd_["ringGH_accelerate"] * r_x[:, 0]
                             )
                             vec = res.sum(axis=0)
                             r[:, 0] = r_x[:, 0] - np.multiply(L_const_inv, vec)
@@ -455,26 +459,29 @@ class RecToolsIR(RecTools):
                             for ang_index in range(self.angles_number):
                                 res[:, ang_index, :] = (
                                     res[:, ang_index, :]
-                                    + _data_["ringGH_accelerate"] * r_x
+                                    + _data_upd_["ringGH_accelerate"] * r_x
                                 )
                                 vec = res.sum(axis=1)
                                 r = r_x - np.multiply(L_const_inv, vec)
                     if self.datafidelity == "SWLS":
-                        res = self.Atools.forwproj(X_t) - _data_["projection_norm_data"]
+                        res = (
+                            self.Atools.forwproj(X_t)
+                            - _data_upd_["projection_norm_data"]
+                        )
                         if self.geom == "2D":
                             for det_index in range(self.DetectorsDimH):
-                                wk = _data_["projection_raw_data"][:, det_index]
+                                wk = _data_upd_["projection_raw_data"][:, det_index]
                                 res[:, det_index] = (
                                     np.multiply(wk, res[:, det_index])
                                     - 1.0
-                                    / (np.sum(wk) + _data_["beta_SWLS"][det_index])
+                                    / (np.sum(wk) + _data_upd_["beta_SWLS"][det_index])
                                     * (wk.dot(res[:, det_index]))
                                     * wk
                                 )
                         else:  # 3D case
                             for detVert_index in range(self.DetectorsDimV):
                                 for detHorz_index in range(self.DetectorsDimH):
-                                    wk = _data_["projection_raw_data"][
+                                    wk = _data_upd_["projection_raw_data"][
                                         detVert_index, :, detHorz_index
                                     ]
                                     res[detVert_index, :, detHorz_index] = (
@@ -484,23 +491,23 @@ class RecToolsIR(RecTools):
                                         - 1.0
                                         / (
                                             np.sum(wk)
-                                            + _data_["beta_SWLS"][detHorz_index]
+                                            + _data_upd_["beta_SWLS"][detHorz_index]
                                         )
                                         * (wk.dot(res[detVert_index, :, detHorz_index]))
                                         * wk
                                     )
-                if _data_["huber_threshold"] is not None:
+                if _data_upd_["huber_threshold"] is not None:
                     # apply Huber penalty
                     multHuber = np.ones(np.shape(res))
                     multHuber[
-                        (np.where(np.abs(res) > _data_["huber_threshold"]))
+                        (np.where(np.abs(res) > _data_upd_["huber_threshold"]))
                     ] = np.divide(
-                        _data_["huber_threshold"],
+                        _data_upd_["huber_threshold"],
                         np.abs(
-                            res[(np.where(np.abs(res) > _data_["huber_threshold"]))]
+                            res[(np.where(np.abs(res) > _data_upd_["huber_threshold"]))]
                         ),
                     )
-                    if _data_["OS_number"] != 1:
+                    if _data_upd_["OS_number"] != 1:
                         # OS-Huber-gradient
                         grad_fidelity = self.Atools.backprojOS(
                             np.multiply(multHuber, res), sub_ind
@@ -510,13 +517,13 @@ class RecToolsIR(RecTools):
                         grad_fidelity = self.Atools.backproj(
                             np.multiply(multHuber, res)
                         )
-                elif _data_["studentst_threshold"] is not None:
+                elif _data_upd_["studentst_threshold"] is not None:
                     # apply Students't penalty
                     multStudent = np.ones(np.shape(res))
                     multStudent = np.divide(
-                        2.0, _data_["studentst_threshold"] ** 2 + res**2
+                        2.0, _data_upd_["studentst_threshold"] ** 2 + res**2
                     )
-                    if _data_["OS_number"] != 1:
+                    if _data_upd_["OS_number"] != 1:
                         # OS-Students't-gradient
                         grad_fidelity = self.Atools.backprojOS(
                             np.multiply(multStudent, res), sub_ind
@@ -527,7 +534,7 @@ class RecToolsIR(RecTools):
                             np.multiply(multStudent, res)
                         )
                 else:
-                    if _data_["OS_number"] != 1:
+                    if _data_upd_["OS_number"] != 1:
                         # OS reduced gradient
                         grad_fidelity = self.Atools.backprojOS(res, sub_ind)
                     else:
@@ -535,44 +542,46 @@ class RecToolsIR(RecTools):
                         grad_fidelity = self.Atools.backproj(res)
 
                 X = X_t - L_const_inv * grad_fidelity
-                if _algorithm_["nonnegativity"] == "ENABLE":
+                if _algorithm_upd_["nonnegativity"] == "ENABLE":
                     X[X < 0.0] = 0.0
-                if _algorithm_["mask_diameter"] is not None:
+                if _algorithm_upd_["mask_diameter"] is not None:
                     X = circ_mask(
-                        X, _algorithm_["mask_diameter"]
+                        X, _algorithm_upd_["mask_diameter"]
                     )  # applying a circular mask
-                if _regularisation_["method"] is not None:
+                if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####
                     (X, info_vec) = prox_regul(self, X, _regularisation_)
                     ###########################################################
                 # updating t variable
                 t = (1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5
                 X_t = X + ((t_old - 1.0) / t) * (X - X_old)  # updating X
-            if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
-                r = np.maximum((np.abs(r) - _data_["ringGH_lambda"]), 0.0) * np.sign(
+            if (_data_upd_["ringGH_lambda"] is not None) and (iter_no > 0):
+                r = np.maximum(
+                    (np.abs(r) - _data_upd_["ringGH_lambda"]), 0.0
+                ) * np.sign(
                     r
                 )  # soft-thresholding operator for ring vector
                 r_x = r + ((t_old - 1.0) / t) * (r - r_old)  # updating r
-            if _algorithm_["verbose"] == "on":
-                if np.mod(iter_no, (round)(_algorithm_["iterations"] / 5) + 1) == 0:
+            if _algorithm_upd_["verbose"] == "on":
+                if np.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
                     print(
                         "FISTA iteration (",
                         iter_no + 1,
                         ") using",
-                        _regularisation_["method"],
+                        _regularisation_upd_["method"],
                         "regularisation for (",
                         (int)(info_vec[0]),
                         ") iterations",
                     )
-                if iter_no == _algorithm_["iterations"] - 1:
+                if iter_no == _algorithm_upd_["iterations"] - 1:
                     print("FISTA stopped at iteration (", iter_no + 1, ")")
             # stopping criteria (checked only after a reasonable number of iterations)
-            if ((iter_no > 10) and (_data_["OS_number"] > 1)) or (
-                (iter_no > 150) and (_data_["OS_number"] == 1)
+            if ((iter_no > 10) and (_data_upd_["OS_number"] > 1)) or (
+                (iter_no > 150) and (_data_upd_["OS_number"] == 1)
             ):
                 nrm = LA.norm(X - X_old) * denomN
-                if nrm < _algorithm_["tolerance"]:
-                    if _algorithm_["verbose"] == "on":
+                if nrm < _algorithm_upd_["tolerance"]:
+                    if _algorithm_upd_["verbose"] == "on":
                         print("FISTA stopped at iteration (", iter_no + 1, ")")
                     break
         return X
@@ -581,7 +590,10 @@ class RecToolsIR(RecTools):
 
     # **********************************ADMM***************************************#
     def ADMM(
-        self, _data_: dict, _algorithm_: dict = {}, _regularisation_: dict = {}
+        self,
+        _data_: dict,
+        _algorithm_: Union[dict, None] = None,
+        _regularisation_: Union[dict, None] = None,
     ) -> np.ndarray:
         """Alternating Directions Method of Multipliers with various types of regularisation and
         data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
@@ -596,7 +608,7 @@ class RecToolsIR(RecTools):
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_, _algorithm_, _regularisation_) = dicts_check(
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
         ######################################################################
@@ -604,7 +616,7 @@ class RecToolsIR(RecTools):
         def ADMM_Ax(x):
             data_upd = self.Atools.A_optomo(x)
             x_temp = self.Atools.A_optomo.transposeOpTomo(data_upd)
-            x_upd = x_temp + _algorithm_["ADMM_rho_const"] * x
+            x_upd = x_temp + _algorithm_upd_["ADMM_rho_const"] * x
             return x_upd
 
         def ADMM_Atb(b):
@@ -614,9 +626,9 @@ class RecToolsIR(RecTools):
         (data_dim, rec_dim) = np.shape(self.Atools.A_optomo)
 
         # initialise the solution and other ADMM variables
-        if np.size(_algorithm_["initialise"]) == rec_dim:
+        if np.size(_algorithm_upd_["initialise"]) == rec_dim:
             # the object has been initialised with an array
-            X = _algorithm_["initialise"].ravel()
+            X = _algorithm_upd_["initialise"].ravel()
         else:
             X = np.zeros(rec_dim, "float32")
 
@@ -625,28 +637,30 @@ class RecToolsIR(RecTools):
         z = np.zeros(rec_dim, "float32")
         u = np.zeros(rec_dim, "float32")
         b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(
-            _data_["projection_norm_data"].ravel()
+            _data_upd_["projection_norm_data"].ravel()
         )
 
         # Outer ADMM iterations
-        for iter_no in range(_algorithm_["iterations"]):
+        for iter_no in range(_algorithm_upd_["iterations"]):
             X_old = X
             # solving quadratic problem using linalg solver
             A_to_solver = scipy.sparse.linalg.LinearOperator(
                 (rec_dim, rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb
             )
-            b_to_solver = b_to_solver_const + _algorithm_["ADMM_rho_const"] * (z - u)
+            b_to_solver = b_to_solver_const + _algorithm_upd_["ADMM_rho_const"] * (
+                z - u
+            )
             outputSolver = scipy.sparse.linalg.gmres(
                 A_to_solver, b_to_solver, tol=1e-05, maxiter=15
             )
             X = np.float32(outputSolver[0])  # get gmres solution
-            if _algorithm_["nonnegativity"] == "ENABLE":
+            if _algorithm_upd_["nonnegativity"] == "ENABLE":
                 X[X < 0.0] = 0.0
             # z-update with relaxation
             zold = z.copy()
             x_hat = (
-                _algorithm_["ADMM_relax_par"] * X
-                + (1.0 - _algorithm_["ADMM_relax_par"]) * zold
+                _algorithm_upd_["ADMM_relax_par"] * X
+                + (1.0 - _algorithm_upd_["ADMM_relax_par"]) * zold
             )
             if self.geom == "2D":
                 x_prox_reg = (x_hat + u).reshape([self.ObjSize, self.ObjSize])
@@ -655,30 +669,30 @@ class RecToolsIR(RecTools):
                     [self.DetectorsDimV, self.ObjSize, self.ObjSize]
                 )
             # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
-            if _regularisation_["method"] is not None:
+            if _regularisation_upd_["method"] is not None:
                 # The proximal operator of the chosen regulariser
-                (z, info_vec) = prox_regul(self, x_prox_reg, _regularisation_)
+                (z, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
             z = z.ravel()
             # update u variable
             u = u + (x_hat - z)
-            if _algorithm_["verbose"] == "on":
-                if np.mod(iter_no, (round)(_algorithm_["iterations"] / 5) + 1) == 0:
+            if _algorithm_upd_["verbose"] == "on":
+                if np.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
                     print(
                         "ADMM iteration (",
                         iter_no + 1,
                         ") using",
-                        _regularisation_["method"],
+                        _regularisation_upd_["method"],
                         "regularisation for (",
                         (int)(info_vec[0]),
                         ") iterations",
                     )
-            if iter_no == _algorithm_["iterations"] - 1:
+            if iter_no == _algorithm_upd_["iterations"] - 1:
                 print("ADMM stopped at iteration (", iter_no + 1, ")")
 
             # stopping criteria (checked after reasonable number of iterations)
             if iter_no > 5:
                 nrm = LA.norm(X - X_old) * denomN
-                if nrm < _algorithm_["tolerance"]:
+                if nrm < _algorithm_upd_["tolerance"]:
                     print("ADMM stopped at iteration (", iter_no, ")")
                     break
         if self.geom == "2D":

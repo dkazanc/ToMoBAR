@@ -5,7 +5,6 @@
 """
 astra_enabled = False
 try:
-    import astra
     from tomobar.supp.astraOP import AstraTools, AstraTools3D
 
     astra_enabled = True

@@ -18,8 +18,8 @@ except ImportError:
 def dicts_check(
     self,
     _data_: dict,
-    _algorithm_: dict = {},
-    _regularisation_: dict = {},
+    _algorithm_: Union[dict, None] = None,
+    _regularisation_: Union[dict, None] = None,
     method_run: str = "FISTA",
 ) -> tuple:
     """Function that checks the given dictionaties and populates its parameters.
@@ -121,6 +121,8 @@ def dicts_check(
             if "ringGH_accelerate" not in _data_:
                 _data_["ringGH_accelerate"] = 50
     # ----------  dealing with _algorithm_  --------------
+    if _algorithm_ is None:
+        _algorithm_ = {}
     if method_run in {"SIRT", "CGLS", "power", "ADMM", "Landweber"}:
         _algorithm_["lipschitz_const"] = 0  # bypass Lipshitz const calculation bellow
         if _algorithm_.get("iterations") is None:
@@ -169,6 +171,8 @@ def dicts_check(
     if "verbose" not in _algorithm_:
         _algorithm_["verbose"] = "on"
     # ----------  deal with _regularisation_  --------------
+    if _regularisation_ is None:
+        _regularisation_ = {}
     if bool(_regularisation_) is False:
         _regularisation_["method"] = None
     if method_run in {"FISTA", "ADMM"}:

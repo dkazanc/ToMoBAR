@@ -13,6 +13,7 @@ GPLv3 license (ASTRA toolbox)
 import numpy as np
 import cupy as cp
 import astra
+from typing import Union
 
 from tomobar.recon_base import RecTools
 from tomobar.supp.dicts import dicts_check, reinitialise_atools_OS
@@ -69,7 +70,9 @@ class RecToolsIRCuPy(RecTools):
             raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
         self.datafidelity = datafidelity
 
-    def Landweber(self, _data_: dict, _algorithm_: dict = {}) -> cp.ndarray:
+    def Landweber(
+        self, _data_: dict, _algorithm_: Union[dict, None] = None
+    ) -> cp.ndarray:
         """Using Landweber iterative technique to reconstruct projection data given as a CuPy array.
            We perform the following iterations: x_k+1 = x_k - tau*A.T(A(x_k) - b)
 
@@ -82,7 +85,7 @@ class RecToolsIRCuPy(RecTools):
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_, _algorithm_, _regularisation_) = dicts_check(
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="Landweber"
         )
         ######################################################################
@@ -94,19 +97,19 @@ class RecToolsIRCuPy(RecTools):
             astra.geom_size(self.Atools.vol_geom), dtype=cp.float32
         )  # initialisation
 
-        for iter_no in range(_algorithm_["iterations"]):
+        for iter_no in range(_algorithm_upd_["iterations"]):
             residual = (
-                self.Atools.forwprojCuPy(x_rec) - _data_["projection_norm_data"]
+                self.Atools.forwprojCuPy(x_rec) - _data_upd_["projection_norm_data"]
             )  # Ax - b term
-            x_rec -= _algorithm_["tau_step_lanweber"] * self.Atools.backprojCuPy(
+            x_rec -= _algorithm_upd_["tau_step_lanweber"] * self.Atools.backprojCuPy(
                 residual
             )
-            if _algorithm_["nonnegativity"]:
+            if _algorithm_upd_["nonnegativity"]:
                 x_rec[x_rec < 0.0] = 0.0
         cp._default_memory_pool.free_all_blocks()
         return x_rec
 
-    def SIRT(self, _data_: dict, _algorithm_: dict = {}) -> cp.ndarray:
+    def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
            reconstruct projection data given as a CuPy array.
            We perform the following iterations:: x_k+1 = C*A.T*R(b - A(x_k))
@@ -120,13 +123,13 @@ class RecToolsIRCuPy(RecTools):
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_, _algorithm_, _regularisation_) = dicts_check(
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
         ######################################################################
         epsilon = 1e-8
-        _data_["projection_norm_data"] = cp.ascontiguousarray(
-            _data_["projection_norm_data"]
+        _data_upd_["projection_norm_data"] = cp.ascontiguousarray(
+            _data_upd_["projection_norm_data"]
         )
         # prepearing preconditioning matrices R and C
         R = 1 / self.Atools.forwprojCuPy(
@@ -143,16 +146,17 @@ class RecToolsIRCuPy(RecTools):
         )  # initialisation
 
         # perform iterations
-        for iter_no in range(_algorithm_["iterations"]):
+        for iter_no in range(_algorithm_upd_["iterations"]):
             x_rec += C * self.Atools.backprojCuPy(
-                R * (_data_["projection_norm_data"] - self.Atools.forwprojCuPy(x_rec))
+                R
+                * (_data_upd_["projection_norm_data"] - self.Atools.forwprojCuPy(x_rec))
             )
-            if _algorithm_["nonnegativity"]:
+            if _algorithm_upd_["nonnegativity"]:
                 x_rec[x_rec < 0.0] = 0.0
         cp._default_memory_pool.free_all_blocks()
         return x_rec
 
-    def CGLS(self, _data_: dict, _algorithm_: dict = {}) -> cp.ndarray:
+    def CGLS(self, _data_: dict, _algorithm_: Union[dict, None]) -> cp.ndarray:
         """Using CGLS iterative technique to reconstruct projection data given as a CuPy array.
            We aim to solve the system of the normal equations A.T*A*x = A.T*b.
 
@@ -165,14 +169,14 @@ class RecToolsIRCuPy(RecTools):
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_, _algorithm_, _regularisation_) = dicts_check(
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         ######################################################################
-        _data_["projection_norm_data"] = cp.ascontiguousarray(
-            (_data_["projection_norm_data"])
+        _data_upd_["projection_norm_data"] = cp.ascontiguousarray(
+            (_data_upd_["projection_norm_data"])
         )
-        data_shape_3d = cp.shape(_data_["projection_norm_data"])
+        data_shape_3d = cp.shape(_data_upd_["projection_norm_data"])
 
         # Prepare for CG iterations.
         x_rec = cp.zeros(
@@ -180,13 +184,13 @@ class RecToolsIRCuPy(RecTools):
         )  # initialisation
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
-        d = self.Atools.backprojCuPy(_data_["projection_norm_data"])
+        d = self.Atools.backprojCuPy(_data_upd_["projection_norm_data"])
         d = cp.ravel(d, order="C")
         normr2 = cp.inner(d, d)
-        r = cp.ravel(_data_["projection_norm_data"], order="C")
+        r = cp.ravel(_data_upd_["projection_norm_data"], order="C")
 
         # perform CG iterations
-        for iter_no in range(_algorithm_["iterations"]):
+        for iter_no in range(_algorithm_upd_["iterations"]):
             # Update x_rec and r vectors:
             Ad = self.Atools.forwprojCuPy(cp.reshape(d, newshape=x_shape_3d, order="C"))
             Ad = cp.ravel(Ad, order="C")
@@ -202,7 +206,7 @@ class RecToolsIRCuPy(RecTools):
             beta = normr2_new / normr2
             normr2 = normr2_new.copy()
             d = s + beta * d
-            if _algorithm_["nonnegativity"]:
+            if _algorithm_upd_["nonnegativity"]:
                 x_rec[x_rec < 0.0] = 0.0
 
         cp._default_memory_pool.free_all_blocks()
@@ -261,7 +265,10 @@ class RecToolsIRCuPy(RecTools):
         return s
 
     def FISTA(
-        self, _data_: dict, _algorithm_: dict = {}, _regularisation_: dict = {}
+        self,
+        _data_: dict,
+        _algorithm_: Union[dict, None] = None,
+        _regularisation_: Union[dict, None] = None,
     ) -> cp.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
         data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
@@ -280,31 +287,31 @@ class RecToolsIRCuPy(RecTools):
         # initialise the solution
         X = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=cp.float32)
 
-        (_data_, _algorithm_, _regularisation_) = dicts_check(
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
 
-        if _data_["OS_number"] > 1:
-            _data_ = reinitialise_atools_OS(self, _data_)
+        if _data_upd_["OS_number"] > 1:
+            _data_upd_ = reinitialise_atools_OS(self, _data_upd_)
 
         L_const_inv = cp.float32(
-            1.0 / _algorithm_["lipschitz_const"]
+            1.0 / _algorithm_upd_["lipschitz_const"]
         )  # inverted Lipschitz constant
 
         # re-initialise with CuPy array
-        _data_["projection_norm_data"] = cp.ascontiguousarray(
-            _data_["projection_norm_data"]
+        _data_upd_["projection_norm_data"] = cp.ascontiguousarray(
+            _data_upd_["projection_norm_data"]
         )
 
         t = cp.float32(1.0)
         X_t = cp.copy(X)
         # FISTA iterations
-        for iter_no in range(_algorithm_["iterations"]):
+        for iter_no in range(_algorithm_upd_["iterations"]):
             # loop over subsets (OS)
-            for sub_ind in range(_data_["OS_number"]):
+            for sub_ind in range(_data_upd_["OS_number"]):
                 X_old = X
                 t_old = t
-                if _data_["OS_number"] > 1:
+                if _data_upd_["OS_number"] > 1:
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
@@ -313,30 +320,33 @@ class RecToolsIRCuPy(RecTools):
                         # 3D Least-squares (LS) data fidelity - OS (linear)
                         res = (
                             self.Atools.forwprojOSCuPy(X_t, sub_ind)
-                            - _data_["projection_norm_data"][:, indVec, :]
+                            - _data_upd_["projection_norm_data"][:, indVec, :]
                         )
                     if self.datafidelity == "PWLS":
                         # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
                         res = np.multiply(
-                            _data_["projection_raw_data"][:, indVec, :],
+                            _data_upd_["projection_raw_data"][:, indVec, :],
                             (
                                 self.Atools.forwprojOSCuPy(X_t, sub_ind)
-                                - _data_["projection_norm_data"][:, indVec, :]
+                                - _data_upd_["projection_norm_data"][:, indVec, :]
                             ),
                         )
                     # OS reduced gradient
                     grad_fidelity = self.Atools.backprojOSCuPy(res, sub_ind)
                 else:
                     # full gradient
-                    res = self.Atools.forwprojCuPy(X_t) - _data_["projection_norm_data"]
+                    res = (
+                        self.Atools.forwprojCuPy(X_t)
+                        - _data_upd_["projection_norm_data"]
+                    )
                     grad_fidelity = self.Atools.backprojCuPy(res)
 
                 X = X_t - L_const_inv * grad_fidelity
 
-                if _algorithm_["nonnegativity"]:
+                if _algorithm_upd_["nonnegativity"]:
                     X[X < 0.0] = 0.0
 
-                if _regularisation_["method"] is not None:
+                if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####
                     X = prox_regul(self, X, _regularisation_)
 
