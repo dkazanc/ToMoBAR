@@ -14,6 +14,7 @@ try:
 except ImportError:
     import numpy as xp
 
+
 def dicts_check(
     self,
     _data_: dict,
@@ -256,4 +257,4 @@ def reinitialise_atools_OS(self, _data_: dict):
             self.device_projector,
             self.GPUdevice_index,
         )  # initiate 3D ASTRA class OS object
-    return  _data_
+    return _data_

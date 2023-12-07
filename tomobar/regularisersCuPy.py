@@ -17,7 +17,7 @@ except ImportError:
     print(
         "____! CCPi-regularisation package (CuPy part needed only) is missing, please install !____"
     )
-    
+
 
 def prox_regul(self, X, _regularisation_):
     info_vec = (_regularisation_["iterations"], 0)

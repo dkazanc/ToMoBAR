@@ -1,6 +1,8 @@
 """A script to demonstrate multi-gpu capabilities of ToMoBAR package, note that mpi4py is required.
 Used reference: https://github.com/mcduta/programming/tree/main/simple-mpi-cuda
 
+# You would need mpi4py installed in your environment to run the code bellow
+
 # Run the script as:
 # mpirun -np 2 python MultiGPU_demo.py -g -s -gpus 1
 # where:

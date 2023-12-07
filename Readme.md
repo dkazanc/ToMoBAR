@@ -16,8 +16,8 @@
 |--------|-------------------|
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/dkazanc/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/dkazanc/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/dkazanc/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/dkazanc/tomobar/badges/downloads.svg)](https://anaconda.org/dkazanc/tomobar/) |
 
-### NEW in ToMoBAR v.23.12:
-- CuPy-enabled 3D FISTA-OS with regularisation all in-device implementation. It can be an order of magnitude faster than the non-CuPy version.
+### NEW in ToMoBAR v.2023.12:
+- CuPy-enabled 3D FISTA-OS with regularisation all in-device implementation. It should be 3-5 times faster than the non-CuPy version depending on the GPU device and the size of data.
 - With class initialisation one can specify axes labels and the input data will be automatically passed in the right format. See this [Demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/DemoFISTA_3D.py).
 
 ### Software includes:

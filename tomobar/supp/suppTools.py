@@ -188,17 +188,20 @@ def DFFC(data, flats, darks, downsample, nrPArepetions):
 
     return [clean_DFFC, EFF, EFF_denoised]
 
-def normaliser(data: np.array, 
-               flats: np.array, 
-               darks: np.array, 
-               log: bool = True,
-               method: str="mean",
-               axis: int=0,
-               **kwargs) -> np.ndarray:
+
+def normaliser(
+    data: np.array,
+    flats: np.array,
+    darks: np.array,
+    log: bool = True,
+    method: str = "mean",
+    axis: int = 0,
+    **kwargs,
+) -> np.ndarray:
     """Data normalisation module
 
     Args:
-        data (np.array): 3d numpy array of raw data.        
+        data (np.array): 3d numpy array of raw data.
         flats (np.array): 2d numpy array for flat field.
         darks (np.array): 2d numpy array for darks field.
         log (bool, optional): Take negative log. Defaults to True.
@@ -206,7 +209,7 @@ def normaliser(data: np.array,
         axis (int, optional): Define the ANGLES axis.
         dyn_downsample (int, optional): Parameter for "dynamic" method. Defaults to 2.
         dyn_iterations (int, optional): Parameter for "dynamic" method. Defaults to 10.
-        
+
 
     Raises:
         NameError: method error
@@ -215,9 +218,7 @@ def normaliser(data: np.array,
         np.ndarray: 3d numpy array of normalised data
     """
     if np.ndim(data) == 2:
-        raise NameError(
-            "Normalisation is implemented for 3d data input"
-        )
+        raise NameError("Normalisation is implemented for 3d data input")
     if darks is None:
         darks = np.zeros(np.shape(flats), dtype="float32")
     if method is None or method == "mean":
@@ -236,9 +237,13 @@ def normaliser(data: np.array,
             if key == "dyn_iterations":
                 dyn_iterations_v = value
             else:
-                dyn_iterations_v = 10                
+                dyn_iterations_v = 10
         [data_norm, EFF, EFF_filt] = DFFC(
-            data, flats, darks, downsample=dyn_downsample_v, nrPArepetions = dyn_iterations_v
+            data,
+            flats,
+            darks,
+            downsample=dyn_downsample_v,
+            nrPArepetions=dyn_iterations_v,
         )
     else:
         raise NameError(
@@ -250,8 +255,8 @@ def normaliser(data: np.array,
             (np.where(denom <= 0.0))
         ] = 1.0  # remove zeros/negatives in the denominator if any
         if axis == 1:
-            denom = denom[:,np.newaxis,:]
-            darks = darks[:,np.newaxis,:]
+            denom = denom[:, np.newaxis, :]
+            darks = darks[:, np.newaxis, :]
         nomin = data - darks  # get nominator
         nomin[(np.where(nomin < 0.0))] = 1.0  # remove negatives
         data_norm = np.true_divide(nomin, denom)
@@ -432,9 +437,7 @@ def __get_swap_tuple(data_axis_labels, labels_order):
     return swap_tuple
 
 
-def swap_data_axis_to_accepted(
-    data_axis_labels, labels_order
-):
+def swap_data_axis_to_accepted(data_axis_labels, labels_order):
     """A module to ensure that the input tomographic data is prepeared for reconstruction
     in the axis order required.
 
@@ -476,8 +479,8 @@ def swap_data_axis_to_accepted(
 
     return [swap_tuple1, swap_tuple2]
 
-def _data_swap(data: xp.ndarray,
-              data_swap_list: list) -> xp.ndarray:
+
+def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
     """Swap data labels based on the provided list of tuples
 
     Args:
@@ -489,7 +492,5 @@ def _data_swap(data: xp.ndarray,
     """
     for swap_tuple in data_swap_list:
         if swap_tuple is not None:
-            data = xp.swapaxes(
-                data, swap_tuple[0], swap_tuple[1]
-            )
+            data = xp.swapaxes(data, swap_tuple[0], swap_tuple[1])
     return data

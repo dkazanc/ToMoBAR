@@ -36,10 +36,12 @@ flats = datadict["flats_ar"]
 darks = datadict["darks_ar"]
 
 # normalise the data
-data_norm = normaliser(dataRaw, flats[:,np.newaxis,:], darks[:,np.newaxis,:], axis=1)
+data_norm = normaliser(
+    dataRaw, flats[:, np.newaxis, :], darks[:, np.newaxis, :], axis=1
+)
 dataRaw = np.float32(np.divide(dataRaw, np.max(dataRaw).astype(float)))
 detectorHoriz = np.size(data_norm, 0)
-data_labels2D = ["detX", "angles"] # set the input data labels
+data_labels2D = ["detX", "angles"]  # set the input data labels
 
 N_size = 1000
 slice_to_recon = 19  # select which slice to reconstruct
@@ -180,7 +182,8 @@ _data_ = {
     ],  # Normalised projection data
     "projection_raw_data": dataRaw[:, :, slice_to_recon],  # Raw projection data
     "OS_number": 6,  # The number of subsets
-    "ringGH_lambda": 0.000015, "ringGH_accelerate": 6,
+    "ringGH_lambda": 0.000015,
+    "ringGH_accelerate": 6,
 }
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
 
@@ -196,7 +199,7 @@ _regularisation_ = {
 }
 
 # adding Group-Huber data model by updaing the data dictionary
-#_data_.update({"ringGH_lambda": 0.000015, "ringGH_accelerate": 6})
+# _data_.update({"ringGH_lambda": 0.000015, "ringGH_accelerate": 6})
 
 RecFISTA_pwls_GH_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
@@ -229,7 +232,8 @@ _data_ = {
     ],  # Normalised projection data
     "projection_raw_data": dataRaw[:, :, slice_to_recon],  # Raw projection data
     "OS_number": 6,  # The number of subsets
-    "ringGH_lambda": 0.000015, "ringGH_accelerate": 6,
+    "ringGH_lambda": 0.000015,
+    "ringGH_accelerate": 6,
 }
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
 
@@ -364,7 +368,7 @@ _data_ = {
     "projection_norm_data": data_norm[:, :, slice_to_recon],
     "OS_number": 6,
     "ringGH_lambda": 0.000001,
-    "ringGH_accelerate": 15
+    "ringGH_accelerate": 15,
 }  # data dictionary
 
 lc = Rectools.powermethod(

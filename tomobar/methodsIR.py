@@ -49,6 +49,7 @@ def merge_3_dicts(x, y, z):
     merg.update(z)
     return merg
 
+
 __all__ = [
     "SIRT",
     "CGLS",
@@ -56,6 +57,7 @@ __all__ = [
     "ADMM",
     "powermethod",
 ]
+
 
 class RecToolsIR(RecTools):
     """
@@ -104,8 +106,7 @@ class RecToolsIR(RecTools):
             raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
         self.datafidelity = datafidelity
 
-    def SIRT(self, _data_: dict, 
-                    _algorithm_: dict = {}) -> np.ndarray:
+    def SIRT(self, _data_: dict, _algorithm_: dict = {}) -> np.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
 
         Args:
@@ -132,8 +133,7 @@ class RecToolsIR(RecTools):
             )
         return SIRT_rec
 
-    def CGLS(self, _data_: dict, 
-                   _algorithm_: dict = {}) -> np.ndarray:
+    def CGLS(self, _data_: dict, _algorithm_: dict = {}) -> np.ndarray:
         """Conjugate Gradient Least Squares from ASTRA toolbox.
 
         Args:
@@ -159,7 +159,7 @@ class RecToolsIR(RecTools):
                 _data_["projection_norm_data"], _algorithm_["iterations"]
             )
         return CGLS_rec
-    
+
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
         projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
@@ -169,14 +169,14 @@ class RecToolsIR(RecTools):
 
         Returns:
             float: the Lipschitz constant
-        """        
-        
+        """
+
         power_iterations = 15
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # classical approach (default)
         else:
-             _data_ = reinitialise_atools_OS(self, _data_)
-        
+            _data_ = reinitialise_atools_OS(self, _data_)
+
         s = 1.0
         if self.geom == "2D":
             x1 = np.float32(np.random.randn(self.ObjSize, self.ObjSize))
@@ -188,7 +188,7 @@ class RecToolsIR(RecTools):
             sqweight = _data_["projection_raw_data"]
             # do the axis swap if required:
             sqweight = _data_swap(sqweight, self.data_swap_list)
- 
+
         if _data_["OS_number"] == 1:
             # non-OS approach
             y = self.Atools.forwproj(x1)
@@ -218,15 +218,11 @@ class RecToolsIR(RecTools):
                     if self.geom == "2D":
                         y = np.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
                     else:
-                        y = np.multiply(
-                            sqweight[:, self.Atools.newInd_Vec[0, :], :], y
-                        )
+                        y = np.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
         return s
 
     def FISTA(
-        self, _data_: dict, 
-              _algorithm_: dict = {}, 
-              _regularisation_: dict = {}
+        self, _data_: dict, _algorithm_: dict = {}, _regularisation_: dict = {}
     ) -> np.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
         data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
@@ -358,9 +354,7 @@ class RecToolsIR(RecTools):
                                 - _data_["projection_norm_data"][indVec, :]
                             )
                             for det_index in range(self.DetectorsDimH):
-                                wk = _data_["projection_raw_data"][
-                                    indVec, det_index
-                                ]
+                                wk = _data_["projection_raw_data"][indVec, det_index]
                                 res[:, det_index] = (
                                     np.multiply(wk, res[:, det_index])
                                     - 1.0
@@ -378,8 +372,7 @@ class RecToolsIR(RecTools):
                         # ring removal part for Group-Huber (GH) fidelity (2D)
                         if (_data_["ringGH_lambda"] is not None) and (iter_no > 0):
                             res[:, 0:None] = (
-                                res[:, 0:None]
-                                + _data_["ringGH_accelerate"] * r_x[:, 0]
+                                res[:, 0:None] + _data_["ringGH_accelerate"] * r_x[:, 0]
                             )
                     else:  # 3D
                         if self.datafidelity == "LS":
@@ -417,11 +410,7 @@ class RecToolsIR(RecTools):
                                             np.sum(wk)
                                             + _data_["beta_SWLS"][detHorz_index]
                                         )
-                                        * (
-                                            wk.dot(
-                                                res[detVert_index, :, detHorz_index]
-                                            )
-                                        )
+                                        * (wk.dot(res[detVert_index, :, detHorz_index]))
                                         * wk
                                     )
                         if self.datafidelity == "KL":
@@ -592,9 +581,7 @@ class RecToolsIR(RecTools):
 
     # **********************************ADMM***************************************#
     def ADMM(
-        self, _data_: dict, 
-              _algorithm_: dict = {}, 
-              _regularisation_: dict = {}
+        self, _data_: dict, _algorithm_: dict = {}, _regularisation_: dict = {}
     ) -> np.ndarray:
         """Alternating Directions Method of Multipliers with various types of regularisation and
         data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).

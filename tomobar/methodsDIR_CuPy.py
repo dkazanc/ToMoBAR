@@ -18,6 +18,7 @@ from tomobar.cuda_kernels import load_cuda_module
 from tomobar.recon_base import RecTools
 from tomobar.supp.suppTools import _check_kwargs, _data_swap
 
+
 def _filtersinc3D_cupy(projection3D: cp.ndarray) -> cp.ndarray:
     """Applies a SINC filter to 3D projection data
 
@@ -102,7 +103,7 @@ class RecToolsDIRCuPy(RecTools):
         Returns:
             cp.ndarray
                 The FBP reconstructed volume as a CuPy array.
-        """        
+        """
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(_data_swap(data, self.data_swap_list))
         data = cp.ascontiguousarray(cp.swapaxes(data, 0, 1))

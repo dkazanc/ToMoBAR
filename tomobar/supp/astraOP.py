@@ -193,7 +193,7 @@ def _set_geometry3d(self):
         "cuda3d", self.proj_geom, self.vol_geom
     )  # for GPU
     self.A_optomo = astra.OpTomo(self.proj_id)
-    return self.proj_geom, self.A_optomo 
+    return self.proj_geom, self.A_optomo
 
 
 def _set_OS_geometry3d(self):
@@ -395,7 +395,7 @@ class Astra3D:
             # ordered-subsets accelerated parallel beam projection geometry
             self.proj_geom_OS = _set_OS_geometry3d(self)
         else:
-            # traditional full data parallel beam projection geometry            
+            # traditional full data parallel beam projection geometry
             self.proj_geom, self.A_optomo = _set_geometry3d(self)
 
     def runAstraBackproj(self, proj_data, method, iterations, os_index):
@@ -446,19 +446,21 @@ class Astra3D:
         # set ASTRA configuration for 3D reconstructor using CuPy arrays
         proj_link = astra.data3d.GPULink(
             proj_data.data.ptr, *proj_data.shape[::-1], 4 * proj_data.shape[2]
-        )        
+        )
         if self.OS_number != 1:
             # ordered-subsets
             projector_id = astra.create_projector(
                 "cuda3d", self.proj_geom_OS[os_index], self.vol_geom
             )
-            proj_id = astra.data3d.link("-proj3d", self.proj_geom_OS[os_index], proj_link)
+            proj_id = astra.data3d.link(
+                "-proj3d", self.proj_geom_OS[os_index], proj_link
+            )
         else:
             # traditional full data parallel beam projection geometry
             projector_id = astra.create_projector(
                 "cuda3d", self.proj_geom, self.vol_geom
             )
-            proj_id = astra.data3d.link("-proj3d", self.proj_geom, proj_link)      
+            proj_id = astra.data3d.link("-proj3d", self.proj_geom, proj_link)
 
         # create a CuPy array with ASTRA link to it
         recon_volume = xp.zeros(astra.geom_size(self.vol_geom), dtype=np.float32)
@@ -533,11 +535,15 @@ class Astra3D:
 
         if self.OS_number != 1:
             # ordered-subsets approach
-            proj_volume = xp.zeros(astra.geom_size(self.proj_geom_OS[os_index]), dtype=xp.float32)
+            proj_volume = xp.zeros(
+                astra.geom_size(self.proj_geom_OS[os_index]), dtype=xp.float32
+            )
             gpu_link_sino = astra.data3d.GPULink(
                 proj_volume.data.ptr, *proj_volume.shape[::-1], 4 * proj_volume.shape[2]
             )
-            proj_id = astra.data3d.link("-sino", self.proj_geom_OS[os_index], gpu_link_sino)
+            proj_id = astra.data3d.link(
+                "-sino", self.proj_geom_OS[os_index], gpu_link_sino
+            )
         else:
             # traditional full data parallel beam projection geometry
             # Enabling GPUlink to the created empty CuPy array

@@ -19,6 +19,7 @@ from tomobar.supp.dicts import dicts_check, reinitialise_atools_OS
 from tomobar.supp.suppTools import _data_swap
 from tomobar.regularisersCuPy import prox_regul
 
+
 class RecToolsIRCuPy(RecTools):
     """
     ----------------------------------------------------------------------------------------------------------
@@ -61,15 +62,14 @@ class RecToolsIRCuPy(RecTools):
             device_projector=device_projector,
             data_axis_labels=data_axis_labels,  # inherit from the base class
         )
-        
+
         if DetectorsDimV == 0 or DetectorsDimV is None:
             raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
         if datafidelity not in ["LS", "PWLS", "SWLS", "KL"]:
             raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
-        self.datafidelity = datafidelity     
+        self.datafidelity = datafidelity
 
-    def Landweber(self, _data_: dict, 
-                        _algorithm_: dict = {}) -> cp.ndarray:
+    def Landweber(self, _data_: dict, _algorithm_: dict = {}) -> cp.ndarray:
         """Using Landweber iterative technique to reconstruct projection data given as a CuPy array.
            We perform the following iterations: x_k+1 = x_k - tau*A.T(A(x_k) - b)
 
@@ -87,7 +87,9 @@ class RecToolsIRCuPy(RecTools):
         )
         ######################################################################
 
-        _data_["projection_norm_data"] = cp.ascontiguousarray(_data_["projection_norm_data"])
+        _data_["projection_norm_data"] = cp.ascontiguousarray(
+            _data_["projection_norm_data"]
+        )
         x_rec = cp.zeros(
             astra.geom_size(self.Atools.vol_geom), dtype=cp.float32
         )  # initialisation
@@ -104,8 +106,7 @@ class RecToolsIRCuPy(RecTools):
         cp._default_memory_pool.free_all_blocks()
         return x_rec
 
-    def SIRT(self, _data_: dict, 
-                   _algorithm_: dict = {}) -> cp.ndarray:
+    def SIRT(self, _data_: dict, _algorithm_: dict = {}) -> cp.ndarray:
         """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
            reconstruct projection data given as a CuPy array.
            We perform the following iterations:: x_k+1 = C*A.T*R(b - A(x_k))
@@ -124,7 +125,9 @@ class RecToolsIRCuPy(RecTools):
         )
         ######################################################################
         epsilon = 1e-8
-        _data_["projection_norm_data"] = cp.ascontiguousarray(_data_["projection_norm_data"])
+        _data_["projection_norm_data"] = cp.ascontiguousarray(
+            _data_["projection_norm_data"]
+        )
         # prepearing preconditioning matrices R and C
         R = 1 / self.Atools.forwprojCuPy(
             cp.ones(astra.geom_size(self.Atools.vol_geom), dtype=np.float32)
@@ -149,8 +152,7 @@ class RecToolsIRCuPy(RecTools):
         cp._default_memory_pool.free_all_blocks()
         return x_rec
 
-    def CGLS(self, _data_: dict, 
-                   _algorithm_: dict = {}) -> cp.ndarray:
+    def CGLS(self, _data_: dict, _algorithm_: dict = {}) -> cp.ndarray:
         """Using CGLS iterative technique to reconstruct projection data given as a CuPy array.
            We aim to solve the system of the normal equations A.T*A*x = A.T*b.
 
@@ -167,7 +169,8 @@ class RecToolsIRCuPy(RecTools):
             self, _data_, _algorithm_, method_run="CGLS"
         )
         ######################################################################
-        _data_["projection_norm_data"] = cp.ascontiguousarray((_data_["projection_norm_data"])
+        _data_["projection_norm_data"] = cp.ascontiguousarray(
+            (_data_["projection_norm_data"])
         )
         data_shape_3d = cp.shape(_data_["projection_norm_data"])
 
@@ -214,14 +217,14 @@ class RecToolsIRCuPy(RecTools):
 
         Returns:
             float: the Lipschitz constant
-        """        
-        
+        """
+
         power_iterations = 15
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # classical approach (default)
         else:
-             _data_ = reinitialise_atools_OS(self, _data_)
-        
+            _data_ = reinitialise_atools_OS(self, _data_)
+
         s = 1.0
         proj_geom = astra.geom_size(self.Atools.vol_geom)
         x1 = cp.random.randn(proj_geom[0], proj_geom[1], proj_geom[2], dtype=cp.float32)
@@ -254,15 +257,11 @@ class RecToolsIRCuPy(RecTools):
                 x1 = x1 / s
                 y = self.Atools.forwprojOSCuPy(x1, 0)
                 if self.datafidelity == "PWLS":
-                    y = cp.multiply(
-                            sqweight[:, self.Atools.newInd_Vec[0, :], :], y
-                        )
+                    y = cp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
         return s
 
     def FISTA(
-        self, _data_: dict, 
-              _algorithm_: dict = {}, 
-              _regularisation_: dict = {}
+        self, _data_: dict, _algorithm_: dict = {}, _regularisation_: dict = {}
     ) -> cp.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
         data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
@@ -279,28 +278,30 @@ class RecToolsIRCuPy(RecTools):
             # 2D reconstruction
             raise ValueError("2D CuPy reconstruction is not yet supported")
         # initialise the solution
-        X = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=cp.float32)      
+        X = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=cp.float32)
 
         (_data_, _algorithm_, _regularisation_) = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
 
         if _data_["OS_number"] > 1:
-             _data_ = reinitialise_atools_OS(self, _data_)
+            _data_ = reinitialise_atools_OS(self, _data_)
 
         L_const_inv = cp.float32(
             1.0 / _algorithm_["lipschitz_const"]
         )  # inverted Lipschitz constant
 
         # re-initialise with CuPy array
-        _data_["projection_norm_data"] = cp.ascontiguousarray(_data_["projection_norm_data"])
+        _data_["projection_norm_data"] = cp.ascontiguousarray(
+            _data_["projection_norm_data"]
+        )
 
         t = cp.float32(1.0)
         X_t = cp.copy(X)
         # FISTA iterations
         for iter_no in range(_algorithm_["iterations"]):
             # loop over subsets (OS)
-            for sub_ind in range(_data_["OS_number"]):            
+            for sub_ind in range(_data_["OS_number"]):
                 X_old = X
                 t_old = t
                 if _data_["OS_number"] > 1:
@@ -341,6 +342,5 @@ class RecToolsIRCuPy(RecTools):
 
                 t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
                 X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
-                del res
         cp._default_memory_pool.free_all_blocks()
         return X

@@ -43,6 +43,7 @@ print("Generate 3D analytical projection data with TomoPhantom")
 projData3D_analyt = TomoP3D.ModelSino(
     model, N_size, Horiz_det, Vert_det, angles, path_library3D
 )
+data_labels = ["detY", "angles", "detX"]
 
 # transfering numpy array to CuPy array
 projData3D_analyt_cupy = cp.asarray(projData3D_analyt, order="C")
@@ -58,7 +59,7 @@ RecToolsCP = RecToolsDIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
-    data_axis_labels=["detY", "angles", "detX"], # axes labels 
+    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 tic = timeit.default_timer()
@@ -93,7 +94,7 @@ plt.show()
 print(
     "Min {} and Max {} of the volume".format(np.min(FBPrec_cupy), np.max(FBPrec_cupy))
 )
-del FBPrec_cupy
+del FBPrec_cupy, RecToolsCP
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
@@ -105,6 +106,7 @@ RecToolsCP = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
+    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 # prepare dictionaries with parameters:
@@ -127,6 +129,7 @@ plt.subplot(133)
 plt.imshow(lwrec[:, :, sliceSel])
 plt.title("3D Landweber Reconstruction, sagittal view")
 plt.show()
+del RecToolsCP
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using SIRT algorithm %%%%%%%%%%%%%")
@@ -138,6 +141,7 @@ RecToolsCP = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
+    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 # prepare dictionaries with parameters:
@@ -161,6 +165,7 @@ plt.subplot(133)
 plt.imshow(sirt_rec[:, :, sliceSel])
 plt.title("3D SIRT Reconstruction, sagittal view")
 plt.show()
+del RecToolsCP
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using CGLS algorithm %%%%%%%%%%%%%")
@@ -172,6 +177,7 @@ RecToolsCP = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
+    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 # prepare dictionaries with parameters:
@@ -195,6 +201,7 @@ plt.subplot(133)
 plt.imshow(cgls_rec[:, :, sliceSel])
 plt.title("3D CGLS Reconstruction, sagittal view")
 plt.show()
+del RecToolsCP
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using FISTA algorithm %%%%%%%%%%%%")
@@ -206,14 +213,13 @@ RecToolsCP = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
+    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
-lc = RecToolsCP.powermethod(
-_data_
-)
-_algorithm_ = {"iterations": 300, "lipschitz_const":  lc.get()}
+lc = RecToolsCP.powermethod(_data_)
+_algorithm_ = {"iterations": 300, "lipschitz_const": lc.get()}
 
 start_time = timeit.default_timer()
 RecFISTA = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_={})
@@ -236,10 +242,10 @@ plt.subplot(133)
 plt.imshow(fista_rec_np[:, :, sliceSel])
 plt.title("3D FISTA Reconstruction, sagittal view")
 plt.show()
-del RecFISTA
+del RecFISTA, RecToolsCP
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("%%%%% Reconstructing using regularised FISTA algorithm %%%%%")
+print("%%%%% Reconstructing using regularised FISTA-OS algorithm %%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # NOTE that you'd need to install CuPy modules for the regularisers from the regularisation toolkit
 RecToolsCP = RecToolsIRCuPy(
@@ -248,22 +254,27 @@ RecToolsCP = RecToolsIRCuPy(
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",
+    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
+    device_projector=0,
+    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
+start_time = timeit.default_timer()
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
-lc = RecToolsCP.powermethod(
-_data_
-)
-_algorithm_ = {"iterations": 300, "lipschitz_const":  lc.get()}
+_data_ = {
+    "projection_norm_data": projData3D_analyt_cupy,
+    "OS_number": 8,
+}  # data dictionary
+lc = RecToolsCP.powermethod(_data_)
+_algorithm_ = {"iterations": 15, "lipschitz_const": lc.get()}
+
 _regularisation_ = {
     "method": "PD_TV",
-    "regul_param": 0.001,
-    "iterations": 100,
-    "device_regulariser": "gpu",
+    "regul_param": 0.0005,
+    "iterations": 35,
+    "device_regulariser": 0,
 }
-start_time = timeit.default_timer()
+
 RecFISTA = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_)
 txtstr = "%s = %.3fs" % ("elapsed time", timeit.default_timer() - start_time)
 print(txtstr)
@@ -274,14 +285,15 @@ sliceSel = int(0.5 * N_size)
 plt.figure()
 plt.subplot(131)
 plt.imshow(fista_rec_np[sliceSel, :, :])
-plt.title("3D FISTA Reconstruction, axial view")
+plt.title("3D FISTA-OS Reconstruction, axial view")
 
 plt.subplot(132)
 plt.imshow(fista_rec_np[:, sliceSel, :])
-plt.title("3D FISTA Reconstruction, coronal view")
+plt.title("3D FISTA-OS Reconstruction, coronal view")
 
 plt.subplot(133)
 plt.imshow(fista_rec_np[:, :, sliceSel])
-plt.title("3D FISTA Reconstruction, sagittal view")
+plt.title("3D FISTA-OS Reconstruction, sagittal view")
 plt.show()
-del RecFISTA
+del RecFISTA, RecToolsCP
+# %%
