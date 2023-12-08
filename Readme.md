@@ -44,14 +44,13 @@
  * Python or [MATLAB](http://www.mathworks.com/products/matlab/) (not actively maintained currently)
 
 ### Software dependencies
- * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations
- * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for tomographic data and phantoms simulations
- * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation [7]
+ * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations (required)
+ * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for tomographic data and phantoms simulations (optional)
+ * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation [7] (required for iterative methods)
  * Wavelet toolbox [pypwt](https://github.com/pierrepaleo/pypwt) if wavelet regularisation is used (optional)
- * [mpi4py](https://mpi4py.readthedocs.io/en/stable/) for multi-GPU reconstruction control
- * [cupy](https://cupy.dev/) for GPU memory device-to-device operability
- * See [INSTALLATION](https://github.com/dkazanc/TomoRec/blob/master/INSTALLATION) for detailed information
-
+ * [mpi4py](https://mpi4py.readthedocs.io/en/stable/) for multi-GPU reconstruction control (optional)
+ * [cupy](https://cupy.dev/) for GPU memory device-to-device operability (required for CuPy methods)
+ 
 ### Python conda:
 Install the ToMoBAR package into the existing conda [environment](https://github.com/dkazanc/ToMoBAR/tree/master/conda-recipe/environment/environment.yml):
 ```
