@@ -45,7 +45,7 @@
 
 ### Software dependencies
  * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations (required)
- * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for tomographic data and phantoms simulations (optional)
+ * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for tomographic data and phantoms simulations (optional but needed for most of Demos)
  * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation [7] (required for iterative methods)
  * Wavelet toolbox [pypwt](https://github.com/pierrepaleo/pypwt) if wavelet regularisation is used (optional)
  * [mpi4py](https://mpi4py.readthedocs.io/en/stable/) for multi-GPU reconstruction control (optional)

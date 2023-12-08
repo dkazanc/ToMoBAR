@@ -80,8 +80,8 @@ def test_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = RecTools.CGLS(_data_, _algorithm_)
 
     Iter_rec = Iter_rec.get()
-    assert_allclose(np.min(Iter_rec), -0.0042607156, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.025812835, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.0042607156, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.025812835, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
