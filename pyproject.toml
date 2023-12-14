@@ -13,6 +13,9 @@ tomobar = ["*.cu", "*.cuh"]  # include cuda kernels in package
 
 [tool.setuptools-git-versioning]
 enabled = true
+template = "{tag}"
+dev_template = "{tag}"
+
 
 [project]
 name = "tomobar"

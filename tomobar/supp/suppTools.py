@@ -396,10 +396,9 @@ def _apply_circular_mask(data, recon_mask_radius, axis=2):
 def _check_kwargs(reconstruction, **kwargs):
     # Iterating over optional parameters:
     for key, value in kwargs.items():
-        if key == "recon_mask_radius":
+        if key == "recon_mask_radius" and value is not None:
             _apply_circular_mask(reconstruction, value)
     return reconstruction
-
 
 def circ_mask(X, diameter):
     # applying a circular mask to the reconstructed image/volume
