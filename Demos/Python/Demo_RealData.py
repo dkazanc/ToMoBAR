@@ -1,24 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GPLv3 license (ASTRA toolbox)
-
 Script to reconstruct tomographic X-ray data (dendritic growth process)
 obtained at Diamond Light Source (UK synchrotron), beamline I12
 
-Dependencies: 
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or conda build of  https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-
-<<<
-IF THE SHARED DATA ARE USED FOR PUBLICATIONS/PRESENTATIONS etc., PLEASE CITE:
 D. Kazantsev et al. 2017. Model-based iterative reconstruction using 
 higher-order regularization of dynamic synchrotron data. 
 Measurement Science and Technology, 28(9), p.094004.
->>>
-@author: Daniil Kazantsev: https://github.com/dkazanc
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -193,7 +181,7 @@ _algorithm_ = {"iterations": 25, "lipschitz_const": lc}  # The number of iterati
 ##### creating the regularisation dictionary: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.000002,  # Regularisation parameter
+    "regul_param": 0.0000025,  # Regularisation parameter
     "iterations": 60,  # The number of regularisation iterations
     "device_regulariser": "gpu",
 }
@@ -417,7 +405,7 @@ _data_ = {
         :, :, slice_to_recon
     ],  # Normalised projection data
     "projection_raw_data": dataRaw[:, :, slice_to_recon],  # Raw projection data
-    "beta_SWLS": 0.2 * np.ones(detectorHoriz),  #  a parameter for SWLS model
+    "beta_SWLS": 0.2,  #  a parameter for SWLS model
     "OS_number": 6,  # The number of subsets
 }
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
@@ -428,7 +416,7 @@ _algorithm_ = {"iterations": 25, "lipschitz_const": lc}  # The number of iterati
 ##### creating the regularisation dictionary using the CCPi regularisation toolkit: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.000001,  # Regularisation parameter
+    "regul_param": 0.0000007,  # Regularisation parameter
     "iterations": 80,  # The number of regularisation iterations
     "device_regulariser": "gpu",
 }

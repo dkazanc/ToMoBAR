@@ -99,19 +99,20 @@ del FBPrec_cupy, RecToolsCP
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsIRCuPy(
+RecToolsCP_iter = RecToolsIRCuPy(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
     device_projector="gpu",
     data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
-LWrec_cupy = RecToolsCP.Landweber(_data_)
+LWrec_cupy = RecToolsCP_iter.Landweber(_data_)
 
 lwrec = cp.asnumpy(LWrec_cupy)
 
@@ -129,12 +130,12 @@ plt.subplot(133)
 plt.imshow(lwrec[:, :, sliceSel])
 plt.title("3D Landweber Reconstruction, sagittal view")
 plt.show()
-del RecToolsCP
+del RecToolsCP_iter
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using SIRT algorithm %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsIRCuPy(
+RecToolsCP_iter = RecToolsIRCuPy(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
@@ -147,7 +148,7 @@ RecToolsCP = RecToolsIRCuPy(
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
 _algorithm_ = {"iterations": 300, "nonnegativity": True}
-SIRTrec_cupy = RecToolsCP.SIRT(_data_, _algorithm_)
+SIRTrec_cupy = RecToolsCP_iter.SIRT(_data_, _algorithm_)
 
 sirt_rec = cp.asnumpy(SIRTrec_cupy)
 
@@ -165,12 +166,12 @@ plt.subplot(133)
 plt.imshow(sirt_rec[:, :, sliceSel])
 plt.title("3D SIRT Reconstruction, sagittal view")
 plt.show()
-del RecToolsCP
+del RecToolsCP_iter
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using CGLS algorithm %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsIRCuPy(
+RecToolsCP_iter = RecToolsIRCuPy(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
@@ -183,7 +184,7 @@ RecToolsCP = RecToolsIRCuPy(
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
 _algorithm_ = {"iterations": 20, "nonnegativity": True}
-CGLSrec_cupy = RecToolsCP.CGLS(_data_, _algorithm_)
+CGLSrec_cupy = RecToolsCP_iter.CGLS(_data_, _algorithm_)
 
 cgls_rec = cp.asnumpy(CGLSrec_cupy)
 
@@ -201,12 +202,12 @@ plt.subplot(133)
 plt.imshow(cgls_rec[:, :, sliceSel])
 plt.title("3D CGLS Reconstruction, sagittal view")
 plt.show()
-del RecToolsCP
+del RecToolsCP_iter
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using FISTA algorithm %%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsIRCuPy(
+RecToolsCP_iter = RecToolsIRCuPy(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
@@ -218,11 +219,11 @@ RecToolsCP = RecToolsIRCuPy(
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
-lc = RecToolsCP.powermethod(_data_)
+lc = RecToolsCP_iter.powermethod(_data_)
 _algorithm_ = {"iterations": 300, "lipschitz_const": lc.get()}
 
 start_time = timeit.default_timer()
-RecFISTA = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_={})
+RecFISTA = RecToolsCP_iter.FISTA(_data_, _algorithm_, _regularisation_={})
 txtstr = "%s = %.3fs" % ("elapsed time", timeit.default_timer() - start_time)
 print(txtstr)
 
@@ -242,13 +243,13 @@ plt.subplot(133)
 plt.imshow(fista_rec_np[:, :, sliceSel])
 plt.title("3D FISTA Reconstruction, sagittal view")
 plt.show()
-del RecFISTA, RecToolsCP
+del RecFISTA, RecToolsCP_iter
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%% Reconstructing using regularised FISTA-OS algorithm %%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # NOTE that you'd need to install CuPy modules for the regularisers from the regularisation toolkit
-RecToolsCP = RecToolsIRCuPy(
+RecToolsCP_iter = RecToolsIRCuPy(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
@@ -265,7 +266,7 @@ _data_ = {
     "projection_norm_data": projData3D_analyt_cupy,
     "OS_number": 8,
 }  # data dictionary
-lc = RecToolsCP.powermethod(_data_)
+lc = RecToolsCP_iter.powermethod(_data_)
 _algorithm_ = {"iterations": 15, "lipschitz_const": lc.get()}
 
 _regularisation_ = {
@@ -275,7 +276,7 @@ _regularisation_ = {
     "device_regulariser": 0,
 }
 
-RecFISTA = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_)
+RecFISTA = RecToolsCP_iter.FISTA(_data_, _algorithm_, _regularisation_)
 txtstr = "%s = %.3fs" % ("elapsed time", timeit.default_timer() - start_time)
 print(txtstr)
 
@@ -295,5 +296,5 @@ plt.subplot(133)
 plt.imshow(fista_rec_np[:, :, sliceSel])
 plt.title("3D FISTA-OS Reconstruction, sagittal view")
 plt.show()
-del RecFISTA, RecToolsCP
+del RecFISTA, RecToolsCP_iter
 # %%

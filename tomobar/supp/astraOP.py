@@ -1,12 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""Series of classes that wrapping ASTRA toolbox to perform projection/backprojection
+"""The series of classes for wrapping of ASTRA toolbox to perform projection/backprojection
 and reconstruction of of 2D/3D parallel beam data.
 
 GPLv3 license (ASTRA toolbox)
-@author: Daniil Kazantsev: https://github.com/dkazanc
-Changelog:
-    07.04.22 - major OOP reformating of all classes and adding multigpu device control
 """
 import numpy as np
 
@@ -222,6 +217,17 @@ def _set_OS_geometry3d(self):
 
 #######################Reconstruction Parent classes##########################
 class Astra2D:
+    """Parent 2D parallel beam projection/backprojection class based on ASTRA toolbox.
+
+    Args:
+        DetectorsDimH (int): Horizontal detector dimension.
+        AnglesVec (np.ndarray): Vector of projection angles in radians.
+        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.        
+        ObjSize (int): Reconstructed object dimensions (a scalar).
+        OS_number (int): The number of ordered-subsets for iterative reconstruction.
+        device_projector (str): 'cpu' or 'gpu'  device.
+        GPUdevice_index (int): An integer for GPU device, -1 for CPU computing and >0 for GPU computing, a gpu device number.
+    """
     def __init__(
         self,
         DetectorsDimH,
@@ -232,19 +238,7 @@ class Astra2D:
         device_projector,
         GPUdevice_index,
     ):
-        """
-        ------------------------------------------------------------------------------
-        Parent 2D parallel beam projection/backprojection class based on ASTRA toolbox
-        ------------------------------------------------------------------------------
-        Parameters of the class:
-        * DetectorsDimH     # Horizontal detector dimension
-        * AnglesVec         # Array of projection angles in radians
-        * CenterRotOffset   # The Centre of Rotation scalar or a vector
-        * ObjSize,          # Reconstructed object dimensions (scalar)
-        * OS_number         # the total number of subsets for iterative reconstruction
-        * device_projector  # a 'cpu' or 'gpu' string
-        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number
-        """
+
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
         self.CenterRotOffset = CenterRotOffset
@@ -350,6 +344,18 @@ class Astra2D:
 
 
 class Astra3D:
+    """Parent 3D parallel beam projection/backprojection class based on ASTRA toolbox.
+
+    Args:
+        DetectorsDimH (int): Horizontal detector dimension.
+        DetectorsDimV (int): Vertical detector dimension.
+        AnglesVec (np.ndarray): Vector of projection angles in radians.
+        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.        
+        ObjSize (int): Reconstructed object dimensions (a scalar).
+        OS_number (int): The number of ordered-subsets for iterative reconstruction.
+        device_projector (str): 'cpu' or 'gpu'  device.
+        GPUdevice_index (int): An integer for GPU device, -1 for CPU computing and >0 for GPU computing, a gpu device number.
+    """    
     def __init__(
         self,
         DetectorsDimH,
@@ -361,20 +367,7 @@ class Astra3D:
         device_projector,
         GPUdevice_index,
     ):
-        """
-        ------------------------------------------------------------------------------
-        Parent 3D parallel beam projection/backprojection class based on ASTRA toolbox
-        ------------------------------------------------------------------------------
-        Parameters of the class:
-        * DetectorsDimH     # Horizontal detector dimension
-        * DetectorsDimV     # Vertical detector dimension
-        * AnglesVec         # Array of projection angles in radians
-        * CenterRotOffset   # The Centre of Rotation scalar or a vector
-        * ObjSize,          # Reconstructed object dimensions (scalar)
-        * OS_number         # the total number of subsets for iterative reconstruction
-        * device_projector  # a 'cpu' or 'gpu' string
-        * GPUdevice_index   # an integer, -1 for CPU computing and >0 for GPU computing, a gpu device number
-        """
+
         self.DetectorsDimV = DetectorsDimV
         self.DetectorsDimH = DetectorsDimH
         self.AnglesVec = AnglesVec
@@ -572,6 +565,11 @@ class Astra3D:
 
 #####################Reconstruction Children classes#########################
 class AstraTools(Astra2D):
+    """2D parallel beam projection/backprojection class based on ASTRA toolbox.
+
+    Args:
+        Astra2D (class): inhereted class.
+    """
     def __init__(
         self,
         DetectorsDimH,
@@ -582,9 +580,6 @@ class AstraTools(Astra2D):
         device_projector,
         GPUdevice_index,
     ):
-        """
-        2D parallel beam projection/backprojection class based on ASTRA toolbox
-        """
         super().__init__(
             DetectorsDimH,
             AnglesVec,
@@ -627,6 +622,11 @@ class AstraTools(Astra2D):
 
 
 class AstraToolsOS(Astra2D):
+    """2D parallel beam ordered-subsets projection/backprojection class based on ASTRA toolbox.
+
+    Args:
+        Astra2D (class): inhereted class.
+    """    
     def __init__(
         self,
         DetectorsDimH,
@@ -637,9 +637,6 @@ class AstraToolsOS(Astra2D):
         device_projector,
         GPUdevice_index,
     ):
-        """
-        2D parallel ordered-subsets beam projection/backprojection class
-        """
         super().__init__(
             DetectorsDimH,
             AnglesVec,
@@ -664,6 +661,11 @@ class AstraToolsOS(Astra2D):
 
 
 class AstraTools3D(Astra3D):
+    """3D parallel beam projection/backprojection class based on ASTRA toolbox.
+
+    Args:
+        Astra3D (class): inhereted class.
+    """   
     def __init__(
         self,
         DetectorsDimH,
@@ -675,9 +677,6 @@ class AstraTools3D(Astra3D):
         device_projector,
         GPUdevice_index,
     ):
-        """
-        3D parallel beam projection/backprojection class based on ASTRA toolbox
-        """
         super().__init__(
             DetectorsDimH,
             DetectorsDimV,
@@ -719,6 +718,11 @@ class AstraTools3D(Astra3D):
 
 
 class AstraToolsOS3D(Astra3D):
+    """3D parallel beam ordered-subsets projection/backprojection class based on ASTRA toolbox.
+
+    Args:
+        Astra3D (class): inhereted class.
+    """       
     def __init__(
         self,
         DetectorsDimH,
@@ -730,9 +734,6 @@ class AstraToolsOS3D(Astra3D):
         device_projector,
         GPUdevice_index,
     ):
-        """
-        3D ordered subset parallel beam projection/backprojection class
-        """
         super().__init__(
             DetectorsDimH,
             DetectorsDimV,

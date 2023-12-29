@@ -1,15 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-""" Module to add regularisers from the CCPi-regularisation toolkit 
-and initiate proximity operator for iterative methods
+"""Adding CuPy-enabled regularisers from the CCPi-regularisation toolkit and 
+initiate proximity operator for iterative methods.
 
-see installation for CuPy modules in
-https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-
-GPLv3 license (ASTRA toolbox)
 @author: Daniil Kazantsev: https://github.com/dkazanc
 """
 
+import cupy as cp
 try:
     from ccpi.filters.regularisersCuPy import ROF_TV as ROF_TV_cupy
     from ccpi.filters.regularisersCuPy import PD_TV as PD_TV_cupy
@@ -19,7 +14,16 @@ except ImportError:
     )
 
 
-def prox_regul(self, X, _regularisation_):
+def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
+    """Enabling proximal operators step in interative reconstruction. 
+
+    Args:
+        X (cp.ndarray): 2D or 3D CuPy array.
+        _regularisation_ (dict): Regularisation dictionary with parameters. 
+
+    Returns:
+        cp.ndarray: Filtered 2D or 3D CuPy array.
+    """
     info_vec = (_regularisation_["iterations"], 0)
     # The proximal operator of the chosen regulariser
     if "ROF_TV" in _regularisation_["method"]:

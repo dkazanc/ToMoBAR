@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""the base reconstruction class.
-@author: Daniil Kazantsev
+"""The base reconstruction class for the varierty of direct and iterative methods.
+
+@authors: Daniil Kazantsev: https://github.com/dkazanc
 """
 astra_enabled = False
 try:
@@ -16,18 +15,16 @@ from tomobar.supp.suppTools import swap_data_axis_to_accepted
 
 
 class RecTools:
-    """----------------------------------------------------------------------------------------------------------
-    The base class for reconstruction
-    ----------------------------------------------------------------------------------------------------------
-    Arguments of the class mainly related to projection geometry:
-      *DetectorsDimH,     # Horizontal detector dimension.
-      *DetectorsDimV,     # Vertical detector dimension for 3D case. Set to 0 or None for 2D case.
-      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar or a vector.
-      *AnglesVec,         # A vector of projection angles in radians.
-      *ObjSize,           # Reconstructed object dimensions (a scalar).
-      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device.
-      *data_axis_labels   # set the order of axis labels of the input data, e.g. ['detY', 'angles', 'detX'].
-    ----------------------------------------------------------------------------------------------------------
+    """The base reconstruction class
+    
+    Args:
+        DetectorsDimH (int): Horizontal detector dimension.
+        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
+        CenterRotOffset (float): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        AnglesVec (np.ndarray): Vector of projection angles in radians.
+        ObjSize (int): Reconstructed object dimensions (a scalar).
+        device_projector (str, int): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
+        data_axis_labels (list): a list with axis labels of the input data, e.g. ['detY', 'angles', 'detX'].
     """
 
     def __init__(

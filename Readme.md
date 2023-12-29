@@ -2,7 +2,7 @@
     <tr>
         <td>
         <div align="left">
-          <img src="docs/images/tomobar_logo.png" width="450"><br>  
+          <img src="docs/source/_static//tomobar_logo.png" width="450"><br>  
         </div>
         </td>
         <td>
@@ -29,13 +29,13 @@
  * [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos) to reconstruct synthetic and also real data [4-6]
 
 <div align="center">
-  <img src="docs/images/recsFISTA_stud.png" width="550">
+  <img src="docs/source/_static/recsFISTA_stud.png" width="550">
 </div>
 <div align="center">
-  <img src="docs/images/TomoRec_surf2.jpg" width="600">  
+  <img src="docs/source/_static/TomoRec_surf2.jpg" width="600">  
 </div>
 
-## Software highlights:
+## ToMoBAR highlights:
  * Tomographic parallel-beam projection data can be simulated without the "inverse crime" using [TomoPhantom](https://github.com/dkazanc/TomoPhantom). Noise and artifacts (zingers, rings, jitter) can be modelled and added to the data.
  * Simulated data reconstructed iteratively using FISTA or ADMM algorithms with multiple "plug-and-play" regularisers from [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) and GPU-accelerated wavelets from [pypwt](https://github.com/pierrepaleo/pypwt).
  * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method; data fidelities: PWLS, Kullback-Leibler, Huber, Group-Huber[2], Students't [3,4], and SWLS [5] to deal with noise and imaging artifacts (rings, streaks).
@@ -77,7 +77,7 @@ ToMoBAR can be used by running in parallel across multiple GPU devices on a PC o
 Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
 
 ## How to use ToMoBAR in Python:
-Please check [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python) and also [Documetation](https://dkazanc.github.io/ToMoBAR/) with more detailed recipies how to run.
+Please check [Documetation](https://dkazanc.github.io/ToMoBAR/) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python) for more details.
 
 A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`. To list all accepted parameters for dictionaries do: 
 ```python
@@ -85,7 +85,7 @@ from tomobar.supp.dicts import dicts_check
 help(dicts_check)
 ```
 <div align="left">
-  <img src="docs/images/tomobar_pres.png" width="620">  
+  <img src="docs/source/_static/tomobar_pres.png" width="620">  
 </div>
 
 ### References:

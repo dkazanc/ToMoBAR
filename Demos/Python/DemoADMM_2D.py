@@ -6,14 +6,6 @@ GPLv3 license (ASTRA toolbox)
 Script to generate 2D analytical phantoms and their sinograms with added noise 
 and then reconstruct using the regularised ADMM algorithm.
 
-Dependencies: 
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-    * TomoPhantom, https://github.com/dkazanc/TomoPhantom
-
-@author: Daniil Kazantsev
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,13 +14,10 @@ import os
 import tomophantom
 from tomophantom.supp.qualitymetrics import QualityTools
 
-
 model = 4  # select a model
 N_size = 512  # set dimension of the phantom
-# one can specify an exact path to the parameters file
-# path_library2D = '../../../PhantomLibrary/models/Phantom2DLibrary.dat'
 path = os.path.dirname(tomophantom.__file__)
-path_library2D = os.path.join(path, "Phantom2DLibrary.dat")
+path_library2D = os.path.join(path, "phantomlib", "Phantom2DLibrary.dat")
 phantom_2D = TomoP2D.Model(model, N_size, path_library2D)
 
 plt.close("all")
