@@ -38,10 +38,7 @@
 </div>
 
 ## ToMoBAR highlights:
-Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do)
-
-### General software prerequisites
- * Python or [MATLAB](http://www.mathworks.com/products/matlab/) (not actively maintained currently)
+Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do).
 
 ### Software dependencies
 All dependencies are listed [here](https://dkazanc.github.io/ToMoBAR/introduction/dependencies.html).

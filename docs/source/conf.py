@@ -5,8 +5,7 @@
 import os
 import sys
 from datetime import date
-
-# from unittest import mock
+from unittest import mock
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -24,8 +23,8 @@ MOCK_MODULES = [
     "scipy",
 ]
 
-# for mod_name in MOCK_MODULES:
-#    sys.modules[mod_name] = mock.Mock()
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
 
 # ------------------------------------------------------------------------------
 
