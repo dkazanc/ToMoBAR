@@ -20,7 +20,10 @@ sys.path.insert(0, os.path.abspath("../.."))
 # Mock imports instead of full environment in readthedocs
 MOCK_MODULES = [
     "cupy",
+    "skimage",
     "scipy",
+    "scipy.fft",
+    "scipy.ndimage",    
 ]
 
 for mod_name in MOCK_MODULES:
