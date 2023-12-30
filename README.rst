@@ -1,3 +1,6 @@
+ToMoBAR's documentation
+=======================
+
 **ToMoBAR** (cite [CT2020]_, [SX2022]_) is a Python and Matlab 
 (not currently maintained) library of direct and model-based 
 regularised iterative reconstruction algorithms with a 
