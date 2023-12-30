@@ -3,9 +3,12 @@ channels:
   - conda-forge
   - defaults
   - httomo
+  - anaconda
 dependencies:
   - python=3.10
   - tomobar
+  - scipy
+  - cupy
   - sphinx
   - sphinx-book-theme
   - nbsphinx
