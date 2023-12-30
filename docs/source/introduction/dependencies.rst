@@ -3,7 +3,7 @@
 Dependencies
 ************
 ToMoBAR relies on several dependencies which we list bellow in the order of priority. 
-In general, we would recommend installing 1,2 and 4. 
+In general, we would recommend installing 1,2 and 4 packages.
 
 * 1. `ASTRA-toolbox <https://www.astra-toolbox.com/>`_ is the most critical dependency
   as ToMoBAR heavily relies on the GPU-accelerated projection/backprojection routines of the toolbox. With 
@@ -49,12 +49,29 @@ In general, we would recommend installing 1,2 and 4.
    
    $ conda install -c httomo tomophantom # linux/windows
 
-* 5. CuPy dependency is optional and it is a work in progress to fully support it in ToMoBAR. 
+* 5. `CuPy <https://cupy.dev/>`_  dependency is optional to be able to use algorithms operating on CuPy array kept on the GPU device instead of Numpy arrays. 
+  It is a work in progress to fully support the feature in ToMoBAR, however, many main reconstruction methods such as direct and basic were already ported. 
+  FISTA ordered-subsets with some regularisres has been exposed and offers up to several times acceleration compared to the version in :mod:`tomobar.methodsIR`.
+  We have plans to continue developing and supporting this new capability as it offers promising efficiency for GPU computations. 
 
-* 6. CuPy-enabled CCPi-Regularisation-Toolkit if (5) is satisfied. 
-  This extension doesn't depend on (2) and can co-exist with (2) or to be standalone. 
+  For Python installation see the `conda-cupy <https://anaconda.org/anaconda/cupy>`_ page.
 
-* 7. 
+.. code-block:: console
+   
+   $ conda install -c anaconda cupy # linux/windows  
+
+* 6. CuPy-enabled CCPi-Regularisation-Toolkit is required when (5) is satisfied. 
+  This extension doesn't depend on (2) and can co-exist with (2) installation or standalone.
+  Note, however, it is also WIP and not all regularisers :mod:`tomobar.regularisersCuPy` have been ported.
+
+.. code-block:: console
+   
+   $ conda install -c httomo ccpi-regularisation-cupy # all OS supported
+
+* 7. `mpi4py <https://mpi4py.readthedocs.io/en/stable/>`_ is a Python extension for parallel computing using MPI. 
+  Install only if you are planning to use multi-GPU computing. ToMoBAR in itself doesn't offer
+  any parallelisation and you might want to check the `HTTomo <https://github.com/DiamondLightSource/httomo>`_ package.
+  HTTomo supports MPI-based reconstruction and uses ToMoBAR as a backend. 
 
 
 

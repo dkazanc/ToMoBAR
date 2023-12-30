@@ -19,6 +19,7 @@
 ### NEW in ToMoBAR v.2023.12:
 - CuPy-enabled 3D FISTA-OS with regularisation all in-device implementation. It should be 3-5 times faster than the non-CuPy version depending on the GPU device and the size of data.
 - With class initialisation one can specify axes labels and the input data will be automatically passed in the right format. See this [Demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/DemoFISTA_3D.py).
+- Demos changed to adhere the recent changes in TomoPhantom v.3.0
 
 ### Software includes:
  * A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods available in ASTRA

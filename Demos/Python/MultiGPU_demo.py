@@ -20,14 +20,14 @@ def data_generator():
     import numpy as np
     import tomophantom
     from tomophantom import TomoP3D
-    from tomophantom.supp.artifacts import _Artifacts_
+    from tomophantom.artefacts import artefacts_mix
 
     print("Building 3D phantom using TomoPhantom software")
     data_dict = {}
     model = 13  # select a model number from the library
     N_size = 128  # Define phantom dimensions using a scalar value (cubic phantom)
     path = os.path.dirname(tomophantom.__file__)
-    path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
+    path_library3D = os.path.join(path, "phantomlib", "Phantom3DLibrary.dat")
 
     # Projection geometry related parameters:
     Horiz_det = int(np.sqrt(2) * N_size)  # detector column count (horizontal)
@@ -48,7 +48,7 @@ def data_generator():
         "noise_seed": 0,
     }
 
-    projData3D_analyt_noise = _Artifacts_(projData3D_analyt, **_noise_)
+    projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_)
 
     del projData3D_analyt
     data_dict["model"] = model

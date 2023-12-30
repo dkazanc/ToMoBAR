@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from tomophantom import TomoP2D
 import os
 import tomophantom
-from tomophantom.supp.qualitymetrics import QualityTools
+from tomophantom.qualitymetrics import QualityTools
 
 model = 4  # select a model
 N_size = 512  # set dimension of the phantom
@@ -43,7 +43,7 @@ plt.colorbar(ticks=[0, 150, 250], orientation="vertical")
 plt.title("{}" "{}".format("Analytical sinogram of model no.", model))
 # %%
 # Adding noise
-from tomophantom.supp.artifacts import _Artifacts_
+from tomophantom.artefacts import artefacts_mix
 
 # forming dictionaries with artifact types
 _noise_ = {
@@ -52,7 +52,7 @@ _noise_ = {
     "noise_seed": 0,
 }
 
-noisy_sino = _Artifacts_(sino_an, **_noise_)
+noisy_sino = artefacts_mix(sino_an, **_noise_)
 
 plt.figure()
 plt.rcParams.update({"font.size": 21})

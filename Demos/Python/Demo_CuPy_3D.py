@@ -28,7 +28,7 @@ tic = timeit.default_timer()
 model = 13  # select a model number from the library
 N_size = 128  # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
-path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
+path_library3D = os.path.join(path, "phantomlib", "Phantom3DLibrary.dat")
 
 phantom_tm = TomoP3D.Model(model, N_size, path_library3D)
 
@@ -94,7 +94,7 @@ plt.show()
 print(
     "Min {} and Max {} of the volume".format(np.min(FBPrec_cupy), np.max(FBPrec_cupy))
 )
-del FBPrec_cupy, RecToolsCP
+
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
@@ -130,7 +130,7 @@ plt.subplot(133)
 plt.imshow(lwrec[:, :, sliceSel])
 plt.title("3D Landweber Reconstruction, sagittal view")
 plt.show()
-del RecToolsCP_iter
+
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using SIRT algorithm %%%%%%%%%%%%%")
@@ -166,7 +166,6 @@ plt.subplot(133)
 plt.imshow(sirt_rec[:, :, sliceSel])
 plt.title("3D SIRT Reconstruction, sagittal view")
 plt.show()
-del RecToolsCP_iter
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using CGLS algorithm %%%%%%%%%%%%%")

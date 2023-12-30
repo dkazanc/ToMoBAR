@@ -21,15 +21,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tomophantom
 from tomophantom import TomoP3D
-from tomophantom.supp.qualitymetrics import QualityTools
-from tomophantom.supp.artifacts import _Artifacts_
+from tomophantom.qualitymetrics import QualityTools
+from tomophantom.artefacts import artefacts_mix
 
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()
 model = 13  # select a model number from the library
 N_size = 128  # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
-path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
+path_library3D = os.path.join(path, "phantomlib", "Phantom3DLibrary.dat")
 # This will generate a N_size x N_size x N_size phantom (3D)
 phantom_tm = TomoP3D.Model(model, N_size, path_library3D)
 toc = timeit.default_timer()
@@ -72,7 +72,7 @@ _noise_ = {
     "noise_seed": 0,
 }
 
-projData3D_analyt_noise = _Artifacts_(projData3D_analyt, **_noise_)
+projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_)
 
 
 intens_max = 45
