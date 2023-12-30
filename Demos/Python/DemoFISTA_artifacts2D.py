@@ -20,14 +20,13 @@ import matplotlib.pyplot as plt
 from tomophantom import TomoP2D
 import os
 import tomophantom
-from tomophantom.supp.qualitymetrics import QualityTools
+from tomophantom.qualitymetrics import QualityTools
 
 model = 12  # select a model
 N_size = 512  # set dimension of the phantom
 # one can specify an exact path to the parameters file
-# path_library2D = '../../../PhantomLibrary/models/Phantom2DLibrary.dat'
 path = os.path.dirname(tomophantom.__file__)
-path_library2D = os.path.join(path, "Phantom2DLibrary.dat")
+path_library2D = os.path.join(path, "phantomlib", "Phantom2DLibrary.dat")
 phantom_2D = TomoP2D.Model(model, N_size, path_library2D)
 
 plt.close("all")
@@ -54,7 +53,7 @@ plt.title("{}" "{}".format("Analytical sinogram of model no.", model))
 indicesROI = phantom_2D > 0
 # %%
 # Adding artifacts and noise
-from tomophantom.supp.artifacts import _Artifacts_
+from tomophantom.artefacts import artefacts_mix
 
 # forming dictionaries with artifact types
 _noise_ = {
@@ -66,7 +65,7 @@ _noise_ = {
 
 # misalignment dictionary
 _sinoshifts_ = {"datashifts_maxamplitude_pixel": 10}
-[[sino_misalign, sino_misalign_raw], shifts] = _Artifacts_(
+[[sino_misalign, sino_misalign_raw], shifts] = artefacts_mix(
     sino_an, **_noise_, **_sinoshifts_
 )
 
@@ -80,7 +79,7 @@ _stripes_ = {
     "stripes_type": "full",
 }
 
-[sino_artifacts, sino_artifacts_raw] = _Artifacts_(
+[sino_artifacts, sino_artifacts_raw] = artefacts_mix(
     sino_an, **_noise_, **_zingers_, **_stripes_
 )
 

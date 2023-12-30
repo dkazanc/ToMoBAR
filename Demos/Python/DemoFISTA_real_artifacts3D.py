@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-* Script to generate 3D analytical phantoms and their projection data using TomoPhantom
-* Synthetic flat fields are also genererated and noise incorporated into data 
+Script to generate 3D analytical phantoms and their projection data using TomoPhantom
+Synthetic flat fields are also genererated and noise incorporated into data 
 together with normalisation errors. This simulates more challeneging data for 
-reconstruction.
-
->>>>> Dependencies (reconstruction): <<<<<
-1. ASTRA toolbox: conda install -c astra-toolbox astra-toolbox
-2. tomobar: conda install -c dkazanc tomobar
-or install from https://github.com/dkazanc/ToMoBAR
-
-@author: Daniil Kazantsev
+the reconstruction.
 """
 import timeit
 import os
@@ -19,18 +12,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tomophantom
 from tomophantom import TomoP3D
-from tomophantom.supp.qualitymetrics import QualityTools
-from tomophantom.supp.flatsgen import synth_flats
+from tomophantom.qualitymetrics import QualityTools
+from tomophantom.flatsgen import synth_flats
 from tomobar.supp.suppTools import normaliser
 
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()
-model = 17  # select a model number from the library
+model = 16  # select a model number from the library
 N_size = 256  # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
-path_library3D = os.path.join(path, "Phantom3DLibrary.dat")
+path_library3D = os.path.join(path, "phantomlib", "Phantom3DLibrary.dat")
 # This will generate a N_size x N_size x N_size phantom (3D)
-phantom_tm = TomoP3D.Model(model, N_size, path_library3D)
+phantom_3D = TomoP3D.Model(model, N_size, path_library3D)
 toc = timeit.default_timer()
 Run_time = toc - tic
 print("Phantom has been built in {} seconds".format(Run_time))
@@ -39,15 +32,15 @@ sliceSel = int(0.5 * N_size)
 # plt.gray()
 plt.figure()
 plt.subplot(131)
-plt.imshow(phantom_tm[sliceSel, :, :], vmin=0, vmax=1)
+plt.imshow(phantom_3D[sliceSel, :, :], vmin=0, vmax=1)
 plt.title("3D Phantom, axial view")
 
 plt.subplot(132)
-plt.imshow(phantom_tm[:, sliceSel, :], vmin=0, vmax=1)
+plt.imshow(phantom_3D[:, sliceSel, :], vmin=0, vmax=1)
 plt.title("3D Phantom, coronal view")
 
 plt.subplot(133)
-plt.imshow(phantom_tm[:, :, sliceSel], vmin=0, vmax=1)
+plt.imshow(phantom_3D[:, :, sliceSel], vmin=0, vmax=1)
 plt.title("3D Phantom, sagittal view")
 plt.show()
 
@@ -74,7 +67,7 @@ plt.subplot(132)
 plt.imshow(projData3D_analyt[sliceSel, :, :], vmin=0, vmax=intens_max_clean)
 plt.title("Sinogram view")
 plt.subplot(133)
-plt.imshow(projData3D_analyt[:, :, sliceSel], vmin=0, vmax=intens_max_clean)
+plt.imshow(projData3D_analyt[:, :, sliceSel], vmin=0, vmax=1.1*intens_max_clean)
 plt.title("Tangentogram view")
 plt.show()
 # %%
@@ -85,14 +78,14 @@ I0 = 15000
 # Source intensity
 flatsnum = 100  # the number of the flat fields simulated
 
-[projData3D_noisy, flatsSIM] = synth_flats(
+[projData3D_noisy, flatsSIM, speckles] = synth_flats(
     projData3D_analyt,
     source_intensity=I0,
-    source_variation=0.02,
+    detectors_miscallibration=0.02,
     arguments_Bessel=(1, 10, 10, 12),
     specklesize=5,
     kbar=0.3,
-    jitter=5.0,
+    jitter_projections=0.0,
     sigmasmooth=3,
     flatsnum=flatsnum,
 )
@@ -106,12 +99,11 @@ plt.title("A selected simulated flat-field")
 plt.show()
 # %%
 print("Normalise projections using ToMoBAR software")
-# normalise the data, the required data format is [detectorsX, Projections, detectorsY]
 projData3D_norm = normaliser(
-    projData3D_noisy, flatsSIM, darks=None, log="true", method="mean"
+    projData3D_noisy, flatsSIM, darks=None, log="true", method="mean", axis=1
 )
 
-intens_max = 0.15 * np.max(projData3D_norm)
+intens_max = np.max(projData3D_norm)
 sliceSel = 150
 plt.figure()
 plt.subplot(131)
@@ -122,32 +114,6 @@ plt.imshow(projData3D_norm[sliceSel, :, :], vmin=0, vmax=intens_max)
 plt.title("Sinogram view")
 plt.subplot(133)
 plt.imshow(projData3D_norm[:, :, sliceSel], vmin=0, vmax=intens_max)
-plt.title("Tangentogram view")
-plt.show()
-# %%
-print("Normalise projections dynamically using ToMoBAR software")
-# normalise the data, the required data format is [detectorsX, Projections, detectorsY]
-projData3D_norm_dyn = normaliser(
-    projData3D_noisy,
-    flatsSIM,
-    darks=None,
-    log="true",
-    method="dynamic",
-    dyn_downsample=2,
-    dyn_iterations=10,
-)
-
-intens_max = 0.15 * np.max(projData3D_norm_dyn)
-sliceSel = 150
-plt.figure()
-plt.subplot(131)
-plt.imshow(projData3D_norm_dyn[:, sliceSel, :], vmin=0, vmax=intens_max)
-plt.title("Normalised dynamically 2D Projection (erroneous)")
-plt.subplot(132)
-plt.imshow(projData3D_norm_dyn[sliceSel, :, :], vmin=0, vmax=intens_max)
-plt.title("Sinogram view")
-plt.subplot(133)
-plt.imshow(projData3D_norm_dyn[:, :, sliceSel], vmin=0, vmax=intens_max)
 plt.title("Tangentogram view")
 plt.show()
 # %%
@@ -167,9 +133,6 @@ print("Reconstruction using FBP from tomobar")
 recNumerical_conventional = RectoolsDIR.FBP(projData3D_norm)  # FBP reconstruction
 recNumerical_conventional *= intens_max_clean
 
-recNumerical_dynamic = RectoolsDIR.FBP(projData3D_norm_dyn)  # FBP reconstruction
-recNumerical_dynamic *= intens_max_clean
-
 sliceSel = int(0.5 * N_size)
 max_val = 1
 # plt.gray()
@@ -188,32 +151,13 @@ plt.title("3D Reconstruction, sagittal view")
 plt.show()
 
 # calculate errors
-Qtools = QualityTools(phantom_tm, recNumerical_conventional)
+Qtools = QualityTools(phantom_3D, recNumerical_conventional)
 RMSE = Qtools.rmse()
 print(
-    "Root Mean Square Error is {} for conventional flat field normalisation".format(
+    "Root Mean Square Error is {} for FBP".format(
         RMSE
     )
 )
-
-plt.figure()
-plt.subplot(131)
-plt.imshow(recNumerical_dynamic[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D Reconstruction, axial view")
-
-plt.subplot(132)
-plt.imshow(recNumerical_dynamic[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D Reconstruction, coronal view")
-
-plt.subplot(133)
-plt.imshow(recNumerical_dynamic[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D Reconstruction, sagittal view")
-plt.show()
-
-# calculate errors
-Qtools = QualityTools(phantom_tm, recNumerical_dynamic)
-RMSE = Qtools.rmse()
-print("Root Mean Square Error is {} for dynamic flat fields normalisation".format(RMSE))
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA-OS method using tomobar")
@@ -224,10 +168,10 @@ from tomobar.methodsIR import RecToolsIR
 Rectools = RecToolsIR(
     DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
     DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=0.0,  # Center of Rotation (CoR) scalar (for 3D case only)
+    CenterRotOffset=None,  # Center of Rotation (CoR) scalar (for 3D case only)
     AnglesVec=angles_rad,  # array of angles in radians
     ObjSize=N_size,  # a scalar to define reconstructed object dimensions
-    datafidelity="LS",  # data fidelity, choose LS, PWLS (wip), GH (wip), Student (wip)
+    datafidelity="PWLS",  # data fidelity
     device_projector="gpu",
 )
 # %%
@@ -235,7 +179,7 @@ Rectools = RecToolsIR(
 _data_ = {
     "projection_norm_data": projData3D_norm,
     "projection_raw_data": projData3D_noisy / np.max(projData3D_noisy),
-    "OS_number": 10,
+    "OS_number": 8,
 }  # data dictionary
 lc = Rectools.powermethod(
     _data_
@@ -270,60 +214,85 @@ plt.subplot(133)
 plt.imshow(RecFISTA_os_reg[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FISTA-TV Reconstruction, sagittal view")
 plt.show()
+
+
+# calculate errors
+Qtools = QualityTools(phantom_3D, RecFISTA_os_reg)
+RMSE = Qtools.rmse()
+print(
+    "Root Mean Square Error is {} for PWLS-TV".format(
+        RMSE
+    )
+)
 # %%
-# Run FISTA reconstrucion algorithm with 3D regularisation and Huber data penalty
-# adding Huber data fidelity threhsold
-_data_.update({"huber_threshold": 0.8})
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with FISTA-OS-TV-WAVLETS method using tomobar")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# initialise tomobar ITERATIVE reconstruction class ONCE
+from tomobar.methodsIR import RecToolsIR
 
-RecFISTA_Huber_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+Rectools = RecToolsIR(
+    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+    CenterRotOffset=None,  # Center of Rotation (CoR) scalar (for 3D case only)
+    AnglesVec=angles_rad,  # array of angles in radians
+    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+    datafidelity="PWLS",  # data fidelity
+    device_projector="gpu",
+)
+# %%
+# prepare dictionaries with parameters:
+_data_ = {
+    "projection_norm_data": projData3D_norm,
+    "projection_raw_data": projData3D_noisy / np.max(projData3D_noisy),
+    "OS_number": 8,
+}  # data dictionary
+lc = Rectools.powermethod(
+    _data_
+)  # calculate Lipschitz constant (run once to initialise)
 
-Qtools = QualityTools(phantom_tm, RecFISTA_Huber_TV)
-RMSE_FISTA_HUBER_TV = Qtools.rmse()
-print("RMSE for FISTA-OS-Huber-TV is {}".format(RMSE_FISTA_HUBER_TV))
+# algorithm parameters
+_algorithm_ = {"iterations": 15, "lipschitz_const": lc}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {
+    "method": "PD_TV_WAVELETS",
+    "regul_param": 0.0000035, # Regularisation parameter for TV
+    "regul_param2": 0.000001,  # Regularisation parameter for wavelets
+    "iterations": 80,
+    "device_regulariser": "gpu",
+}
+
+RecFISTA_os_reg_tv_w = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+RecFISTA_os_reg_tv_w *= intens_max_clean
 
 sliceSel = int(0.5 * N_size)
 max_val = 1
 plt.figure()
 plt.subplot(131)
-plt.imshow(RecFISTA_Huber_TV[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D Huber Rec, axial")
+plt.imshow(RecFISTA_os_reg_tv_w[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("3D FISTA-TV-WAVELET Reconstruction, axial view")
 
 plt.subplot(132)
-plt.imshow(RecFISTA_Huber_TV[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D Huber Rec, coronal")
+plt.imshow(RecFISTA_os_reg_tv_w[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("3D FISTA-TV-WAVELET Reconstruction, coronal view")
 
 plt.subplot(133)
-plt.imshow(RecFISTA_Huber_TV[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D Huber Rec, sagittal")
+plt.imshow(RecFISTA_os_reg_tv_w[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("3D FISTA-TV-WAVELET Reconstruction, sagittal view")
 plt.show()
 
-# adding RING minimisation component (better model for data with rings - different from GH!)
-# data.update({'huber_threshold' : None})
-_data_.update({"ring_weights_threshold": 0.7})
-_data_.update({"ring_tuple_halfsizes": (9, 7, 9)})
 
-# Run FISTA reconstrucion algorithm with 3D regularisation and a better ring model
-RecFISTA_HuberRING_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+# calculate errors
+Qtools = QualityTools(phantom_3D, RecFISTA_os_reg_tv_w)
+RMSE = Qtools.rmse()
+print(
+    "Root Mean Square Error is {} for PWLS-TV".format(
+        RMSE
+    )
+)
 
-Qtools = QualityTools(phantom_tm, RecFISTA_HuberRING_TV)
-RMSE_FISTA_HUBER_RING_TV = Qtools.rmse()
-print("RMSE for FISTA-OS-Huber-Ring-TV is {}".format(RMSE_FISTA_HUBER_RING_TV))
-
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-plt.imshow(RecFISTA_HuberRING_TV[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D HuberRing Rec, axial")
-
-plt.subplot(132)
-plt.imshow(RecFISTA_HuberRING_TV[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D HuberRing Rec, coronal")
-
-plt.subplot(133)
-plt.imshow(RecFISTA_HuberRING_TV[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D HuberRing Rec, sagittal")
-plt.show()
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA-OS-SWLS method using tomobar")
@@ -341,30 +310,30 @@ Rectools = RecToolsIR(
 _data_ = {
     "projection_norm_data": projData3D_norm,
     "projection_raw_data": projData3D_noisy / np.max(projData3D_noisy),
-    "beta_SWLS": 2.5 * np.ones(Horiz_det),
-    "OS_number": 10,
+    "beta_SWLS": 1.0,
+    "OS_number": 8,
 }  # data dictionary
 
 lc = Rectools.powermethod(
     _data_
 )  # calculate Lipschitz constant (run once to initialise)
 
-# Run FISTA reconstrucion algorithm without regularisation
-_algorithm_ = {"iterations": 20, "mask_diameter": 0.9, "lipschitz_const": lc}
+_algorithm_ = {"iterations": 20, "recon_mask_radius": 0.9, "lipschitz_const": lc}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
-    "method": "PD_TV",
-    "regul_param": 0.0003,
+    "method": "PD_TV_WAVELETS",
+    "regul_param": 0.0000015, # Regularisation parameter for TV
+    "regul_param2": 0.0000005,  # Regularisation parameter for wavelets
     "iterations": 80,
     "device_regulariser": "gpu",
 }
 
 # Run FISTA reconstrucion algorithm with 3D regularisation
 RecFISTA_SWLS_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+RecFISTA_SWLS_reg *= intens_max_clean
 
-
-Qtools = QualityTools(phantom_tm, RecFISTA_SWLS_reg)
+Qtools = QualityTools(phantom_3D, RecFISTA_SWLS_reg)
 RMSE_FISTA_SWLS = Qtools.rmse()
 print("RMSE for FISTA-OS-SWLS-TV is {}".format(RMSE_FISTA_SWLS))
 
@@ -383,60 +352,4 @@ plt.subplot(133)
 plt.imshow(RecFISTA_SWLS_reg[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FISTA-SWLS-TV Recon, sagittal view")
 plt.show()
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with FISTA-KL-OS method using tomobar")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# initialise tomobar ITERATIVE reconstruction class ONCE
-from tomobar.methodsIR import RecToolsIR
-
-Rectools = RecToolsIR(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="KL",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
-)
-
-_data_ = {"projection_norm_data": projData3D_norm, "OS_number": 10}  # data dictionary
-
-lc = Rectools.powermethod(
-    _data_
-)  # calculate Lipschitz constant (run once to initialise)
-
-# Run FISTA reconstrucion algorithm without regularisation
-_algorithm_ = {"iterations": 30, "lipschitz_const": lc * 0.3}
-
-# adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {
-    "method": "PD_TV",
-    "regul_param": 0.0001,
-    "iterations": 80,
-    "device_regulariser": "gpu",
-}
-
-# Run FISTA reconstrucion algorithm with 3D regularisation
-RecFISTA_KL_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
-
-Qtools = QualityTools(phantom_tm, RecFISTA_KL_reg)
-RMSE_FISTA_KL_TV = Qtools.rmse()
-print("RMSE for FISTA-OS-KL-TV is {}".format(RMSE_FISTA_KL_TV))
-
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-plt.imshow(RecFISTA_KL_reg[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-TV Recon, axial view")
-
-plt.subplot(132)
-plt.imshow(RecFISTA_KL_reg[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-TV Recon, coronal view")
-
-plt.subplot(133)
-plt.imshow(RecFISTA_KL_reg[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-TV Recon, sagittal view")
-plt.show()
-# %%
+#%%

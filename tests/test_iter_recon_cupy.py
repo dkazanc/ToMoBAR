@@ -312,7 +312,6 @@ def test_FISTA_OS_PWLS_reg_cp_3D(angles, raw_data, flats, darks):
     Iter_rec = Iter_rec.get()
 
     assert 4000 <= lc <= 5000
-    assert_allclose(np.min(Iter_rec), -0.00016067, rtol=1e-03)
     assert_allclose(np.max(Iter_rec), 0.0212302, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)

@@ -1,29 +1,25 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""A reconstruction class for direct reconstructon methods.
+"""Reconstruction class for direct reconstructon methods.
 
--- Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
--- Forward/Backward projection (ASTRA and ASTRA with CuPy)
--- Filtered Back Projection (ASTRA and ASTRA with CuPy)
-
-@author: Daniil Kazantsev
+* Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
+* Forward/Backward projection (ASTRA)
+* Filtered Back Projection (ASTRA)
 """
 
 import numpy as np
 from tomobar.recon_base import RecTools
 from tomobar.supp.suppTools import _data_swap
-
 import scipy.fftpack
 
 
-def _filtersinc3D(projection3D):
-    # applies filters to __3D projection data__ in order to achieve FBP
-    # Data format [DetectorVert, Projections, DetectorHoriz]
-    # adopted from Matlabs code by  Waqas Akram
-    # "a":	This parameter varies the filter magnitude response.
-    # When "a" is very small (a<<1), the response approximates |w|
-    # As "a" is increased, the filter response starts to
-    # roll off at high frequencies.
+def _filtersinc3D(projection3D: np.ndarray):
+    """Applies a 3D filter to 3D projection data for FBP
+
+    Args:
+        projection3D (np.ndarray): projection data
+
+    Returns:
+        np.ndarray: Filtered data
+    """
     a = 1.1
     [DetectorsLengthV, projectionsNum, DetectorsLengthH] = np.shape(projection3D)
     w = np.linspace(
@@ -82,18 +78,16 @@ def _filtersinc2D(sinogram):
 
 
 class RecToolsDIR(RecTools):
-    """----------------------------------------------------------------------------------------------------------
-    A class for reconstruction using DIRect methods (FBP and Fourier)
-    ----------------------------------------------------------------------------------------------------------
-    Parameters of the class function main specifying the projection geometry:
-      *DetectorsDimH,     # Horizontal detector dimension
-      *DetectorsDimV,     # Vertical detector dimension for 3D case, 0 or None for 2D case
-      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar or a vector
-      *AnglesVec,         # A vector of projection angles in radians
-      *ObjSize,           # Reconstructed object dimensions (a scalar)
-      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-      *data_axis_labels   # set the order of axis labels of the input data, e.g. ['detY', 'angles', 'detX']
-    ----------------------------------------------------------------------------------------------------------
+    """Reconstruction class using DIRect methods (FBP and Fourier).
+
+    Args:
+        DetectorsDimH (int): Horizontal detector dimension.
+        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
+        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        AnglesVec (np.ndarray): Vector of projection angles in radians.
+        ObjSize (int): Reconstructed object dimensions (a scalar).
+        device_projector (str, int): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
+        data_axis_labels (list): a list with axis labels of the input data, e.g. ['detY', 'angles', 'detX'].
     """
 
     def __init__(
@@ -116,46 +110,43 @@ class RecToolsDIR(RecTools):
             data_axis_labels=data_axis_labels,  # inherit from the base class
         )
 
-    def FORWPROJ(self, data):
-        """Module to perform forward projection of 2d/3d data array
+    def FORWPROJ(self, data: np.ndarray) -> np.ndarray:
+        """Module to perform forward projection of 2d/3d data numpy array
 
         Args:
-            data (ndarray): 2d or 3d array to project, either numpy or cupy
+            data (np.ndarray): 2D or 3D object
+
         Returns:
-            ndarray: Forward projected array either numpy or cupy
+            np.ndarray: Forward projected numpy array (projection data)
         """
-        # perform check here if the given array is numpy or not
-        # if not we assume that it is a CuPy array (loose assumption of course)
-        if isinstance(data, np.ndarray):
-            projdata = self.Atools.forwproj(data)
-        else:
-            projdata = self.Atools.forwprojCuPy(data)
+        projdata = self.Atools.forwproj(data)
         return projdata
 
-    def BACKPROJ(self, projdata):
-        """Module to perform back-projection of 2d/3d data array
+    def BACKPROJ(self, projdata: np.ndarray) -> np.ndarray:
+        """Module to perform back-projection of 2d/3d data numpy array
 
         Args:
-            projdata (ndarray): 2d or 3d array to backproject, either numpy or cupy
+            projdata (np.ndarray): 2D/3D projection data
 
         Returns:
-            ndarray: backprojected array either numpy or cupy
+            np.ndarray: Backprojected 2D/3D object
         """
-        # perform check here if the given array is numpy or not
-        # if not we assume that it is a CuPy array (loose assumption of course)
-        if isinstance(projdata, np.ndarray):
-            backproj = self.Atools.backproj(projdata)
-        else:
-            backproj = self.Atools.backprojCuPy(projdata)
+        backproj = self.Atools.backproj(projdata)
         return backproj
 
-    def FOURIER(self, sinogram, method="linear"):
-        """
-        2D Reconstruction using Fourier slice theorem (scipy required)
+    def FOURIER(self, sinogram: np.ndarray, method: str = "linear") -> np.ndarray:
+        """2D Reconstruction using Fourier slice theorem (scipy required)
         for griddata interpolation module choose nearest, linear or cubic
+
+        Args:
+            sinogram (np.ndarray): 2D sinogram data
+            method (str, optional): Interpolation type (nearest, linear, or cubic). Defaults to "linear".
+
+        Returns:
+            np.ndarray: Reconstructed object
         """
         if sinogram.ndim == 3:
-            raise (
+            raise ValueError(
                 "Fourier method is currently for 2D data only, use FBP if 3D needed "
             )
         else:
@@ -163,7 +154,9 @@ class RecToolsDIR(RecTools):
         if (method == "linear") or (method == "nearest") or (method == "cubic"):
             pass
         else:
-            raise ("For griddata interpolation module choose nearest, linear or cubic ")
+            raise ValueError(
+                "For griddata interpolation module choose nearest, linear or cubic"
+            )
         import scipy.interpolate
         import scipy.fftpack
         import scipy.misc
@@ -210,7 +203,15 @@ class RecToolsDIR(RecTools):
         ]
         return image
 
-    def FBP(self, data):
+    def FBP(self, data: np.ndarray) -> np.ndarray:
+        """Filtered backprojection for 2D or 3D data
+
+        Args:
+            data (np.ndarray): 2D or 3D projection data
+
+        Returns:
+            np.ndarray: FBP reconstructed 2D or 3D object
+        """
         # get the input data into the right format dimension-wise
         data = _data_swap(data, self.data_swap_list)
         if self.geom == "2D":

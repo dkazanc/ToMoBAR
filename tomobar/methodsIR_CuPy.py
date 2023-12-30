@@ -1,14 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""A class for iterative reconstruction methods using CuPy-library.
+"""Reconstruction class for regularised iterative methods using CuPy library.
 
-Dependencies:
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CuPy package
-
-GPLv3 license (ASTRA toolbox)
-@author: Daniil Kazantsev: https://github.com/dkazanc
-"""
+* Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
+                               shrinkage-thresholding algorithm for linear inverse problems,
+                               SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
+"""                               
 
 import numpy as np
 import cupy as cp
@@ -22,27 +17,26 @@ from tomobar.regularisersCuPy import prox_regul
 
 
 class RecToolsIRCuPy(RecTools):
-    """
-    ----------------------------------------------------------------------------------------------------------
-    A class for iterative reconstruction algorithms using ASTRA toolbox and CuPy toolbox
-    ----------------------------------------------------------------------------------------------------------
-    Parameters of the class function main specifying the projection geometry:
-      *DetectorsDimH,     # Horizontal detector dimension
-      *DetectorsDimV,     # Vertical detector dimension for 3D case
-      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar or a vector
-      *AnglesVec,         # A vector of projection angles in radians
-      *ObjSize,           # Reconstructed object dimensions (a scalar)
-      *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
-      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-      *data_axis_labels   # set the order of axis labels of the input data, e.g. ['detY', 'angles', 'detX']
+    """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox, CCPi-RGL toolkit.
+    Parameters for reconstruction algorithms are extracted from three dictionaries:
+    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters 
+    that are accepted.
 
-    Parameters for reconstruction algorithms are extracted from 3 dictionaries: _data_, _algorithm_ and _regularisation_.
-    To list all accepted parameters for those dictionaries do:
-     > from tomobar.supp.dicts import dicts_check
-     > help(dicts_check)
-    ----------------------------------------------------------------------------------------------------------
-    """
+    If FISTA is used it will require CuPy-enabled routines of the CCPi-regularisation toolkit.
+    This implementation is typically >3 times faster than one in RecToolsIR, however 
+    please note that the functionality of FISTA is limited compared to the version of
+    FISTA in RecToolsIR. The work is in progress and the current FISTA version is experimental.
 
+    Args:
+        DetectorsDimH (int): Horizontal detector dimension.
+        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
+        CenterRotOffset (float): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        AnglesVec (np.ndarray): Vector of projection angles in radians.
+        ObjSize (int): Reconstructed object dimensions (a scalar).
+        datafidelity (str): Data fidelity, choose from LS, KL, PWLS or SWLS.
+        device_projector (int): Provide a GPU index (integer) of a specific GPU device.
+        data_axis_labels (list): a list with axis labels of the input data, e.g. ['detY', 'angles', 'detX'].    
+    """
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
@@ -157,8 +151,8 @@ class RecToolsIRCuPy(RecTools):
         return x_rec
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None]) -> cp.ndarray:
-        """Using CGLS iterative technique to reconstruct projection data given as a CuPy array.
-           We aim to solve the system of the normal equations A.T*A*x = A.T*b.
+        """Conjugate Gradients Least Squares iterative technique to reconstruct projection data 
+            given as a CuPy array. We aim to solve the system of normal equations A.T*A*x = A.T*b.
 
         Args:
             _data_ (dict): Data dictionary, where projection data is provided.
@@ -270,9 +264,12 @@ class RecToolsIRCuPy(RecTools):
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
     ) -> cp.ndarray:
-        """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
-        data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
-
+        """A Fast Iterative Shrinkage-Thresholding Algorithm with various types regularisations.
+           The parameters for the algorithm should be provided in three dictionaries:
+           _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function 
+           for all parameters that are accepted.
+           Please note that not all of the functionality supported compared to FISTA from methodsIR.
+            
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.

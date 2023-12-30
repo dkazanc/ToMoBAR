@@ -6,6 +6,7 @@ channels:
 dependencies:
   - astra-toolbox::astra-toolbox
   - httomo::ccpi-regularisation-cupy
+  - httomo::ccpi-regulariser
   - conda-forge::cupy
   - conda-forge::numpy
   - conda-forge::python

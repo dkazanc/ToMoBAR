@@ -1,13 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Supplementary data tools:
-    normaliser - to normalise the raw data and take the negative log (if needed)
-        have options: 'mean', 'median' and 'dynamic'
-    autocropper - automatically crops the 3D projection data to reduce its size
+"""Supplementary data tools:
 
-@authors: Daniil Kazantsev: https://github.com/dkazanc
-          Gerard Jover Pujol https://github.com/IararIV/
+List of functions: 
+
+* normaliser - to normalise the raw data and take the negative log (if needed). Options are: 'mean', 'median' and 'dynamic'.
+* autocropper - automatically crops the 3D projection data to reduce its size.
+
+@authors: 
+    Daniil Kazantsev: https://github.com/dkazanc
+    
+    Gerard Jover Pujol https://github.com/IararIV/
 """
 import numpy as np
 import typing
@@ -270,17 +271,16 @@ def normaliser(
 
 
 def autocropper(data, addbox, backgr_pix1):
-    """
-    The method crops 3D projection data in order to reduce the total data size.
+    """The method crops 3D projection data in order to reduce the total data size.
     Method assumes that the object is positioned vertically around the central
     point of the horizontal detector. It is important since the vertical mid ROI
     of each projection is used to estimate the background noise levels.
-    Parameters:
-    - data ! The required dimensions: [Projections, detectorsVertical, detectorsHoriz] !
-    - addbox: (int pixels) to add additional pixels in addition to automatically
-    found cropped values, i.e. increasing the cropping region (safety option)
-    - backgr_pix1 (int pixels): to create rectangular ROIs to collect noise statistics
-    on both (vertical) sides of each 2D projection
+    
+    
+    Args:
+        data (np.ndarray) The required dimensions: [Projections, detectorsVertical, detectorsHoriz] !
+        addbox: (int) to add additional pixels in addition to automatically found cropped values, i.e. increasing the cropping region (safety option)
+        backgr_pix1 (int): to create rectangular ROIs to collect noise statistics on both (vertical) sides of each 2D projection
     """
     backgr_pix2 = int(2.5 * backgr_pix1)  # usually enough to collect noise statistics
 
@@ -400,6 +400,7 @@ def _check_kwargs(reconstruction, **kwargs):
             _apply_circular_mask(reconstruction, value)
     return reconstruction
 
+
 def circ_mask(X, diameter):
     # applying a circular mask to the reconstructed image/volume
     # Make the 'diameter' smaller than 1.0 in order to shrink it
@@ -444,10 +445,8 @@ def swap_data_axis_to_accepted(data_axis_labels, labels_order):
         data_axis_labels (list):  a list of data labels, e.g. given as ['angles', 'detX', 'detY']
         labels_order (list): the required (fixed) order of axis labels for data, e.g. ["detY", "angles", "detX"].
 
-    Returns:
-    ------
-    list
-        A list of two tuples for input data swaping axis. If both are None, then no swapping needed.
+    Returns:    
+        list: A list of two tuples for input data swaping axis. If both are None, then no swapping needed.
     """
     swap_tuple2 = None
     # check if the labels names are the accepted ones

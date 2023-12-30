@@ -2,7 +2,7 @@
     <tr>
         <td>
         <div align="left">
-          <img src="docs/images/tomobar_logo.png" width="450"><br>  
+          <img src="docs/source/_static//tomobar_logo.png" width="450"><br>  
         </div>
         </td>
         <td>
@@ -14,11 +14,13 @@
 
 | Master | Anaconda binaries |
 |--------|-------------------|
-| ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/dkazanc/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/dkazanc/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/dkazanc/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/dkazanc/tomobar/badges/downloads.svg)](https://anaconda.org/dkazanc/tomobar/) |
+| ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
 ### NEW in ToMoBAR v.2023.12:
+- [DOCUMENTATION](https://dkazanc.github.io/ToMoBAR/) is available. Tutorials presented and API referenes. 
 - CuPy-enabled 3D FISTA-OS with regularisation all in-device implementation. It should be 3-5 times faster than the non-CuPy version depending on the GPU device and the size of data.
 - With class initialisation one can specify axes labels and the input data will be automatically passed in the right format. See this [Demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/DemoFISTA_3D.py).
+- Demos changed to adhere the recent changes in TomoPhantom v.3.0
 
 ### Software includes:
  * A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods available in ASTRA
@@ -29,64 +31,23 @@
  * [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos) to reconstruct synthetic and also real data [4-6]
 
 <div align="center">
-  <img src="docs/images/recsFISTA_stud.png" width="550">
+  <img src="docs/source/_static/recsFISTA_stud.png" width="550">
 </div>
 <div align="center">
-  <img src="docs/images/TomoRec_surf2.jpg" width="600">  
+  <img src="docs/source/_static/TomoRec_surf2.jpg" width="600">  
 </div>
 
-## Software highlights:
- * Tomographic parallel-beam projection data can be simulated without the "inverse crime" using [TomoPhantom](https://github.com/dkazanc/TomoPhantom). Noise and artifacts (zingers, rings, jitter) can be modelled and added to the data.
- * Simulated data reconstructed iteratively using FISTA or ADMM algorithms with multiple "plug-and-play" regularisers from [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) and GPU-accelerated wavelets from [pypwt](https://github.com/pierrepaleo/pypwt).
- * The FISTA algorithm offers various modifications: convergence acceleration with ordered-subsets method; data fidelities: PWLS, Kullback-Leibler, Huber, Group-Huber[2], Students't [3,4], and SWLS [5] to deal with noise and imaging artifacts (rings, streaks).
-
-### General software prerequisites
- * Python or [MATLAB](http://www.mathworks.com/products/matlab/) (not actively maintained currently)
+## ToMoBAR highlights:
+Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do).
 
 ### Software dependencies
- * [ASTRA-toolbox](https://www.astra-toolbox.com/) for projection operations (required)
- * [TomoPhantom](https://github.com/dkazanc/TomoPhantom) for tomographic data and phantoms simulations (optional but needed for most of Demos)
- * [CCPi-RegularisationToolkit](https://github.com/vais-ral/CCPi-Regularisation-Toolkit) for regularisation [7] (required for iterative methods)
- * Wavelet toolbox [pypwt](https://github.com/pierrepaleo/pypwt) if wavelet regularisation is used (optional)
- * [mpi4py](https://mpi4py.readthedocs.io/en/stable/) for multi-GPU reconstruction control (optional)
- * [cupy](https://cupy.dev/) for GPU memory device-to-device operability (required for CuPy methods)
+All dependencies are listed [here](https://dkazanc.github.io/ToMoBAR/introduction/dependencies.html).
  
-### Python conda:
-Install the ToMoBAR package into the existing conda [environment](https://github.com/dkazanc/ToMoBAR/tree/master/conda-recipe/environment/environment.yml):
-```
-conda install -c httomo tomobar
-```
- or build using the provided conda recipe:
-```
-export VERSION=$(date +%Y.%m) (unix) / set VERSION=2024.01 (Windows)
-conda build conda-recipe/ --numpy 1.23 --python 3.10
-conda install -c file://${CONDA_PREFIX}/conda-bld/ tomobar --force-reinstall
-```
-
-### Python development environment
-* Clone the repository from GitHub page
-* Install dependencies from the [environment](https://github.com/dkazanc/ToMoBAR/tree/master/conda-recipe/environment/environment.yml) file
-* Activate the environment with ```conda activate tomobar```
-* From the root directory install the enviroment in development mode with ```pip install -e .[dev]```
-* Run tests: `pytest tests/`
-
-### MultiGPU capability
-ToMoBAR can be used by running in parallel across multiple GPU devices on a PC or a compute node of a cluster. In order to initiate a parallel run on multiple GPUs you will need an MPI library, such as, [mpi4py](https://mpi4py.readthedocs.io/en/stable/). See this [demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/MultiGPU_demo.py).
-
-### Matlab (is not currently supported)
-Use available m-functions, see [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Matlab).
+## Installation
+Please check the detailed [installation](https://dkazanc.github.io/ToMoBAR/howto/installation.html) guide.
 
 ## How to use ToMoBAR in Python:
-Please check [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python) and also [Documetation](https://dkazanc.github.io/ToMoBAR/) with more detailed recipies how to run.
-
-A typical setup for iterative reconstruction would include building three dictionaries: `_data_`, `_algorithm_` and `_regularisation_`. To list all accepted parameters for dictionaries do: 
-```python
-from tomobar.supp.dicts import dicts_check
-help(dicts_check)
-```
-<div align="left">
-  <img src="docs/images/tomobar_pres.png" width="620">  
-</div>
+Please see [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python) for more details.
 
 ### References:
  1. [D. Kazantsev and N. Wadeson 2020. TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software for high resolution synchrotron X-ray tomography. CT Meeting 2020](https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf)

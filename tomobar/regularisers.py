@@ -1,16 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-""" Module to add regularisers from the CCPi-regularisation toolkit 
-and initiate proximity operator for iterative methods
+"""Adding regularisers from the CCPi-regularisation toolkit and 
+initiate proximity operator for iterative methods.
 
-conda install ccpi-regulariser -c ccpi -c conda-forge
-https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-
-GPLv3 license (ASTRA toolbox)
 @author: Daniil Kazantsev: https://github.com/dkazanc
 """
 import numpy as np
-
+from typing import Union
 try:
     from ccpi.filters.regularisers import (
         ROF_TV,
@@ -36,7 +30,16 @@ except ImportError:
     )
 
 
-def prox_regul(self, X, _regularisation_):
+def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray, tuple]:
+    """Enabling proximal operators step in interative reconstruction. 
+
+    Args:
+        X (np.ndarray): 2D or 3D numpy array.
+        _regularisation_ (dict): Regularisation dictionary with parameters. 
+
+    Returns:
+        np.ndarray or a tuple: Filtered 2D or 3D numpy array or a tuple.
+    """
     info_vec = (_regularisation_["iterations"], 0)
     # The proximal operator of the chosen regulariser
     if "ROF_TV" in _regularisation_["method"]:

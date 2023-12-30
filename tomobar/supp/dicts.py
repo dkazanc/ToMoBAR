@@ -22,55 +22,61 @@ def dicts_check(
     _regularisation_: Union[dict, None] = None,
     method_run: str = "FISTA",
 ) -> tuple:
-    """Function that checks the given dictionaties and populates its parameters.
+    """This function checks the given _data_, _algorithm_, and  _regularisation_
+    dictionaries and populates parameters if required. Please note that the dictionaries are 
+    required for iterative methods only as for direct methods the input is an array explicitly 
+    given to the function as an argument. The most versatile method in terms of parametrisation
+    is currently FISTA, therefore most of the keywords arguments bellow are applicable to it.
 
     Args:
-        ----------------------------------------------------------------------------------------------------------
-        _data_ (dict):  Data dictionary inspects the following parameters bellow. Please note that this is for
-        iterative methods only, for direct methods the input is simply an array.
-            --projection_norm_data: the -log(normalised) projection data; a 2D sinogram or a 3D data array
-            --projection_raw_data: raw data for PWLS and SWLS models. FISTA-related parameter.
-            --OS_number: the number of ordered subsets, if None or 1 is a classical (full data) algorithm. FISTA. Defaults to 1.
-            --huber_threshold: a threshold for Huber function to apply to data model (supress outliers). FISTA.
-            --studentst_threshold: a threshold for Students't function to apply to data model (supress outliers). FISTA.
-            --ringGH_lambda: a parameter for Group-Huber data model to supress full rings of the same intensity. FISTA.
-            --ringGH_accelerate: Group-Huber data model acceleration factor (use carefully to avoid divergence. FISTA. Defaults to 50.
-            --beta_SWLS: a regularisation parameter for stripe-weighted LS model. FISTA. Defaults to 0.1.
-        ----------------------------------------------------------------------------------------------------------
-        _algorithm_ (dict, optional): Algorithm dictionary inspects the following parameters. Defaults to {}.
-            --iterations: the number of iterations for the reconstruction algorithm.
-            --initialise: initialisation for the algorithm (given as an array)
-            --nonnegativity: enables the nonnegativity for algorithms. Defaults to False.
-            --mask_diameter: set to 1.0 to enable a circular mask diameter, < 1.0 to shrink the mask. Defaults to 1.0.
-            --lipschitz_const: Lipschitz constant for FISTA algorithm, if not provided it will be calculated for each method call.
-            --ADMM_rho_const: augmented Lagrangian parameter for ADMM algorithm.
-            --ADMM_relax_par: over relaxation parameter for convergence speed for ADMM algorithm.
-            --tolerance: tolerance to terminate reconstruction algorithm (FISTA, ADMM) iterations earlier, Defaults to 0.0.
-            --verbose: mode to print iterations number and other messages ('on' by default, 'off' to suppress)
-        ----------------------------------------------------------------------------------------------------------
-        _regularisation_ (dict, optional): Regularisation dictionary. Available for FISTA and ADMM algorithms. Defaults to {}.
-            --method: select a regularisation method: ROF_TV, FGP_TV, PD_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV.
-                 You can also add WAVELET regularisation by adding WAVELETS to any method above, e.g., ROF_TV_WAVELETS
-            --regul_param: the main regularisation parameter for regularisers to control the amount of smoothing. Defaults to 0.001.
-            --iterations: the number of inner iterations for regularisers as they are iterative methods themselves. Defaults to 150.
-            --device_regulariser: Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device.
-            --edge_threhsold: edge (noise) threshold parameter for NDF and DIFF4th models.
-            --tolerance: tolerance to stop inner regularisation iterations prematurely.
-            --time_marching_step: a step to ensure convergence for gradient-based methods: ROF_TV,LLT_ROF,NDF,Diff4th.
-            --regul_param2: second regularisation parameter (LLT_ROF or when using WAVELETS).
-            --TGV_alpha1: TGV specific parameter for the 1st order term.
-            --TGV_alpha2: TGV specific parameter for the 2nd order term.
-            --PD_LipschitzConstant: Primal-dual parameter for convergence (PD_TV and TGV specific).
-            --NDF_penalty: NDF-method specific penalty type: Huber (default), Perona, Tukey.
-            --NLTV_H_i: NLTV penalty related weights, the array of i-related indices.
-            --NLTV_H_j: NLTV penalty related weights, the array of j-related indices.
-            --NLTV_Weights: NLTV-specific penalty type, the array of Weights.
-            --methodTV: 0/1 - TV specific isotropic/anisotropic choice.
-        ----------------------------------------------------------------------------------------------------------
-        method_run (str, optional): The name of the method to run. Defaults to "FISTA".
+        _data_ (dict):  Data dictionary where data related items must be specified.
+        _algorithm_ (dict, optional): Algorithm dictionary. Defaults to {}.
+        _regularisation_ (dict, optional): Regularisation dictionary. Needed only for FISTA and ADMM algorithms. Defaults to {}.
+        method_run (str, optional): The name of the method to be run. Defaults to "FISTA".
+    
+    Keyword Args:
+        _data_['projection_norm_data'] (ndarray):  The -log(normalised) projection data as a 2D sinogram or as a 3D data array.
+        _data_['projection_raw_data'] (ndarray): Raw data for PWLS and SWLS models. FISTA-related parameter.
+        _data_['OS_number'] (int): The number of ordered subsets, if None or 1 then the classical (full data) algorithm. Defaults to 1.
+        _data_['huber_threshold'] (float): Parameter for the Huber data fidelity (to supress outliers).
+        _data_['studentst_threshold] (float):  Parameter for Students't data fidelity (to supress outliers).
+        _data_['ringGH_lambda'] (float):  Parameter for Group-Huber data model to supress full rings of the uniform intensity.
+        _data_['ringGH_accelerate'] (float): Group-Huber data model acceleration factor (can lead to divergence). Defaults to 50.
+        _data_['beta_SWLS'] (float): Regularisation parameter for stripe-weighted data model (ring artefacts removal) Defaults to 0.1.
+   
+        _algorithm_['iterations'] (int): The number of iterations for the reconstruction algorithm.
+        _algorithm_['nonnegativity'] (bool): Enable nonnegativity for the solution. Defaults to False.
+        _algorithm_['recon_mask_radius'] (float): Enables a circular mask cutoff in the reconstructed image. Defaults to 1.0.               
+        _algorithm_['initialise'] (ndarray): Initialise an algorithm with an array.
+        _algorithm_['lipschitz_const'] (float): Lipschitz constant for the FISTA algorithm. If not provided it will be calculated for each method call.
+        _algorithm_['ADMM_rho_const'] (float): Augmented Lagrangian parameter for the ADMM algorithm.
+        _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm.
+        _algorithm_['tolerance'] (float): Tolerance to terminate reconstruction algorithm iterations earlier. Defaults to 0.0.
+        _algorithm_['verbose'] (bool): Switch on printing of iterations number and other messages. Defaults to False. 
+        
+        _regularisation_['method'] (str): Select the regularisation method from the CCPi-regularisation toolkit. The supported 
+                methods listed: ROF_TV, FGP_TV, PD_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV.
+                If one also installed `pypwt` package for Wavelets then one can WAVELET regularisation by adding WAVELETS to any method above
+                by appending "_WAVELETS" string to an existing regulariser. For instance, ROF_TV_WAVELETS would enable dual regularisation with ROF_TV
+                and wavelets.
+        _regularisation_['regul_param'] (float): The main regularisation parameter for regularisers to control the amount of smoothing. Defaults to 0.001.
+        _regularisation_['iterations'] (int): The number of INNER iterations for regularisers. Defaults to 150.
+        _regularisation_['device_regulariser'] (str, int): Select the device as 'cpu' or 'gpu'. Or provide GPU index (integer) of a specific device.
+        _regularisation_['edge_threhsold'] (float): Noise-related threshold parameter for NDF and DIFF4th (diffusion) regularisers.
+        _regularisation_['tolerance'] (float): Tolerance to stop inner regularisation iterations prematurely.
+        _regularisation_['time_marching_step'] (float): Time step parameter for convergence of gradient-based methods: ROF_TV,LLT_ROF,NDF,Diff4th.
+        _regularisation_['regul_param2'] (float): The second regularisation parameter (LLT_ROF or when using WAVELETS in addition).
+        _regularisation_['TGV_alpha1'] (float): The TGV penalty specific parameter for the 1st order term.
+        _regularisation_['TGV_alpha2'] (float): The TGV penalty specific parameter for the 2nd order term.
+        _regularisation_['PD_LipschitzConstant'] (float): The Primal-Dual (PD) penalty related parameter for convergence (PD_TV and TGV specific).
+        _regularisation_['NDF_penalty'] (str): The NDF-method specific penalty type: Huber (default), Perona, Tukey.
+        _regularisation_['NLTV_H_i'] (ndarray): The NLTV penalty related weights, the array of i-related indices.
+        _regularisation_['NLTV_H_j'] (ndarray): The NLTV penalty related weights, the array of j-related indices.
+        _regularisation_['NLTV_Weights] (ndarray): The NLTV-specific penalty type, the array of Weights.
+        _regularisation_['methodTV'] (int): 0/1 - TV specific isotropic/anisotropic choice.       
 
     Returns:
-        tuple: a tuple with three populated dictionaries (_data_, _algorithm_, _regularisation_)
+        tuple: A tuple with three populated dictionaries (_data_, _algorithm_, _regularisation_).
     """
     if _data_ is None:
         raise NameError("Data dictionary must be provided")
@@ -163,13 +169,13 @@ def dicts_check(
         self.nonneg_regul = 1  # enable nonnegativity for regularisers
     else:
         self.nonneg_regul = 0  # disable nonnegativity for regularisers
-    if "mask_diameter" not in _algorithm_:
-        _algorithm_["mask_diameter"] = 1.0
+    if "recon_mask_radius" not in _algorithm_:
+        _algorithm_["recon_mask_radius"] = 1.0
     # tolerance to stop OUTER algorithm iterations earlier
     if "tolerance" not in _algorithm_:
         _algorithm_["tolerance"] = 0.0
     if "verbose" not in _algorithm_:
-        _algorithm_["verbose"] = "on"
+        _algorithm_["verbose"] = False
     # ----------  deal with _regularisation_  --------------
     if _regularisation_ is None:
         _regularisation_ = {}

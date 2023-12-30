@@ -1,24 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""A reconstruction class for regularised iterative methods.
+"""Reconstruction class for regularised iterative methods.
 
--- Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
+* Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
                                shrinkage-thresholding algorithm for linear inverse problems,
                                SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
--- Regularised ADMM algorithm (Boyd, N. Parikh, E. Chu, B. Peleato, J. Eckstein, "Distributed optimization and
+* Regularised ADMM algorithm (Boyd, N. Parikh, E. Chu, B. Peleato, J. Eckstein, "Distributed optimization and
                                statistical learning via the alternating direction method of multipliers", Found. Trends Mach. Learn.,
                                vol. 3, no. 1, pp. 1-122, Jan. 2011)
--- SIRT, CGLS algorithms wrapped directly from ASTRA package
-
-Dependencies:
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-    pwpwt uf you're planning to use WAVELETS as a regulariser (optional)
-
-GPLv3 license (ASTRA toolbox)
-@author: Daniil Kazantsev: https://github.com/dkazanc
+* SIRT, CGLS algorithms wrapped directly from the ASTRA package
 """
 
 import numpy as np
@@ -30,48 +18,22 @@ from tomobar.regularisers import prox_regul
 from tomobar.supp.astraOP import AstraToolsOS, AstraToolsOS3D
 from typing import Union
 
-try:
-    import scipy.sparse.linalg
-except ImportError:
-    print("____! Scipy toolbox package is missing, please install for ADMM !____")
-
-
-def smooth(y, box_pts):
-    # a function to smooth 1D signal
-    box = np.ones(box_pts) / box_pts
-    y_smooth = np.convolve(y, box, mode="same")
-    return y_smooth
-
-
-def merge_3_dicts(x, y, z):
-    merg = x.copy()
-    merg.update(y)
-    merg.update(z)
-    return merg
-
-
 class RecToolsIR(RecTools):
-    """
-    ----------------------------------------------------------------------------------------------------------
-    A class for iterative reconstruction algorithms (FISTA and ADMM) using ASTRA toolbox and CCPi-RGL toolkit
-    ----------------------------------------------------------------------------------------------------------
-    Parameters of the class function main specifying the projection geometry:
-      *DetectorsDimH,     # Horizontal detector dimension
-      *DetectorsDimV,     # Vertical detector dimension for 3D case
-      *CenterRotOffset,   # The Centre of Rotation (CoR) scalar or a vector
-      *AnglesVec,         # A vector of projection angles in radians
-      *ObjSize,           # Reconstructed object dimensions (a scalar)
-      *datafidelity,      # Data fidelity, choose from LS, KL, PWLS or SWLS
-      *device_projector   # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-      *data_axis_labels   # set the order of axes labels of the input data, e.g. ['detY', 'angles', 'detX']
+    """Iterative reconstruction algorithms (FISTA and ADMM) using ASTRA toolbox and CCPi-RGL toolkit.
+    Parameters for reconstruction algorithms are extracted from three dictionaries:
+    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters 
+    that are accepted.
 
-    Parameters for reconstruction algorithms are extracted from 3 dictionaries: _data_, _algorithm_ and _regularisation_.
-    To list all accepted parameters for those dictionaries do:
-     > from tomobar.supp.dicts import dicts_check
-     > help(dicts_check)
-    ----------------------------------------------------------------------------------------------------------
+    Args:
+        DetectorsDimH (int): Horizontal detector dimension.
+        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
+        CenterRotOffset (float): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        AnglesVec (np.ndarray): Vector of projection angles in radians.
+        ObjSize (int): Reconstructed object dimensions (a scalar).
+        datafidelity (str): Data fidelity, choose from LS, KL, PWLS or SWLS.
+        device_projector (str, int): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
+        data_axis_labels (list): a list with axis labels of the input data, e.g. ['detY', 'angles', 'detX'].    
     """
-
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
@@ -219,7 +181,7 @@ class RecToolsIR(RecTools):
         _regularisation_: Union[dict, None] = None,
     ) -> np.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
-        data fidelity terms provided in three dictionaries, see more with help(RecToolsIR).
+        data fidelity terms provided in three dictionaries, see parameters at `tomobar.supp.dicts`.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -544,9 +506,9 @@ class RecToolsIR(RecTools):
                 X = X_t - L_const_inv * grad_fidelity
                 if _algorithm_upd_["nonnegativity"] == "ENABLE":
                     X[X < 0.0] = 0.0
-                if _algorithm_upd_["mask_diameter"] is not None:
+                if _algorithm_upd_["recon_mask_radius"] is not None:
                     X = circ_mask(
-                        X, _algorithm_upd_["mask_diameter"]
+                        X, _algorithm_upd_["recon_mask_radius"]
                     )  # applying a circular mask
                 if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####
@@ -562,7 +524,7 @@ class RecToolsIR(RecTools):
                     r
                 )  # soft-thresholding operator for ring vector
                 r_x = r + ((t_old - 1.0) / t) * (r - r_old)  # updating r
-            if _algorithm_upd_["verbose"] == "on":
+            if _algorithm_upd_["verbose"]:
                 if np.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
                     print(
                         "FISTA iteration (",
@@ -581,7 +543,7 @@ class RecToolsIR(RecTools):
             ):
                 nrm = LA.norm(X - X_old) * denomN
                 if nrm < _algorithm_upd_["tolerance"]:
-                    if _algorithm_upd_["verbose"] == "on":
+                    if _algorithm_upd_["verbose"]:
                         print("FISTA stopped at iteration (", iter_no + 1, ")")
                     break
         return X
@@ -606,6 +568,10 @@ class RecToolsIR(RecTools):
         Returns:
             np.ndarray: ADMM-reconstructed numpy array
         """
+        try:
+            import scipy.sparse.linalg
+        except ImportError:
+            print("____! Scipy toolbox package is missing, please install for ADMM !____")        
         ######################################################################
         # parameters check and initialisation
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
@@ -675,7 +641,7 @@ class RecToolsIR(RecTools):
             z = z.ravel()
             # update u variable
             u = u + (x_hat - z)
-            if _algorithm_upd_["verbose"] == "on":
+            if _algorithm_upd_["verbose"]:
                 if np.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
                     print(
                         "ADMM iteration (",
