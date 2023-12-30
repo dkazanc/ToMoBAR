@@ -6,8 +6,16 @@
 """                               
 
 import numpy as np
-import cupy as cp
-import astra
+try:
+    import cupy as cp
+except ImportError:
+    print("Cupy library is a required dependency for this part of the code, please install")
+try:
+    import astra
+except ImportError:
+    print("Astra toolbox is required, please install")
+
+
 from typing import Union
 
 from tomobar.recon_base import RecTools

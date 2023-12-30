@@ -5,8 +5,11 @@
 """
 
 import numpy as np
-import cupy as cp
-import cupyx
+try:
+    import cupy as cp
+    import cupyx
+except ImportError:
+    print("Cupy library is a required dependency for this part of the code, please install")
 
 from tomobar.cuda_kernels import load_cuda_module
 from tomobar.recon_base import RecTools
