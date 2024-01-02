@@ -16,7 +16,7 @@ In general, we would recommend installing 1,2 and 4 packages.
    
    $ conda install -c astra-toolbox astra-toolbox
 
-* 2. `CCPi-Regularisation-Toolkit <https://github.com/vais-ral/CCPi-Regularisation-Toolkit>`_ provides 
+* 2. `CCPi-Regularisation-Toolkit <https://github.com/vais-ral/CCPi-Regularisation-Toolkit>`_ [KAZ2019]_ provides 
   CPU and GPU regularisers (2D/3D) to enable :ref:`examples_regul_iter` in ToMoBAR. 
   Once installed, one will have an access to more than 10 plug-and-play regularisers to 
   compliment ToMoBAR's iterative reconstruction algorithms.

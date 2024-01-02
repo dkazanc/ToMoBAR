@@ -9,6 +9,8 @@
 
     introduction/about
     introduction/dependencies
+    introduction/references
+
 
 .. _how_to_content:
 
