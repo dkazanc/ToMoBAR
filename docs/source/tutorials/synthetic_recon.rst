@@ -241,10 +241,3 @@ Simply replace the :mod:`tomobar.methodsIR` class with :mod:`tomobar.methodsIR_C
 Note that the array of angles for CuPy modules still should be provided as a Numpy array. 
 
 
-.. [PM2015] P. Paleo and A. Mirone 2015. Ring artifacts correction in 
-   compressed sensing tomographic reconstruction. Journal of synchrotron radiation,
-   22(5), pp.1268-1278.
-
-.. [HOA2017] H. Om Aggrawal et al. 2017. A Convex Reconstruction Model
-   for X-ray tomographic Imaging with Uncertain Flat-fields", IEEE 
-   Transactions on Computational Imaging.

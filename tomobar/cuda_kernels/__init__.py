@@ -1,6 +1,9 @@
 import os
 from typing import List, Tuple
-import cupy as cp
+try:
+    import cupy as cp
+except ImportError:
+    print("Cupy library is a required dependency for this part of the code, please install")
 
 
 def load_cuda_module(

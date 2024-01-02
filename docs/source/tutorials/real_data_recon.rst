@@ -108,11 +108,3 @@ demo.
 
 As one can see that visually the SWLS model produced the best reconstruction here. 
 This model is indeed works very well when the stripes (rings) are full and not partial.
-
-.. [GUO2018] E. Guo et al. 2018. The influence of nanoparticles on dendritic 
-   grain growth in Mg alloys. Acta Materialia.
-
-.. [KAZ2017] D. Kazantsev et al. 2017. Model-based iterative 
-   reconstruction using higher-order regularization of dynamic 
-   synchrotron data. Measurement Science and Technology, 28(9), p.094004.
-
