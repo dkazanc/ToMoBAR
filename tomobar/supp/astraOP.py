@@ -1,7 +1,7 @@
 """The series of classes for wrapping of ASTRA toolbox to perform projection/backprojection
 and reconstruction of of 2D/3D parallel beam data.
 
-GPLv3 license (ASTRA toolbox)
+GPLv3 license (defined by ASTRA toolbox)
 """
 import numpy as np
 
@@ -213,7 +213,6 @@ def _set_OS_geometry3d(self):
             "parallel3d_vec", self.DetectorsDimV, self.DetectorsDimH, vectors
         )
     return self.proj_geom_OS
-
 
 #######################Reconstruction Parent classes##########################
 class Astra2D:

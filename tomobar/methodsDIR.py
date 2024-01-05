@@ -83,7 +83,7 @@ class RecToolsDIR(RecTools):
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
-        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        CenterRotOffset (float, np.ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): Reconstructed object dimensions (a scalar).
         device_projector (str, int): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
