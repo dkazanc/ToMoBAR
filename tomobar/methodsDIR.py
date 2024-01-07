@@ -6,9 +6,10 @@
 """
 
 import numpy as np
-from tomobar.recon_base import RecTools
-from tomobar.supp.suppTools import _data_swap
 import scipy.fftpack
+
+from tomobar.astra_wrappers import AstraTools2D, AstraTools3D
+from tomobar.supp.funcs import _data_swap, _parse_device_argument
 
 
 def _filtersinc3D(projection3D: np.ndarray):
@@ -77,17 +78,18 @@ def _filtersinc2D(sinogram):
     return np.float32(filtered)
 
 
-class RecToolsDIR(RecTools):
+class RecToolsDIR():
     """Reconstruction class using DIRect methods (FBP and Fourier).
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
-        CenterRotOffset (float, np.ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): Reconstructed object dimensions (a scalar).
-        device_projector (str, int): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
-        data_axis_labels (list): a list with axis labels of the input data, e.g. ['detY', 'angles', 'detX'].
+        device_projector (str, int, optional): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
+        data_axis_labels (list, optional): a list with axis labels of the input data, e.g. ['detY', 'angles', 'detX'].
+        cupyrun (bool, optional): instantiate CuPy class if True
     """
 
     def __init__(
@@ -99,16 +101,35 @@ class RecToolsDIR(RecTools):
         ObjSize,  # A scalar to define reconstructed object dimensions
         device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
         data_axis_labels=None,  # the input data axis labels
+        cupyrun = False,
     ):
-        super().__init__(
-            DetectorsDimH,
-            DetectorsDimV,
-            CenterRotOffset,
-            AnglesVec,
-            ObjSize,
-            device_projector=device_projector,
-            data_axis_labels=data_axis_labels,  # inherit from the base class
+        device_projector, GPUdevice_index = _parse_device_argument(
+            device_projector
         )
+
+        if (DetectorsDimV == 0 or DetectorsDimV is None):
+            self.geom = "2D"
+            self.Atools = AstraTools2D(
+                            DetectorsDimH,
+                            AnglesVec,
+                            CenterRotOffset,
+                            ObjSize,
+                            device_projector,
+                            GPUdevice_index,
+                            data_axis_labels,
+                            cupyrun)
+        else:
+            self.geom = "3D"
+            self.Atools = AstraTools3D(
+                            DetectorsDimH,
+                            DetectorsDimV,
+                            AnglesVec,
+                            CenterRotOffset,
+                            ObjSize,
+                            device_projector,
+                            GPUdevice_index,
+                            data_axis_labels,
+                            cupyrun)
 
     def FORWPROJ(self, data: np.ndarray) -> np.ndarray:
         """Module to perform forward projection of 2d/3d data numpy array
@@ -119,8 +140,7 @@ class RecToolsDIR(RecTools):
         Returns:
             np.ndarray: Forward projected numpy array (projection data)
         """
-        projdata = self.Atools.forwproj(data)
-        return projdata
+        return self.Atools._forwproj(data)
 
     def BACKPROJ(self, projdata: np.ndarray) -> np.ndarray:
         """Module to perform back-projection of 2d/3d data numpy array
@@ -131,8 +151,10 @@ class RecToolsDIR(RecTools):
         Returns:
             np.ndarray: Backprojected 2D/3D object
         """
-        backproj = self.Atools.backproj(projdata)
-        return backproj
+        # get the input data into the right format dimension-wise
+        projdata = _data_swap(projdata, self.Atools.data_swap_list)
+
+        return self.Atools._backproj(projdata)
 
     def FOURIER(self, sinogram: np.ndarray, method: str = "linear") -> np.ndarray:
         """2D Reconstruction using Fourier slice theorem (scipy required)
@@ -162,22 +184,24 @@ class RecToolsDIR(RecTools):
         import scipy.misc
         import scipy.ndimage.interpolation
 
+        DetectorsDimH = self.Atools.detectors_x
+        ObjSize = self.Atools.recon_size
         # Fourier transform the rows of the sinogram, move the DC component to the row's centre
         sinogram_fft_rows = scipy.fftpack.fftshift(
             scipy.fftpack.fft(scipy.fftpack.ifftshift(sinogram, axes=1)), axes=1
         )
         # Coordinates of sinogram FFT-ed rows' samples in 2D FFT space
-        a = -self.AnglesVec
-        r = np.arange(self.DetectorsDimH) - self.DetectorsDimH / 2
+        a = -self.Atools.angles_vec
+        r = np.arange(DetectorsDimH) - DetectorsDimH / 2
         r, a = np.meshgrid(r, a)
         r = r.flatten()
         a = a.flatten()
-        srcx = (self.DetectorsDimH / 2) + r * np.cos(a)
-        srcy = (self.DetectorsDimH / 2) + r * np.sin(a)
+        srcx = (DetectorsDimH / 2) + r * np.cos(a)
+        srcy = (DetectorsDimH / 2) + r * np.sin(a)
 
         # Coordinates of regular grid in 2D FFT space
         dstx, dsty = np.meshgrid(
-            np.arange(self.DetectorsDimH), np.arange(self.DetectorsDimH)
+            np.arange(DetectorsDimH), np.arange(DetectorsDimH)
         )
         dstx = dstx.flatten()
         dsty = dsty.flatten()
@@ -188,7 +212,7 @@ class RecToolsDIR(RecTools):
             (dsty, dstx),
             method,
             fill_value=0.0,
-        ).reshape((self.DetectorsDimH, self.DetectorsDimH))
+        ).reshape((DetectorsDimH, DetectorsDimH))
         # Transform from 2D Fourier space back to a reconstruction of the target
         recon = np.real(
             scipy.fftpack.fftshift(scipy.fftpack.ifft2(scipy.fftpack.ifftshift(fft2)))
@@ -196,10 +220,10 @@ class RecToolsDIR(RecTools):
 
         # Cropping reconstruction to size of the original image
         image = recon[
-            int(((self.DetectorsDimH - self.ObjSize) / 2) + 1) : self.DetectorsDimH
-            - int(((self.DetectorsDimH - self.ObjSize) / 2) - 1),
-            int(((self.DetectorsDimH - self.ObjSize) / 2)) : self.DetectorsDimH
-            - int(((self.DetectorsDimH - self.ObjSize) / 2)),
+            int(((DetectorsDimH - ObjSize) / 2) + 1) : DetectorsDimH
+            - int(((DetectorsDimH - ObjSize) / 2) - 1),
+            int(((DetectorsDimH - ObjSize) / 2)) : DetectorsDimH
+            - int(((DetectorsDimH - ObjSize) / 2)),
         ]
         return image
 
@@ -213,15 +237,12 @@ class RecToolsDIR(RecTools):
             np.ndarray: FBP reconstructed 2D or 3D object
         """
         # get the input data into the right format dimension-wise
-        data = _data_swap(data, self.data_swap_list)
+        data = _data_swap(data, self.Atools.data_swap_list)
         if self.geom == "2D":
             "dealing with FBP 2D not working for parallel_vec geometry and CPU"
-            if self.device_projector == "gpu":
-                FBP_rec = self.Atools.fbp2D(data)  # GPU reconstruction
-            else:
-                filtered_sino = _filtersinc2D(data)  # filtering sinogram
-                FBP_rec = self.Atools.backproj(filtered_sino)  # backproject
-        if self.geom == "3D":
-            filtered_sino = _filtersinc3D(data)  # filtering projection data
-            FBP_rec = self.Atools.backproj(filtered_sino)  # 3d backproject
-        return FBP_rec
+            if self.Atools.processing_arch == "gpu":
+                return self.Atools._fbp(data)
+            else:                
+                return self.Atools._backproj(_filtersinc2D(data))
+        else:
+            return self.Atools._backproj(_filtersinc3D(data))

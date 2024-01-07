@@ -18,9 +18,9 @@ if nocupy:
     import scipy
 
 from tomobar.cuda_kernels import load_cuda_module
-from tomobar.recon_base import RecTools
-from tomobar.supp.suppTools import _check_kwargs, _data_swap
-
+from tomobar.supp.suppTools import _check_kwargs
+from tomobar.supp.funcs import _data_swap
+from tomobar.methodsDIR import RecToolsDIR
 
 def _filtersinc3D_cupy(projection3D: xp.ndarray) -> xp.ndarray:
     """Applies a SINC filter to 3D projection data
@@ -69,8 +69,8 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray) -> xp.ndarray:
     )
 
 
-class RecToolsDIRCuPy(RecTools):
-    """Reconstruction class using DIRect methods with CuPy.
+class RecToolsDIRCuPy(RecToolsDIR):
+    """Reconstruction class using DIRect methods with CuPy API.
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
@@ -100,6 +100,7 @@ class RecToolsDIRCuPy(RecTools):
             ObjSize,
             device_projector,
             data_axis_labels=data_axis_labels,  # inherit from the base class
+            cupyrun = True,
         )
         if DetectorsDimV == 0 or DetectorsDimV is None:
             raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
@@ -117,9 +118,9 @@ class RecToolsDIRCuPy(RecTools):
             xp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
         # filter the data on the GPU and keep the result there
-        data = _filtersinc3D_cupy(_data_swap(data, self.data_swap_list))
+        data = _filtersinc3D_cupy(_data_swap(data, self.Atools.data_swap_list))
         data = xp.ascontiguousarray(xp.swapaxes(data, 0, 1))
-        reconstruction = self.Atools.backprojCuPy(data)  # 3d backprojecting
+        reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
         xp._default_memory_pool.free_all_blocks()
         return _check_kwargs(reconstruction, **kwargs)
 
@@ -132,7 +133,7 @@ class RecToolsDIRCuPy(RecTools):
         Returns:
             xp.ndarray: Forward projected cupy array (projection data)
         """
-        projdata = self.Atools.forwprojCuPy(data)
+        projdata = self.Atools._forwprojCuPy(data)
         return projdata
 
     def BACKPROJ(self, projdata: xp.ndarray) -> xp.ndarray:
@@ -144,5 +145,5 @@ class RecToolsDIRCuPy(RecTools):
         Returns:
             xp.ndarray: Backprojected 2D/3D object
         """
-        backproj = self.Atools.backprojCuPy(projdata)
+        backproj = self.Atools._backprojCuPy(projdata)
         return backproj

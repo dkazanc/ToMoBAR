@@ -4,6 +4,18 @@
 import numpy as np
 from typing import Union, List
 
+try:
+    import cupy as xp
+
+    try:
+        xp.cuda.Device(0).compute_capability
+    except xp.cuda.runtime.CUDARuntimeError:
+        import numpy as xp
+
+        print("CuPy is installed but the GPU device is inaccessible")
+except ImportError:
+    import numpy as xp
+
 # define a 2D vector geometry
 def _vec_geom_init2D(angles_rad: np.ndarray, 
                       CenterRotOffset: Union[float, List]) -> np.ndarray:
@@ -62,3 +74,86 @@ def __rotation_matrix3D(theta):
             [0.0, 0.0, 1.0],
         ]
     )
+
+def __get_swap_tuple(data_axis_labels, labels_order):
+    swap_tuple = None
+    for in_l1, str_1 in enumerate(labels_order):
+        for in_l2, str_2 in enumerate(data_axis_labels):
+            if str_1 == str_2:
+                # get the indices only IF the order is different
+                if in_l1 != in_l2:
+                    swap_tuple = (in_l1, in_l2)
+                    return swap_tuple
+    return swap_tuple
+
+
+def _swap_data_axis_to_accepted(data_axis_labels, labels_order):
+    """A module to ensure that the input tomographic data is prepeared for reconstruction
+    in the axis order required.
+
+    Args:
+        data_axis_labels (list):  a list of data labels, e.g. given as ['angles', 'detX', 'detY']
+        labels_order (list): the required (fixed) order of axis labels for data, e.g. ["detY", "angles", "detX"].
+
+    Returns:    
+        list: A list of two tuples for input data swaping axis. If both are None, then no swapping needed.
+    """
+    swap_tuple2 = None
+    # check if the labels names are the accepted ones
+    for str_1 in data_axis_labels:
+        if str_1 not in labels_order:
+            raise ValueError(
+                f'Axis title "{str_1}" is not valid, please use one of these: "angles", "detX", or "detY"'
+            )
+    data_axis_labels_copy = data_axis_labels.copy()
+
+    # check the order and produce a swapping tuple if needed
+    swap_tuple1 = __get_swap_tuple(data_axis_labels_copy, labels_order)
+
+    if swap_tuple1 is not None:
+        # swap elements in the list and check the list again
+        data_axis_labels_copy[swap_tuple1[0]], data_axis_labels_copy[swap_tuple1[1]] = (
+            data_axis_labels_copy[swap_tuple1[1]],
+            data_axis_labels_copy[swap_tuple1[0]],
+        )
+        swap_tuple2 = __get_swap_tuple(data_axis_labels_copy, labels_order)
+
+    if swap_tuple2 is not None:
+        # swap elements in the list
+        data_axis_labels_copy[swap_tuple2[0]], data_axis_labels_copy[swap_tuple2[1]] = (
+            data_axis_labels_copy[swap_tuple2[1]],
+            data_axis_labels_copy[swap_tuple2[0]],
+        )
+
+    return [swap_tuple1, swap_tuple2]
+
+
+def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
+    """Swap data labels based on the provided list of tuples
+
+    Args:
+        data (xp.ndarray): Numpy or CuPu 2D or 3D array
+        data_swap_list (list): List of tuples to swap to
+
+    Returns:
+        xp.ndarray: swapped array to the desired format
+    """
+    for swap_tuple in data_swap_list:
+        if swap_tuple is not None:
+            data = xp.swapaxes(data, swap_tuple[0], swap_tuple[1])
+    return data
+
+def _parse_device_argument(device_int_or_string):
+    """Convert a cpu/gpu string or integer gpu number into a tuple."""
+    if isinstance(device_int_or_string, int):
+        return "gpu", device_int_or_string
+    elif device_int_or_string == "gpu":
+        return "gpu", 0
+    elif device_int_or_string == "cpu":
+        return "cpu", -1
+    else:
+        raise ValueError(
+            'Unknown device {0}. Expecting either "cpu" or "gpu" strings OR the gpu device integer'.format(
+                device_int_or_string
+            )
+        )

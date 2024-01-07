@@ -22,7 +22,7 @@ try:
     except xp.cuda.runtime.CUDARuntimeError:
         import numpy as xp
 
-        print("CuPy is installed but GPU device inaccessible")
+        print("CuPy is installed but the GPU device is inaccessible")
 except ImportError:
     import numpy as xp
 
