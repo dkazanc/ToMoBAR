@@ -15,7 +15,7 @@ demo.
 .. code-block:: python
 
     from tomobar.methodsDIR import RecToolsDIR
-    data_labels2D = ["detX", "angles"]  # set the input data labels
+
     Rectools = RecToolsDIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
     DetectorsDimV=None,  # Vertical detector dimension
@@ -23,10 +23,9 @@ demo.
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
-    data_axis_labels=data_labels2D,
     )
 
-    FBPrec = Rectools.FBP(sinogram)
+    FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
 
 .. figure::  ../_static/tutorial/real/FBP_dendr.jpg
     :scale: 25 %
@@ -37,6 +36,7 @@ demo.
 .. code-block:: python
     
     from tomobar.methodsIR import RecToolsIR
+    
     Rectools = RecToolsIR(
         DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
         DetectorsDimV=None,  # Vertical detector dimension (3D case)
@@ -45,13 +45,13 @@ demo.
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         datafidelity="PWLS",  # Data fidelity term
         device_projector="gpu",
-        data_axis_labels=data_labels2D,
     )
 
     _data_ = {
         "projection_norm_data": sinogram,  # Normalised projection data
         "projection_raw_data": sinogram_raw,  # Raw projection data
         "OS_number": 6,  # The number of subsets
+        "data_axes_labels_order": ["detX", "angles"],
     }
     lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant
     
@@ -70,18 +70,13 @@ demo.
     :scale: 25 %
     :alt: FISTA recon
 
-* Then we will add the Group-Huber data fidelity model [PM2015]_ to minimise ring artefacts. 
-  The only change will be the `_data_` dictionary.
+* Then we will add the Group-Huber data fidelity model [PM2015]_ to minimise the ring artefacts. 
+  The only change needed is the update of the `_data_` dictionary.
 
 .. code-block:: python
-    
-    _data_ = {
-        "projection_norm_data": sinogram,  # Normalised projection data
-        "projection_raw_data": sinogram_raw,  # Raw projection data
-        "OS_number": 6,  # The number of subsets
-        "ringGH_lambda": 0.000015, # GH model parameters
-        "ringGH_accelerate": 6, # GH model parameters
-    }
+     
+     _data_.update({"ringGH_lambda": 0.000015})
+     _data_.update({"ringGH_accelerate": 6})
     
     RecFISTA = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 
@@ -89,15 +84,27 @@ demo.
     :scale: 25 %
     :alt: FISTA recon
 
-* We also try the Stripe-Weighted Least Squares data model [HOA2017]_.
+* We also can try the Stripe-Weighted Least Squares (SWLS) data model [HOA2017]_. As we change the data fidelity, we need to re-initialise the class
+  object.
 
 .. code-block:: python
+
+    Rectools = RecToolsIR(
+        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+        DetectorsDimV=None,  # Vertical detector dimension (3D case)
+        CenterRotOffset=None,  # Center of Rotation scalar
+        AnglesVec=angles_rad,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="SWLS",  # Data fidelity term
+        device_projector="gpu",
+    )
     
     _data_ = {
         "projection_norm_data": sinogram,  # Normalised projection data
         "projection_raw_data": sinogram_raw,  # Raw projection data
         "OS_number": 6,  # The number of subsets
         "beta_SWLS": 0.2,  #  parameter for the SWLS model
+        "data_axes_labels_order": ["detX", "angles"],
     }
     
     RecFISTA = Rectools.FISTA(_data_, _algorithm_, _regularisation_)

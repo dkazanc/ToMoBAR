@@ -1,19 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GPLv3 license (ASTRA toolbox)
-
-Script to generate 3D analytical phantoms and their projection data with added 
+A script to generate 3D analytical phantoms and their projection data with added 
 noise and then reconstruct using regularised ADMM algorithm.
 
-Dependencies: 
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-    * TomoPhantom, https://github.com/dkazanc/TomoPhantom
-
-@author: Daniil Kazantsev
 """
 import timeit
 import os

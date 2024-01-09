@@ -1,7 +1,8 @@
 import pytest
 
 import numpy as np
-from tomobar.supp.suppTools import swap_data_axis_to_accepted, normaliser
+from tomobar.supp.suppTools import normaliser
+from tomobar.supp.funcs import _swap_data_axes_to_accepted
 from numpy.testing import assert_allclose
 
 
@@ -26,7 +27,7 @@ def test_normaliser_axis1(raw_data, flats, darks):
 @pytest.mark.parametrize("labels", [["detY", "angles", "detX"]])
 def test_swap_data_axis_to_accepted1(labels):
     labels_order = ["detY", "angles", "detX"]
-    result = swap_data_axis_to_accepted(labels, labels_order)
+    result = _swap_data_axes_to_accepted(labels, labels_order)
     assert result[0] == None
     assert result[1] == None
 
@@ -35,7 +36,7 @@ def test_swap_data_axis_to_accepted1(labels):
 @pytest.mark.parametrize("result", [[(0, 1), None]])
 def test_swap_data_axis_to_accepted2(labels, result):
     labels_order = ["detY", "angles", "detX"]
-    swap_list = swap_data_axis_to_accepted(labels, labels_order)
+    swap_list = _swap_data_axes_to_accepted(labels, labels_order)
     assert swap_list[0] == result[0]
     assert swap_list[1] == result[1]
 
@@ -44,7 +45,7 @@ def test_swap_data_axis_to_accepted2(labels, result):
 @pytest.mark.parametrize("result", [[(0, 2), (1, 2)]])
 def test_swap_data_axis_to_accepted3(labels, result):
     labels_order = ["detY", "angles", "detX"]
-    swap_list = swap_data_axis_to_accepted(labels, labels_order)
+    swap_list = _swap_data_axes_to_accepted(labels, labels_order)
     assert swap_list[0] == result[0]
     assert swap_list[1] == result[1]
 
@@ -53,6 +54,6 @@ def test_swap_data_axis_to_accepted3(labels, result):
 @pytest.mark.parametrize("result", [[(0, 1), None]])
 def test_swap_data_axis_to_accepted4(labels, result):
     labels_order = ["angles", "detX"]
-    swap_list = swap_data_axis_to_accepted(labels, labels_order)
+    swap_list = _swap_data_axes_to_accepted(labels, labels_order)
     assert swap_list[0] == result[0]
     assert swap_list[1] == result[1]

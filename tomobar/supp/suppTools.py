@@ -22,7 +22,7 @@ try:
     except xp.cuda.runtime.CUDARuntimeError:
         import numpy as xp
 
-        print("CuPy is installed but GPU device inaccessible")
+        print("CuPy is installed but the GPU device is inaccessible")
 except ImportError:
     import numpy as xp
 
@@ -275,8 +275,8 @@ def autocropper(data, addbox, backgr_pix1):
     Method assumes that the object is positioned vertically around the central
     point of the horizontal detector. It is important since the vertical mid ROI
     of each projection is used to estimate the background noise levels.
-    
-    
+
+
     Args:
         data (np.ndarray) The required dimensions: [Projections, detectorsVertical, detectorsHoriz] !
         addbox: (int) to add additional pixels in addition to automatically found cropped values, i.e. increasing the cropping region (safety option)
@@ -423,72 +423,3 @@ def circ_mask(X, diameter):
     else:
         X_masked = np.multiply(X, mask)
     return X_masked
-
-
-def __get_swap_tuple(data_axis_labels, labels_order):
-    swap_tuple = None
-    for in_l1, str_1 in enumerate(labels_order):
-        for in_l2, str_2 in enumerate(data_axis_labels):
-            if str_1 == str_2:
-                # get the indices only IF the order is different
-                if in_l1 != in_l2:
-                    swap_tuple = (in_l1, in_l2)
-                    return swap_tuple
-    return swap_tuple
-
-
-def swap_data_axis_to_accepted(data_axis_labels, labels_order):
-    """A module to ensure that the input tomographic data is prepeared for reconstruction
-    in the axis order required.
-
-    Args:
-        data_axis_labels (list):  a list of data labels, e.g. given as ['angles', 'detX', 'detY']
-        labels_order (list): the required (fixed) order of axis labels for data, e.g. ["detY", "angles", "detX"].
-
-    Returns:    
-        list: A list of two tuples for input data swaping axis. If both are None, then no swapping needed.
-    """
-    swap_tuple2 = None
-    # check if the labels names are the accepted ones
-    for str_1 in data_axis_labels:
-        if str_1 not in labels_order:
-            raise ValueError(
-                f'Axis title "{str_1}" is not valid, please use one of these: "angles", "detX", or "detY"'
-            )
-    data_axis_labels_copy = data_axis_labels.copy()
-
-    # check the order and produce a swapping tuple if needed
-    swap_tuple1 = __get_swap_tuple(data_axis_labels_copy, labels_order)
-
-    if swap_tuple1 is not None:
-        # swap elements in the list and check the list again
-        data_axis_labels_copy[swap_tuple1[0]], data_axis_labels_copy[swap_tuple1[1]] = (
-            data_axis_labels_copy[swap_tuple1[1]],
-            data_axis_labels_copy[swap_tuple1[0]],
-        )
-        swap_tuple2 = __get_swap_tuple(data_axis_labels_copy, labels_order)
-
-    if swap_tuple2 is not None:
-        # swap elements in the list
-        data_axis_labels_copy[swap_tuple2[0]], data_axis_labels_copy[swap_tuple2[1]] = (
-            data_axis_labels_copy[swap_tuple2[1]],
-            data_axis_labels_copy[swap_tuple2[0]],
-        )
-
-    return [swap_tuple1, swap_tuple2]
-
-
-def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
-    """Swap data labels based on the provided list of tuples
-
-    Args:
-        data (xp.ndarray): Numpy or CuPu 2D or 3D array
-        data_swap_list (list): List of tuples to swap to
-
-    Returns:
-        xp.ndarray: swapped array to the desired format
-    """
-    for swap_tuple in data_swap_list:
-        if swap_tuple is not None:
-            data = xp.swapaxes(data, swap_tuple[0], swap_tuple[1])
-    return data

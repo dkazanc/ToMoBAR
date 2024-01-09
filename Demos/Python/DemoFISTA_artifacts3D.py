@@ -5,12 +5,6 @@
 * We use TomoPhantom to generate artifacts
 * tomobar is required for reconstruction
 
->>>>> Dependencies (reconstruction): <<<<<
-1. ASTRA toolbox: conda install -c astra-toolbox astra-toolbox
-2. tomobar: conda install -c dkazanc tomobar
-or install from https://github.com/dkazanc/ToMoBAR
-
-@author: Daniil Kazantsev
 """
 import timeit
 import os
@@ -90,9 +84,10 @@ _noise_ = {
 
 # misalignment dictionary
 _datashifts_ = {"datashifts_maxamplitude_pixel": 10}
-[[projData3D_analyt_misalign, projData3D_analyt_misalign_raw], shifts2D] = artefacts_mix(
-    projData3D_analyt, **_noise_, **_datashifts_
-)
+[
+    [projData3D_analyt_misalign, projData3D_analyt_misalign_raw],
+    shifts2D,
+] = artefacts_mix(projData3D_analyt, **_noise_, **_datashifts_)
 
 # adding zingers and stripes
 _zingers_ = {"zingers_percentage": 0.25, "zingers_modulus": 10}
@@ -158,7 +153,7 @@ Qtools = QualityTools(phantom_tm, Rec_FBP)
 RMSE = Qtools.rmse()
 print("Root Mean Square Error is {}".format(RMSE))
 # %%
-# Reconstructing misaligned data using exact shifts
+# Reconstructing misaligned data using the exact shifts
 
 # initialise tomobar DIRECT reconstruction class ONCE
 from tomobar.methodsDIR import RecToolsDIR

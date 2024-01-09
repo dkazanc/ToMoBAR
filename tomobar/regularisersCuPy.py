@@ -5,6 +5,7 @@ initiate proximity operator for iterative methods.
 """
 
 import cupy as cp
+
 try:
     from ccpi.filters.regularisersCuPy import ROF_TV as ROF_TV_cupy
     from ccpi.filters.regularisersCuPy import PD_TV as PD_TV_cupy
@@ -15,11 +16,11 @@ except ImportError:
 
 
 def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
-    """Enabling proximal operators step in interative reconstruction. 
+    """Enabling proximal operators step in interative reconstruction.
 
     Args:
         X (cp.ndarray): 2D or 3D CuPy array.
-        _regularisation_ (dict): Regularisation dictionary with parameters. 
+        _regularisation_ (dict): Regularisation dictionary with parameters.
 
     Returns:
         cp.ndarray: Filtered 2D or 3D CuPy array.
@@ -34,7 +35,7 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             _regularisation_["iterations"],
             _regularisation_["time_marching_step"],
             _regularisation_["tolerance"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "PD_TV" in _regularisation_["method"]:
         # Primal-Dual (PD) Total variation method by Chambolle-Pock
@@ -46,6 +47,6 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             _regularisation_["methodTV"],
             self.nonneg_regul,
             _regularisation_["PD_LipschitzConstant"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     return X_prox

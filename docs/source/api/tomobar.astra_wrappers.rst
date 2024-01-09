@@ -1,6 +1,6 @@
-:mod:`tomobar.supp.astraOP`
+:mod:`tomobar.astra_wrappers`
 ============================================
-.. automodule:: tomobar.supp.astraOP
+.. automodule:: tomobar.astra_wrappers
    :members:
    :show-inheritance:
    :undoc-members:

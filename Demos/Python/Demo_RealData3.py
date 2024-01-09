@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GPLv3 license (ASTRA toolbox)
-
-Script to reconstruct tomographic X-ray data (macromollecular crystallography)
+A script to reconstruct tomographic X-ray data (macromollecular crystallography)
 obtained at Diamond Light Source (UK synchrotron), beamline i23
 
-Dependencies: 
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or conda build of  https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-
-<<<
->>>
-@author: Daniil Kazantsev: https://github.com/dkazanc
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -43,10 +32,9 @@ RectoolsDIR = RecToolsDIR(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
-    data_axis_labels=data_labels2D,
 )
 
-FBPrec = RectoolsDIR.FBP(sinogram)
+FBPrec = RectoolsDIR.FBP(sinogram, data_axes_labels_order=data_labels2D)
 
 fig = plt.figure()
 plt.imshow(FBPrec, vmin=0, vmax=0.005, cmap="gray")
@@ -67,14 +55,15 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
-    data_axis_labels=data_labels2D,
 )
 
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": sinogram,  # Normalised projection data
     "OS_number": 6,  # The number of subsets
-}
+    "data_axes_labels_order": data_labels2D,
+}  # data dictionary
+
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
 
 ####################### Creating the algorithm dictionary: #######################

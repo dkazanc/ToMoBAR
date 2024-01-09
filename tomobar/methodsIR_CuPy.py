@@ -3,35 +3,35 @@
 * Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
                                shrinkage-thresholding algorithm for linear inverse problems,
                                SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
-"""                               
+"""
 
 import numpy as np
+from typing import Union
+
 try:
     import cupy as cp
 except ImportError:
-    print("Cupy library is a required dependency for this part of the code, please install")
+    print(
+        "Cupy library is a required dependency for this part of the code, please install"
+    )
 try:
     import astra
 except ImportError:
     print("Astra toolbox is required, please install")
 
-
-from typing import Union
-
-from tomobar.recon_base import RecTools
-from tomobar.supp.dicts import dicts_check, reinitialise_atools_OS
-from tomobar.supp.suppTools import _data_swap
+from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
+from tomobar.methodsIR import RecToolsIR
 
 
-class RecToolsIRCuPy(RecTools):
+class RecToolsIRCuPy(RecToolsIR):
     """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox, CCPi-RGL toolkit.
     Parameters for reconstruction algorithms are extracted from three dictionaries:
-    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters 
+    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters
     that are accepted.
 
     If FISTA is used it will require CuPy-enabled routines of the CCPi-regularisation toolkit.
-    This implementation is typically >3 times faster than one in RecToolsIR, however 
+    This implementation is typically >3 times faster than one in RecToolsIR, however
     please note that the functionality of FISTA is limited compared to the version of
     FISTA in RecToolsIR. The work is in progress and the current FISTA version is experimental.
 
@@ -43,8 +43,9 @@ class RecToolsIRCuPy(RecTools):
         ObjSize (int): Reconstructed object dimensions (a scalar).
         datafidelity (str): Data fidelity, choose from LS, KL, PWLS or SWLS.
         device_projector (int): Provide a GPU index (integer) of a specific GPU device.
-        data_axis_labels (list): a list with axis labels of the input data, e.g. ['detY', 'angles', 'detX'].    
+        cupyrun (bool, optional): instantiate CuPy modules.
     """
+
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
@@ -53,8 +54,8 @@ class RecToolsIRCuPy(RecTools):
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # Reconstructed object dimensions (scalar)
         datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
-        device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
-        data_axis_labels=None,  # the input data axis labels
+        device_projector=0,  # provide a GPU index (integer) of a specific device
+        cupyrun=True,
     ):
         super().__init__(
             DetectorsDimH,
@@ -62,15 +63,13 @@ class RecToolsIRCuPy(RecTools):
             CenterRotOffset,
             AnglesVec,
             ObjSize,
+            datafidelity=datafidelity,
             device_projector=device_projector,
-            data_axis_labels=data_axis_labels,  # inherit from the base class
+            cupyrun=cupyrun,
         )
 
         if DetectorsDimV == 0 or DetectorsDimV is None:
             raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
-        if datafidelity not in ["LS", "PWLS", "SWLS", "KL"]:
-            raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
-        self.datafidelity = datafidelity
 
     def Landweber(
         self, _data_: dict, _algorithm_: Union[dict, None] = None
@@ -85,6 +84,7 @@ class RecToolsIRCuPy(RecTools):
         Returns:
             cp.ndarray: The Landweber-reconstructed volume as a CuPy array.
         """
+        cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
@@ -101,14 +101,13 @@ class RecToolsIRCuPy(RecTools):
 
         for iter_no in range(_algorithm_upd_["iterations"]):
             residual = (
-                self.Atools.forwprojCuPy(x_rec) - _data_upd_["projection_norm_data"]
+                self.Atools._forwprojCuPy(x_rec) - _data_upd_["projection_norm_data"]
             )  # Ax - b term
-            x_rec -= _algorithm_upd_["tau_step_lanweber"] * self.Atools.backprojCuPy(
+            x_rec -= _algorithm_upd_["tau_step_lanweber"] * self.Atools._backprojCuPy(
                 residual
             )
             if _algorithm_upd_["nonnegativity"]:
                 x_rec[x_rec < 0.0] = 0.0
-        cp._default_memory_pool.free_all_blocks()
         return x_rec
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
@@ -124,6 +123,7 @@ class RecToolsIRCuPy(RecTools):
             cp.ndarray: The SIRT-reconstructed volume as a CuPy array.
         """
         ######################################################################
+        cp._default_memory_pool.free_all_blocks()
         # parameters check and initialisation
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
@@ -134,11 +134,11 @@ class RecToolsIRCuPy(RecTools):
             _data_upd_["projection_norm_data"]
         )
         # prepearing preconditioning matrices R and C
-        R = 1 / self.Atools.forwprojCuPy(
+        R = 1 / self.Atools._forwprojCuPy(
             cp.ones(astra.geom_size(self.Atools.vol_geom), dtype=np.float32)
         )
         R = cp.minimum(R, 1 / epsilon)
-        C = 1 / self.Atools.backprojCuPy(
+        C = 1 / self.Atools._backprojCuPy(
             cp.ones(astra.geom_size(self.Atools.proj_geom), dtype=np.float32)
         )
         C = cp.minimum(C, 1 / epsilon)
@@ -149,17 +149,19 @@ class RecToolsIRCuPy(RecTools):
 
         # perform iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
-            x_rec += C * self.Atools.backprojCuPy(
+            x_rec += C * self.Atools._backprojCuPy(
                 R
-                * (_data_upd_["projection_norm_data"] - self.Atools.forwprojCuPy(x_rec))
+                * (
+                    _data_upd_["projection_norm_data"]
+                    - self.Atools._forwprojCuPy(x_rec)
+                )
             )
             if _algorithm_upd_["nonnegativity"]:
                 x_rec[x_rec < 0.0] = 0.0
-        cp._default_memory_pool.free_all_blocks()
         return x_rec
 
-    def CGLS(self, _data_: dict, _algorithm_: Union[dict, None]) -> cp.ndarray:
-        """Conjugate Gradients Least Squares iterative technique to reconstruct projection data 
+    def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
+        """Conjugate Gradients Least Squares iterative technique to reconstruct projection data
             given as a CuPy array. We aim to solve the system of normal equations A.T*A*x = A.T*b.
 
         Args:
@@ -169,16 +171,17 @@ class RecToolsIRCuPy(RecTools):
         Returns:
             cp.ndarray: The CGLS-reconstructed volume as a CuPy array.
         """
+        cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         ######################################################################
-        _data_upd_["projection_norm_data"] = cp.ascontiguousarray(
-            (_data_upd_["projection_norm_data"])
+        data_input = cp.ascontiguousarray(
+            cp.copy((_data_upd_["projection_norm_data"]), order="C")
         )
-        data_shape_3d = cp.shape(_data_upd_["projection_norm_data"])
+        data_shape_3d = cp.shape(data_input)
 
         # Prepare for CG iterations.
         x_rec = cp.zeros(
@@ -186,20 +189,22 @@ class RecToolsIRCuPy(RecTools):
         )  # initialisation
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
-        d = self.Atools.backprojCuPy(_data_upd_["projection_norm_data"])
+        d = self.Atools._backprojCuPy(data_input)
         d = cp.ravel(d, order="C")
         normr2 = cp.inner(d, d)
-        r = cp.ravel(_data_upd_["projection_norm_data"], order="C")
+        r = cp.ravel(data_input, order="C")
 
         # perform CG iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
             # Update x_rec and r vectors:
-            Ad = self.Atools.forwprojCuPy(cp.reshape(d, newshape=x_shape_3d, order="C"))
+            Ad = self.Atools._forwprojCuPy(
+                cp.reshape(d, newshape=x_shape_3d, order="C")
+            )
             Ad = cp.ravel(Ad, order="C")
             alpha = normr2 / cp.inner(Ad, Ad)
             x_rec += alpha * d
             r -= alpha * Ad
-            s = self.Atools.backprojCuPy(
+            s = self.Atools._backprojCuPy(
                 cp.reshape(r, newshape=data_shape_3d, order="C")
             )
             s = cp.ravel(s, order="C")
@@ -211,7 +216,7 @@ class RecToolsIRCuPy(RecTools):
             if _algorithm_upd_["nonnegativity"]:
                 x_rec[x_rec < 0.0] = 0.0
 
-        cp._default_memory_pool.free_all_blocks()
+        del d, s, beta, r, alpha, Ad, normr2_new, normr2
         return cp.reshape(x_rec, newshape=x_shape_3d, order="C")
 
     def powermethod(self, _data_: dict) -> float:
@@ -224,47 +229,9 @@ class RecToolsIRCuPy(RecTools):
         Returns:
             float: the Lipschitz constant
         """
-
-        power_iterations = 15
-        if _data_.get("OS_number") is None:
-            _data_["OS_number"] = 1  # classical approach (default)
-        else:
-            _data_ = reinitialise_atools_OS(self, _data_)
-
-        s = 1.0
-        proj_geom = astra.geom_size(self.Atools.vol_geom)
-        x1 = cp.random.randn(proj_geom[0], proj_geom[1], proj_geom[2], dtype=cp.float32)
-
-        if self.datafidelity == "PWLS":
-            sqweight = _data_["projection_raw_data"]
-            # do the axis swap if required:
-            sqweight = _data_swap(sqweight, self.data_swap_list)
-
-        if _data_["OS_number"] == 1:
-            # non-OS approach
-            y = self.Atools.forwprojCuPy(x1)
-            if self.datafidelity == "PWLS":
-                y = cp.multiply(sqweight, y)
-            for iter in range(power_iterations):
-                x1 = self.Atools.backprojCuPy(y)
-                s = cp.linalg.norm(cp.ravel(x1), axis=0)
-                x1 = x1 / s
-                y = self.Atools.forwprojCuPy(x1)
-                if self.datafidelity == "PWLS":
-                    y = cp.multiply(sqweight, y)
-        else:
-            # OS approach
-            y = self.Atools.forwprojOSCuPy(x1, 0)
-            if self.datafidelity == "PWLS":
-                y = cp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
-            for iter in range(power_iterations):
-                x1 = self.Atools.backprojOSCuPy(y, 0)
-                s = cp.linalg.norm(cp.ravel(x1), axis=0)
-                x1 = x1 / s
-                y = self.Atools.forwprojOSCuPy(x1, 0)
-                if self.datafidelity == "PWLS":
-                    y = cp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
-        return s
+        cp._default_memory_pool.free_all_blocks()
+        # numpy-cupy agnostic function
+        return super().powermethod(_data_)
 
     def FISTA(
         self,
@@ -274,10 +241,10 @@ class RecToolsIRCuPy(RecTools):
     ) -> cp.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types regularisations.
            The parameters for the algorithm should be provided in three dictionaries:
-           _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function 
+           _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function
            for all parameters that are accepted.
            Please note that not all of the functionality supported compared to FISTA from methodsIR.
-            
+
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
@@ -286,6 +253,7 @@ class RecToolsIRCuPy(RecTools):
         Returns:
             cp.ndarray: FISTA-reconstructed 3D cupy array
         """
+        cp._default_memory_pool.free_all_blocks()
         if self.geom == "2D":
             # 2D reconstruction
             raise ValueError("2D CuPy reconstruction is not yet supported")
@@ -297,7 +265,7 @@ class RecToolsIRCuPy(RecTools):
         )
 
         if _data_upd_["OS_number"] > 1:
-            _data_upd_ = reinitialise_atools_OS(self, _data_upd_)
+            _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
 
         L_const_inv = cp.float32(
             1.0 / _algorithm_upd_["lipschitz_const"]
@@ -324,7 +292,7 @@ class RecToolsIRCuPy(RecTools):
                     if self.datafidelity == "LS":
                         # 3D Least-squares (LS) data fidelity - OS (linear)
                         res = (
-                            self.Atools.forwprojOSCuPy(X_t, sub_ind)
+                            self.Atools._forwprojOSCuPy(X_t, sub_ind)
                             - _data_upd_["projection_norm_data"][:, indVec, :]
                         )
                     if self.datafidelity == "PWLS":
@@ -332,19 +300,19 @@ class RecToolsIRCuPy(RecTools):
                         res = np.multiply(
                             _data_upd_["projection_raw_data"][:, indVec, :],
                             (
-                                self.Atools.forwprojOSCuPy(X_t, sub_ind)
+                                self.Atools._forwprojOSCuPy(X_t, sub_ind)
                                 - _data_upd_["projection_norm_data"][:, indVec, :]
                             ),
                         )
                     # OS reduced gradient
-                    grad_fidelity = self.Atools.backprojOSCuPy(res, sub_ind)
+                    grad_fidelity = self.Atools._backprojOSCuPy(res, sub_ind)
                 else:
                     # full gradient
                     res = (
-                        self.Atools.forwprojCuPy(X_t)
+                        self.Atools._forwprojCuPy(X_t)
                         - _data_upd_["projection_norm_data"]
                     )
-                    grad_fidelity = self.Atools.backprojCuPy(res)
+                    grad_fidelity = self.Atools._backprojCuPy(res)
 
                 X = X_t - L_const_inv * grad_fidelity
 
@@ -353,9 +321,8 @@ class RecToolsIRCuPy(RecTools):
 
                 if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####
-                    X = prox_regul(self, X, _regularisation_)
+                    X = prox_regul(self, X, _regularisation_upd_)
 
                 t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
                 X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
-        cp._default_memory_pool.free_all_blocks()
         return X

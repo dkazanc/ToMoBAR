@@ -1,7 +1,9 @@
 import numpy as np
-from tomobar.supp.astraOP import AstraToolsOS, AstraToolsOS3D
+from tomobar.astra_wrappers import AstraTools2D, AstraTools3D
+
 import typing
 from typing import Union
+from tomobar.supp.funcs import _data_dims_swapper
 
 try:
     import cupy as xp
@@ -23,8 +25,8 @@ def dicts_check(
     method_run: str = "FISTA",
 ) -> tuple:
     """This function checks the given _data_, _algorithm_, and  _regularisation_
-    dictionaries and populates parameters if required. Please note that the dictionaries are 
-    required for iterative methods only as for direct methods the input is an array explicitly 
+    dictionaries and populates parameters if required. Please note that the dictionaries are
+    required for iterative methods only as for direct methods the input is an array explicitly
     given to the function as an argument. The most versatile method in terms of parametrisation
     is currently FISTA, therefore most of the keywords arguments bellow are applicable to it.
 
@@ -33,28 +35,29 @@ def dicts_check(
         _algorithm_ (dict, optional): Algorithm dictionary. Defaults to {}.
         _regularisation_ (dict, optional): Regularisation dictionary. Needed only for FISTA and ADMM algorithms. Defaults to {}.
         method_run (str, optional): The name of the method to be run. Defaults to "FISTA".
-    
+
     Keyword Args:
         _data_['projection_norm_data'] (ndarray):  The -log(normalised) projection data as a 2D sinogram or as a 3D data array.
         _data_['projection_raw_data'] (ndarray): Raw data for PWLS and SWLS models. FISTA-related parameter.
+        _data_['data_axes_labels_order'] (list, None).  The order of the axes labels for the input data, use the following labels: ["detY", "angles", "detX"].
         _data_['OS_number'] (int): The number of ordered subsets, if None or 1 then the classical (full data) algorithm. Defaults to 1.
         _data_['huber_threshold'] (float): Parameter for the Huber data fidelity (to supress outliers).
         _data_['studentst_threshold] (float):  Parameter for Students't data fidelity (to supress outliers).
         _data_['ringGH_lambda'] (float):  Parameter for Group-Huber data model to supress full rings of the uniform intensity.
         _data_['ringGH_accelerate'] (float): Group-Huber data model acceleration factor (can lead to divergence). Defaults to 50.
         _data_['beta_SWLS'] (float): Regularisation parameter for stripe-weighted data model (ring artefacts removal) Defaults to 0.1.
-   
+
         _algorithm_['iterations'] (int): The number of iterations for the reconstruction algorithm.
         _algorithm_['nonnegativity'] (bool): Enable nonnegativity for the solution. Defaults to False.
-        _algorithm_['recon_mask_radius'] (float): Enables a circular mask cutoff in the reconstructed image. Defaults to 1.0.               
+        _algorithm_['recon_mask_radius'] (float): Enables a circular mask cutoff in the reconstructed image. Defaults to 1.0.
         _algorithm_['initialise'] (ndarray): Initialise an algorithm with an array.
         _algorithm_['lipschitz_const'] (float): Lipschitz constant for the FISTA algorithm. If not provided it will be calculated for each method call.
         _algorithm_['ADMM_rho_const'] (float): Augmented Lagrangian parameter for the ADMM algorithm.
         _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm.
         _algorithm_['tolerance'] (float): Tolerance to terminate reconstruction algorithm iterations earlier. Defaults to 0.0.
-        _algorithm_['verbose'] (bool): Switch on printing of iterations number and other messages. Defaults to False. 
-        
-        _regularisation_['method'] (str): Select the regularisation method from the CCPi-regularisation toolkit. The supported 
+        _algorithm_['verbose'] (bool): Switch on printing of iterations number and other messages. Defaults to False.
+
+        _regularisation_['method'] (str): Select the regularisation method from the CCPi-regularisation toolkit. The supported
                 methods listed: ROF_TV, FGP_TV, PD_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV.
                 If one also installed `pypwt` package for Wavelets then one can WAVELET regularisation by adding WAVELETS to any method above
                 by appending "_WAVELETS" string to an existing regulariser. For instance, ROF_TV_WAVELETS would enable dual regularisation with ROF_TV
@@ -73,33 +76,54 @@ def dicts_check(
         _regularisation_['NLTV_H_i'] (ndarray): The NLTV penalty related weights, the array of i-related indices.
         _regularisation_['NLTV_H_j'] (ndarray): The NLTV penalty related weights, the array of j-related indices.
         _regularisation_['NLTV_Weights] (ndarray): The NLTV-specific penalty type, the array of Weights.
-        _regularisation_['methodTV'] (int): 0/1 - TV specific isotropic/anisotropic choice.       
+        _regularisation_['methodTV'] (int): 0/1 - TV specific isotropic/anisotropic choice.
 
     Returns:
         tuple: A tuple with three populated dictionaries (_data_, _algorithm_, _regularisation_).
     """
     if _data_ is None:
-        raise NameError("Data dictionary must be provided")
+        raise NameError("The data dictionary must be always provided")
     else:
         # -------- dealing with _data_ dictionary ------------
         if _data_.get("projection_norm_data") is None:
             raise NameError("No input 'projection_norm_data' has been provided")
         # projection raw data for PWLS/SWLS type data models
         if _data_.get("projection_raw_data") is None:
-            if (self.datafidelity == "PWLS") or (self.datafidelity == "SWLS"):
+            if self.datafidelity in ["PWLS", "SWLS"]:
                 raise NameError(
                     "No input 'projection_raw_data' provided for PWLS or SWLS data fidelity"
                 )
-        # do the axis swap if required:
-        for swap_tuple in self.data_swap_list:
-            if swap_tuple is not None:
-                _data_["projection_norm_data"] = xp.swapaxes(
-                    _data_["projection_norm_data"], swap_tuple[0], swap_tuple[1]
+
+        if "data_axes_labels_order" not in _data_:
+            _data_["data_axes_labels_order"] = None
+
+        if _data_["data_axes_labels_order"] is not None:
+            if self.geom == "2D":
+                _data_["projection_norm_data"] = _data_dims_swapper(
+                    _data_["projection_norm_data"],
+                    _data_["data_axes_labels_order"],
+                    ["angles", "detX"],
                 )
-                if _data_.get("projection_raw_data") is not None:
-                    _data_["projection_raw_data"] = xp.swapaxes(
-                        _data_["projection_raw_data"], swap_tuple[0], swap_tuple[1]
+                if self.datafidelity in ["PWLS", "SWLS"]:
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["angles", "detX"],
                     )
+            else:
+                _data_["projection_norm_data"] = _data_dims_swapper(
+                    _data_["projection_norm_data"],
+                    _data_["data_axes_labels_order"],
+                    ["detY", "angles", "detX"],
+                )
+                if self.datafidelity in ["PWLS", "SWLS"]:
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["detY", "angles", "detX"],
+                    )
+                    # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
+            _data_["data_axes_labels_order"] = None
 
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # classical approach (default)
@@ -109,10 +133,10 @@ def dicts_check(
             if self.datafidelity == "SWLS":
                 if _data_.get("beta_SWLS") is None:
                     # SWLS related parameter (ring supression)
-                    _data_["beta_SWLS"] = 0.1 * np.ones(self.DetectorsDimH)
+                    _data_["beta_SWLS"] = 0.1 * np.ones(self.Atools.detectors_x)
                 else:
                     _data_["beta_SWLS"] = _data_["beta_SWLS"] * np.ones(
-                        self.DetectorsDimH
+                        self.Atools.detectors_x
                     )
             # Huber data model to supress artifacts
             if "huber_threshold" not in _data_:
@@ -240,31 +264,34 @@ def dicts_check(
     return (_data_, _algorithm_, _regularisation_)
 
 
-def reinitialise_atools_OS(self, _data_: dict):
-    """reinitialises OS geometry by overwriting existing Atools
+def _reinitialise_atools_OS(self, _data_: dict):
+    """reinitialises OS geometry by overwriting the existing Atools
+       Note: Not an ideal thing to do as it can lead to various problems,
+       worth considering moving the subsets definition to the class init.
 
     Args:
         _data_ (dict): data dictionary
     """
+
     if self.geom == "2D":
-        self.Atools = AstraToolsOS(
-            self.DetectorsDimH,
-            self.AnglesVec,
-            self.CenterRotOffset,
-            self.ObjSize,
+        self.Atools = AstraTools2D(
+            self.Atools.detectors_x,
+            self.Atools.angles_vec,
+            self.Atools.centre_of_rotation,
+            self.Atools.recon_size,
+            self.Atools.processing_arch,
+            self.Atools.device_index,
             _data_["OS_number"],
-            self.device_projector,
-            self.GPUdevice_index,
         )  # initiate 2D ASTRA class OS object
     else:
-        self.Atools = AstraToolsOS3D(
-            self.DetectorsDimH,
-            self.DetectorsDimV,
-            self.AnglesVec,
-            self.CenterRotOffset,
-            self.ObjSize,
+        self.Atools = AstraTools3D(
+            self.Atools.detectors_x,
+            self.Atools.detectors_y,
+            self.Atools.angles_vec,
+            self.Atools.centre_of_rotation,
+            self.Atools.recon_size,
+            self.Atools.processing_arch,
+            self.Atools.device_index,
             _data_["OS_number"],
-            self.device_projector,
-            self.GPUdevice_index,
         )  # initiate 3D ASTRA class OS object
     return _data_
