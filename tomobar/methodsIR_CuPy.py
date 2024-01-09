@@ -3,7 +3,7 @@
 * Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
                                shrinkage-thresholding algorithm for linear inverse problems,
                                SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
-"""                               
+"""
 
 import numpy as np
 from typing import Union
@@ -11,7 +11,9 @@ from typing import Union
 try:
     import cupy as cp
 except ImportError:
-    print("Cupy library is a required dependency for this part of the code, please install")
+    print(
+        "Cupy library is a required dependency for this part of the code, please install"
+    )
 try:
     import astra
 except ImportError:
@@ -21,14 +23,15 @@ from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.methodsIR import RecToolsIR
 
+
 class RecToolsIRCuPy(RecToolsIR):
     """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox, CCPi-RGL toolkit.
     Parameters for reconstruction algorithms are extracted from three dictionaries:
-    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters 
+    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters
     that are accepted.
 
     If FISTA is used it will require CuPy-enabled routines of the CCPi-regularisation toolkit.
-    This implementation is typically >3 times faster than one in RecToolsIR, however 
+    This implementation is typically >3 times faster than one in RecToolsIR, however
     please note that the functionality of FISTA is limited compared to the version of
     FISTA in RecToolsIR. The work is in progress and the current FISTA version is experimental.
 
@@ -42,6 +45,7 @@ class RecToolsIRCuPy(RecToolsIR):
         device_projector (int): Provide a GPU index (integer) of a specific GPU device.
         cupyrun (bool, optional): instantiate CuPy modules.
     """
+
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
@@ -50,8 +54,8 @@ class RecToolsIRCuPy(RecToolsIR):
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # Reconstructed object dimensions (scalar)
         datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
-        device_projector=0, # provide a GPU index (integer) of a specific device
-        cupyrun = True,
+        device_projector=0,  # provide a GPU index (integer) of a specific device
+        cupyrun=True,
     ):
         super().__init__(
             DetectorsDimH,
@@ -103,7 +107,7 @@ class RecToolsIRCuPy(RecToolsIR):
                 residual
             )
             if _algorithm_upd_["nonnegativity"]:
-                x_rec[x_rec < 0.0] = 0.0        
+                x_rec[x_rec < 0.0] = 0.0
         return x_rec
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
@@ -147,14 +151,17 @@ class RecToolsIRCuPy(RecToolsIR):
         for iter_no in range(_algorithm_upd_["iterations"]):
             x_rec += C * self.Atools._backprojCuPy(
                 R
-                * (_data_upd_["projection_norm_data"] - self.Atools._forwprojCuPy(x_rec))
+                * (
+                    _data_upd_["projection_norm_data"]
+                    - self.Atools._forwprojCuPy(x_rec)
+                )
             )
             if _algorithm_upd_["nonnegativity"]:
-                x_rec[x_rec < 0.0] = 0.0        
+                x_rec[x_rec < 0.0] = 0.0
         return x_rec
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
-        """Conjugate Gradients Least Squares iterative technique to reconstruct projection data 
+        """Conjugate Gradients Least Squares iterative technique to reconstruct projection data
             given as a CuPy array. We aim to solve the system of normal equations A.T*A*x = A.T*b.
 
         Args:
@@ -169,10 +176,10 @@ class RecToolsIRCuPy(RecToolsIR):
         # parameters check and initialisation
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
-        )    
+        )
         ######################################################################
-        data_input = cp.ascontiguousarray(cp.copy(
-            (_data_upd_["projection_norm_data"]), order = "C")
+        data_input = cp.ascontiguousarray(
+            cp.copy((_data_upd_["projection_norm_data"]), order="C")
         )
         data_shape_3d = cp.shape(data_input)
 
@@ -190,7 +197,9 @@ class RecToolsIRCuPy(RecToolsIR):
         # perform CG iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
             # Update x_rec and r vectors:
-            Ad = self.Atools._forwprojCuPy(cp.reshape(d, newshape=x_shape_3d, order="C"))
+            Ad = self.Atools._forwprojCuPy(
+                cp.reshape(d, newshape=x_shape_3d, order="C")
+            )
             Ad = cp.ravel(Ad, order="C")
             alpha = normr2 / cp.inner(Ad, Ad)
             x_rec += alpha * d
@@ -207,7 +216,7 @@ class RecToolsIRCuPy(RecToolsIR):
             if _algorithm_upd_["nonnegativity"]:
                 x_rec[x_rec < 0.0] = 0.0
 
-        del d, s, beta, r, alpha, Ad, normr2_new, normr2        
+        del d, s, beta, r, alpha, Ad, normr2_new, normr2
         return cp.reshape(x_rec, newshape=x_shape_3d, order="C")
 
     def powermethod(self, _data_: dict) -> float:
@@ -222,7 +231,7 @@ class RecToolsIRCuPy(RecToolsIR):
         """
         cp._default_memory_pool.free_all_blocks()
         # numpy-cupy agnostic function
-        return super().powermethod(_data_)       
+        return super().powermethod(_data_)
 
     def FISTA(
         self,
@@ -232,10 +241,10 @@ class RecToolsIRCuPy(RecToolsIR):
     ) -> cp.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types regularisations.
            The parameters for the algorithm should be provided in three dictionaries:
-           _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function 
+           _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function
            for all parameters that are accepted.
            Please note that not all of the functionality supported compared to FISTA from methodsIR.
-            
+
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.

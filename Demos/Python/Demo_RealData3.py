@@ -34,8 +34,7 @@ RectoolsDIR = RecToolsDIR(
     device_projector="gpu",
 )
 
-FBPrec = RectoolsDIR.FBP(sinogram,
-                         data_axes_labels_order=data_labels2D)
+FBPrec = RectoolsDIR.FBP(sinogram, data_axes_labels_order=data_labels2D)
 
 fig = plt.figure()
 plt.imshow(FBPrec, vmin=0, vmax=0.005, cmap="gray")
@@ -62,7 +61,8 @@ Rectools = RecToolsIR(
 _data_ = {
     "projection_norm_data": sinogram,  # Normalised projection data
     "OS_number": 6,  # The number of subsets
-    "data_axes_labels_order": data_labels2D}  # data dictionary
+    "data_axes_labels_order": data_labels2D,
+}  # data dictionary
 
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
 

@@ -66,7 +66,7 @@ _noise_ = {
 projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_)
 
 # NOTE: the best practice is to provide the axes labels to the method.
-# In that case any data orientation can be handled automatically. 
+# In that case any data orientation can be handled automatically.
 data_labels3D = ["detY", "angles", "detX"]  # set the input data labels
 
 
@@ -96,11 +96,12 @@ RectoolsDIR = RecToolsDIR(
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",    
+    device_projector="gpu",
 )
 
-FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise,
-                         data_axes_labels_order=data_labels3D)  # perform FBP
+FBPrec = RectoolsDIR.FBP(
+    projData3D_analyt_noise, data_axes_labels_order=data_labels3D
+)  # perform FBP
 
 sliceSel = int(0.5 * N_size)
 max_val = 1
@@ -128,8 +129,10 @@ RecTools = RecToolsIR(
     device_projector="gpu",
 )
 
-_data_ = {"projection_norm_data": projData3D_analyt_noise,
-          "data_axes_labels_order": data_labels3D}  # data dictionary
+_data_ = {
+    "projection_norm_data": projData3D_analyt_noise,
+    "data_axes_labels_order": data_labels3D,
+}  # data dictionary
 
 _algorithm_ = {"iterations": 200}
 
@@ -165,8 +168,10 @@ Rectools = RecToolsIR(
     device_projector="gpu",
 )
 
-_data_ = {"projection_norm_data": projData3D_analyt_noise,
-          "data_axes_labels_order": data_labels3D}  # data dictionary
+_data_ = {
+    "projection_norm_data": projData3D_analyt_noise,
+    "data_axes_labels_order": data_labels3D,
+}  # data dictionary
 
 lc = Rectools.powermethod(
     _data_
@@ -246,7 +251,8 @@ start_time = timeit.default_timer()
 _data_ = {
     "projection_norm_data": projData3D_analyt,
     "OS_number": 8,
-    "data_axes_labels_order": data_labels3D}  # data dictionary
+    "data_axes_labels_order": data_labels3D,
+}  # data dictionary
 
 lc = Rectools.powermethod(
     _data_
@@ -261,7 +267,8 @@ RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
 _data_ = {
     "projection_norm_data": projData3D_analyt,
     "OS_number": 8,
-    "data_axes_labels_order": data_labels3D}  # data dictionary
+    "data_axes_labels_order": data_labels3D,
+}  # data dictionary
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {

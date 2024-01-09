@@ -45,10 +45,12 @@ RectoolsDIR = RecToolsDIR(
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",    
+    device_projector="gpu",
 )
 
-FBPrec = RectoolsDIR.FBP(data_norm[:, :, slice_to_recon], data_axes_labels_order=["detX", "angles"])
+FBPrec = RectoolsDIR.FBP(
+    data_norm[:, :, slice_to_recon], data_axes_labels_order=["detX", "angles"]
+)
 
 fig = plt.figure()
 plt.imshow(FBPrec[100:900, 100:900], vmin=0, vmax=0.004, cmap="gray")
@@ -66,7 +68,7 @@ Rectools = RecToolsIR(
     datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
 )
-# %% 
+# %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA PWLS-OS-TV method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -77,7 +79,8 @@ _data_ = {
     ],  # Normalised projection data
     "projection_raw_data": dataRaw[:, :, slice_to_recon],  # Raw projection data
     "OS_number": 6,  # The number of subsets
-    "data_axes_labels_order": ["detX", "angles"]}
+    "data_axes_labels_order": ["detX", "angles"],
+}
 
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
 
@@ -184,7 +187,8 @@ _data_ = {
     "projection_norm_data": data_norm[
         :, :, slice_to_recon
     ],  # Normalised projection data
-    "data_axes_labels_order": ["detX", "angles"]}
+    "data_axes_labels_order": ["detX", "angles"],
+}
 
 _algorithm_ = {"iterations": 15, "ADMM_rho_const": 500.0}
 
@@ -226,7 +230,8 @@ Rectools = RecToolsIR(
 _data_ = {
     "projection_norm_data": data_norm[:, :, slice_to_recon],
     "OS_number": 6,
-    "data_axes_labels_order": ["detX", "angles"]}
+    "data_axes_labels_order": ["detX", "angles"],
+}
 
 lc = Rectools.powermethod(
     _data_
@@ -273,7 +278,8 @@ _data_ = {
     "projection_raw_data": dataRaw[:, :, slice_to_recon],  # Raw projection data
     "beta_SWLS": 0.2,  #  a parameter for SWLS model
     "OS_number": 6,  # The number of subsets
-    "data_axes_labels_order": ["detX", "angles"]}
+    "data_axes_labels_order": ["detX", "angles"],
+}
 
 lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant (run once)
 

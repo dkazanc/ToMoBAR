@@ -15,9 +15,11 @@ from typing import Union
 
 try:
     import cupy as cp
+
     cupy_imported = True
 except ImportError:
     import numpy as xp
+
     cupy_imported = False
 
 import astra
@@ -29,10 +31,11 @@ from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
 from tomobar.regularisers import prox_regul
 from tomobar.astra_wrappers import AstraTools2D, AstraTools3D
 
-class RecToolsIR():
+
+class RecToolsIR:
     """Iterative reconstruction algorithms (FISTA and ADMM) using ASTRA toolbox and CCPi-RGL toolkit.
     Parameters for reconstruction algorithms are extracted from three dictionaries:
-    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters 
+    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters
     that are accepted.
 
     Args:
@@ -45,6 +48,7 @@ class RecToolsIR():
         device_projector (str, int): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
         cupyrun (bool, optional): instantiate CuPy modules.
     """
+
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
@@ -53,37 +57,35 @@ class RecToolsIR():
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # Reconstructed object dimensions (scalar)
         datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
-        device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device        
-        cupyrun = False,
+        device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+        cupyrun=False,
     ):
         self.datafidelity = datafidelity
         self.cupyrun = cupyrun
 
-        device_projector, GPUdevice_index = _parse_device_argument(
-            device_projector
-        )
+        device_projector, GPUdevice_index = _parse_device_argument(device_projector)
 
-        if (DetectorsDimV == 0 or DetectorsDimV is None):
+        if DetectorsDimV == 0 or DetectorsDimV is None:
             self.geom = "2D"
             self.Atools = AstraTools2D(
-                            DetectorsDimH,
-                            AnglesVec,
-                            CenterRotOffset,
-                            ObjSize,
-                            device_projector,
-                            GPUdevice_index,
-                            )
+                DetectorsDimH,
+                AnglesVec,
+                CenterRotOffset,
+                ObjSize,
+                device_projector,
+                GPUdevice_index,
+            )
         else:
             self.geom = "3D"
             self.Atools = AstraTools3D(
-                            DetectorsDimH,
-                            DetectorsDimV,
-                            AnglesVec,
-                            CenterRotOffset,
-                            ObjSize,
-                            device_projector,
-                            GPUdevice_index,
-                            )   
+                DetectorsDimH,
+                DetectorsDimV,
+                AnglesVec,
+                CenterRotOffset,
+                ObjSize,
+                device_projector,
+                GPUdevice_index,
+            )
 
     @property
     def datafidelity(self) -> int:
@@ -121,7 +123,9 @@ class RecToolsIR():
         )
         ######################################################################
         # SIRT reconstruction algorithm from ASTRA wrappers
-        return self.Atools._sirt(_data_upd_["projection_norm_data"], _algorithm_upd_["iterations"])
+        return self.Atools._sirt(
+            _data_upd_["projection_norm_data"], _algorithm_upd_["iterations"]
+        )
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> xp.ndarray:
         """Conjugate Gradient Least Squares from ASTRA toolbox.
@@ -139,9 +143,11 @@ class RecToolsIR():
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
-        ######################################################################      
+        ######################################################################
         # CGLS reconstruction algorithm from ASTRA-wrappers
-        return self.Atools._cgls(_data_upd_["projection_norm_data"], _algorithm_upd_["iterations"])
+        return self.Atools._cgls(
+            _data_upd_["projection_norm_data"], _algorithm_upd_["iterations"]
+        )
 
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
@@ -159,31 +165,50 @@ class RecToolsIR():
             if cupy_imported:
                 import cupy as xp
         if "data_axes_labels_order" not in _data_:
-            _data_['data_axes_labels_order'] = None
-        if self.datafidelity in ["PWLS", "SWLS"] and "projection_raw_data" not in _data_:
+            _data_["data_axes_labels_order"] = None
+        if (
+            self.datafidelity in ["PWLS", "SWLS"]
+            and "projection_raw_data" not in _data_
+        ):
             raise ValueError("Please provide projection_raw_data for this model")
         if self.datafidelity in ["PWLS", "SWLS"]:
-            sqweight = _data_['projection_raw_data']
+            sqweight = _data_["projection_raw_data"]
 
-        if _data_['data_axes_labels_order'] is not None:
+        if _data_["data_axes_labels_order"] is not None:
             if self.geom == "2D":
-                _data_["projection_norm_data"] = _data_dims_swapper(_data_["projection_norm_data"], _data_['data_axes_labels_order'], ["angles", "detX"])
+                _data_["projection_norm_data"] = _data_dims_swapper(
+                    _data_["projection_norm_data"],
+                    _data_["data_axes_labels_order"],
+                    ["angles", "detX"],
+                )
                 if self.datafidelity in ["PWLS", "SWLS"]:
-                    _data_['projection_raw_data'] = _data_dims_swapper(_data_['projection_raw_data'], _data_['data_axes_labels_order'], ["angles", "detX"])
-                    sqweight = _data_['projection_raw_data']
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["angles", "detX"],
+                    )
+                    sqweight = _data_["projection_raw_data"]
             else:
-                _data_["projection_norm_data"] = _data_dims_swapper(_data_["projection_norm_data"], _data_['data_axes_labels_order'], ["detY", "angles", "detX"])
+                _data_["projection_norm_data"] = _data_dims_swapper(
+                    _data_["projection_norm_data"],
+                    _data_["data_axes_labels_order"],
+                    ["detY", "angles", "detX"],
+                )
                 if self.datafidelity in ["PWLS", "SWLS"]:
-                    _data_['projection_raw_data'] = _data_dims_swapper(_data_['projection_raw_data'], _data_['data_axes_labels_order'], ["detY", "angles", "detX"])
-                    sqweight = _data_['projection_raw_data']
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["detY", "angles", "detX"],
+                    )
+                    sqweight = _data_["projection_raw_data"]
                     # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
-            _data_['data_axes_labels_order'] = None
-        
+            _data_["data_axes_labels_order"] = None
+
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # the classical approach (default)
         else:
             _data_ = _reinitialise_atools_OS(self, _data_)
-        
+
         power_iterations = 15
         s = 1.0
         proj_geom = astra.geom_size(self.Atools.vol_geom)
@@ -231,7 +256,7 @@ class RecToolsIR():
                 if cupy_imported and self.cupyrun:
                     x1 = self.Atools._backprojOSCuPy(y, 0)
                 else:
-                    x1 = self.Atools._backprojOS(y, 0)                
+                    x1 = self.Atools._backprojOS(y, 0)
                 if cupy_imported and self.cupyrun:
                     s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 else:
@@ -278,7 +303,7 @@ class RecToolsIR():
         )
         if _data_upd_["OS_number"] > 1:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
-        ######################################################################        
+        ######################################################################
 
         L_const_inv = (
             1.0 / _algorithm_upd_["lipschitz_const"]
@@ -303,7 +328,12 @@ class RecToolsIR():
                 X = _algorithm_upd_["initialise"]
             else:
                 X = xp.zeros(
-                    (self.Atools.detectors_y, self.Atools.recon_size, self.Atools.recon_size), "float32"
+                    (
+                        self.Atools.detectors_y,
+                        self.Atools.recon_size,
+                        self.Atools.recon_size,
+                    ),
+                    "float32",
                 )  # initialise with zeros
             r = xp.zeros(
                 (self.Atools.detectors_y, self.Atools.detectors_x), "float32"
@@ -652,7 +682,9 @@ class RecToolsIR():
         try:
             import scipy.sparse.linalg
         except ImportError:
-            print("____! Scipy toolbox package is missing, please install for ADMM !____")        
+            print(
+                "____! Scipy toolbox package is missing, please install for ADMM !____"
+            )
         if not self.cupyrun:
             import numpy as xp
         ######################################################################
@@ -712,10 +744,16 @@ class RecToolsIR():
                 + (1.0 - _algorithm_upd_["ADMM_relax_par"]) * zold
             )
             if self.geom == "2D":
-                x_prox_reg = (x_hat + u).reshape([self.Atools.recon_size, self.Atools.recon_size])
+                x_prox_reg = (x_hat + u).reshape(
+                    [self.Atools.recon_size, self.Atools.recon_size]
+                )
             if self.geom == "3D":
                 x_prox_reg = (x_hat + u).reshape(
-                    [self.Atools.detectors_y, self.Atools.recon_size, self.Atools.recon_size]
+                    [
+                        self.Atools.detectors_y,
+                        self.Atools.recon_size,
+                        self.Atools.recon_size,
+                    ]
                 )
             # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
             if _regularisation_upd_["method"] is not None:
@@ -747,7 +785,13 @@ class RecToolsIR():
         if self.geom == "2D":
             return X.reshape([self.Atools.recon_size, self.Atools.recon_size])
         if self.geom == "3D":
-            return X.reshape([self.Atools.detectors_y, self.Atools.recon_size, self.Atools.recon_size])
+            return X.reshape(
+                [
+                    self.Atools.detectors_y,
+                    self.Atools.recon_size,
+                    self.Atools.recon_size,
+                ]
+            )
         return X
 
 

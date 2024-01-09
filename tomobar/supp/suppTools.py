@@ -275,8 +275,8 @@ def autocropper(data, addbox, backgr_pix1):
     Method assumes that the object is positioned vertically around the central
     point of the horizontal detector. It is important since the vertical mid ROI
     of each projection is used to estimate the background noise levels.
-    
-    
+
+
     Args:
         data (np.ndarray) The required dimensions: [Projections, detectorsVertical, detectorsHoriz] !
         addbox: (int) to add additional pixels in addition to automatically found cropped values, i.e. increasing the cropping region (safety option)

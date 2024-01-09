@@ -62,9 +62,11 @@ RecToolsCP = RecToolsDIRCuPy(
 )
 
 tic = timeit.default_timer()
-FBPrec_cupy = RecToolsCP.FBP(projData3D_analyt_cupy, 
-                             recon_mask_radius=0.9,
-                             data_axes_labels_order=input_data_labels)
+FBPrec_cupy = RecToolsCP.FBP(
+    projData3D_analyt_cupy,
+    recon_mask_radius=0.9,
+    data_axes_labels_order=input_data_labels,
+)
 toc = timeit.default_timer()
 Run_time = toc - tic
 print(
@@ -107,12 +109,14 @@ RecToolsCP_iter = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
-    device_projector="gpu",    
+    device_projector="gpu",
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy,
-          "data_axes_labels_order": input_data_labels}  # data dictionary
+_data_ = {
+    "projection_norm_data": projData3D_analyt_cupy,
+    "data_axes_labels_order": input_data_labels,
+}  # data dictionary
 
 LWrec_cupy = RecToolsCP_iter.Landweber(_data_)
 
@@ -146,8 +150,10 @@ RecToolsCP_iter = RecToolsIRCuPy(
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy,
-          "data_axes_labels_order": input_data_labels}
+_data_ = {
+    "projection_norm_data": projData3D_analyt_cupy,
+    "data_axes_labels_order": input_data_labels,
+}
 
 _algorithm_ = {"iterations": 300, "nonnegativity": True}
 
@@ -183,8 +189,10 @@ RecToolsCP_iter = RecToolsIRCuPy(
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy,
-          "data_axes_labels_order": input_data_labels}
+_data_ = {
+    "projection_norm_data": projData3D_analyt_cupy,
+    "data_axes_labels_order": input_data_labels,
+}
 
 _algorithm_ = {"iterations": 20, "nonnegativity": True}
 CGLSrec_cupy = RecToolsCP_iter.CGLS(_data_, _algorithm_)
@@ -215,13 +223,15 @@ RecToolsCP_iter = RecToolsIRCuPy(
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity='LS',
+    datafidelity="LS",
     device_projector=0,
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy,
-          "data_axes_labels_order": input_data_labels}  # data dictionary
+_data_ = {
+    "projection_norm_data": projData3D_analyt_cupy,
+    "data_axes_labels_order": input_data_labels,
+}  # data dictionary
 
 lc = RecToolsCP_iter.powermethod(_data_)
 
@@ -268,7 +278,8 @@ start_time = timeit.default_timer()
 _data_ = {
     "projection_norm_data": projData3D_analyt_cupy,
     "OS_number": 8,
-    "data_axes_labels_order": input_data_labels}  # data dictionary
+    "data_axes_labels_order": input_data_labels,
+}  # data dictionary
 
 lc = RecToolsCP_iter.powermethod(_data_)
 _algorithm_ = {"iterations": 15, "lipschitz_const": lc.get()}

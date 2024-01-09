@@ -5,6 +5,7 @@ initiate proximity operator for iterative methods.
 """
 import numpy as np
 from typing import Union
+
 try:
     from ccpi.filters.regularisers import (
         ROF_TV,
@@ -31,11 +32,11 @@ except ImportError:
 
 
 def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray, tuple]:
-    """Enabling proximal operators step in interative reconstruction. 
+    """Enabling proximal operators step in interative reconstruction.
 
     Args:
         X (np.ndarray): 2D or 3D numpy array.
-        _regularisation_ (dict): Regularisation dictionary with parameters. 
+        _regularisation_ (dict): Regularisation dictionary with parameters.
 
     Returns:
         np.ndarray or a tuple: Filtered 2D or 3D numpy array or a tuple.

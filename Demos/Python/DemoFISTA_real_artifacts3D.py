@@ -67,7 +67,7 @@ plt.subplot(132)
 plt.imshow(projData3D_analyt[sliceSel, :, :], vmin=0, vmax=intens_max_clean)
 plt.title("Sinogram view")
 plt.subplot(133)
-plt.imshow(projData3D_analyt[:, :, sliceSel], vmin=0, vmax=1.1*intens_max_clean)
+plt.imshow(projData3D_analyt[:, :, sliceSel], vmin=0, vmax=1.1 * intens_max_clean)
 plt.title("Tangentogram view")
 plt.show()
 # %%
@@ -153,11 +153,7 @@ plt.show()
 # calculate errors
 Qtools = QualityTools(phantom_3D, recNumerical_conventional)
 RMSE = Qtools.rmse()
-print(
-    "Root Mean Square Error is {} for FBP".format(
-        RMSE
-    )
-)
+print("Root Mean Square Error is {} for FBP".format(RMSE))
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA-OS method using tomobar")
@@ -219,11 +215,7 @@ plt.show()
 # calculate errors
 Qtools = QualityTools(phantom_3D, RecFISTA_os_reg)
 RMSE = Qtools.rmse()
-print(
-    "Root Mean Square Error is {} for PWLS-TV".format(
-        RMSE
-    )
-)
+print("Root Mean Square Error is {} for PWLS-TV".format(RMSE))
 # %%
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -258,7 +250,7 @@ _algorithm_ = {"iterations": 15, "lipschitz_const": lc}
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
     "method": "PD_TV_WAVELETS",
-    "regul_param": 0.0000035, # Regularisation parameter for TV
+    "regul_param": 0.0000035,  # Regularisation parameter for TV
     "regul_param2": 0.000001,  # Regularisation parameter for wavelets
     "iterations": 80,
     "device_regulariser": "gpu",
@@ -287,11 +279,7 @@ plt.show()
 # calculate errors
 Qtools = QualityTools(phantom_3D, RecFISTA_os_reg_tv_w)
 RMSE = Qtools.rmse()
-print(
-    "Root Mean Square Error is {} for PWLS-TV".format(
-        RMSE
-    )
-)
+print("Root Mean Square Error is {} for PWLS-TV".format(RMSE))
 
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -323,7 +311,7 @@ _algorithm_ = {"iterations": 20, "recon_mask_radius": 0.9, "lipschitz_const": lc
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
     "method": "PD_TV_WAVELETS",
-    "regul_param": 0.0000015, # Regularisation parameter for TV
+    "regul_param": 0.0000015,  # Regularisation parameter for TV
     "regul_param2": 0.0000005,  # Regularisation parameter for wavelets
     "iterations": 80,
     "device_regulariser": "gpu",
@@ -352,4 +340,4 @@ plt.subplot(133)
 plt.imshow(RecFISTA_SWLS_reg[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FISTA-SWLS-TV Recon, sagittal view")
 plt.show()
-#%%
+# %%

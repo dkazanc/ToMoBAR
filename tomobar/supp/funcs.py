@@ -16,9 +16,11 @@ try:
 except ImportError:
     import numpy as xp
 
+
 # define a 2D vector geometry
-def _vec_geom_init2D(angles_rad: np.ndarray, 
-                      CenterRotOffset: Union[float, List]) -> np.ndarray:
+def _vec_geom_init2D(
+    angles_rad: np.ndarray, CenterRotOffset: Union[float, List]
+) -> np.ndarray:
     DetectorSpacingX = 1.0
     s0 = [0.0, -1.0]  # source
     u0 = [DetectorSpacingX, 0.0]  # detector coordinates
@@ -36,6 +38,7 @@ def _vec_geom_init2D(angles_rad: np.ndarray,
         vec_temp = np.dot(__rotation_matrix2D(theta), u0)
         vectors[i, 4:6] = vec_temp[:]  # detector pixel (0,0) to (0,1).
     return vectors
+
 
 # define 3D vector geometry
 def _vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOffset):
@@ -65,6 +68,7 @@ def _vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOf
 def __rotation_matrix2D(theta):
     return np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
 
+
 # define 3D rotation matrix
 def __rotation_matrix3D(theta):
     return np.array(
@@ -74,6 +78,7 @@ def __rotation_matrix3D(theta):
             [0.0, 0.0, 1.0],
         ]
     )
+
 
 def __get_swap_tuple(data_axis_labels, labels_order):
     swap_tuple = None
@@ -95,14 +100,14 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
         data_axes_labels (list):  a list of data labels, e.g. given as ['angles', 'detX', 'detY']
         required_labels_order (list): the required (fixed) order of axis labels for data, e.g. ["detY", "angles", "detX"].
 
-    Returns:    
+    Returns:
         list: A list of two tuples for input data swaping axis. If both are None, then no swapping needed.
     """
 
     if len(data_axes_labels) != len(required_labels_order):
         raise ValueError(
             f"Warning: The mismatch between labels data dimensions for 2D and 3D."
-        )        
+        )
     swap_tuple2 = None
     # check if the labels names are the accepted ones
     for str_1 in data_axes_labels:
@@ -148,6 +153,7 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
             data = xp.swapaxes(data, swap_tuple[0], swap_tuple[1])
     return data
 
+
 def _parse_device_argument(device_int_or_string):
     """Convert a cpu/gpu string or integer gpu number into a tuple."""
     if isinstance(device_int_or_string, int):
@@ -163,7 +169,10 @@ def _parse_device_argument(device_int_or_string):
             )
         )
 
-def _data_dims_swapper(data: xp.ndarray, data_axes_labels_order: list, required_labels_order: list) -> xp.ndarray:
+
+def _data_dims_swapper(
+    data: xp.ndarray, data_axes_labels_order: list, required_labels_order: list
+) -> xp.ndarray:
     """Swaps data axes as it required
 
     Args:
@@ -174,6 +183,7 @@ def _data_dims_swapper(data: xp.ndarray, data_axes_labels_order: list, required_
     Returns:
         xp.ndarray: An array with swapped (or not) axes.
     """
-    data_swap_list = _swap_data_axes_to_accepted(data_axes_labels_order, required_labels_order)
+    data_swap_list = _swap_data_axes_to_accepted(
+        data_axes_labels_order, required_labels_order
+    )
     return _data_swap(data, data_swap_list)
-

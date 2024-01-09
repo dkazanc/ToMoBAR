@@ -46,12 +46,11 @@ RectoolsDIR = RecToolsDIR(
     device_projector="gpu",
 )
 
-FBPrec = RectoolsDIR.FBP(data_norm,
-                         data_axes_labels_order=data_labels2D)
+FBPrec = RectoolsDIR.FBP(data_norm, data_axes_labels_order=data_labels2D)
 
 plt.figure()
-plt.imshow(FBPrec[500:1500,500:1500], vmin=0, vmax=1, cmap="gray")
-#plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
+plt.imshow(FBPrec[500:1500, 500:1500], vmin=0, vmax=1, cmap="gray")
+# plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
 plt.title("FBP reconstruction")
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -74,7 +73,8 @@ _data_ = {
     "projection_norm_data": data_norm,
     "projection_raw_data": data_raw,
     "OS_number": 6,
-    "data_axes_labels_order": data_labels2D}  # data dictionary
+    "data_axes_labels_order": data_labels2D,
+}  # data dictionary
 
 lc = Rectools.powermethod(
     _data_
@@ -141,8 +141,9 @@ _data_ = {
     "projection_norm_data": data_norm,
     "projection_raw_data": data_raw,
     "OS_number": 6,
-    "data_axes_labels_order": data_labels2D}  # data dictionary
-    
+    "data_axes_labels_order": data_labels2D,
+}  # data dictionary
+
 lc = Rectools.powermethod(
     _data_
 )  # calculate Lipschitz constant (run once to initialise)
@@ -182,9 +183,7 @@ Rectools = RecToolsIR(
 )
 
 # prepare dictionaries with parameters:
-_data_ = {
-    "projection_norm_data": data_norm,
-    "data_axes_labels_order": data_labels2D}
+_data_ = {"projection_norm_data": data_norm, "data_axes_labels_order": data_labels2D}
 
 _algorithm_ = {"iterations": 5, "ADMM_rho_const": 500.0}
 
