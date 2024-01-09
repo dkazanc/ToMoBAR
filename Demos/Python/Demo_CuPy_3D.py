@@ -43,7 +43,7 @@ print("Generate 3D analytical projection data with TomoPhantom")
 projData3D_analyt = TomoP3D.ModelSino(
     model, N_size, Horiz_det, Vert_det, angles, path_library3D
 )
-data_labels = ["detY", "angles", "detX"]
+input_data_labels = ["detY", "angles", "detX"]
 
 # transfering numpy array to CuPy array
 projData3D_analyt_cupy = cp.asarray(projData3D_analyt, order="C")
@@ -59,11 +59,12 @@ RecToolsCP = RecToolsDIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
-    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 tic = timeit.default_timer()
-FBPrec_cupy = RecToolsCP.FBP(projData3D_analyt_cupy, recon_mask_radius=0.9)
+FBPrec_cupy = RecToolsCP.FBP(projData3D_analyt_cupy, 
+                             recon_mask_radius=0.9,
+                             data_axes_labels_order=input_data_labels)
 toc = timeit.default_timer()
 Run_time = toc - tic
 print(
@@ -106,12 +107,13 @@ RecToolsCP_iter = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
-    device_projector="gpu",
-    data_axis_labels=data_labels,  # inpud data axes labels
+    device_projector="gpu",    
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
+_data_ = {"projection_norm_data": projData3D_analyt_cupy,
+          "data_axes_labels_order": input_data_labels}  # data dictionary
+
 LWrec_cupy = RecToolsCP_iter.Landweber(_data_)
 
 lwrec = cp.asnumpy(LWrec_cupy)
@@ -130,7 +132,6 @@ plt.subplot(133)
 plt.imshow(lwrec[:, :, sliceSel])
 plt.title("3D Landweber Reconstruction, sagittal view")
 plt.show()
-
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using SIRT algorithm %%%%%%%%%%%%%")
@@ -142,12 +143,14 @@ RecToolsCP_iter = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
-    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
+_data_ = {"projection_norm_data": projData3D_analyt_cupy,
+          "data_axes_labels_order": input_data_labels}
+
 _algorithm_ = {"iterations": 300, "nonnegativity": True}
+
 SIRTrec_cupy = RecToolsCP_iter.SIRT(_data_, _algorithm_)
 
 sirt_rec = cp.asnumpy(SIRTrec_cupy)
@@ -177,11 +180,12 @@ RecToolsCP_iter = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
-    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
+_data_ = {"projection_norm_data": projData3D_analyt_cupy,
+          "data_axes_labels_order": input_data_labels}
+
 _algorithm_ = {"iterations": 20, "nonnegativity": True}
 CGLSrec_cupy = RecToolsCP_iter.CGLS(_data_, _algorithm_)
 
@@ -201,7 +205,6 @@ plt.subplot(133)
 plt.imshow(cgls_rec[:, :, sliceSel])
 plt.title("3D CGLS Reconstruction, sagittal view")
 plt.show()
-del RecToolsCP_iter
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%% Reconstructing using FISTA algorithm %%%%%%%%%%%%")
@@ -212,13 +215,16 @@ RecToolsCP_iter = RecToolsIRCuPy(
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",
-    data_axis_labels=data_labels,  # inpud data axes labels
+    datafidelity='LS',
+    device_projector=0,
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_cupy}  # data dictionary
+_data_ = {"projection_norm_data": projData3D_analyt_cupy,
+          "data_axes_labels_order": input_data_labels}  # data dictionary
+
 lc = RecToolsCP_iter.powermethod(_data_)
+
 _algorithm_ = {"iterations": 300, "lipschitz_const": lc.get()}
 
 start_time = timeit.default_timer()
@@ -242,7 +248,6 @@ plt.subplot(133)
 plt.imshow(fista_rec_np[:, :, sliceSel])
 plt.title("3D FISTA Reconstruction, sagittal view")
 plt.show()
-del RecFISTA, RecToolsCP_iter
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%% Reconstructing using regularised FISTA-OS algorithm %%")
@@ -256,7 +261,6 @@ RecToolsCP_iter = RecToolsIRCuPy(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector=0,
-    data_axis_labels=data_labels,  # inpud data axes labels
 )
 
 start_time = timeit.default_timer()
@@ -264,7 +268,8 @@ start_time = timeit.default_timer()
 _data_ = {
     "projection_norm_data": projData3D_analyt_cupy,
     "OS_number": 8,
-}  # data dictionary
+    "data_axes_labels_order": input_data_labels}  # data dictionary
+
 lc = RecToolsCP_iter.powermethod(_data_)
 _algorithm_ = {"iterations": 15, "lipschitz_const": lc.get()}
 
@@ -295,5 +300,4 @@ plt.subplot(133)
 plt.imshow(fista_rec_np[:, :, sliceSel])
 plt.title("3D FISTA-OS Reconstruction, sagittal view")
 plt.show()
-del RecFISTA, RecToolsCP_iter
 # %%

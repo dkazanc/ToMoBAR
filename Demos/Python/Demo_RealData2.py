@@ -1,24 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GPLv3 license (ASTRA toolbox)
-
-Script to reconstruct tomographic X-ray data (ice cream crystallisation process)
+A script to reconstruct tomographic X-ray data (ice cream crystallisation process)
 obtained at Diamond Light Source (UK synchrotron), beamline I13
 
-Dependencies: 
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or conda build of  https://github.com/vais-ral/CCPi-Regularisation-Toolkit
 
 <<<
-IF THE SHARED DATA ARE USED FOR PUBLICATIONS/PRESENTATIONS etc., PLEASE CITE:
+IF THE SHARED DATA IS USED FOR PUBLICATIONS/PRESENTATIONS etc., PLEASE CITE:
 E. Guo et al. 2018. Revealing the microstructural stability of a 
 three-phase soft solid (ice cream) by 4D synchrotron X-ray tomography.
 Journal of Food Engineering, vol.237
 >>>
-@author: Daniil Kazantsev: https://github.com/dkazanc
+
 """
 
 import h5py
@@ -51,14 +44,14 @@ RectoolsDIR = RecToolsDIR(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
-    data_axis_labels=data_labels2D,
 )
 
-FBPrec = RectoolsDIR.FBP(data_norm)
+FBPrec = RectoolsDIR.FBP(data_norm,
+                         data_axes_labels_order=data_labels2D)
 
 plt.figure()
-# plt.imshow(FBPrec[500:1500,500:1500], vmin=0, vmax=1, cmap="gray")
-plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
+plt.imshow(FBPrec[500:1500,500:1500], vmin=0, vmax=1, cmap="gray")
+#plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
 plt.title("FBP reconstruction")
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -74,7 +67,6 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
-    data_axis_labels=data_labels2D,
 )
 
 # prepare dictionaries with parameters:
@@ -82,7 +74,7 @@ _data_ = {
     "projection_norm_data": data_norm,
     "projection_raw_data": data_raw,
     "OS_number": 6,
-}  # data dictionary
+    "data_axes_labels_order": data_labels2D}  # data dictionary
 
 lc = Rectools.powermethod(
     _data_
@@ -142,7 +134,6 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
-    data_axis_labels=data_labels2D,
 )
 
 # prepare dictionaries with parameters:
@@ -150,8 +141,8 @@ _data_ = {
     "projection_norm_data": data_norm,
     "projection_raw_data": data_raw,
     "OS_number": 6,
-}  # data dictionary
-
+    "data_axes_labels_order": data_labels2D}  # data dictionary
+    
 lc = Rectools.powermethod(
     _data_
 )  # calculate Lipschitz constant (run once to initialise)
@@ -188,13 +179,12 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
-    data_axis_labels=data_labels2D,
 )
 
 # prepare dictionaries with parameters:
 _data_ = {
     "projection_norm_data": data_norm,
-}  # data dictionary
+    "data_axes_labels_order": data_labels2D}
 
 _algorithm_ = {"iterations": 5, "ADMM_rho_const": 500.0}
 

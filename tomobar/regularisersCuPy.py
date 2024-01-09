@@ -34,7 +34,7 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             _regularisation_["iterations"],
             _regularisation_["time_marching_step"],
             _regularisation_["tolerance"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "PD_TV" in _regularisation_["method"]:
         # Primal-Dual (PD) Total variation method by Chambolle-Pock
@@ -46,6 +46,6 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             _regularisation_["methodTV"],
             self.nonneg_regul,
             _regularisation_["PD_LipschitzConstant"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     return X_prox

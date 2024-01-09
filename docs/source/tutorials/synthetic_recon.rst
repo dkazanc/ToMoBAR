@@ -18,6 +18,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
     from tomophantom.qualitymetrics import QualityTools
     from tomophantom.flatsgen import synth_flats
     from tomobar.supp.suppTools import normaliser
+    
     model = 16  # select a model number from the library of phantoms
     N_size = 256  # Define phantom dimensions using a scalar value (cubic phantom)
     path = os.path.dirname(tomophantom.__file__)
@@ -41,6 +42,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
     # angles number
     angles = np.linspace(0.0, 179.9, angles_num, dtype="float32")  # in degrees
     angles_rad = angles * (np.pi / 180.0) # in radians
+    
     projData3D_analyt = TomoP3D.ModelSino(
         model, N_size, Horiz_det, Vert_det, angles, path_library3D
     )
@@ -104,9 +106,10 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
         AnglesVec=angles_rad,  # array of angles in radians
         ObjSize=N_size,  # a scalar to define reconstructed object dimensions
         device_projector="gpu",
-        data_axes_labels3D = ["detY", "angles", "detX"],
     )
-    FBP_rec = RectoolsDIR.FBP(projData3D_norm)  # FBP reconstruction
+
+    data_axes_labels3D = ["detY", "angles", "detX"]
+    FBP_Rec = Rectools.FBP(projData3D_norm, data_axes_labels_order=data_axes_labels3D)    
 
 .. figure::  ../_static/tutorial/synth/FBP_recon.png
     :scale: 25 %
@@ -126,13 +129,15 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
         ObjSize=N_size,  # a scalar to define reconstructed object dimensions
         datafidelity="PWLS",  # data fidelity,
         device_projector="gpu",
-        data_axes_labels3D = ["detY", "angles", "detX"],
     )
+    
     _data_ = {
         "projection_norm_data": projData3D_norm,
         "projection_raw_data": projData3D_noisy / np.max(projData3D_noisy),
         "OS_number": 8, # the number of Ordered Subsets
+        "data_axes_labels_order": ["detY", "angles", "detX"],
     }  # data dictionary
+    
     lc = Rectools.powermethod(
         _data_
     )  # calculate Lipschitz constant (run once to initialise)
@@ -200,7 +205,6 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         datafidelity="SWLS",  # Stripe Weighted LS  Data fidelity
         device_projector="gpu",
-        data_axes_labels3D = ["detY", "angles", "detX"],
     )
 
     _data_ = {
@@ -208,6 +212,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
         "projection_raw_data": projData3D_noisy / np.max(projData3D_noisy),
         "beta_SWLS": 0.5, # SWLS related term
         "OS_number": 8, # the number of Ordered Subsets
+        "data_axes_labels_order": ["detY", "angles", "detX"],
     }  # data dictionary
 
     lc = Rectools.powermethod(
@@ -236,8 +241,6 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
   example we would like to demonstrate the principle of the `plug-and-play` functionality of the 
   ToMoBAR package.
 
-Note that one can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package. 
-Simply replace the :mod:`tomobar.methodsIR` class with :mod:`tomobar.methodsIR_CuPy` class and provide data as CuPy arrays. 
-Note that the array of angles for CuPy modules still should be provided as a Numpy array. 
-
+One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package. 
+For that one needs to use :mod:`tomobar.methodsIR_CuPy` class instead of :mod:`tomobar.methodsIR`. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
 

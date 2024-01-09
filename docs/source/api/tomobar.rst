@@ -16,11 +16,11 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
+   tomobar.astra_wrappers
    tomobar.methodsDIR
    tomobar.methodsDIR_CuPy
    tomobar.methodsIR
    tomobar.methodsIR_CuPy
-   tomobar.recon_base
    tomobar.regularisers
    tomobar.regularisersCuPy
 

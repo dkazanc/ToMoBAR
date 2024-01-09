@@ -16,9 +16,8 @@ ToMoBAR Modules
    ../api/tomobar.methodsDIR_CuPy  
    ../api/tomobar.methodsIR  
    ../api/tomobar.methodsIR_CuPy  
-   ../api/tomobar.recon_base
    ../api/tomobar.regularisers
    ../api/tomobar.regularisersCuPy         
-   ../api/tomobar.supp.astraOP
+   ../api/tomobar.astra_wrappers
    ../api/tomobar.supp.dicts
    ../api/tomobar.supp.suppTools

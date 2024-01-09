@@ -1,19 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GPLv3 license (ASTRA toolbox)
-
-Script to generate 3D analytical phantoms and their projection data with added 
+A script to generate 3D analytical phantoms and their projection data with added 
 noise and then reconstruct using regularised FISTA algorithm.
-
-Dependencies: 
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * CCPi-RGL toolkit (for regularisation), install with 
-    conda install ccpi-regulariser -c ccpi -c conda-forge
-    or https://github.com/vais-ral/CCPi-Regularisation-Toolkit
-    * TomoPhantom, https://github.com/dkazanc/TomoPhantom
-
-@author: Daniil Kazantsev
 """
 import timeit
 import os
@@ -76,8 +65,8 @@ _noise_ = {
 
 projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_)
 
-# NOTE: the best practise is to provide the axes labels to the reconstructor
-# classes. In that case any data orientation can be handled automatically
+# NOTE: the best practice is to provide the axes labels to the method.
+# In that case any data orientation can be handled automatically. 
 data_labels3D = ["detY", "angles", "detX"]  # set the input data labels
 
 
@@ -107,11 +96,11 @@ RectoolsDIR = RecToolsDIR(
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",
-    data_axis_labels=data_labels3D,  # set the labels of the input data
+    device_projector="gpu",    
 )
 
-FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise)  # perform FBP
+FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise,
+                         data_axes_labels_order=data_labels3D)  # perform FBP
 
 sliceSel = int(0.5 * N_size)
 max_val = 1
@@ -137,10 +126,11 @@ RecTools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
-    data_axis_labels=data_labels3D,  # set the labels of the input data
 )
 
-_data_ = {"projection_norm_data": projData3D_analyt_noise}  # data dictionary
+_data_ = {"projection_norm_data": projData3D_analyt_noise,
+          "data_axes_labels_order": data_labels3D}  # data dictionary
+
 _algorithm_ = {"iterations": 200}
 
 Iter_rec = RecTools.SIRT(_data_, _algorithm_)
@@ -173,10 +163,10 @@ Rectools = RecToolsIR(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
-    data_axis_labels=data_labels3D,  # set the labels of the input data
 )
 
-_data_ = {"projection_norm_data": projData3D_analyt_noise}  # data dictionary
+_data_ = {"projection_norm_data": projData3D_analyt_noise,
+          "data_axes_labels_order": data_labels3D}  # data dictionary
 
 lc = Rectools.powermethod(
     _data_
@@ -186,20 +176,6 @@ lc = Rectools.powermethod(
 _algorithm_ = {"iterations": 200, "lipschitz_const": lc}
 # Run FISTA reconstrucion algorithm without regularisation
 RecFISTA = Rectools.FISTA(_data_, _algorithm_, {})
-del Rectools
-
-Rectools = RecToolsIR(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
-    data_axis_labels=data_labels3D,  # set the labels of the input data
-)
-
-_data_ = {"projection_norm_data": projData3D_analyt_noise}  # data dictionary
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
@@ -243,7 +219,6 @@ plt.imshow(RecFISTA_reg[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FISTA regularised reconstruction, sagittal view")
 plt.show()
 
-
 # calculate errors
 Qtools = QualityTools(phantom_tm, RecFISTA)
 RMSE_FISTA = Qtools.rmse()
@@ -271,7 +246,7 @@ start_time = timeit.default_timer()
 _data_ = {
     "projection_norm_data": projData3D_analyt,
     "OS_number": 8,
-}  # data dictionary
+    "data_axes_labels_order": data_labels3D}  # data dictionary
 
 lc = Rectools.powermethod(
     _data_
@@ -283,23 +258,10 @@ _algorithm_ = {"iterations": 15, "lipschitz_const": lc}
 
 RecFISTA_os = Rectools.FISTA(_data_, _algorithm_, {})
 
-del Rectools
-
-Rectools = RecToolsIR(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
-    data_axis_labels=data_labels3D,  # set the labels of the input data
-)
-
 _data_ = {
     "projection_norm_data": projData3D_analyt,
     "OS_number": 8,
-}  # data dictionary
+    "data_axes_labels_order": data_labels3D}  # data dictionary
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
@@ -351,99 +313,4 @@ Qtools = QualityTools(phantom_tm, RecFISTA_os_reg)
 RMSE_FISTA_os_reg = Qtools.rmse()
 print("RMSE for FISTA-OS is {}".format(RMSE_FISTA_os))
 print("RMSE for regularised FISTA-OS is {}".format(RMSE_FISTA_os_reg))
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with FISTA-KL-OS method")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# set parameters and initiate a class object
-Rectools = RecToolsIR(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="KL",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
-)
-
-_data_ = {
-    "projection_norm_data": projData3D_analyt_noise,
-    "OS_number": 8,
-}  # data dictionary
-
-lc = Rectools.powermethod(
-    _data_
-)  # calculate Lipschitz constant (run once to initialise)
-
-# Run FISTA reconstrucion algorithm without regularisation
-_algorithm_ = {"iterations": 30, "lipschitz_const": lc * 0.3}
-# Run FISTA reconstrucion algorithm without regularisation
-RecFISTA_kl_os = Rectools.FISTA(_data_, _algorithm_, {})
-del Rectools
-
-Rectools = RecToolsIR(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
-    data_axis_labels=data_labels3D,  # set the labels of the input data
-)
-
-_data_ = {
-    "projection_norm_data": projData3D_analyt_noise,
-    "OS_number": 8,
-}  # data dictionary
-
-# adding regularisation using the CCPi regularisation toolkit and wavelets
-_regularisation_ = {
-    "method": "PD_TV_WAVELETS",
-    "regul_param": 0.00003,
-    "regul_param2": 0.00001,
-    "iterations": 30,
-    "device_regulariser": "gpu",
-}
-
-# Run FISTA reconstrucion algorithm with 3D regularisation
-RecFISTA_kl_os_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
-
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-plt.imshow(RecFISTA_kl_os[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-OS Reconstruction, axial view")
-
-plt.subplot(132)
-plt.imshow(RecFISTA_kl_os[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-OS Reconstruction, coronal view")
-
-plt.subplot(133)
-plt.imshow(RecFISTA_kl_os[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-OS Reconstruction, sagittal view")
-plt.show()
-
-plt.figure()
-plt.subplot(131)
-plt.imshow(RecFISTA_kl_os_reg[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-OS regularised reconstruction, axial view")
-
-plt.subplot(132)
-plt.imshow(RecFISTA_kl_os_reg[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-OS regularised reconstruction, coronal view")
-
-plt.subplot(133)
-plt.imshow(RecFISTA_kl_os_reg[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D FISTA-KL-OS regularised reconstruction, sagittal view")
-plt.show()
-
-# calculate errors
-Qtools = QualityTools(phantom_tm, RecFISTA_kl_os)
-RMSE_FISTA_klos = Qtools.rmse()
-Qtools = QualityTools(phantom_tm, RecFISTA_kl_os_reg)
-RMSE_FISTA_klos_reg = Qtools.rmse()
-print("RMSE for FISTA-KL-OS is {}".format(RMSE_FISTA_klos))
-print("RMSE for regularised FISTA-KL-OS is {}".format(RMSE_FISTA_klos_reg))
 # %%

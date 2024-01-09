@@ -5,12 +5,6 @@
 * We use TomoPhantom to generate artifacts
 * tomobar is required for reconstruction
 
->>>>> Dependencies (reconstruction): <<<<<
-1. ASTRA toolbox: conda install -c astra-toolbox astra-toolbox
-2. tomobar: conda install -c dkazanc tomobar
-or install from https://github.com/dkazanc/ToMoBAR
-
-@author: Daniil Kazantsev
 """
 import timeit
 import os
@@ -158,7 +152,7 @@ Qtools = QualityTools(phantom_tm, Rec_FBP)
 RMSE = Qtools.rmse()
 print("Root Mean Square Error is {}".format(RMSE))
 # %%
-# Reconstructing misaligned data using exact shifts
+# Reconstructing misaligned data using the exact shifts
 
 # initialise tomobar DIRECT reconstruction class ONCE
 from tomobar.methodsDIR import RecToolsDIR

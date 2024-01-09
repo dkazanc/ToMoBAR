@@ -20,10 +20,10 @@ def test_backproj2D(data, angles, processing_arch):
                            AnglesVec=angles,
                            ObjSize=N_size,
                            device_projector = processing_arch,
-                           data_axis_labels=["angles", "detX"],
                            )
             
-    FBPrec = RecTools.BACKPROJ(data2D)
+    FBPrec = RecTools.BACKPROJ(data2D,
+                               data_axes_labels_order=["angles", "detX"])
 
     assert 22 <= np.min(FBPrec) <= 25
     assert 130 <= np.max(FBPrec) <= 150
@@ -42,15 +42,18 @@ def test_forwproj2D(data, angles, processing_arch):
                            CenterRotOffset=0.0,
                            AnglesVec=angles,
                            ObjSize=N_size,
-                           device_projector = processing_arch,
-                           data_axis_labels=["angles", "detX"],
+                           device_projector = processing_arch,                           
                            )
             
-    frw_proj = RecTools.FORWPROJ(phantom)    
+    frw_proj = RecTools.FORWPROJ(phantom, 
+                                 data_axes_labels_order=["angles", "detX"])
+    frw_proj_order = RecTools.FORWPROJ(phantom, 
+                                data_axes_labels_order=["detX", "angles"])
     assert 60 <= np.min(frw_proj) <= 75
     assert 200 <= np.max(frw_proj) <= 300
     assert frw_proj.dtype == np.float32
     assert frw_proj.shape == (180, 160)  
+    assert frw_proj_order.shape == (160, 180)
 
 @pytest.mark.parametrize("processing_arch", ["cpu", "gpu"])
 def test_fbp2D(data, angles, processing_arch):
@@ -64,10 +67,10 @@ def test_fbp2D(data, angles, processing_arch):
                            AnglesVec=angles,
                            ObjSize=N_size,
                            device_projector = processing_arch,
-                           data_axis_labels=["angles", "detX"],
                            )
             
-    FBPrec = RecTools.FBP(data2D)
+    FBPrec = RecTools.FBP(data2D, 
+                          data_axes_labels_order=["angles", "detX"])
 
     assert np.min(FBPrec) <= -0.0001
     assert np.max(FBPrec) >= 0.001
@@ -112,14 +115,12 @@ def test_FBP2D_normalise(angles, raw_data, flats, darks):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="cpu",  # define the device
-        data_axis_labels=["angles", "detX"],  # set the labels of the input data
     )
     FBPrec = RecTools.FBP(data2D)
     assert_allclose(np.min(FBPrec), -0.010723082, rtol=eps)
     assert_allclose(np.max(FBPrec), 0.030544952, rtol=eps)
     assert FBPrec.dtype == np.float32
     assert FBPrec.shape == (160, 160)    
-
 
 def test_backproj3D(data, angles):
     detX = np.shape(data)[2]
@@ -131,10 +132,10 @@ def test_backproj3D(data, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",  # define the device
-        data_axis_labels=["angles", "detY", "detX"],  # set the labels of the input data
+        device_projector="gpu",  # define the device        
     )
-    backproj = RecTools.BACKPROJ(data)
+    backproj = RecTools.BACKPROJ(data,
+                                 data_axes_labels_order=["angles", "detY", "detX"])
     assert_allclose(np.min(backproj), -3.8901403, rtol=eps)
     assert_allclose(np.max(backproj), 350.38193, rtol=eps)
     assert backproj.dtype == np.float32
@@ -150,10 +151,10 @@ def test_FBP3D_1(data, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",  # define the device
-        data_axis_labels=["angles", "detY", "detX"],  # set the labels of the input data
+        device_projector="gpu",  # define the device        
     )
-    FBPrec = RecTools.FBP(data)
+    FBPrec = RecTools.FBP(data,
+                          data_axes_labels_order=["angles", "detY", "detX"])
     assert_allclose(np.min(FBPrec), -0.014693323, rtol=eps)
     assert_allclose(np.max(FBPrec), 0.0340156, rtol=eps)
     assert FBPrec.dtype == np.float32
@@ -172,9 +173,9 @@ def test_FBP3D_normalisation(angles, raw_data, flats, darks):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="gpu",  # define the device
-        data_axis_labels=["angles", "detY", "detX"],  # set the labels of the input data
     )
-    FBPrec = RecTools.FBP(normalised)
+    FBPrec = RecTools.FBP(normalised,
+                          data_axes_labels_order=["angles", "detY", "detX"])
     assert_allclose(np.min(FBPrec), -0.014656051, rtol=eps)
     assert_allclose(np.max(FBPrec), 0.0338298, rtol=eps)
     assert FBPrec.dtype == np.float32
@@ -191,51 +192,14 @@ def test_forwproj3D(data, angles):
                            CenterRotOffset=0.0,
                            AnglesVec=angles,
                            ObjSize=N_size,
-                           device_projector='gpu',
-                           data_axis_labels=["detY", "angles", "detX"],
+                           device_projector='gpu',                           
                            )
             
     frw_proj = RecTools.FORWPROJ(phantom)
+    frw_proj_order_chg = RecTools.FORWPROJ(phantom,
+                                 data_axes_labels_order=["angles", "detY", "detX"])
     assert_allclose(np.min(frw_proj), 67.27458, rtol=eps)
     assert_allclose(np.max(frw_proj), 225.27428, rtol=eps)
     assert frw_proj.dtype == np.float32
     assert frw_proj.shape == (128, 180, 160)
-
-# @pytest.mark.parametrize("processing_arch", ["cpu", "gpu"])
-# def test_sirt2D(data, angles, processing_arch):
-#     detX = np.shape(data)[2]
-#     data2D = data[:, 60, :]
-#     N_size = detX
-
-#     RecTools = AstraTools2D(detectors_x=detX, 
-#                             angles_vec=angles,
-#                             centre_of_rotation=0.0,
-#                             recon_size=N_size, 
-#                             processing_arch=processing_arch,
-#                             device_index=0)
-            
-#     rec = RecTools._sirt(data2D, 2)
-
-#     assert 0.00001 <= np.min(rec) <= 0.003
-#     assert 0.00001 <= np.max(rec) <= 0.01    
-#     assert rec.dtype == np.float32
-#     assert rec.shape == (160, 160)
-
-# @pytest.mark.parametrize("processing_arch", ["cpu", "gpu"])
-# def test_cgls2D(data, angles, processing_arch):
-#     detX = np.shape(data)[2]
-#     data2D = data[:, 60, :]
-#     N_size = detX
-
-#     RecTools = AstraTools2D(detectors_x=detX, 
-#                             angles_vec=angles,
-#                             centre_of_rotation=0.0,
-#                             recon_size=N_size, 
-#                             processing_arch=processing_arch,
-#                             device_index=0)
-            
-#     rec = RecTools._cgls(data2D, 2)
-#     assert np.min(rec) <= -0.0001
-#     assert np.max(rec) >= 0.001
-#     assert rec.dtype == np.float32
-#     assert rec.shape == (160, 160)
+    assert frw_proj_order_chg.shape == (180, 128, 160)

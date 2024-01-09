@@ -50,7 +50,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
             _regularisation_["iterations"],
             _regularisation_["time_marching_step"],
             _regularisation_["tolerance"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "FGP_TV" in _regularisation_["method"]:
         # Fast-Gradient-Projection Total variation method
@@ -61,7 +61,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
             _regularisation_["tolerance"],
             _regularisation_["methodTV"],
             self.nonneg_regul,
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "PD_TV" in _regularisation_["method"]:
         # Primal-Dual (PD) Total variation method by Chambolle-Pock
@@ -73,7 +73,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
             _regularisation_["methodTV"],
             self.nonneg_regul,
             _regularisation_["PD_LipschitzConstant"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "SB_TV" in _regularisation_["method"]:
         # Split Bregman Total variation method
@@ -83,7 +83,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
             _regularisation_["iterations"],
             _regularisation_["tolerance"],
             _regularisation_["methodTV"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "LLT_ROF" in _regularisation_["method"]:
         # Lysaker-Lundervold-Tai + ROF Total variation method
@@ -94,7 +94,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
             _regularisation_["iterations"],
             _regularisation_["time_marching_step"],
             _regularisation_["tolerance"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "TGV" in _regularisation_["method"]:
         # Total Generalised Variation method
@@ -106,7 +106,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
             _regularisation_["iterations"],
             _regularisation_["PD_LipschitzConstant"],
             _regularisation_["tolerance"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "NDF" in _regularisation_["method"]:
         # Nonlinear isotropic diffusion method
@@ -118,7 +118,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
             _regularisation_["time_marching_step"],
             self.NDF_method,
             _regularisation_["tolerance"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "Diff4th" in _regularisation_["method"]:
         # Anisotropic diffusion of higher order
@@ -129,7 +129,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
             _regularisation_["iterations"],
             _regularisation_["time_marching_step"],
             _regularisation_["tolerance"],
-            self.GPUdevice_index,
+            self.Atools.device_index,
         )
     if "NLTV" in _regularisation_["method"]:
         # Non-local Total Variation

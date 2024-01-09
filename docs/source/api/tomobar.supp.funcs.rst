@@ -1,6 +1,6 @@
-:mod:`tomobar.recon_base`
+:mod:`tomobar.supp.funcs`
 ============================================
-.. automodule:: tomobar.recon_base
+.. automodule:: tomobar.supp.funcs
    :members:
    :show-inheritance:
    :undoc-members:
