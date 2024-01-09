@@ -3,7 +3,7 @@ name: tomobar_docs
 on:
   schedule:
     # Run at midnight every day
-    - cron: '0 0 * * *'
+    - cron: '30 15 * * *'
     
 jobs:
   build-linux:
