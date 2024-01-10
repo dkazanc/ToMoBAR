@@ -22,7 +22,11 @@ except ImportError:
 
     cupy_imported = False
 
-import astra
+try:
+    import astra
+except ImportError:
+    print("____! Astra-toolbox package is missing, please install !____")
+
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 
 from tomobar.supp.suppTools import circ_mask

@@ -17,7 +17,7 @@ except ImportError:
 try:
     import astra
 except ImportError:
-    print("Astra toolbox is required, please install")
+    print("____! Astra-toolbox package is missing, please install !____")
 
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
