@@ -227,16 +227,14 @@ class RecToolsDIR:
                 "For griddata interpolation module choose nearest, linear or cubic"
             )
         import scipy.interpolate
-        import scipy.fftpack
+        from scipy.fft import fftshift, ifftshift, fft, ifft2
         import scipy.misc
         import scipy.ndimage.interpolation
 
         DetectorsDimH = self.Atools.detectors_x
         ObjSize = self.Atools.recon_size
         # Fourier transform the rows of the sinogram, move the DC component to the row's centre
-        sinogram_fft_rows = scipy.fftpack.fftshift(
-            scipy.fftpack.fft(scipy.fftpack.ifftshift(sinogram, axes=1)), axes=1
-        )
+        sinogram_fft_rows = fftshift(fft(ifftshift(sinogram, axes=1)), axes=1)
         # Coordinates of sinogram FFT-ed rows' samples in 2D FFT space
         a = -self.Atools.angles_vec
         r = np.arange(DetectorsDimH) - DetectorsDimH / 2
@@ -259,11 +257,9 @@ class RecToolsDIR:
             fill_value=0.0,
         ).reshape((DetectorsDimH, DetectorsDimH))
         # Transform from 2D Fourier space back to a reconstruction of the target
-        recon = np.real(
-            scipy.fftpack.fftshift(scipy.fftpack.ifft2(scipy.fftpack.ifftshift(fft2)))
-        )
+        recon = np.real(fftshift(ifft2(ifftshift(fft2))))
 
-        # Cropping reconstruction to size of the original image
+        # Cropping the reconstruction to size of the original image
         image = recon[
             int(((DetectorsDimH - ObjSize) / 2) + 1) : DetectorsDimH
             - int(((DetectorsDimH - ObjSize) / 2) - 1),
@@ -271,3 +267,33 @@ class RecToolsDIR:
             - int(((DetectorsDimH - ObjSize) / 2)),
         ]
         return image
+
+    def FOURIER3D(self, data: np.ndarray, **kwargs) -> np.ndarray:
+        """Fourier direct reconstruction.
+        Args:
+            data (np.ndarray): projection data or a sinogram
+
+        Keyword Args:
+            recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
+
+        Returns:
+            np.ndarray: The Fourier reconstructed volume or an image.
+        """
+        import scipy.interpolate
+        from scipy.fft import fftshift, ifftshift
+
+        for key, value in kwargs.items():
+            if key == "data_axes_labels_order" and value is not None:
+                if self.geom == "2D":
+                    data = _data_dims_swapper(data, value, ["angles", "detX"])
+                else:
+                    data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+
+        # Fourier transform the rows of the sinogram, move the DC component to the row's centre
+        sinogram_fft_rows = scipy.fftpack.fftshift(
+            scipy.fftpack.fft(scipy.fftpack.ifftshift(data, axes=1)), axes=1
+        )
+
+        proj_f = scipy.fft.rfft(data, axis=-1, norm="backward", overwrite_x=True)
+
+        return sinogram_fft_rows

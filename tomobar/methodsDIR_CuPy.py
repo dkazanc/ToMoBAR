@@ -1,73 +1,23 @@
-"""Reconstruction class for direct methods using CuPy-library.
+"""Reconstruction class for 3D direct methods using CuPy-library.
 
-* Forward/Backward projection (ASTRA with DirectLink and CuPy)
-* Filtered Back Projection (ASTRA, Filter implemented in CuPy)
+* Forward/Backward projection (ASTRA with DirectLink and CuPy).
+* Filtered Back Projection (ASTRA, Filter implemented in CuPy).
+* Fourier direct reconstruction on unequally spaced grids.
 """
 
-# import numpy as np
-nocupy = False
 try:
     import cupy as xp
-    from cupyx import scipy
 except ImportError:
-    nocupy = True
+    import numpy as xp
+
     print(
         "Cupy library is a required dependency for this part of the code, please install"
     )
 
-if nocupy:
-    import numpy as xp
-    import scipy
-
-from tomobar.cuda_kernels import load_cuda_module
 from tomobar.supp.suppTools import _check_kwargs
 from tomobar.supp.funcs import _data_dims_swapper
 from tomobar.methodsDIR import RecToolsDIR
-
-
-def _filtersinc3D_cupy(projection3D: xp.ndarray) -> xp.ndarray:
-    """Applies a SINC filter to 3D projection data
-
-    Args:
-        data : xp.ndarray
-            Projection data as a CuPy array.
-
-    Returns:
-        xp.ndarray
-            The filtered projectiond data as a CuPy array.
-    """
-    (projectionsNum, DetectorsLengthV, DetectorsLengthH) = xp.shape(projection3D)
-
-    # prepearing a ramp-like filter to apply to every projection
-    module = load_cuda_module("generate_filtersync")
-    filter_prep = module.get_function("generate_filtersinc")
-
-    # prepearing a ramp-like filter to apply to every projection
-    module = load_cuda_module("generate_filtersync")
-    filter_prep = module.get_function("generate_filtersinc")
-
-    # Use real FFT to save space and time
-    proj_f = scipy.fft.rfft(projection3D, axis=-1, norm="backward", overwrite_x=True)
-
-    # generating the filter here so we can schedule/allocate while FFT is keeping the GPU busy
-    a = 1.1
-    f = xp.empty((1, 1, DetectorsLengthH // 2 + 1), dtype=xp.float32)
-    bx = 256
-    # because FFT is linear, we can apply the FFT scaling + multiplier in the filter
-    multiplier = 1.0 / projectionsNum / DetectorsLengthH
-    filter_prep(
-        grid=(1, 1, 1),
-        block=(bx, 1, 1),
-        args=(xp.float32(a), f, xp.int32(DetectorsLengthH), xp.float32(multiplier)),
-        shared_mem=bx * 4,
-    )
-
-    # actual filtering
-    proj_f *= f
-
-    return scipy.fft.irfft(
-        proj_f, projection3D.shape[2], axis=-1, norm="forward", overwrite_x=True
-    )
+from tomobar.fourier import _filtersinc3D_cupy
 
 
 class RecToolsDIRCuPy(RecToolsDIR):
@@ -118,12 +68,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         projected = self.Atools._forwprojCuPy(data)
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
-                if self.geom == "2D":
-                    projected = _data_dims_swapper(projected, value, ["angles", "detX"])
-                else:
-                    projected = _data_dims_swapper(
-                        projected, value, ["detY", "angles", "detX"]
-                    )
+                projected = _data_dims_swapper(
+                    projected, value, ["detY", "angles", "detX"]
+                )
 
         return projected
 
@@ -142,12 +89,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         """
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
-                if self.geom == "2D":
-                    projdata = _data_dims_swapper(projdata, value, ["angles", "detX"])
-                else:
-                    projdata = _data_dims_swapper(
-                        projdata, value, ["detY", "angles", "detX"]
-                    )
+                projdata = _data_dims_swapper(
+                    projdata, value, ["detY", "angles", "detX"]
+                )
 
         return self.Atools._backprojCuPy(projdata)
 
@@ -167,10 +111,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         """
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
-                if self.geom == "2D":
-                    data = _data_dims_swapper(data, value, ["angles", "detX"])
-                else:
-                    data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
+                data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
 
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(data)
@@ -178,3 +119,26 @@ class RecToolsDIRCuPy(RecToolsDIR):
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
         xp._default_memory_pool.free_all_blocks()
         return _check_kwargs(reconstruction, **kwargs)
+
+    def FOURIER_REC(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
+        """Fourier direct reconstruction on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input.
+           This implementation follows V. Nikitin's CUDA-C implementation:
+           https://github.com/nikitinvv/radonusfft and TomoCuPy package.
+
+        Args:
+            data (xp.ndarray): projection data as a CuPy array
+
+        Keyword Args:
+            recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
+
+        Returns:
+            xp.ndarray: The Fourier reconstructed volume as a CuPy array.
+        """
+        for key, value in kwargs.items():
+            if key == "data_axes_labels_order" and value is not None:
+                data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+
+        DetectorsDimH = self.Atools.detectors_x
+        N = self.Atools.recon_size
+
+        return data_fft_rows

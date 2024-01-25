@@ -60,11 +60,11 @@ dev = [
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = [
-   "-vv", 
-   "-ra", 
+   "-vv",
+   "-ra",
    "-q",
    "--tb=native",
-   "--cov-report=term", 
+   "--cov-report=term",
    "--cov-report=xml:cov.xml",
 ]
 testpaths = [
@@ -102,13 +102,19 @@ add-ignore = [
     "D418", # Ignore missing docstrings in dunder methods; See: https://github.com/PyCQA/pydocstyle/issues/525
 ]
 
-[tool.flake8]
-# Make flake8 respect black's line length (default 88),
-max-line-length = 88
-extend-ignore = [
-    "E203",  
-    "F811"  
-]
-per-file-ignores = [
-    "*pyi:E302"
-]
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
