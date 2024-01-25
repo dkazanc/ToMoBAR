@@ -17,7 +17,7 @@
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
 ### NEW in ToMoBAR since v.2024.01:
-- [DOCUMENTATION](https://dkazanc.github.io/ToMoBAR/) is available. Various tutorials presented and references to API.
+- [DOCUMENTATION](https://dkazanc.github.io/ToMoBAR/) is available. Various tutorials are presented and references to API given.
 - CuPy-enabled 3D FISTA-OS with regularisation all in-device implementation. It should be 3-5 times faster than the non-CuPy version depending on the GPU device in use and the size of the data.
 - Now one can specify the axes labels to describe the input data so it will be automatically passed in the right format to the method. See this [Demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/DemoFISTA_3D.py).
 - Demos changed to adhere the recent changes in TomoPhantom v.3.0.
