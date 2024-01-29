@@ -16,8 +16,10 @@ except ImportError:
 
 from tomobar.supp.suppTools import _check_kwargs
 from tomobar.supp.funcs import _data_dims_swapper
-from tomobar.methodsDIR import RecToolsDIR
 from tomobar.fourier import _filtersinc3D_cupy
+from tomobar.cuda_kernels import load_cuda_module
+
+from tomobar.methodsDIR import RecToolsDIR
 
 
 class RecToolsDIRCuPy(RecToolsDIR):
