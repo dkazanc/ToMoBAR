@@ -16,7 +16,7 @@ except ImportError:
 
 from tomobar.supp.suppTools import _check_kwargs
 from tomobar.supp.funcs import _data_dims_swapper
-from tomobar.fourier import _filtersinc3D_cupy
+from tomobar.fourier import _filtersinc3D_cupy, calc_filter
 from tomobar.cuda_kernels import load_cuda_module
 
 from tomobar.methodsDIR import RecToolsDIR
@@ -107,23 +107,27 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
                  When "None" we assume  ["angles", "detX"] for 2D and ["angles", "detY", "detX"] for 3D.
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
+            cutoff_freq (float): Cutoff frequency parameter for the sinc filter.
 
         Returns:
             xp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
+        cutoff_freq = 0.6  # default value
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
+            if key == "cutoff_freq" and value is not None:
+                cutoff_freq = value
 
         # filter the data on the GPU and keep the result there
-        data = _filtersinc3D_cupy(data)
+        data = _filtersinc3D_cupy(data, cutoff=cutoff_freq)
         data = xp.ascontiguousarray(xp.swapaxes(data, 0, 1))
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
         xp._default_memory_pool.free_all_blocks()
         return _check_kwargs(reconstruction, **kwargs)
 
-    def FOURIER_REC(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
-        """Fourier direct reconstruction on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input.
+    def FOURIER_INV(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
+        """Fourier direct inversion on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input.
            This implementation follows V. Nikitin's CUDA-C implementation:
            https://github.com/nikitinvv/radonusfft and TomoCuPy package.
 
@@ -131,6 +135,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data (xp.ndarray): projection data as a CuPy array
 
         Keyword Args:
+            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
+                        When "None" we assume  ["angles", "detX"] for 2D and ["angles", "detY", "detX"] for 3D.
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
 
         Returns:
@@ -140,7 +146,115 @@ class RecToolsDIRCuPy(RecToolsDIR):
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
 
-        DetectorsDimH = self.Atools.detectors_x
-        N = self.Atools.recon_size
+        # extract kernels from CUDA modules
+        module = load_cuda_module("fft_us_kernels")
+        gather_kernel = module.get_function("gather_kernel")
+        wrap_kernel = module.get_function("wrap_kernel")
 
-        return data_fft_rows
+        # initialisation
+        [nz, nproj, n] = data.shape
+        rotation_axis = self.Atools.centre_of_rotation - 0.5
+        theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
+        recon_size = self.Atools.recon_size
+
+        if (n % 2) != 0:
+            raise ValueError("The horizontal detector size of data must be even")
+
+        # usfft parameters
+        eps = 1e-3  # accuracy of usfft
+        mu = -xp.log(eps) / (2 * n * n)
+        m = int(
+            xp.ceil(
+                2 * n * 1 / xp.pi * xp.sqrt(-mu * xp.log(eps) + (mu * n) * (mu * n) / 4)
+            )
+        )
+        oversampling_level = 2  # at least 2 or larger
+
+        # memory for recon
+        recon_up = xp.zeros([nz, n, n], dtype=xp.float32)
+
+        # extra arrays
+        # interpolation kernel
+        t = xp.linspace(-1 / 2, 1 / 2, n, endpoint=False)
+        [dx, dy] = xp.meshgrid(t, t)
+        phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) / nproj * (1 - n % 4)
+        # padded fft, reusable by chunks
+        fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+        # (+1,-1) arrays for fftshift
+        c1dfftshift = (1 - 2 * ((xp.arange(1, n + 1) % 2))).astype(
+            "int8"
+        )  # can be done as a cupy kernel to save a bit of memory (TODO)
+        c2dtmp = 1 - 2 * ((xp.arange(1, 2 * n + 1) % 2)).astype(
+            "int8"
+        )  # can be done as a cupy kernel to save a bit of memory (TODO)
+        c2dfftshift = xp.outer(c2dtmp, c2dtmp)
+
+        # init filter
+        ne = oversampling_level * n
+        padding_m = ne // 2 - n // 2
+        padding_p = ne // 2 + n // 2
+        wfilter = calc_filter(ne, "ramp")
+
+        # STEP0: FBP filtering
+        t = xp.fft.rfftfreq(ne).astype(xp.float32)
+        w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (-rotation_axis))
+        # I remember the bellow part may use a lot of memory due to "w*" operation,
+        # if so you can do it as a loop over slices/angles
+        tmp = xp.pad(data, ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
+        tmp = xp.fft.irfft(w * xp.fft.rfft(tmp, axis=2), axis=2)
+        tmp_p = tmp[:, :, padding_m:padding_p]
+        del tmp
+
+        # BACKPROJECTION
+        # !work with complex numbers by setting a half of the array as real and another half as imag
+        datac = (
+            tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
+        )  # can be done without introducing array datac, saves memory, see tomocupy (TODO)
+        del tmp_p
+
+        # STEP1: fft 1d
+        datac = xp.fft.fft(c1dfftshift * datac) * c1dfftshift * 4 / n
+
+        # STEP2: interpolation (gathering) in the frequency domain
+        mua = xp.array(
+            [mu], dtype=xp.float32
+        )  # dont understand why RawKernel cant work with float, I have to send it as an array (TODO)
+        gather_kernel(
+            (int(xp.ceil(n / 32)), int(xp.ceil(nproj / 32)), nz // 2),
+            (32, 32, 1),
+            (datac, fde, theta, m, mua, n, nproj, nz // 2),
+        )
+        wrap_kernel(
+            (
+                int(xp.ceil((2 * n + 2 * m) / 32)),
+                int(xp.ceil((2 * n + 2 * m) / 32)),
+                nz // 2,
+            ),
+            (32, 32, 1),
+            (fde, n, nz // 2, m),
+        )
+
+        # STEP3: ifft 2d
+        fde2 = fde[
+            :, m:-m, m:-m
+        ]  # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
+        fde2 = xp.fft.ifft2(fde2 * c2dfftshift) * c2dfftshift
+
+        # STEP4: unpadding, multiplication by phi
+        fde2 = fde2[:, n // 2 : 3 * n // 2, n // 2 : 3 * n // 2] * phi
+
+        # restructure memory
+        recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
+
+        del fde, fde2, mua, datac
+        xp._default_memory_pool.free_all_blocks()
+        unpad_recon_m = n // 2 - recon_size // 2
+        unpad_recon_p = n // 2 + recon_size // 2
+        return _check_kwargs(
+            recon_up[
+                :,
+                unpad_recon_m:unpad_recon_p,
+                unpad_recon_m:unpad_recon_p,
+            ],
+            **kwargs,
+        )

@@ -21,12 +21,14 @@ if nocupy:
 from tomobar.cuda_kernels import load_cuda_module
 
 
-def _filtersinc3D_cupy(projection3D: xp.ndarray) -> xp.ndarray:
+def _filtersinc3D_cupy(projection3D: xp.ndarray, cutoff: float = 0.6) -> xp.ndarray:
     """Applies a SINC filter to 3D projection data
 
     Args:
         data : xp.ndarray
             Projection data as a CuPy array.
+        cutoff: float
+            cutoff for sinc filter, lower values lead to sharper reconstructions
 
     Returns:
         xp.ndarray
@@ -46,7 +48,6 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray) -> xp.ndarray:
     proj_f = scipy.fft.rfft(projection3D, axis=-1, norm="backward", overwrite_x=True)
 
     # generating the filter here so we can schedule/allocate while FFT is keeping the GPU busy
-    a = 1.1
     f = xp.empty((1, 1, DetectorsLengthH // 2 + 1), dtype=xp.float32)
     bx = 256
     # because FFT is linear, we can apply the FFT scaling + multiplier in the filter
@@ -54,7 +55,12 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray) -> xp.ndarray:
     filter_prep(
         grid=(1, 1, 1),
         block=(bx, 1, 1),
-        args=(xp.float32(a), f, xp.int32(DetectorsLengthH), xp.float32(multiplier)),
+        args=(
+            xp.float32(cutoff),
+            f,
+            xp.int32(DetectorsLengthH),
+            xp.float32(multiplier),
+        ),
         shared_mem=bx * 4,
     )
 

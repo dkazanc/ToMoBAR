@@ -2,7 +2,7 @@
 #define M_PI 3.1415926535897932384626433832795f
 #endif
 
-extern "C" __global__ void gather(float2 *g, float2 *f, float *theta, int m,
+extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta, int m,
                        float *mu, int n, int nproj, int nz)
 {
 
@@ -47,7 +47,7 @@ extern "C" __global__ void gather(float2 *g, float2 *f, float *theta, int m,
 }
 
 
-extern "C" __global__ void wrap(float2 *f, int n, int nz, int m)
+extern "C" __global__ void wrap_kernel(float2 *f, int n, int nz, int m)
 {
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
   int ty = blockDim.y * blockIdx.y + threadIdx.y;

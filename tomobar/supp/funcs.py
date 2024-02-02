@@ -1,6 +1,7 @@
 """Supporting functions
 
 """
+
 import numpy as np
 from typing import Union, List
 
@@ -150,7 +151,9 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
     """
     for swap_tuple in data_swap_list:
         if swap_tuple is not None:
-            data = xp.swapaxes(data, swap_tuple[0], swap_tuple[1])
+            data = xp.require(
+                xp.swapaxes(data, swap_tuple[0], swap_tuple[1]), requirements="C"
+            )
     return data
 
 

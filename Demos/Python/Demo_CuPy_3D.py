@@ -20,13 +20,14 @@ import numpy as np
 import cupy as cp
 import tomophantom
 from tomophantom import TomoP3D
+from tomophantom.qualitymetrics import QualityTools
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()
 model = 13  # select a model number from the library
-N_size = 128  # Define phantom dimensions using a scalar value (cubic phantom)
+N_size = 256  # Define phantom dimensions using a scalar value (cubic phantom)
 path = os.path.dirname(tomophantom.__file__)
 path_library3D = os.path.join(path, "phantomlib", "Phantom3DLibrary.dat")
 
@@ -64,8 +65,9 @@ RecToolsCP = RecToolsDIRCuPy(
 tic = timeit.default_timer()
 FBPrec_cupy = RecToolsCP.FBP(
     projData3D_analyt_cupy,
-    recon_mask_radius=0.9,
+    recon_mask_radius=0.95,
     data_axes_labels_order=input_data_labels,
+    cutoff_freq=0.7,
 )
 toc = timeit.default_timer()
 Run_time = toc - tic
@@ -94,10 +96,86 @@ plt.imshow(FBPrec_cupy[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FBP Reconstruction, sagittal view")
 plt.show()
 
+
+#
+sliceSel = int(0.5 * N_size)
+max_val = 0.3
+plt.figure()
+plt.subplot(131)
+plt.imshow(
+    abs(FBPrec_cupy[sliceSel, :, :] - phantom_tm[sliceSel, :, :]), vmin=0, vmax=max_val
+)
+plt.title("3D FBP residual, axial view")
+
+plt.subplot(132)
+plt.imshow(
+    abs(FBPrec_cupy[:, sliceSel, :] - phantom_tm[:, sliceSel, :]), vmin=0, vmax=max_val
+)
+plt.title("3D FBP residual, coronal view")
+
+plt.subplot(133)
+plt.imshow(
+    abs(FBPrec_cupy[:, :, sliceSel] - phantom_tm[:, :, sliceSel]), vmin=0, vmax=max_val
+)
+plt.title("3D FBP residual, sagittal view")
+plt.show()
+
+
 print(
     "Min {} and Max {} of the volume".format(np.min(FBPrec_cupy), np.max(FBPrec_cupy))
 )
 
+# calculate errors
+Qtools = QualityTools(phantom_tm, FBPrec_cupy)
+RMSE = Qtools.rmse()
+print("Root Mean Square Error is {} for FBP".format(RMSE))
+
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%%%%%%Reconstructing with 3D Fourier-CuPy method %%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+RecToolsCP = RecToolsDIRCuPy(
+    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
+    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    device_projector="gpu",
+)
+
+tic = timeit.default_timer()
+Fourier_cupy = RecToolsCP.FOURIER_INV(
+    projData3D_analyt_cupy,
+    recon_mask_radius=0.95,
+    data_axes_labels_order=input_data_labels,
+)
+toc = timeit.default_timer()
+Run_time = toc - tic
+print("Fourier 3D reconstruction using CuPy (GPU) in {} seconds".format(Run_time))
+
+# bring data from the device to the host
+Fourier_cupy = cp.asnumpy(Fourier_cupy)
+
+sliceSel = int(0.5 * N_size)
+max_val = 1
+plt.figure()
+plt.subplot(131)
+plt.imshow(Fourier_cupy[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("3D Fourier Reconstruction, axial view")
+
+plt.subplot(132)
+plt.imshow(Fourier_cupy[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("3D Fourier Reconstruction, coronal view")
+
+plt.subplot(133)
+plt.imshow(Fourier_cupy[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("3D Fourier Reconstruction, sagittal view")
+plt.show()
+
+# calculate errors
+Qtools = QualityTools(phantom_tm, Fourier_cupy)
+RMSE = Qtools.rmse()
+print("Root Mean Square Error is {} for Fourier inversion".format(RMSE))
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%Reconstructing using Landweber algorithm %%%%%%%%%%%")
