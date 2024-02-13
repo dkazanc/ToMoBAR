@@ -1,5 +1,6 @@
 import numpy as np
-from tomobar.astra_wrappers import AstraTools2D, AstraTools3D
+from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
+from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 
 import typing
 from typing import Union

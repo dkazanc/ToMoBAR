@@ -2,17 +2,24 @@
 
 * Forward/Backward projection (ASTRA with DirectLink and CuPy).
 * Filtered Back Projection (ASTRA, Filter implemented in CuPy).
-* Fourier direct reconstruction on unequally spaced grids.
+* Fourier direct reconstruction with classical polar to cartesian interpolation.
+* Fourier direct reconstruction on unequally spaced grids (interpolation in image space).
 """
+
+import numpy as np
 
 try:
     import cupy as xp
+
+    from cupyx.scipy.fft import fftshift, ifftshift, fft, ifft2, rfftfreq, rfft, irfft
+    from cupyx.scipy.interpolate import interpn, RegularGridInterpolator
 except ImportError:
     import numpy as xp
 
     print(
         "Cupy library is a required dependency for this part of the code, please install"
     )
+
 
 from tomobar.supp.suppTools import _check_kwargs
 from tomobar.supp.funcs import _data_dims_swapper
@@ -51,8 +58,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
             ObjSize,
             device_projector,
         )
-        if DetectorsDimV == 0 or DetectorsDimV is None:
-            raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
+        # if DetectorsDimV == 0 or DetectorsDimV is None:
+        #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
     def FORWPROJ(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
@@ -131,6 +138,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
            This implementation follows V. Nikitin's CUDA-C implementation:
            https://github.com/nikitinvv/radonusfft and TomoCuPy package.
 
+
         Args:
             data (xp.ndarray): projection data as a CuPy array
 
@@ -140,7 +148,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
 
         Returns:
-            xp.ndarray: The Fourier reconstructed volume as a CuPy array.
+            xp.ndarray: The NUFFT reconstructed volume as a CuPy array.
         """
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -158,17 +166,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
         recon_size = self.Atools.recon_size
 
         if (n % 2) != 0:
-            raise ValueError("The horizontal detector size of data must be even")
+            raise ValueError(
+                "The horizontal detector size of the projection data must be even"
+            )
 
         # usfft parameters
         eps = 1e-3  # accuracy of usfft
-        mu = -xp.log(eps) / (2 * n * n)
+        mu = -np.log(eps) / (2 * n * n)
         m = int(
-            xp.ceil(
-                2 * n * 1 / xp.pi * xp.sqrt(-mu * xp.log(eps) + (mu * n) * (mu * n) / 4)
+            np.ceil(
+                2 * n * 1 / np.pi * np.sqrt(-mu * np.log(eps) + (mu * n) * (mu * n) / 4)
             )
         )
-        oversampling_level = 2  # at least 2 or larger
+        oversampling_level = 2  # at least 2 or larger required
 
         # memory for recon
         recon_up = xp.zeros([nz, n, n], dtype=xp.float32)
@@ -177,7 +187,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # interpolation kernel
         t = xp.linspace(-1 / 2, 1 / 2, n, endpoint=False)
         [dx, dy] = xp.meshgrid(t, t)
-        phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) / nproj * (1 - n % 4)
+        phi = np.exp(mu * (n * n) * (dx * dx + dy * dy)) / nproj * (1 - n % 4)
         # padded fft, reusable by chunks
         fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
         # (+1,-1) arrays for fftshift
@@ -196,12 +206,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
         wfilter = calc_filter(ne, "ramp")
 
         # STEP0: FBP filtering
-        t = xp.fft.rfftfreq(ne).astype(xp.float32)
+        t = rfftfreq(ne).astype(xp.float32)
         w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (-rotation_axis))
         # I remember the bellow part may use a lot of memory due to "w*" operation,
         # if so you can do it as a loop over slices/angles
         tmp = xp.pad(data, ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
-        tmp = xp.fft.irfft(w * xp.fft.rfft(tmp, axis=2), axis=2)
+        tmp = irfft(w * rfft(tmp, axis=2), axis=2)
         tmp_p = tmp[:, :, padding_m:padding_p]
         del tmp
 
@@ -213,22 +223,29 @@ class RecToolsDIRCuPy(RecToolsDIR):
         del tmp_p
 
         # STEP1: fft 1d
-        datac = xp.fft.fft(c1dfftshift * datac) * c1dfftshift * 4 / n
+        datac = fft(c1dfftshift * datac) * c1dfftshift * 4 / n
 
         # STEP2: interpolation (gathering) in the frequency domain
-        mua = xp.array(
-            [mu], dtype=xp.float32
-        )  # dont understand why RawKernel cant work with float, I have to send it as an array (TODO)
+        # When profiling gather_kernel takes up to 50% of the time!
         gather_kernel(
             (int(xp.ceil(n / 32)), int(xp.ceil(nproj / 32)), nz // 2),
             (32, 32, 1),
-            (datac, fde, theta, m, mua, n, nproj, nz // 2),
+            (
+                datac,
+                fde,
+                theta,
+                xp.int32(m),
+                xp.float32(mu),
+                xp.int32(n),
+                xp.int32(nproj),
+                xp.int32(nz // 2),
+            ),
         )
         wrap_kernel(
             (
                 int(xp.ceil((2 * n + 2 * m) / 32)),
                 int(xp.ceil((2 * n + 2 * m) / 32)),
-                nz // 2,
+                xp.int32(nz // 2),
             ),
             (32, 32, 1),
             (fde, n, nz // 2, m),
@@ -238,7 +255,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         fde2 = fde[
             :, m:-m, m:-m
         ]  # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
-        fde2 = xp.fft.ifft2(fde2 * c2dfftshift) * c2dfftshift
+        fde2 = ifft2(fde2 * c2dfftshift) * c2dfftshift
 
         # STEP4: unpadding, multiplication by phi
         fde2 = fde2[:, n // 2 : 3 * n // 2, n // 2 : 3 * n // 2] * phi
@@ -246,7 +263,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # restructure memory
         recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
 
-        del fde, fde2, mua, datac
+        del fde, fde2, datac
         xp._default_memory_pool.free_all_blocks()
         unpad_recon_m = n // 2 - recon_size // 2
         unpad_recon_p = n // 2 + recon_size // 2

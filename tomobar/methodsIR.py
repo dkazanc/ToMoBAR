@@ -33,7 +33,8 @@ from tomobar.supp.suppTools import circ_mask
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
 
 from tomobar.regularisers import prox_regul
-from tomobar.astra_wrappers import AstraTools2D, AstraTools3D
+from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
+from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 
 
 class RecToolsIR:

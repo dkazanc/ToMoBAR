@@ -30,6 +30,33 @@ def test_Fourier_inv3D(data_cupy, angles, ensure_clean_memory):
     assert recon_data.shape == (128, 160, 160)
 
 
+# def test_Fourier2d_classic():
+#     N_size = 64  # set dimension of the phantom
+#     # create sinogram analytically
+#     angles_num = int(0.5 * np.pi * N_size)
+#     # angles number
+#     angles = np.linspace(0.0, 179.9, angles_num, dtype="float32")
+#     angles_rad = angles * (np.pi / 180.0)
+#     P = int(np.sqrt(2) * N_size)  # detectors
+#     sino_num = np.ones((angles_num, P))
+
+#     RectoolsDirect = RecToolsDIRCuPy(
+#         DetectorsDimH=P,  # DetectorsDimH # detector dimension (horizontal)
+#         DetectorsDimV=None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+#         CenterRotOffset=0.0,  # Center of Rotation (CoR) scalar
+#         AnglesVec=angles_rad,  # array of angles in radians
+#         ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+#         device_projector="cpu",
+#     )
+#     RecFourier = RectoolsDirect.FOURIER(
+#         cp.asarray(sino_num, order="C"), method="linear"
+#     )
+#     # assert_allclose(np.min(RecFourier), -0.0009970121907807294, rtol=eps)
+#     # assert_allclose(np.max(RecFourier), 0.05049668114021118, rtol=eps)
+#     assert RecFourier.dtype == np.float64
+#     assert RecFourier.shape == (64, 64)
+
+
 def test_FBP3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]

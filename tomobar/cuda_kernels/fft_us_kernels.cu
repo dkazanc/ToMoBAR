@@ -3,7 +3,7 @@
 #endif
 
 extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta, int m,
-                       float *mu, int n, int nproj, int nz)
+                       float mu, int n, int nproj, int nz)
 {
 
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -18,8 +18,8 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta, int
   int ell0, ell1, g_ind, f_ind;
 
   g_ind = tx + ty * n + tz * n * nproj;
-  coeff0 = M_PI / mu[0];
-  coeff1 = -M_PI * M_PI / mu[0];
+  coeff0 = M_PI / mu;
+  coeff1 = -M_PI * M_PI / mu;
   x0 = (tx - n / 2) / (float)n * __cosf(theta[ty]);
   y0 = -(tx - n / 2) / (float)n * __sinf(theta[ty]);
   if (x0 >= 0.5f)

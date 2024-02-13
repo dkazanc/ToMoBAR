@@ -5,11 +5,13 @@
 import numpy as np
 from typing import Union, List
 
+cupy_enabled = False
 try:
     import cupy as xp
 
     try:
         xp.cuda.Device(0).compute_capability
+        cupy_enabled = True
     except xp.cuda.runtime.CUDARuntimeError:
         import numpy as xp
 
@@ -151,10 +153,12 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
     """
     for swap_tuple in data_swap_list:
         if swap_tuple is not None:
-            data = xp.require(
-                xp.swapaxes(data, swap_tuple[0], swap_tuple[1]), requirements="C"
-            )
-    return data
+            if cupy_enabled:
+                xpp = xp.get_array_module(data)
+                return xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
+            else:
+                return np.swapaxes(data, swap_tuple[0], swap_tuple[1])
+        return data
 
 
 def _parse_device_argument(device_int_or_string):
