@@ -13,6 +13,7 @@ try:
 
     from cupyx.scipy.fft import fftshift, ifftshift, fft, ifft2, rfftfreq, rfft, irfft
     from cupyx.scipy.interpolate import interpn, RegularGridInterpolator
+    import cupyx
 except ImportError:
     import numpy as xp
 
@@ -181,23 +182,24 @@ class RecToolsDIRCuPy(RecToolsDIR):
         oversampling_level = 2  # at least 2 or larger required
 
         # memory for recon
-        recon_up = xp.zeros([nz, n, n], dtype=xp.float32)
+        recon_up = xp.empty([nz, n, n], dtype=xp.float32)
 
         # extra arrays
         # interpolation kernel
-        t = xp.linspace(-1 / 2, 1 / 2, n, endpoint=False)
+        t = xp.linspace(-1 / 2, 1 / 2, n, endpoint=False, dtype=xp.float32)
         [dx, dy] = xp.meshgrid(t, t)
-        phi = np.exp(mu * (n * n) * (dx * dx + dy * dy)) / nproj * (1 - n % 4)
+        phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
         # padded fft, reusable by chunks
         fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
         # (+1,-1) arrays for fftshift
-        c1dfftshift = (1 - 2 * ((xp.arange(1, n + 1) % 2))).astype(
-            "int8"
-        )  # can be done as a cupy kernel to save a bit of memory (TODO)
-        c2dtmp = 1 - 2 * ((xp.arange(1, 2 * n + 1) % 2)).astype(
-            "int8"
-        )  # can be done as a cupy kernel to save a bit of memory (TODO)
-        c2dfftshift = xp.outer(c2dtmp, c2dtmp)
+        c1dfftshift = xp.empty(n, dtype=xp.int8)
+        c1dfftshift[::2] = -1
+        c1dfftshift[1::2] = 1
+        c2dfftshift = xp.empty((2*n, 2*n), dtype=xp.int8)
+        c2dfftshift[0::2, 1::2] = -1
+        c2dfftshift[1::2, 0::2] = -1
+        c2dfftshift[0::2, 0::2] = 1
+        c2dfftshift[1::2, 1::2] = 1
 
         # init filter
         ne = oversampling_level * n
@@ -207,13 +209,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP0: FBP filtering
         t = rfftfreq(ne).astype(xp.float32)
-        w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (-rotation_axis))
-        # I remember the bellow part may use a lot of memory due to "w*" operation,
-        # if so you can do it as a loop over slices/angles
-        tmp = xp.pad(data, ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
-        tmp = irfft(w * rfft(tmp, axis=2), axis=2)
-        tmp_p = tmp[:, :, padding_m:padding_p]
-        del tmp
 
         # BACKPROJECTION
         # !work with complex numbers by setting a half of the array as real and another half as imag
@@ -223,7 +218,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         del tmp_p
 
         # STEP1: fft 1d
-        datac = fft(c1dfftshift * datac) * c1dfftshift * 4 / n
+        datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
 
         # STEP2: interpolation (gathering) in the frequency domain
         # When profiling gather_kernel takes up to 50% of the time!
@@ -234,18 +229,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 datac,
                 fde,
                 theta,
-                xp.int32(m),
-                xp.float32(mu),
-                xp.int32(n),
-                xp.int32(nproj),
-                xp.int32(nz // 2),
+                np.int32(m),
+                np.float32(mu),
+                np.int32(n),
+                np.int32(nproj),
+                np.int32(nz // 2),
             ),
         )
         wrap_kernel(
             (
-                int(xp.ceil((2 * n + 2 * m) / 32)),
-                int(xp.ceil((2 * n + 2 * m) / 32)),
-                xp.int32(nz // 2),
+                int(np.ceil((2 * n + 2 * m) / 32)),
+                int(np.ceil((2 * n + 2 * m) / 32)),
+                np.int32(nz // 2),
             ),
             (32, 32, 1),
             (fde, n, nz // 2, m),
@@ -255,7 +250,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         fde2 = fde[
             :, m:-m, m:-m
         ]  # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
-        fde2 = ifft2(fde2 * c2dfftshift) * c2dfftshift
+        fde2 = cupyx.scipy.fft.ifft2(fde2 * c2dfftshift, axes=(-2, -1), overwrite_x=True)
+        fde2 *= c2dfftshift
 
         # STEP4: unpadding, multiplication by phi
         fde2 = fde2[:, n // 2 : 3 * n // 2, n // 2 : 3 * n // 2] * phi

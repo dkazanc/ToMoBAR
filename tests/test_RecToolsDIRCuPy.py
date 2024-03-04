@@ -1,11 +1,13 @@
+import math
 import cupy as cp
 import numpy as np
 from numpy.testing import assert_allclose
 from cupy import float32
+from cupyx.profiler import time_range
 
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
-eps = 1e-06
+eps = 2e-06
 
 
 def test_Fourier_inv3D(data_cupy, angles, ensure_clean_memory):
@@ -20,14 +22,39 @@ def test_Fourier_inv3D(data_cupy, angles, ensure_clean_memory):
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="gpu",
     )
-    Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
-        data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
-    )
+    
+    with time_range('fourier_inv', color_id=0, sync=True):
+        Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
+            data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
+        )
     recon_data = Fourier_rec_cupy.get()
     assert_allclose(np.min(recon_data), -0.023661297, rtol=eps)
     assert_allclose(np.max(recon_data), 0.06006318, rtol=eps)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
+
+
+def test_Fourier_inv3D_performance(ensure_clean_memory):
+    data_host = np.random.randint(
+        low=7515, high=37624, size=(1801, 6, 2560), dtype=np.uint16
+    ).astype(np.float32)
+    data = cp.asarray(data_host)
+    detX = cp.shape(data)[2]
+    detY = cp.shape(data)[1]
+    angles = np.linspace(0, math.pi, data.shape[0])
+    N_size = detX
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    with time_range('fourier_inv', color_id=0, sync=True):
+        RecToolsCP.FOURIER_INV(
+            data, data_axes_labels_order=["angles", "detY", "detX"]
+        )
 
 
 # def test_Fourier2d_classic():

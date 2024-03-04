@@ -28,6 +28,10 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta, int
     y0 = 0.5f - 1e-5;
   g0.x = g[g_ind].x;
   g0.y = g[g_ind].y;
+  // offset f by [tz, n+m, n+m]
+  int stride1 = 2*n + 2*m;
+  int stride2 = stride1 * stride1;
+  f += n+m + (n+m) * stride1 + tz * stride2;
   for (int i1 = 0; i1 < 2 * m + 1; i1++)
   {
     ell1 = floorf(2 * n * y0) - m + i1;
@@ -39,7 +43,7 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta, int
       w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
       g0t.x = w*g0.x;
       g0t.y = w*g0.y;
-      f_ind = n + m + ell0 + (2 * n + 2 * m) * (n + m + ell1) + tz * (2 * n + 2 * m) * (2 * n + 2 * m);
+      f_ind = ell0 + stride1 * ell1 ;
       atomicAdd(&(f[f_ind].x), g0t.x);
       atomicAdd(&(f[f_ind].y), g0t.y);
     }
