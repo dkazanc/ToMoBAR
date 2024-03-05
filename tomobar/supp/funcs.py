@@ -109,7 +109,7 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
 
     if len(data_axes_labels) != len(required_labels_order):
         raise ValueError(
-            f"Warning: The mismatch between labels data dimensions for 2D and 3D."
+            "Warning: The mismatch between provided labels and data dimensions."
         )
     swap_tuple2 = None
     # check if the labels names are the accepted ones

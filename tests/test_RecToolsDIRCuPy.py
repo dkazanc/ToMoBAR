@@ -3,7 +3,10 @@ import cupy as cp
 import numpy as np
 from numpy.testing import assert_allclose
 from cupy import float32
+import time
+from cupy.cuda.nvtx import RangePush, RangePop
 from cupyx.profiler import time_range
+import pytest
 
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
@@ -22,8 +25,8 @@ def test_Fourier_inv3D(data_cupy, angles, ensure_clean_memory):
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="gpu",
     )
-    
-    with time_range('fourier_inv', color_id=0, sync=True):
+
+    with time_range("fourier_inv", color_id=0, sync=True):
         Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
             data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
         )
@@ -34,7 +37,34 @@ def test_Fourier_inv3D(data_cupy, angles, ensure_clean_memory):
     assert recon_data.shape == (128, 160, 160)
 
 
+def test_Fourier_Z_odd(ensure_clean_memory):
+    dev = cp.cuda.Device()
+    data_host = np.random.randint(
+        low=7515, high=37624, size=(901, 3, 1342), dtype=np.uint16
+    ).astype(np.float32)
+    data = cp.asarray(data_host)
+    detX = cp.shape(data)[2]
+    detY = cp.shape(data)[1]
+    angles = np.linspace(0, math.pi, data.shape[0])
+    N_size = 1300
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    recon = RecToolsCP.FOURIER_INV(
+        data, data_axes_labels_order=["angles", "detY", "detX"]
+    )
+    assert recon.dtype == np.float32
+    assert recon.shape == (3, N_size, N_size)
+
+
+@pytest.mark.perf
 def test_Fourier_inv3D_performance(ensure_clean_memory):
+    dev = cp.cuda.Device()
     data_host = np.random.randint(
         low=7515, high=37624, size=(1801, 6, 2560), dtype=np.uint16
     ).astype(np.float32)
@@ -51,37 +81,57 @@ def test_Fourier_inv3D_performance(ensure_clean_memory):
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector="gpu",
     )
-    with time_range('fourier_inv', color_id=0, sync=True):
-        RecToolsCP.FOURIER_INV(
-            data, data_axes_labels_order=["angles", "detY", "detX"]
+    # cold run
+    RecToolsCP.FOURIER_INV(data, data_axes_labels_order=["angles", "detY", "detX"])
+    start = time.perf_counter_ns()
+    RangePush("Core")
+    for _ in range(10):
+        RecToolsCP.FOURIER_INV(data, data_axes_labels_order=["angles", "detY", "detX"])
+    RangePop()
+    dev.synchronize()
+    duration_ms = float(time.perf_counter_ns() - start) * 1e-6 / 10
+
+    assert "performance in ms" == duration_ms
+
+
+@pytest.mark.perf
+def test_FBP_performance(ensure_clean_memory):
+    dev = cp.cuda.Device()
+    data_host = np.random.randint(
+        low=7515, high=37624, size=(1801, 6, 2560), dtype=np.uint16
+    ).astype(np.float32)
+    data = cp.asarray(data_host)
+    detX = cp.shape(data)[2]
+    detY = cp.shape(data)[1]
+    angles = np.linspace(0, math.pi, data.shape[0])
+    N_size = detX
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    # cold run
+    RecToolsCP.FBP(
+        data,
+        data_axes_labels_order=["angles", "detY", "detX"],
+        cutoff_freq=1.1,
+    )
+    start = time.perf_counter_ns()
+    RangePush("Core")
+    for _ in range(10):
+        RecToolsCP.FBP(
+            data,
+            data_axes_labels_order=["angles", "detY", "detX"],
+            cutoff_freq=1.1,
         )
+    RangePop()
+    dev.synchronize()
+    duration_ms = float(time.perf_counter_ns() - start) * 1e-6 / 10
 
-
-# def test_Fourier2d_classic():
-#     N_size = 64  # set dimension of the phantom
-#     # create sinogram analytically
-#     angles_num = int(0.5 * np.pi * N_size)
-#     # angles number
-#     angles = np.linspace(0.0, 179.9, angles_num, dtype="float32")
-#     angles_rad = angles * (np.pi / 180.0)
-#     P = int(np.sqrt(2) * N_size)  # detectors
-#     sino_num = np.ones((angles_num, P))
-
-#     RectoolsDirect = RecToolsDIRCuPy(
-#         DetectorsDimH=P,  # DetectorsDimH # detector dimension (horizontal)
-#         DetectorsDimV=None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-#         CenterRotOffset=0.0,  # Center of Rotation (CoR) scalar
-#         AnglesVec=angles_rad,  # array of angles in radians
-#         ObjSize=N_size,  # a scalar to define reconstructed object dimensions
-#         device_projector="cpu",
-#     )
-#     RecFourier = RectoolsDirect.FOURIER(
-#         cp.asarray(sino_num, order="C"), method="linear"
-#     )
-#     # assert_allclose(np.min(RecFourier), -0.0009970121907807294, rtol=eps)
-#     # assert_allclose(np.max(RecFourier), 0.05049668114021118, rtol=eps)
-#     assert RecFourier.dtype == np.float64
-#     assert RecFourier.shape == (64, 64)
+    assert "performance in ms" == duration_ms
 
 
 def test_FBP3D(data_cupy, angles, ensure_clean_memory):

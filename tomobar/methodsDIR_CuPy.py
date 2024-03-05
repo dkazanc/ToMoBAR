@@ -135,7 +135,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         return _check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
-        """Fourier direct inversion on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input.
+        """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input.
            This implementation follows V. Nikitin's CUDA-C implementation:
            https://github.com/nikitinvv/radonusfft and TomoCuPy package.
 
@@ -162,14 +162,23 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # initialisation
         [nz, nproj, n] = data.shape
-        rotation_axis = self.Atools.centre_of_rotation - 0.5
-        theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
-        recon_size = self.Atools.recon_size
-
         if (n % 2) != 0:
             raise ValueError(
                 "The horizontal detector size of the projection data must be even"
             )
+        odd = False
+        if (nz % 2) != 0:
+            # the vertical dimension must be also even, so we need to extend the array. Not efficient.
+            data_p = xp.empty((nz + 1, nproj, n), dtype=xp.float32)
+            data_p[:nz, :, :] = data
+            data = data_p
+            nz += 1
+            odd = True
+            del data_p
+
+        rotation_axis = self.Atools.centre_of_rotation - 0.5
+        theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
+        recon_size = self.Atools.recon_size
 
         # usfft parameters
         eps = 1e-3  # accuracy of usfft
@@ -195,7 +204,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
         c1dfftshift[1::2] = 1
-        c2dfftshift = xp.empty((2*n, 2*n), dtype=xp.int8)
+        c2dfftshift = xp.empty((2 * n, 2 * n), dtype=xp.int8)
         c2dfftshift[0::2, 1::2] = -1
         c2dfftshift[1::2, 0::2] = -1
         c2dfftshift[0::2, 0::2] = 1
@@ -209,12 +218,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP0: FBP filtering
         t = rfftfreq(ne).astype(xp.float32)
+        w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (-rotation_axis))
+        # I remember the bellow part may use a lot of memory due to "w*" operation,
+        # if so you can do it as a loop over slices/angles
+        tmp = xp.pad(data, ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
+        tmp = irfft(w * rfft(tmp, axis=2), axis=2)
+        tmp_p = tmp[:, :, padding_m:padding_p]
+        del tmp
 
         # BACKPROJECTION
         # !work with complex numbers by setting a half of the array as real and another half as imag
-        datac = (
-            tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
-        )  # can be done without introducing array datac, saves memory, see tomocupy (TODO)
+        datac = tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
+        # can be done without introducing array datac, saves memory, see tomocupy (TODO)
         del tmp_p
 
         # STEP1: fft 1d
@@ -250,7 +265,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         fde2 = fde[
             :, m:-m, m:-m
         ]  # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
-        fde2 = cupyx.scipy.fft.ifft2(fde2 * c2dfftshift, axes=(-2, -1), overwrite_x=True)
+        fde2 = cupyx.scipy.fft.ifft2(
+            fde2 * c2dfftshift, axes=(-2, -1), overwrite_x=True
+        )
         fde2 *= c2dfftshift
 
         # STEP4: unpadding, multiplication by phi
@@ -261,11 +278,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         del fde, fde2, datac
         xp._default_memory_pool.free_all_blocks()
+        if odd:
+            unpad_z = nz - 1
+        else:
+            unpad_z = nz
         unpad_recon_m = n // 2 - recon_size // 2
         unpad_recon_p = n // 2 + recon_size // 2
         return _check_kwargs(
             recon_up[
-                :,
+                0:unpad_z,
                 unpad_recon_m:unpad_recon_p,
                 unpad_recon_m:unpad_recon_p,
             ],
