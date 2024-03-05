@@ -90,7 +90,7 @@ def test_Fourier2d():
     angles = np.linspace(0.0, 179.9, angles_num, dtype="float32")
     angles_rad = angles * (np.pi / 180.0)
     P = int(np.sqrt(2) * N_size)  # detectors
-    sino_num = np.ones((P, angles_num))
+    sino_num = np.ones((angles_num, P))
 
     RectoolsDirect = RecToolsDIR(
         DetectorsDimH=P,  # DetectorsDimH # detector dimension (horizontal)
@@ -100,9 +100,9 @@ def test_Fourier2d():
         ObjSize=N_size,  # a scalar to define reconstructed object dimensions
         device_projector="cpu",
     )
-    RecFourier = RectoolsDirect.FOURIER(sino_num, "linear")
-    assert_allclose(np.min(RecFourier), -0.18766182521124633, rtol=eps)
-    assert_allclose(np.max(RecFourier), 0.6936295034142406, rtol=eps)
+    RecFourier = RectoolsDirect.FOURIER(sino_num, method="linear")
+    assert_allclose(np.min(RecFourier), -0.0009970121907807294, rtol=eps)
+    assert_allclose(np.max(RecFourier), 0.05049668114021118, rtol=eps)
     assert RecFourier.dtype == np.float64
     assert RecFourier.shape == (64, 64)
 

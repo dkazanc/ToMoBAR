@@ -1,14 +1,17 @@
 """Supporting functions
 
 """
+
 import numpy as np
 from typing import Union, List
 
+cupy_enabled = False
 try:
     import cupy as xp
 
     try:
         xp.cuda.Device(0).compute_capability
+        cupy_enabled = True
     except xp.cuda.runtime.CUDARuntimeError:
         import numpy as xp
 
@@ -106,7 +109,7 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
 
     if len(data_axes_labels) != len(required_labels_order):
         raise ValueError(
-            f"Warning: The mismatch between labels data dimensions for 2D and 3D."
+            "Warning: The mismatch between provided labels and data dimensions."
         )
     swap_tuple2 = None
     # check if the labels names are the accepted ones
@@ -150,8 +153,12 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
     """
     for swap_tuple in data_swap_list:
         if swap_tuple is not None:
-            data = xp.swapaxes(data, swap_tuple[0], swap_tuple[1])
-    return data
+            if cupy_enabled:
+                xpp = xp.get_array_module(data)
+                return xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
+            else:
+                return np.swapaxes(data, swap_tuple[0], swap_tuple[1])
+        return data
 
 
 def _parse_device_argument(device_int_or_string):

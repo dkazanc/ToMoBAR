@@ -1,0 +1,33 @@
+repos:
+- repo: https://github.com/psf/black
+  rev: 23.12.1
+  hooks:
+    - id: black
+      language_version: python3
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+    - id: trailing-whitespace  # This hook trims trailing whitespace.
+    - id: check-docstring-first  # Checks a common error of defining a docstring after code.
+    - id: check-merge-conflict  # Check for files that contain merge conflict strings.
+    - id: check-yaml  # This hook checks yaml files for parseable syntax.
+    - id: detect-private-key  # Detects the presence of private keys.
+    - id: check-symlinks
+    - id: check-toml
+- repo: https://github.com/pre-commit/pygrep-hooks
+  rev: v1.10.0
+  hooks:
+    - id: python-use-type-annotations
+- repo: https://github.com/kynan/nbstripout
+  rev: 0.6.1
+  hooks:
+    - id: nbstripout
+-   repo: https://github.com/asottile/blacken-docs
+    rev: 1.16.0
+    hooks:
+    - id: blacken-docs
+- repo: https://github.com/nbQA-dev/nbQA
+  rev: 1.7.1
+  hooks:
+    - id: nbqa-black
+      args: [--nbqa-mutate]

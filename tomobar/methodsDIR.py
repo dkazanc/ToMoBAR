@@ -9,7 +9,8 @@ import numpy as np
 import scipy.fftpack
 
 from typing import Union
-from tomobar.astra_wrappers import AstraTools2D, AstraTools3D
+from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
+from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
 
 
@@ -203,71 +204,81 @@ class RecToolsDIR:
         else:
             return self.Atools._backproj(_filtersinc3D(data))
 
-    def FOURIER(self, sinogram: np.ndarray, method: str = "linear") -> np.ndarray:
+    def FOURIER(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """2D Reconstruction using Fourier slice theorem (scipy required)
         for griddata interpolation module choose nearest, linear or cubic
 
         Args:
-            sinogram (np.ndarray): 2D sinogram data
+            data (np.ndarray): 2D sinogram data
+
+        Keyword Args:
+            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
+                 When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
             method (str, optional): Interpolation type (nearest, linear, or cubic). Defaults to "linear".
 
         Returns:
             np.ndarray: Reconstructed object
         """
-        if sinogram.ndim == 3:
+        if data.ndim == 3:
             raise ValueError(
-                "Fourier method is currently for 2D data only, use FBP if 3D needed "
+                "Fourier method is currently for 2D data only, use FBP if 3D reconstruction needed"
             )
-        else:
-            pass
-        if (method == "linear") or (method == "nearest") or (method == "cubic"):
-            pass
-        else:
-            raise ValueError(
-                "For griddata interpolation module choose nearest, linear or cubic"
-            )
-        import scipy.interpolate
-        import scipy.fftpack
-        import scipy.misc
-        import scipy.ndimage.interpolation
 
-        DetectorsDimH = self.Atools.detectors_x
+        for key, value in kwargs.items():
+            if key == "data_axes_labels_order" and value is not None:
+                data = _data_dims_swapper(data, value, ["angles", "detX"])
+            if key == "method":
+                if value not in ["linear", "nearest", "cubic"]:
+                    raise ValueError(
+                        "For griddata interpolation module choose nearest, linear or cubic"
+                    )
+                else:
+                    method = value
+
+        from scipy.fft import fftshift, ifftshift, fft, ifft2
+        from scipy.interpolate import griddata
+
         ObjSize = self.Atools.recon_size
+        # pad sinogram and move it to compensate for CoR
+        oversampling = 2  # 2 or larger
+        angles_tot, DetectorsDimH = data.shape
+        if (DetectorsDimH % 2) != 0:
+            raise ValueError(
+                "The horizontal detector size of the projection data (sinogram) must be even"
+            )
+        det_x_up = oversampling * DetectorsDimH
+        sino_up = np.zeros([angles_tot, det_x_up], dtype=np.float32)
+        pad_from = DetectorsDimH // 2 + int(self.Atools.centre_of_rotation)
+        pad_to = det_x_up - DetectorsDimH // 2 + int(self.Atools.centre_of_rotation)
+        sino_up[:, pad_from:pad_to] = data
+
         # Fourier transform the rows of the sinogram, move the DC component to the row's centre
-        sinogram_fft_rows = scipy.fftpack.fftshift(
-            scipy.fftpack.fft(scipy.fftpack.ifftshift(sinogram, axes=1)), axes=1
-        )
+        sinogram_fft_rows = fftshift(fft(ifftshift(sino_up, axes=1)), axes=1)
         # Coordinates of sinogram FFT-ed rows' samples in 2D FFT space
         a = -self.Atools.angles_vec
-        r = np.arange(DetectorsDimH) - DetectorsDimH / 2
+        r = np.arange(det_x_up) - det_x_up / 2
         r, a = np.meshgrid(r, a)
         r = r.flatten()
         a = a.flatten()
-        srcx = (DetectorsDimH / 2) + r * np.cos(a)
-        srcy = (DetectorsDimH / 2) + r * np.sin(a)
+        srcx = (det_x_up / 2) + r * np.cos(a)
+        srcy = (det_x_up / 2) + r * np.sin(a)
 
         # Coordinates of regular grid in 2D FFT space
-        dstx, dsty = np.meshgrid(np.arange(DetectorsDimH), np.arange(DetectorsDimH))
+        dstx, dsty = np.meshgrid(np.arange(det_x_up), np.arange(det_x_up))
         dstx = dstx.flatten()
         dsty = dsty.flatten()
         # Interpolate the 2D Fourier space grid from the transformed sinogram rows
-        fft2 = scipy.interpolate.griddata(
+        fft2 = griddata(
             (srcy, srcx),
             sinogram_fft_rows.flatten(),
             (dsty, dstx),
             method,
             fill_value=0.0,
-        ).reshape((DetectorsDimH, DetectorsDimH))
+        ).reshape((det_x_up, det_x_up))
         # Transform from 2D Fourier space back to a reconstruction of the target
-        recon = np.real(
-            scipy.fftpack.fftshift(scipy.fftpack.ifft2(scipy.fftpack.ifftshift(fft2)))
-        )
+        recon = np.real(fftshift(ifft2(ifftshift(fft2))))
 
-        # Cropping reconstruction to size of the original image
-        image = recon[
-            int(((DetectorsDimH - ObjSize) / 2) + 1) : DetectorsDimH
-            - int(((DetectorsDimH - ObjSize) / 2) - 1),
-            int(((DetectorsDimH - ObjSize) / 2)) : DetectorsDimH
-            - int(((DetectorsDimH - ObjSize) / 2)),
-        ]
-        return image
+        # Cropping the reconstruction to size of the original image
+        unpad_from = det_x_up // 2 - ObjSize // 2
+        unpad_to = det_x_up // 2 + ObjSize // 2
+        return recon[unpad_from:unpad_to, unpad_from:unpad_to]

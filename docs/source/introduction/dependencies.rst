@@ -14,7 +14,7 @@ In general, we would recommend installing 1,2 and 4 packages.
 
 .. code-block:: console
    
-   $ conda install -c astra-toolbox astra-toolbox
+   $ conda install astra-toolbox::astra-toolbox
 
 * 2. `CCPi-Regularisation-Toolkit <https://github.com/vais-ral/CCPi-Regularisation-Toolkit>`_ [KAZ2019]_ provides 
   CPU and GPU regularisers (2D/3D) to enable :ref:`examples_regul_iter` in ToMoBAR. 
@@ -26,8 +26,9 @@ In general, we would recommend installing 1,2 and 4 packages.
 
 .. code-block:: console
    
-   $ conda install -c ccpi ccpi-regulariser # linux/windows
-   $ conda install -c httomo ccpi-regulariser # linux
+   $ conda install ccpi::ccpi-regulariser # linux/windows
+   $ conda install httomo::ccpi-regulariser # linux
+   $ conda install httomo::ccpi-regularisation-cupy # all OS / CuPy modules only
 
 * 3. Wavelet toolbox `pypwt <https://github.com/pierrepaleo/pypwt>`_ or **pycudwt** is required if 
   the soft/hard thresholding of Wavelets coefficients is added to the regularisers above. In some cases 
@@ -37,7 +38,7 @@ In general, we would recommend installing 1,2 and 4 packages.
 
 .. code-block:: console
    
-   $ conda install -c httomo pypwt # linux only
+   $ conda install httomo::pypwt # linux only
 
 * 4. `TomoPhantom <https://github.com/dkazanc/TomoPhantom>`_  is optional but can be 
   helpful for generating synthethic tomographic data and play with :ref:`examples_synth_iter`.
@@ -47,7 +48,7 @@ In general, we would recommend installing 1,2 and 4 packages.
 
 .. code-block:: console
    
-   $ conda install -c httomo tomophantom # linux/windows
+   $ conda install httomo::tomophantom # linux/windows
 
 * 5. `CuPy <https://cupy.dev/>`_  dependency is optional to be able to use algorithms operating on CuPy array kept on the GPU device instead of Numpy arrays. 
   It is a work in progress to fully support the feature in ToMoBAR, however, many main reconstruction methods such as direct and basic were already ported. 
@@ -58,7 +59,7 @@ In general, we would recommend installing 1,2 and 4 packages.
 
 .. code-block:: console
    
-   $ conda install -c anaconda cupy # linux/windows  
+   $ conda install conda-forge::cupy # linux/windows  
 
 * 6. CuPy-enabled CCPi-Regularisation-Toolkit is required when (5) is satisfied. 
   This extension doesn't depend on (2) and can co-exist with (2) installation or standalone.
@@ -66,7 +67,7 @@ In general, we would recommend installing 1,2 and 4 packages.
 
 .. code-block:: console
    
-   $ conda install -c httomo ccpi-regularisation-cupy # all OS supported
+   $ conda install httomo::ccpi-regularisation-cupy # all OS supported
 
 * 7. `mpi4py <https://mpi4py.readthedocs.io/en/stable/>`_ is a Python extension for parallel computing using MPI. 
   Install only if you are planning to use multi-GPU computing. ToMoBAR in itself doesn't offer
