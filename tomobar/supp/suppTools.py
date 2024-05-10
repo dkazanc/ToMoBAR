@@ -42,9 +42,8 @@ except ImportError:
 try:
     import bm3d
 except ImportError:
-    print(
-        "____! BM3D module is required to use for dynamic flat fields calculation !____"
-    )
+    #"____! BM3D module is required to use for dynamic flat fields calculation !____"
+    pass
 
 
 def DFFC(data, flats, darks, downsample, nrPArepetions):
