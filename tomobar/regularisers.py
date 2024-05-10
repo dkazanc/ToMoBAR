@@ -26,9 +26,8 @@ except ImportError:
 try:
     from pypwt import Wavelets
 except ImportError:
-    print(
-        "____! Wavelet package pywpt is missing, please install for wavelet regularisation !____"
-    )
+    #"____! Wavelet package pywpt is missing, please install for wavelet regularisation !____"
+    pass    
 
 
 def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray, tuple]:
