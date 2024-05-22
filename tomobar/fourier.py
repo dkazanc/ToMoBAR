@@ -6,6 +6,7 @@ https://tomocupy.readthedocs.io/en/latest/
 
 nocupy = False
 import numpy as np
+
 try:
     import cupy as xp
     from cupyx import scipy
@@ -101,7 +102,7 @@ def _wint(n, t):
 
     wn = w
     wn[-40:] = (w[-40]) / (N - 40) * np.arange(N - 40, N)
-    
+
     return wn
 
 
