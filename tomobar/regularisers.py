@@ -1,8 +1,9 @@
-"""Adding regularisers from the CCPi-regularisation toolkit and 
+"""Adding regularisers from the CCPi-regularisation toolkit and
 initiate proximity operator for iterative methods.
 
 @author: Daniil Kazantsev: https://github.com/dkazanc
 """
+
 import numpy as np
 from typing import Union
 
@@ -26,8 +27,8 @@ except ImportError:
 try:
     from pypwt import Wavelets
 except ImportError:
-    #"____! Wavelet package pywpt is missing, please install for wavelet regularisation !____"
-    pass    
+    # "____! Wavelet package pywpt is missing, please install for wavelet regularisation !____"
+    pass
 
 
 def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray, tuple]:

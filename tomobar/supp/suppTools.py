@@ -1,15 +1,16 @@
 """Supplementary data tools:
 
-List of functions: 
+List of functions:
 
 * normaliser - to normalise the raw data and take the negative log (if needed). Options are: 'mean', 'median' and 'dynamic'.
 * autocropper - automatically crops the 3D projection data to reduce its size.
 
-@authors: 
+@authors:
     Daniil Kazantsev: https://github.com/dkazanc
-    
+
     Gerard Jover Pujol https://github.com/IararIV/
 """
+
 import numpy as np
 import typing
 from typing import Union
@@ -42,7 +43,7 @@ except ImportError:
 try:
     import bm3d
 except ImportError:
-    #"____! BM3D module is required to use for dynamic flat fields calculation !____"
+    # "____! BM3D module is required to use for dynamic flat fields calculation !____"
     pass
 
 
