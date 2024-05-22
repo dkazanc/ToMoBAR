@@ -1,8 +1,9 @@
-"""Adding regularisers from the CCPi-regularisation toolkit and 
+"""Adding regularisers from the CCPi-regularisation toolkit and
 initiate proximity operator for iterative methods.
 
 @author: Daniil Kazantsev: https://github.com/dkazanc
 """
+
 import numpy as np
 from typing import Union
 
@@ -12,8 +13,8 @@ try:
         FGP_TV,
         PD_TV,
         SB_TV,
-        LLT_ROF,
         TGV,
+        LLT_ROF,
         NDF,
         Diff4th,
         NLTV,
@@ -26,9 +27,8 @@ except ImportError:
 try:
     from pypwt import Wavelets
 except ImportError:
-    print(
-        "____! Wavelet package pywpt is missing, please install for wavelet regularisation !____"
-    )
+    # ____! Wavelet package pywpt is missing, please install for wavelet regularisation !____
+    pass
 
 
 def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray, tuple]:
@@ -66,16 +66,18 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
         )
     if "PD_TV" in _regularisation_["method"]:
         # Primal-Dual (PD) Total variation method by Chambolle-Pock
-        (X, info_vec) = PD_TV(
+        X = PD_TV(
             X,
             _regularisation_["regul_param"],
             _regularisation_["iterations"],
             _regularisation_["tolerance"],
+            _regularisation_["PD_LipschitzConstant"],
             _regularisation_["methodTV"],
             self.nonneg_regul,
-            _regularisation_["PD_LipschitzConstant"],
-            self.Atools.device_index,
+            device=self.Atools.device_index,
+            infovector=info_vec,
         )
+
     if "SB_TV" in _regularisation_["method"]:
         # Split Bregman Total variation method
         (X, info_vec) = SB_TV(

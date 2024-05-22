@@ -1,15 +1,16 @@
 """Supplementary data tools:
 
-List of functions: 
+List of functions:
 
 * normaliser - to normalise the raw data and take the negative log (if needed). Options are: 'mean', 'median' and 'dynamic'.
 * autocropper - automatically crops the 3D projection data to reduce its size.
 
-@authors: 
+@authors:
     Daniil Kazantsev: https://github.com/dkazanc
-    
+
     Gerard Jover Pujol https://github.com/IararIV/
 """
+
 import numpy as np
 import typing
 from typing import Union
@@ -42,9 +43,8 @@ except ImportError:
 try:
     import bm3d
 except ImportError:
-    print(
-        "____! BM3D module is required to use for dynamic flat fields calculation !____"
-    )
+    # ____! BM3D module is required to use for dynamic flat fields calculation !____
+    pass
 
 
 def DFFC(data, flats, darks, downsample, nrPArepetions):
@@ -191,9 +191,9 @@ def DFFC(data, flats, darks, downsample, nrPArepetions):
 
 
 def normaliser(
-    data: np.array,
-    flats: np.array,
-    darks: np.array,
+    data: np.ndarray,
+    flats: np.ndarray,
+    darks: np.ndarray,
     log: bool = True,
     method: str = "mean",
     axis: int = 0,
@@ -202,9 +202,9 @@ def normaliser(
     """Data normalisation module
 
     Args:
-        data (np.array): 3d numpy array of raw data.
-        flats (np.array): 2d numpy array for flat field.
-        darks (np.array): 2d numpy array for darks field.
+        data (np.ndarray): 3d numpy array of raw data.
+        flats (np.ndarray): 2d numpy array for flat field.
+        darks (np.ndarray): 2d numpy array for darks field.
         log (bool, optional): Take negative log. Defaults to True.
         method (str, optional): Normalisation method, choose "mean", "median" or "dynamic". Defaults to "mean".
         axis (int, optional): Define the ANGLES axis.
@@ -216,7 +216,7 @@ def normaliser(
         NameError: method error
 
     Returns:
-        np.ndarray: 3d numpy array of normalised data
+        np.ndarray: 3d numpy ndarray of normalised data
     """
     if np.ndim(data) == 2:
         raise NameError("Normalisation is implemented for 3d data input")
