@@ -165,6 +165,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # initialisation
         [nz, nproj, n] = data.shape
+        recon_size = self.Atools.recon_size
+        if recon_size > n:
+            raise ValueError(
+                "The reconstruction size {} should not be larger than the size of the horizontal detector {}".format(
+                    recon_size, n
+                )
+            )
         odd_horiz = False
         if (n % 2) != 0:
             n = n - 1  # dealing with the odd horizontal detector size
@@ -186,13 +193,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         if odd_horiz:
             rotation_axis -= 1
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
-        recon_size = self.Atools.recon_size
-        if recon_size > n:
-            raise ValueError(
-                "The reconstruction size {} should not be larger than the size of the horizontal detector {}".format(
-                    recon_size, n
-                )
-            )
+
         # usfft parameters
         eps = 1e-3  # accuracy of usfft
         mu = -np.log(eps) / (2 * n * n)
