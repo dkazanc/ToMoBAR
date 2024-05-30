@@ -13,7 +13,7 @@ from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 eps = 2e-06
 
 
-def test_Fourier_inv3D(data_cupy, angles, ensure_clean_memory):
+def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
@@ -37,7 +37,32 @@ def test_Fourier_inv3D(data_cupy, angles, ensure_clean_memory):
     assert recon_data.shape == (128, 160, 160)
 
 
-def test_Fourier_Z_odd(ensure_clean_memory):
+def test_Fourier3D_Y_odd(ensure_clean_memory):
+    dev = cp.cuda.Device()
+    data_host = np.random.randint(
+        low=7515, high=37624, size=(901, 3, 1341), dtype=np.uint16
+    ).astype(np.float32)
+    data = cp.asarray(data_host)
+    detX = cp.shape(data)[2]
+    detY = cp.shape(data)[1]
+    angles = np.linspace(0, math.pi, data.shape[0])
+    N_size = 1300
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    recon = RecToolsCP.FOURIER_INV(
+        data, data_axes_labels_order=["angles", "detY", "detX"]
+    )
+    assert recon.dtype == np.float32
+    assert recon.shape == (3, N_size, N_size)
+
+
+def test_Fourier3D_Z_odd(ensure_clean_memory):
     dev = cp.cuda.Device()
     data_host = np.random.randint(
         low=7515, high=37624, size=(901, 3, 1342), dtype=np.uint16

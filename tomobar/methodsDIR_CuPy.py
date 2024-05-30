@@ -165,24 +165,34 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # initialisation
         [nz, nproj, n] = data.shape
+        odd_horiz = False
         if (n % 2) != 0:
-            raise ValueError(
-                "The horizontal detector size of the projection data must be even"
-            )
-        odd = False
+            n = n - 1  # dealing with the odd horizontal detector size
+            odd_horiz = True
+        odd_vert = False
         if (nz % 2) != 0:
             # the vertical dimension must be also even, so we need to extend the array. Not efficient.
             data_p = xp.empty((nz + 1, nproj, n), dtype=xp.float32)
-            data_p[:nz, :, :] = data
+            if odd_horiz:
+                data_p[:nz, :, :] = data[:, :, :-1]
+            else:
+                data_p[:nz, :, :] = data
             data = data_p
             nz += 1
-            odd = True
+            odd_vert = True
             del data_p
 
         rotation_axis = self.Atools.centre_of_rotation - 0.5
+        if odd_horiz:
+            rotation_axis -= 1
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
         recon_size = self.Atools.recon_size
-
+        if recon_size > n:
+            raise ValueError(
+                "The reconstruction size {} should not be larger than the size of the horizontal detector {}".format(
+                    recon_size, n
+                )
+            )
         # usfft parameters
         eps = 1e-3  # accuracy of usfft
         mu = -np.log(eps) / (2 * n * n)
@@ -194,7 +204,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
         oversampling_level = 2  # at least 2 or larger required
 
         # memory for recon
-        recon_up = xp.empty([nz, n, n], dtype=xp.float32)
+        if odd_horiz:
+            recon_up = xp.empty([nz, n + 1, n + 1], dtype=xp.float32)
+        else:
+            recon_up = xp.empty([nz, n, n], dtype=xp.float32)
 
         # extra arrays
         # interpolation kernel
@@ -277,14 +290,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
         fde2 = fde2[:, n // 2 : 3 * n // 2, n // 2 : 3 * n // 2] * phi
 
         # restructure memory
-        recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
+        if odd_horiz:
+            recon_up[:, :-1, :-1] = xp.concatenate((fde2.real, fde2.imag))
+        else:
+            recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
 
         del fde, fde2, datac
         xp._default_memory_pool.free_all_blocks()
-        if odd:
+        if odd_vert:
             unpad_z = nz - 1
         else:
             unpad_z = nz
+
         unpad_recon_m = n // 2 - recon_size // 2
         unpad_recon_p = n // 2 + recon_size // 2
         return _check_kwargs(
