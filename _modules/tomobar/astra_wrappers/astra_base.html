@@ -1,0 +1,933 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tomobar.astra_wrappers.astra_base &#8212; Tomobar Documentation page</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" href="../../../_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/general.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
+
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tomobar/astra_wrappers/astra_base';</script>
+    <link rel="shortcut icon" href="../../../_static/tomobar_logo_light.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/tomobar_logo_light.png" class="logo__image only-light" alt="Logo image"/>
+    <script>document.write(`<img src="../../../_static/tomobar_logo_dark.png" class="logo__image only-dark" alt="Logo image"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item"><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/about.html">About ToMoBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How To's</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/use.html">Using ToMoBAR</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/direct_recon.html">Direct reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/basic_iter_recon.html">Basic iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/regul_iter_recon.html">Regularised iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/synthetic_recon.html">Synthethic data reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/real_data_recon.html">Real data reconstruction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../reference/api.html">API reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsDIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsDIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.regularisers.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisers</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.regularisersCuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisersCuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.astra_wrappers.astra_base.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.astra_wrappers.astra_base</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.astra_wrappers.astra_tools2d.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.astra_wrappers.astra_tools2d</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.astra_wrappers.astra_tools3d.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.astra_wrappers.astra_tools3d</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.supp.dicts.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.dicts</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.supp.suppTools.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.suppTools</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script>
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <h1>Source code for tomobar.astra_wrappers.astra_base</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The series of classes for wrapping of ASTRA toolbox to perform projection/backprojection</span>
+<span class="sd">and reconstruction of of 2D/3D parallel beam data.</span>
+
+<span class="sd">GPLv3 license (defined by ASTRA toolbox)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">tomobar.supp.funcs</span> <span class="kn">import</span> <span class="n">_vec_geom_init2D</span><span class="p">,</span> <span class="n">_vec_geom_init3D</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">cupy</span> <span class="k">as</span> <span class="nn">xp</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">xp</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Device</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">compute_capability</span>
+    <span class="k">except</span> <span class="n">xp</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">CUDARuntimeError</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">xp</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CuPy is installed but the GPU device is inaccessible&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">xp</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CuPy is not installed&quot;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">astra</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;____! Astra-toolbox package is missing, please install !____&quot;</span><span class="p">)</span>
+
+
+<span class="c1">###########Base class############</span>
+<div class="viewcode-block" id="AstraBase"><a class="viewcode-back" href="../../../api/tomobar.astra_wrappers.astra_base.html#tomobar.astra_wrappers.astra_base.AstraBase">[docs]</a><span class="k">class</span> <span class="nc">AstraBase</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The base class for projection/backprojection operations and various reconstruction algorithms using ASTRA toolbox wrappers.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        detectors_x (int): Horizontal detector dimension in pixel units.</span>
+<span class="sd">        angles_vec (np.ndarray): A vector of projection angles in radians.</span>
+<span class="sd">        centre_of_rotation (float, np.ndarray): The Centre of Rotation (CoR) scalar or a vector of CoRs for each angle.</span>
+<span class="sd">        recon_size (int): Reconstructed object size (a slice).</span>
+<span class="sd">        processing_arch (str): &#39;cpu&#39; or &#39;gpu&#39; - based processing.</span>
+<span class="sd">        device_index (int, optional): An integer for the GPU device, -1 for CPU computing and &gt;0 for the GPU device.</span>
+<span class="sd">        ordsub_number (int): The number of ordered-subsets for iterative reconstruction.</span>
+<span class="sd">        detectors_y (int): Vertical detector dimension in pixel units (3D case).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">detectors_x</span><span class="p">,</span>
+        <span class="n">angles_vec</span><span class="p">,</span>
+        <span class="n">centre_of_rotation</span><span class="p">,</span>
+        <span class="n">recon_size</span><span class="p">,</span>
+        <span class="n">processing_arch</span><span class="p">,</span>
+        <span class="n">device_index</span><span class="p">,</span>
+        <span class="n">ordsub_number</span><span class="p">,</span>
+        <span class="n">detectors_y</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detectors_x</span> <span class="o">=</span> <span class="n">detectors_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angles_vec</span> <span class="o">=</span> <span class="n">angles_vec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span> <span class="o">=</span> <span class="n">centre_of_rotation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recon_size</span> <span class="o">=</span> <span class="n">recon_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processing_arch</span> <span class="o">=</span> <span class="n">processing_arch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span> <span class="o">=</span> <span class="n">device_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">=</span> <span class="n">ordsub_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detectors_y</span> <span class="o">=</span> <span class="n">detectors_y</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">detectors_x</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detectors_x</span>
+
+    <span class="nd">@detectors_x</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">detectors_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detectors_x_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">detectors_x_val</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The size of the horizontal detector cannot be negative or zero&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_detectors_x</span> <span class="o">=</span> <span class="n">detectors_x_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">angles_vec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_angles_vec</span>
+
+    <span class="nd">@angles_vec</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">angles_vec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">angles_vec_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">angles_vec_val</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The length of angles array cannot be zero&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">angles_vec_val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The array of angles must be 1D&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_angles_vec</span> <span class="o">=</span> <span class="n">angles_vec_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">centre_of_rotation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_centre_of_rotation</span>
+
+    <span class="nd">@centre_of_rotation</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">centre_of_rotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">centre_of_rotation_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">centre_of_rotation_val</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">centre_of_rotation_val</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angles_vec</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The CoR must be a scalar or a 1D array of the SAME size as angles&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">centre_of_rotation_val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">centre_of_rotation_val</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_centre_of_rotation</span> <span class="o">=</span> <span class="n">centre_of_rotation_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">recon_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recon_size</span>
+
+    <span class="nd">@recon_size</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">recon_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recon_size_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">recon_size_val</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Reconstruction is currently available for square or cubic objects only, please provide a scalar&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">recon_size_val</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The size of the reconstruction object cannot be zero&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_recon_size</span> <span class="o">=</span> <span class="n">recon_size_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">processing_arch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processing_arch</span>
+
+    <span class="nd">@processing_arch</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">processing_arch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">processing_arch_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">processing_arch_val</span> <span class="o">!=</span> <span class="s2">&quot;cpu&quot;</span> <span class="ow">and</span> <span class="n">processing_arch_val</span> <span class="o">!=</span> <span class="s2">&quot;gpu&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Please choose the processing architecture to be either &#39;cpu&#39; or &#39;gpu&#39;&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">processing_arch_val</span> <span class="o">==</span> <span class="s2">&quot;cpu&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Correction for the CoR with the vector geometry is implemented on the GPU only&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_processing_arch</span> <span class="o">=</span> <span class="n">processing_arch_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">device_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_index</span>
+
+    <span class="nd">@device_index</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">device_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_index_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">device_index_val</span> <span class="o">&lt;=</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The GPU device index can be only -1, 0 and larger than 0&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processing_arch</span> <span class="o">==</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_device_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_device_index</span> <span class="o">=</span> <span class="n">device_index_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ordsub_number</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ordsub_number</span>
+
+    <span class="nd">@ordsub_number</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">ordsub_number</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ordsub_number_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ordsub_number_val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ordsub_number_val</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">ordsub_number_val</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The number of ordered subsets cannot be negative or zero&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ordsub_number</span> <span class="o">=</span> <span class="n">ordsub_number_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">detectors_y</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detectors_y</span>
+
+    <span class="nd">@detectors_y</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">detectors_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detectors_y_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">detectors_y_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">detectors_y_val</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The size of the vertical detector cannot be negative or zero&quot;</span>
+                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_detectors_y</span> <span class="o">=</span> <span class="n">detectors_y_val</span>
+
+    <span class="k">def</span> <span class="nf">_setOS_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">angles_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">)</span>  <span class="c1"># total number of angles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">NumbProjBins</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">angles_tot</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span><span class="p">))</span>
+        <span class="p">)</span>  <span class="c1"># get the number of projections per bin (subset)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">newInd_Vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">NumbProjBins</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int&quot;</span>
+        <span class="p">)</span>  <span class="c1"># 2D array of OS-sorted indeces</span>
+        <span class="k">for</span> <span class="n">sub_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span><span class="p">):</span>
+            <span class="n">ind_sel</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">proj_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">NumbProjBins</span><span class="p">):</span>
+                <span class="n">indexS</span> <span class="o">=</span> <span class="n">ind_sel</span> <span class="o">+</span> <span class="n">sub_ind</span>
+                <span class="k">if</span> <span class="n">indexS</span> <span class="o">&lt;</span> <span class="n">angles_tot</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">,</span> <span class="n">proj_ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">indexS</span>
+                    <span class="n">ind_sel</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span>
+
+    <span class="k">def</span> <span class="nf">_set_vol2d_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;set the reconstruction (vol_geom)&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_vol_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">recon_size</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_vol3d_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;set the reconstruction (vol_geom)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">Y</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">recon_size</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Y</span> <span class="o">=</span> <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recon_size</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">detectors_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_vol_geom</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_cpu_projection2d_parallel_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;the classical 2D projection geometry (cpu)&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_proj_geom</span><span class="p">(</span>
+            <span class="s2">&quot;parallel&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">angles_vec</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_projector</span><span class="p">(</span><span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">)</span>
+        <span class="c1"># optomo operator is used for ADMM algorithm only</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">A_optomo</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">OpTomo</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_gpu_projection2d_parallel_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;the classical projection geometry (gpu)&quot;&quot;&quot;</span>
+        <span class="n">vectors</span> <span class="o">=</span> <span class="n">_vec_geom_init2D</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_proj_geom</span><span class="p">(</span>
+            <span class="s2">&quot;parallel_vec&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">,</span> <span class="n">vectors</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_projector</span><span class="p">(</span>
+            <span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span>
+        <span class="p">)</span>  <span class="c1"># for GPU</span>
+        <span class="c1"># optomo operator is used for ADMM algorithm only</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">A_optomo</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">OpTomo</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_gpu_projection3d_parallel_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;the classical 3D projection geometry (cpu)&quot;&quot;&quot;</span>
+        <span class="n">vectors</span> <span class="o">=</span> <span class="n">_vec_geom_init3D</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_proj_geom</span><span class="p">(</span>
+            <span class="s2">&quot;parallel3d_vec&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">,</span> <span class="n">vectors</span>
+        <span class="p">)</span>
+        <span class="c1"># optomo operator is used for ADMM algorithm only</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_projector</span><span class="p">(</span>
+            <span class="s2">&quot;cuda3d&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span>
+        <span class="p">)</span>  <span class="c1"># for GPU</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">A_optomo</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">OpTomo</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_projection2d_OS_parallel_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;organising 2d OS projection geometry CPU/GPU&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_id_OS</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">sub_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indVec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># OS-specific indices</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">indVec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">NumbProjBins</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">indVec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">indVec</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># shrink vector size</span>
+            <span class="n">anglesOS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">indVec</span><span class="p">]</span>  <span class="c1"># OS-specific angles</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># centre_of_rotation is a _scalar_</span>
+                <span class="n">vectorsOS</span> <span class="o">=</span> <span class="n">_vec_geom_init2D</span><span class="p">(</span><span class="n">anglesOS</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># centre_of_rotation is a _vector_</span>
+                <span class="n">vectorsOS</span> <span class="o">=</span> <span class="n">_vec_geom_init2D</span><span class="p">(</span>
+                    <span class="n">anglesOS</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">indVec</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_proj_geom</span><span class="p">(</span>
+                <span class="s2">&quot;parallel_vec&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">,</span> <span class="n">vectorsOS</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processing_arch</span> <span class="o">==</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">proj_id_OS</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_projector</span><span class="p">(</span>
+                    <span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span>
+                <span class="p">)</span>  <span class="c1"># for CPU</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">proj_id_OS</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_projector</span><span class="p">(</span>
+                    <span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span>
+                <span class="p">)</span>  <span class="c1"># for GPU</span>
+
+    <span class="k">def</span> <span class="nf">_set_projection3d_OS_parallel_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;organising 3d OS projection geometry CPU/GPU&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">sub_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">indVec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">indVec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">NumbProjBins</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">indVec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">indVec</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># shrink vector size</span>
+            <span class="n">anglesOS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">indVec</span><span class="p">]</span>  <span class="c1"># OS-specific angles</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># CenterRotOffset is a _scalar_</span>
+                <span class="n">vectors</span> <span class="o">=</span> <span class="n">_vec_geom_init3D</span><span class="p">(</span><span class="n">anglesOS</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># CenterRotOffset is a _vector_</span>
+                <span class="n">vectors</span> <span class="o">=</span> <span class="n">_vec_geom_init3D</span><span class="p">(</span>
+                    <span class="n">anglesOS</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">indVec</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_proj_geom</span><span class="p">(</span>
+                <span class="s2">&quot;parallel3d_vec&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">,</span> <span class="n">vectors</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span>
+
+    <span class="k">def</span> <span class="nf">_runAstraBackproj2D</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sinogram</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">iterations</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">os_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;2D ASTRA-based back-projector</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sinogram (np.ndarray): a sinogram to backproject</span>
+<span class="sd">            method (str): A method to choose from the ASTRA&#39;s provided ones.</span>
+<span class="sd">            iterations (int): The number of iterations for iterative methods.</span>
+<span class="sd">            os_index (Union[int, None]): The number of ordered subsets.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: The reconstructed 2D image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">os_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># ordered-subsets</span>
+            <span class="n">sinogram_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                <span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">],</span> <span class="n">sinogram</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># traditional geometry</span>
+            <span class="n">sinogram_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="n">sinogram</span><span class="p">)</span>
+
+        <span class="c1"># Create a data object for the reconstruction</span>
+        <span class="n">rec_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;-vol&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">)</span>
+
+        <span class="c1"># Create algorithm object</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">astra_dict</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processing_arch</span> <span class="o">==</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectorId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_id_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectorId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;option&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;GPUindex&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span><span class="p">}</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ReconstructionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec_id</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sinogram_id</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;FBP&quot;</span> <span class="ow">or</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;FBP_CUDA&quot;</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;FilterType&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Ram-Lak&quot;</span>
+
+        <span class="c1"># Create the algorithm object from the configuration structure</span>
+        <span class="n">alg_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">alg_id</span><span class="p">,</span> <span class="n">iterations</span><span class="p">)</span>
+
+        <span class="c1"># Get the result</span>
+        <span class="n">recon_slice</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rec_id</span><span class="p">)</span>
+
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">rec_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">sinogram_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_id_OS</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">recon_slice</span>
+
+    <span class="k">def</span> <span class="nf">_runAstraProj2D</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">os_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;2D Forward projector for ASTRA parallel-beam</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            image (np.ndarray): Object to perform forward projection on.</span>
+<span class="sd">            os_index (Union[int, None]): The number of ordered subsets.</span>
+<span class="sd">            method (str): A method to choose from ASTRA&#39;s provided ones.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: projected 2d data (sinogram)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">rec_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s2">&quot;-vol&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rec_id</span> <span class="o">=</span> <span class="n">image</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">os_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># ordered-subsets</span>
+            <span class="n">sinogram_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># traditional full data parallel beam projection geometry</span>
+            <span class="n">sinogram_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Create algorithm object</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">astra_dict</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processing_arch</span> <span class="o">==</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectorId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_id_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectorId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;option&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;GPUindex&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span><span class="p">}</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;VolumeDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec_id</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sinogram_id</span>
+
+        <span class="c1"># Create the algorithm object from the configuration structure</span>
+        <span class="n">alg_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+
+        <span class="c1"># Get the result</span>
+        <span class="n">sinogram</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sinogram_id</span><span class="p">)</span>
+
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">rec_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_id_OS</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data2d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">sinogram_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sinogram</span>
+
+<div class="viewcode-block" id="AstraBase.runAstraBackproj3D"><a class="viewcode-back" href="../../../api/tomobar.astra_wrappers.astra_base.html#tomobar.astra_wrappers.astra_base.AstraBase.runAstraBackproj3D">[docs]</a>    <span class="k">def</span> <span class="nf">runAstraBackproj3D</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">proj_data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">iterations</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">os_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;3D ASTRA-based back-projector for parallel beam</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            proj_data (np.ndarray): 3D projection data</span>
+<span class="sd">            method (str): A method to choose from ASTRA&#39;s provided ones.</span>
+<span class="sd">            iterations (int): The number of iterations for iterative methods.</span>
+<span class="sd">            os_index (Union[int, None]): The number of ordered subsets.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: The reconstructed 3D volume.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set ASTRA configuration for 3D reconstructor</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">os_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># ordered-subsets</span>
+            <span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                <span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">],</span> <span class="n">proj_data</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># traditional full data parallel beam projection geometry</span>
+            <span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="n">proj_data</span><span class="p">)</span>
+
+        <span class="c1"># Create a data object for the reconstruction</span>
+        <span class="n">rec_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;-vol&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">)</span>
+
+        <span class="c1"># Create algorithm object</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">astra_dict</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;option&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;GPUindex&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span><span class="p">}</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ReconstructionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec_id</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">proj_id</span>
+
+        <span class="c1"># Create the algorithm object from the configuration structure</span>
+        <span class="n">alg_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">alg_id</span><span class="p">,</span> <span class="n">iterations</span><span class="p">)</span>
+
+        <span class="c1"># Get the result</span>
+        <span class="n">recon_volume</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rec_id</span><span class="p">)</span>
+
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">rec_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">proj_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">recon_volume</span></div>
+
+<div class="viewcode-block" id="AstraBase.runAstraProj3D"><a class="viewcode-back" href="../../../api/tomobar.astra_wrappers.astra_base.html#tomobar.astra_wrappers.astra_base.AstraBase.runAstraProj3D">[docs]</a>    <span class="k">def</span> <span class="nf">runAstraProj3D</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">volume_data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">os_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;3D ASTRA-based projector for parallel beam</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            volume_data (np.ndarray): 3D object to project</span>
+<span class="sd">            os_index (Union[int, None]): The number of ordered subsets.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: 3D projection data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set ASTRA configuration for 3D projector</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">volume_data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">volume_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s2">&quot;-vol&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">,</span> <span class="n">volume_data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">volume_id</span> <span class="o">=</span> <span class="n">volume_data</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">os_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># ordered-subsets</span>
+            <span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># traditional full data parallel beam projection geometry</span>
+            <span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Create algorithm object</span>
+        <span class="n">algString</span> <span class="o">=</span> <span class="s2">&quot;FP3D_CUDA&quot;</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">astra_dict</span><span class="p">(</span><span class="n">algString</span><span class="p">)</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;option&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;GPUindex&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span><span class="p">}</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;VolumeDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">volume_id</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">proj_id</span>
+
+        <span class="c1"># Create the algorithm object from the configuration structure</span>
+        <span class="n">alg_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+
+        <span class="c1"># Get the result</span>
+        <span class="n">proj_volume</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">proj_id</span><span class="p">)</span>
+
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">volume_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">proj_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">proj_volume</span></div>
+
+<div class="viewcode-block" id="AstraBase.runAstraBackproj3DCuPy"><a class="viewcode-back" href="../../../api/tomobar.astra_wrappers.astra_base.html#tomobar.astra_wrappers.astra_base.AstraBase.runAstraBackproj3DCuPy">[docs]</a>    <span class="k">def</span> <span class="nf">runAstraBackproj3DCuPy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">proj_data</span><span class="p">:</span> <span class="n">xp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">os_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;3d back-projection using ASTRA&#39;s GPULink functionality for CuPy arrays</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            proj_data (xp.ndarray): 3d projection data as a CuPy array</span>
+<span class="sd">            method (str): Only BP is available so far.</span>
+<span class="sd">            os_index (Union[int, None]): The number of ordered subsets.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            xp.ndarray: A CuPy array containing back-projected volume.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set ASTRA configuration for 3D reconstructor using CuPy arrays</span>
+        <span class="n">proj_link</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">GPULink</span><span class="p">(</span>
+            <span class="n">proj_data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">*</span><span class="n">proj_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">proj_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">os_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># ordered-subsets</span>
+            <span class="n">projector_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_projector</span><span class="p">(</span>
+                <span class="s2">&quot;cuda3d&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span>
+            <span class="p">)</span>
+            <span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">link</span><span class="p">(</span>
+                <span class="s2">&quot;-proj3d&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">],</span> <span class="n">proj_link</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># traditional full data parallel beam projection geometry</span>
+            <span class="n">projector_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">create_projector</span><span class="p">(</span>
+                <span class="s2">&quot;cuda3d&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span>
+            <span class="p">)</span>
+            <span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s2">&quot;-proj3d&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="n">proj_link</span><span class="p">)</span>
+
+        <span class="c1"># create a CuPy array with ASTRA link to it</span>
+        <span class="n">recon_volume</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">rec_link</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">GPULink</span><span class="p">(</span>
+            <span class="n">recon_volume</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">*</span><span class="n">recon_volume</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">recon_volume</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">rec_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s2">&quot;-vol&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">,</span> <span class="n">rec_link</span><span class="p">)</span>
+
+        <span class="c1"># Create algorithm object</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">astra_dict</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;option&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;GPUindex&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span><span class="p">}</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">proj_id</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ReconstructionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec_id</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectorId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">projector_id</span>
+
+        <span class="c1"># Create the algorithm object from the configuration structure</span>
+        <span class="n">alg_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">alg_id</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">rec_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">proj_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">recon_volume</span></div>
+
+<div class="viewcode-block" id="AstraBase.runAstraProj3DCuPy"><a class="viewcode-back" href="../../../api/tomobar.astra_wrappers.astra_base.html#tomobar.astra_wrappers.astra_base.AstraBase.runAstraProj3DCuPy">[docs]</a>    <span class="k">def</span> <span class="nf">runAstraProj3DCuPy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">volume_data</span><span class="p">:</span> <span class="n">xp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">os_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;3d forward projector using ASTRA&#39;s GPULink functionality for CuPy arrays</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            volume_data (xp.ndarray): the input 3d volume as a CuPy array</span>
+<span class="sd">            os_index (Union[int, None]): The number of ordered subsets.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            xp.ndarray: projected volume array as a cupy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Enable GPUlink to the volume</span>
+        <span class="n">volume_link</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">GPULink</span><span class="p">(</span>
+            <span class="n">volume_data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">*</span><span class="n">volume_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">volume_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">volume_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s2">&quot;-vol&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">,</span> <span class="n">volume_link</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordsub_number</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># ordered-subsets approach</span>
+            <span class="n">proj_volume</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">xp</span><span class="o">.</span><span class="n">float32</span>
+            <span class="p">)</span>
+            <span class="n">gpu_link_sino</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">GPULink</span><span class="p">(</span>
+                <span class="n">proj_volume</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">*</span><span class="n">proj_volume</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">proj_volume</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">link</span><span class="p">(</span>
+                <span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">os_index</span><span class="p">],</span> <span class="n">gpu_link_sino</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># traditional full data parallel beam projection geometry</span>
+            <span class="c1"># Enabling GPUlink to the created empty CuPy array</span>
+            <span class="n">proj_volume</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">xp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="n">gpu_link_sino</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">GPULink</span><span class="p">(</span>
+                <span class="n">proj_volume</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">*</span><span class="n">proj_volume</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">proj_volume</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">proj_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s2">&quot;-sino&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">,</span> <span class="n">gpu_link_sino</span><span class="p">)</span>
+
+        <span class="c1"># Create algorithm object</span>
+        <span class="n">algString</span> <span class="o">=</span> <span class="s2">&quot;FP3D_CUDA&quot;</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">astra_dict</span><span class="p">(</span><span class="n">algString</span><span class="p">)</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;option&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;GPUindex&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_index</span><span class="p">}</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;VolumeDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">volume_id</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;ProjectionDataId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">proj_id</span>
+
+        <span class="c1"># Create the algorithm object from the configuration structure</span>
+        <span class="n">alg_id</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+
+        <span class="n">astra</span><span class="o">.</span><span class="n">algorithm</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">alg_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">volume_id</span><span class="p">)</span>
+        <span class="n">astra</span><span class="o">.</span><span class="n">data3d</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">proj_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">proj_volume</span></div></div>
+</pre></div>
+
+                </article>
+              
+
+              
+              
+                <footer class="bd-footer-article">
+                  
+<div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item"><!-- Previous / next buttons -->
+<div class="prev-next-area">
+</div></div>
+  
+</div>
+
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Jul 02, 2024.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
