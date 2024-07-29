@@ -129,11 +129,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(data, cutoff=cutoff_freq)
-        xp._default_memory_pool.free_all_blocks()
-        cache = xp.fft.config.get_plan_cache()
-        cache.clear()  # flush FFT cache here before backprojection operation
         data = xp.ascontiguousarray(xp.swapaxes(data, 0, 1))
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
+        cache = xp.fft.config.get_plan_cache()
+        cache.clear()  # flush FFT cache here before performing ifft to save the memory
         xp._default_memory_pool.free_all_blocks()
         return _check_kwargs(reconstruction, **kwargs)
 

@@ -42,12 +42,10 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray, cutoff: float = 0.6) -> xp.ndar
     module = load_cuda_module("generate_filtersync")
     filter_prep = module.get_function("generate_filtersinc")
 
-    # prepearing a ramp-like filter to apply to every projection
-    module = load_cuda_module("generate_filtersync")
-    filter_prep = module.get_function("generate_filtersinc")
-
     # Use real FFT to save space and time
     proj_f = scipy.fft.rfft(projection3D, axis=-1, norm="backward", overwrite_x=True)
+    cache = xp.fft.config.get_plan_cache()
+    cache.clear()  # flush FFT cache here before performing ifft to save the memory
 
     # generating the filter here so we can schedule/allocate while FFT is keeping the GPU busy
     f = xp.empty((1, 1, DetectorsLengthH // 2 + 1), dtype=xp.float32)
@@ -69,9 +67,13 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray, cutoff: float = 0.6) -> xp.ndar
     # actual filtering
     proj_f *= f
 
-    return scipy.fft.irfft(
+    projection3D = scipy.fft.irfft(
         proj_f, projection3D.shape[2], axis=-1, norm="forward", overwrite_x=True
     )
+    cache = xp.fft.config.get_plan_cache()
+    cache.clear()
+
+    return projection3D
 
 
 def _wint(n, t):
