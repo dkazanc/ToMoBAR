@@ -521,7 +521,8 @@ class AstraBase:
             proj_id = astra.data3d.link("-proj3d", self.proj_geom, proj_link)
 
         # create a CuPy array with ASTRA link to it
-        recon_volume = xp.zeros(astra.geom_size(self.vol_geom), dtype=np.float32)
+        recon_volume = xp.empty(astra.geom_size(self.vol_geom), dtype=xp.float32)
+
         rec_link = astra.data3d.GPULink(
             recon_volume.data.ptr, *recon_volume.shape[::-1], 4 * recon_volume.shape[2]
         )
@@ -541,6 +542,7 @@ class AstraBase:
         astra.algorithm.delete(alg_id)
         astra.data3d.delete(rec_id)
         astra.data3d.delete(proj_id)
+        del proj_data
         return recon_volume
 
     def runAstraProj3DCuPy(
@@ -563,7 +565,7 @@ class AstraBase:
 
         if self.ordsub_number != 1:
             # ordered-subsets approach
-            proj_volume = xp.zeros(
+            proj_volume = xp.empty(
                 astra.geom_size(self.proj_geom_OS[os_index]), dtype=xp.float32
             )
             gpu_link_sino = astra.data3d.GPULink(
@@ -575,7 +577,7 @@ class AstraBase:
         else:
             # traditional full data parallel beam projection geometry
             # Enabling GPUlink to the created empty CuPy array
-            proj_volume = xp.zeros(astra.geom_size(self.proj_geom), dtype=xp.float32)
+            proj_volume = xp.empty(astra.geom_size(self.proj_geom), dtype=xp.float32)
             gpu_link_sino = astra.data3d.GPULink(
                 proj_volume.data.ptr, *proj_volume.shape[::-1], 4 * proj_volume.shape[2]
             )

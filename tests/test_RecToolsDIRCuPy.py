@@ -183,6 +183,31 @@ def test_FBP3D(data_cupy, angles, ensure_clean_memory):
     assert recon_data.shape == (128, 160, 160)
 
 
+# @pytest.mark.parametrize("projections", [1801, 3601])
+# @pytest.mark.parametrize("slices", [3, 5, 7, 11])
+# @pytest.mark.parametrize("recon_size_it", [1200, 2560])
+# def test_FBP3D_bigdata(slices, recon_size_it, projections, ensure_clean_memory):
+#     data = cp.random.random_sample((projections, slices, 2560), dtype=np.float32)
+#     angles = np.linspace(0.0 * np.pi / 180.0, 180.0 * np.pi / 180.0, data.shape[0])
+#     detX = cp.shape(data)[2]
+#     detY = cp.shape(data)[1]
+#     N_size = detX
+#     RecToolsCP = RecToolsDIRCuPy(
+#         DetectorsDimH=detX,  # Horizontal detector dimension
+#         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+#         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+#         AnglesVec=angles,  # A vector of projection angles in radians
+#         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+#         device_projector="gpu",
+#     )
+#     FBPrec_cupy = RecToolsCP.FBP(
+#         data,
+#         data_axes_labels_order=["angles", "detY", "detX"],
+#         cutoff_freq=1.1,
+#     )
+#     recon_data = FBPrec_cupy.get()
+
+
 def test_FBP3D_mask(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
