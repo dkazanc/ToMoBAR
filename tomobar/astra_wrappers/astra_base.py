@@ -7,7 +7,7 @@ GPLv3 license (defined by ASTRA toolbox)
 import numpy as np
 from typing import Union
 from tomobar.supp.funcs import _vec_geom_init2D, _vec_geom_init3D
-
+from astra.experimental import direct_BP3D, direct_FP3D
 
 try:
     import cupy as xp
@@ -146,6 +146,7 @@ class AstraBase:
             self._device_index = -1
         else:
             self._device_index = device_index_val
+        astra.set_gpu_index = device_index_val
 
     @property
     def ordsub_number(self) -> int:
@@ -510,39 +511,23 @@ class AstraBase:
             projector_id = astra.create_projector(
                 "cuda3d", self.proj_geom_OS[os_index], self.vol_geom
             )
-            proj_id = astra.data3d.link(
-                "-proj3d", self.proj_geom_OS[os_index], proj_link
-            )
         else:
             # traditional full data parallel beam projection geometry
             projector_id = astra.create_projector(
                 "cuda3d", self.proj_geom, self.vol_geom
             )
-            proj_id = astra.data3d.link("-proj3d", self.proj_geom, proj_link)
-
         # create a CuPy array with ASTRA link to it
         recon_volume = xp.empty(astra.geom_size(self.vol_geom), dtype=xp.float32)
 
         rec_link = astra.data3d.GPULink(
             recon_volume.data.ptr, *recon_volume.shape[::-1], 4 * recon_volume.shape[2]
         )
-        rec_id = astra.data3d.link("-vol", self.vol_geom, rec_link)
 
-        # Create algorithm object
-        cfg = astra.astra_dict(method)
-        cfg["option"] = {"GPUindex": self.device_index}
-        cfg["ProjectionDataId"] = proj_id
-        cfg["ReconstructionDataId"] = rec_id
-        cfg["ProjectorId"] = projector_id
+        # run backprojection
+        direct_BP3D(projector_id, rec_link, proj_link)
 
-        # Create the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        astra.algorithm.run(alg_id, 1)
-
-        astra.algorithm.delete(alg_id)
-        astra.data3d.delete(rec_id)
-        astra.data3d.delete(proj_id)
-        del proj_data
+        astra.data3d.delete(projector_id)
+        del proj_data, proj_link, rec_link
         return recon_volume
 
     def runAstraProj3DCuPy(
@@ -571,8 +556,8 @@ class AstraBase:
             gpu_link_sino = astra.data3d.GPULink(
                 proj_volume.data.ptr, *proj_volume.shape[::-1], 4 * proj_volume.shape[2]
             )
-            proj_id = astra.data3d.link(
-                "-sino", self.proj_geom_OS[os_index], gpu_link_sino
+            projector_id = astra.create_projector(
+                "cuda3d", self.proj_geom_OS[os_index], self.vol_geom
             )
         else:
             # traditional full data parallel beam projection geometry
@@ -581,20 +566,14 @@ class AstraBase:
             gpu_link_sino = astra.data3d.GPULink(
                 proj_volume.data.ptr, *proj_volume.shape[::-1], 4 * proj_volume.shape[2]
             )
-            proj_id = astra.data3d.link("-sino", self.proj_geom, gpu_link_sino)
+            projector_id = astra.create_projector(
+                "cuda3d", self.proj_geom, self.vol_geom
+            )
 
-        # Create algorithm object
-        algString = "FP3D_CUDA"
-        cfg = astra.astra_dict(algString)
-        cfg["option"] = {"GPUindex": self.device_index}
-        cfg["VolumeDataId"] = volume_id
-        cfg["ProjectionDataId"] = proj_id
+        # Perform forward projection
+        direct_FP3D(projector_id, volume_link, gpu_link_sino)
 
-        # Create the algorithm object from the configuration structure
-        alg_id = astra.algorithm.create(cfg)
-        astra.algorithm.run(alg_id)
-
-        astra.algorithm.delete(alg_id)
         astra.data3d.delete(volume_id)
-        astra.data3d.delete(proj_id)
+        astra.data3d.delete(projector_id)
+        del volume_data, volume_link, gpu_link_sino
         return proj_volume
