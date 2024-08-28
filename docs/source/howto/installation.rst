@@ -18,11 +18,19 @@ Install ToMoBAR as a pre-built conda Python package:
 
    $ conda install -c httomo tomobar
 
-or install with the main dependencies (preferably into a fresh environment):
+or install with the main dependencies into a new environment:
 
 .. code-block:: console
 
    $ conda install -c httomo -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser pypwt
+
+Install ToMoBAR from PyPi:
++++++++++++++++++++++++++++
+One can install ToMoBAR from PyPi, however, not all dependencies might be at PyPi yet.
+
+.. code-block:: console
+
+   $ pip install tomobar
 
 Create conda environment:
 +++++++++++++++++++++++++
