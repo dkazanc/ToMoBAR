@@ -18,7 +18,6 @@ enabled = true
 template = "{tag}"
 dev_template = "{tag}"
 
-
 [project]
 name = "tomobar"
 version = "2024.08"
@@ -31,7 +30,7 @@ authors = [
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: GPLv3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.9",
     "Environment :: GPU :: NVIDIA CUDA"
