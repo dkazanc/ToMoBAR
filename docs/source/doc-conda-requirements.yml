@@ -1,4 +1,4 @@
-name: tomophantom-docs
+name: tomobar-docs
 channels:
   - conda-forge
   - defaults

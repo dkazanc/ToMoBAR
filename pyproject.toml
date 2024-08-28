@@ -26,6 +26,7 @@ readme = "Readme.md"
 license = {text = "GPLv3"}
 authors = [
     {name = "Daniil Kazantsev", email = "daniil.kazantsev@diamond.ac.uk"},
+    {name = "Viktor Nikitin", email = "vnikitin@anl.gov"},
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -38,6 +39,7 @@ requires-python = ">=3.9"
 dynamic = ["version"]
 dependencies = [
     "numpy",
+    "astra-toolbox",
     "scipy",
     "pillow",
     "scikit-image"
