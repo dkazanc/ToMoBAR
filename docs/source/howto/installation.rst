@@ -54,7 +54,7 @@ This sets the development environment to work in-place on the code.
    $ conda env create --name tomobar --file conda-recipe/environment/environment.yml
    $ conda activate tomobar
    $ pip install -e .[dev] # the editable environment
-   $ pytests tests/ # all tests should pass
+   $ pytest tests/ # all tests should pass
 
 Conda builds
 +++++++++++++
