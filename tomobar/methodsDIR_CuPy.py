@@ -130,6 +130,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(data, cutoff=cutoff_freq)
         data = xp.ascontiguousarray(xp.swapaxes(data, 0, 1))
+        xp._default_memory_pool.free_all_blocks() # free everything related to the filtering before starting Astra
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
         cache = xp.fft.config.get_plan_cache()
         cache.clear()  # flush FFT cache here before performing ifft to save the memory
