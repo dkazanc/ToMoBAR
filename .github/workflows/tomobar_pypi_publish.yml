@@ -1,8 +1,10 @@
-name: Upload Python Package to PyPI when a Release is Created
+name: Upload Python Package to PyPI when `v` tag is pushed to any branch
 
+# Run the workflow whenever a tag beginning with `v` is pushed to any branch
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - v*
 
 jobs:
   pypi-publish:
