@@ -35,7 +35,6 @@ classifiers = [
     "Environment :: GPU :: NVIDIA CUDA"
 ]
 requires-python = ">=3.9"
-dynamic = ["version"]
 dependencies = [
     "numpy",
     "astra-toolbox",
