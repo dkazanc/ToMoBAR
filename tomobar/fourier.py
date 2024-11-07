@@ -46,6 +46,7 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray, cutoff: float = 0.6) -> xp.ndar
     proj_f = scipy.fft.rfft(projection3D, axis=-1, norm="backward", overwrite_x=True)
     cache = xp.fft.config.get_plan_cache()
     cache.clear()  # flush FFT cache here before performing ifft to save the memory
+    xp._default_memory_pool.free_all_blocks()
 
     # generating the filter here so we can schedule/allocate while FFT is keeping the GPU busy
     f = xp.empty((1, 1, DetectorsLengthH // 2 + 1), dtype=xp.float32)
@@ -72,6 +73,7 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray, cutoff: float = 0.6) -> xp.ndar
     )
     cache = xp.fft.config.get_plan_cache()
     cache.clear()
+    xp._default_memory_pool.free_all_blocks()
 
     return projection3D
 
