@@ -20,7 +20,6 @@ dev_template = "{tag}"
 
 [project]
 name = "tomobar"
-version = "2024.08"
 description = "TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software"
 readme = "Readme.md"
 license = {text = "GPLv3"}
@@ -32,10 +31,10 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.9",
     "Environment :: GPU :: NVIDIA CUDA"
 ]
 requires-python = ">=3.9"
+dynamic = ["version"]
 dependencies = [
     "numpy",
     "astra-toolbox",
