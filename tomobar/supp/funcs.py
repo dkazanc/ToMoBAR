@@ -3,7 +3,7 @@
 """
 
 import numpy as np
-from typing import Union, List
+from typing import Union, List, Tuple
 
 cupy_enabled = False
 try:
@@ -161,7 +161,7 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
         return data
 
 
-def _parse_device_argument(device_int_or_string):
+def _parse_device_argument(device_int_or_string) -> Tuple:
     """Convert a cpu/gpu string or integer gpu number into a tuple."""
     if isinstance(device_int_or_string, int):
         return "gpu", device_int_or_string
