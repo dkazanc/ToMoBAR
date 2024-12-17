@@ -26,8 +26,7 @@ from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 
 
-
-class RecToolsIRCuPy():
+class RecToolsIRCuPy:
     """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox, CCPi-RGL toolkit.
     Parameters for reconstruction algorithms are extracted from three dictionaries:
     _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters
@@ -63,7 +62,7 @@ class RecToolsIRCuPy():
 
         if DetectorsDimV == 0 or DetectorsDimV is None:
             raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
-        
+
         self.datafidelity = datafidelity
         self.cupyrun = cupyrun
 
@@ -74,7 +73,7 @@ class RecToolsIRCuPy():
                 AnglesVec,
                 CenterRotOffset,
                 ObjSize,
-                'gpu',
+                "gpu",
                 device_projector,
             )
         else:
@@ -85,10 +84,10 @@ class RecToolsIRCuPy():
                 AnglesVec,
                 CenterRotOffset,
                 ObjSize,
-                'gpu',
+                "gpu",
                 device_projector,
             )
-        
+
     @property
     def datafidelity(self) -> int:
         return self._datafidelity
@@ -106,7 +105,6 @@ class RecToolsIRCuPy():
     @cupyrun.setter
     def cupyrun(self, cupyrun_val):
         self._cupyrun = cupyrun_val
-
 
     def Landweber(
         self, _data_: dict, _algorithm_: Union[dict, None] = None
@@ -255,7 +253,6 @@ class RecToolsIRCuPy():
 
         del d, s, beta, r, alpha, Ad, normr2_new, normr2
         return cp.reshape(x_rec, newshape=x_shape_3d, order="C")
-    
 
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
@@ -317,7 +314,6 @@ class RecToolsIRCuPy():
         s = 1.0
         proj_geom = astra.geom_size(self.Atools.vol_geom)
         x1 = cp.random.randn(*proj_geom, dtype=cp.float32)
-
 
         if _data_["OS_number"] == 1:
             # non-OS approach
