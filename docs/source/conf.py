@@ -38,12 +38,24 @@ for mod_name in MOCK_MODULES:
 
 autodoc_mock_imports = [
     "astra",
+    "astra.experimental",
     "cupy",
     "scipy",
     "scipy.fftpack",
+    "bm3d",
+    "skimage",
+    "tomobar.astra_wrappers.astra_base",
     "tomobar.astra_wrappers.astra_tools2d",
     "tomobar.astra_wrappers.astra_tools3d",
 ]
+
+class CustomMock(mock.Mock):
+    def __repr__(self):
+        return "<cp.ndarray>"
+
+
+sys.modules["cupy"] = CustomMock()
+sys.modules["numpy"] = CustomMock()
 
 
 # ------------------------------------------------------------------------------

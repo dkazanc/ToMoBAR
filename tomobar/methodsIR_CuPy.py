@@ -1,8 +1,4 @@
 """Reconstruction class for regularised iterative methods using CuPy library.
-
-* Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
-                               shrinkage-thresholding algorithm for linear inverse problems,
-                               SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
 """
 
 import numpy as np
@@ -25,13 +21,13 @@ from tomobar.methodsIR import RecToolsIR
 
 
 class RecToolsIRCuPy(RecToolsIR):
-    """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox, CCPi-RGL toolkit.
+    """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox and CCPi-RGL toolkit (FISTA).
     Parameters for reconstruction algorithms are extracted from three dictionaries:
-    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters
-    that are accepted.
+    _data_, _algorithm_ and _regularisation_. See `tomobar.supp.dicts <https://dkazanc.github.io/ToMoBAR/api/tomobar.supp.dicts.html>`_
+    function of ToMoBAR's :ref:`ref_api` for all parameters explained.
 
     If FISTA is used it will require CuPy-enabled routines of the CCPi-regularisation toolkit.
-    This implementation is typically >3 times faster than one in RecToolsIR, however
+    This implementation is typically more than times faster than the one in RecToolsIR, however,
     please note that the functionality of FISTA is limited compared to the version of
     FISTA in RecToolsIR. The work is in progress and the current FISTA version is experimental.
 
@@ -41,8 +37,8 @@ class RecToolsIRCuPy(RecToolsIR):
         CenterRotOffset (float): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): Reconstructed object dimensions (a scalar).
-        datafidelity (str): Data fidelity, choose from LS, KL, PWLS or SWLS.
-        device_projector (int): Provide a GPU index (integer) of a specific GPU device.
+        datafidelity (str, optional): Data fidelity, choose from LS and PWLS. Defaults to LS.
+        device_projector (int, optional): Provide a GPU index of a specific GPU device. Defaults to 0.
         cupyrun (bool, optional): instantiate CuPy modules.
     """
 
@@ -53,7 +49,7 @@ class RecToolsIRCuPy(RecToolsIR):
         CenterRotOffset,  # The Centre of Rotation scalar or a vector
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
+        datafidelity="LS",  # Data fidelity, choose from LS and PWLS
         device_projector=0,  # provide a GPU index (integer) of a specific device
         cupyrun=True,
     ):
@@ -75,7 +71,8 @@ class RecToolsIRCuPy(RecToolsIR):
         self, _data_: dict, _algorithm_: Union[dict, None] = None
     ) -> cp.ndarray:
         """Using Landweber iterative technique to reconstruct projection data given as a CuPy array.
-           We perform the following iterations: x_k+1 = x_k - tau*A.T(A(x_k) - b)
+        We perform the following iterations: :math:`x^{k+1} = x^{k} + \\tau * \mathbf{A}^{\intercal}(\mathbf{A}x^{k} - b)`.
+
 
         Args:
             _data_ (dict): Data dictionary, where projection data is provided.
@@ -112,9 +109,9 @@ class RecToolsIRCuPy(RecToolsIR):
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
-           reconstruct projection data given as a CuPy array.
-           We perform the following iterations:: x_k+1 = C*A.T*R(b - A(x_k))
-
+        reconstruct projection data given as a CuPy array.
+        We perform the following iterations: :math:`x^{k+1} = \mathbf{C}\mathbf{A}^{\intercal}\mathbf{R}(b - \mathbf{A}x^{k})`.
+        
         Args:
             _data_ (dict): Data dictionary, where projection data is provided.
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
@@ -162,7 +159,8 @@ class RecToolsIRCuPy(RecToolsIR):
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Conjugate Gradients Least Squares iterative technique to reconstruct projection data
-            given as a CuPy array. We aim to solve the system of normal equations A.T*A*x = A.T*b.
+        given as a CuPy array. The algorithm aim to solve the system of normal equations 
+        :math:`\mathbf{A}^{\intercal}\mathbf{A}x = \mathbf{A}^{\intercal} b`.
 
         Args:
             _data_ (dict): Data dictionary, where projection data is provided.
@@ -221,7 +219,7 @@ class RecToolsIRCuPy(RecToolsIR):
 
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
-        projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
+        projection_raw_data is required for the PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
 
         Args:
             _data_ (dict): Data dictionary, where input data as a cupy array is provided.
@@ -239,11 +237,14 @@ class RecToolsIRCuPy(RecToolsIR):
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
     ) -> cp.ndarray:
-        """A Fast Iterative Shrinkage-Thresholding Algorithm with various types regularisations.
-           The parameters for the algorithm should be provided in three dictionaries:
-           _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function
-           for all parameters that are accepted.
-           Please note that not all of the functionality supported compared to FISTA from methodsIR.
+        """A Fast Iterative Shrinkage-Thresholding Algorithm [BT2009]_ with various types of regularisation from
+        the regularisation toolkit [KAZ2019]_.
+
+        All parameters for the algorithm should be provided in three dictionaries:
+        _data_, _algorithm_, and _regularisation_. See `tomobar.supp.dicts <https://dkazanc.github.io/ToMoBAR/api/tomobar.supp.dicts.html>`_
+        function of ToMoBAR's :ref:`ref_api` for all parameters explained.
+        Please note that not all of the functionality supported in this CuPy implementation compared to FISTA from 
+        `methodsIR <https://dkazanc.github.io/ToMoBAR/api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR.FISTA>`_.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
