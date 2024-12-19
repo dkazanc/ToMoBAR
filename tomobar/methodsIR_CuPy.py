@@ -1,4 +1,9 @@
 """Reconstruction class for regularised iterative methods using CuPy library.
+
+* FISTA regularised algorithm [BT2009]_ . Implemented using ASTRA with DirectLink and CuPy, Regularisation Toolkit-CuPy.
+* Landweber algorithm.
+* SIRT algorithm.
+* CGLS algorithm.
 """
 
 import numpy as np
@@ -55,7 +60,6 @@ class RecToolsIRCuPy:
         device_projector=0,  # provide a GPU index (integer) of a specific device
         cupyrun=True,
     ):
-
         if DetectorsDimV == 0 or DetectorsDimV is None:
             raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
@@ -146,7 +150,7 @@ class RecToolsIRCuPy:
         """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
         reconstruct projection data given as a CuPy array.
         We perform the following iterations: :math:`x^{k+1} = \mathbf{C}\mathbf{A}^{\intercal}\mathbf{R}(b - \mathbf{A}x^{k})`.
-        
+
         Args:
             _data_ (dict): Data dictionary, where projection data is provided.
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
@@ -194,7 +198,7 @@ class RecToolsIRCuPy:
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Conjugate Gradients Least Squares iterative technique to reconstruct projection data
-        given as a CuPy array. The algorithm aim to solve the system of normal equations 
+        given as a CuPy array. The algorithm aim to solve the system of normal equations
         :math:`\mathbf{A}^{\intercal}\mathbf{A}x = \mathbf{A}^{\intercal} b`.
 
         Args:
@@ -357,7 +361,7 @@ class RecToolsIRCuPy:
         All parameters for the algorithm should be provided in three dictionaries:
         _data_, _algorithm_, and _regularisation_. See `tomobar.supp.dicts <https://dkazanc.github.io/ToMoBAR/api/tomobar.supp.dicts.html>`_
         function of ToMoBAR's :ref:`ref_api` for all parameters explained.
-        Please note that not all of the functionality supported in this CuPy implementation compared to FISTA from 
+        Please note that not all of the functionality supported in this CuPy implementation compared to FISTA from
         `methodsIR <https://dkazanc.github.io/ToMoBAR/api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR.FISTA>`_.
 
         Args:

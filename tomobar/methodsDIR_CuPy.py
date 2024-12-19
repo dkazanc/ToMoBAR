@@ -1,9 +1,8 @@
 """Reconstruction class for 3D direct methods using CuPy-library.
 
 * Forward/Backward projection (ASTRA with DirectLink and CuPy).
-* Filtered Back Projection (ASTRA, Filter implemented in CuPy).
-* Fourier direct reconstruction with classical polar to cartesian interpolation.
-* Fourier direct reconstruction on unequally spaced grids (interpolation in image space).
+* Filtered Back Projection (ASTRA, Filter implemented with CuPy).
+* Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method.
 """
 
 import numpy as np
@@ -31,7 +30,7 @@ from tomobar.methodsDIR import RecToolsDIR
 
 
 class RecToolsDIRCuPy(RecToolsDIR):
-    """Reconstruction class using DIRect methods with CuPy API.
+    """Reconstruction class using direct methods with CuPy API.
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
@@ -120,7 +119,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         Returns:
             xp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
-        cutoff_freq = 0.6  # default value
+        cutoff_freq = 1.1  # default value
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
@@ -139,8 +138,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
     def FOURIER_INV(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input.
-           This implementation follows V. Nikitin's CUDA-C implementation:
-           https://github.com/nikitinvv/radonusfft and TomoCuPy package.
+        This implementation follows V. Nikitin's CUDA-C implementation:
+        https://github.com/nikitinvv/radonusfft and TomoCuPy package.
 
 
         Args:

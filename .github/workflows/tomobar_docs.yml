@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - main
+      - master
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-docs-publish:
@@ -23,7 +23,7 @@ jobs:
           uses: actions/setup-python@v4
           with:
             python-version: '3.10'
-            
+
         - name: tomobar-docs
           uses: conda-incubator/setup-miniconda@v2
           with:
@@ -32,8 +32,8 @@ jobs:
             environment-file: ./docs/source/doc-conda-requirements.yml
 
         - name: pip install tomobar
-          run: |            
-            pip install tomobar 
+          run: |
+            pip install tomobar
 
         - name: Build api docs
           run: sphinx-apidoc -feT -t=./docs/source/_templates -o ./docs/source/api ./tomobar

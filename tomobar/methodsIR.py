@@ -1,12 +1,8 @@
 """Reconstruction class for regularised iterative methods.
 
-* Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
-                               shrinkage-thresholding algorithm for linear inverse problems,
-                               SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
-* Regularised ADMM algorithm (Boyd, N. Parikh, E. Chu, B. Peleato, J. Eckstein, "Distributed optimization and
-                               statistical learning via the alternating direction method of multipliers", Found. Trends Mach. Learn.,
-                               vol. 3, no. 1, pp. 1-122, Jan. 2011)
-* SIRT, CGLS algorithms wrapped directly from the ASTRA package
+* Regularised FISTA algorithm [BT2009]_
+* Regularised ADMM algorithm [Boyd2011]_
+* SIRT and CGLS algorithms wrapped directly from the ASTRA package
 """
 
 import numpy as xp
