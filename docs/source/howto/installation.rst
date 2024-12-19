@@ -23,6 +23,12 @@ or install with the dependencies into a new environment:
 
    $ conda install -c httomo -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser pypwt
 
+one can also try this installation, especially for other than Linux OSs:
+
+.. code-block:: console
+
+   $ conda install -c httomo -c ccpi -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser
+
 Install ToMoBAR from PyPi:
 +++++++++++++++++++++++++++
 One can install ToMoBAR from PyPi, however, not all dependencies might be at PyPi yet.
