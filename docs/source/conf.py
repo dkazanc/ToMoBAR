@@ -21,8 +21,9 @@ sys.path.insert(0, os.path.abspath("../.."))
 MOCK_MODULES = [
     "cupy",
     "astra",
+    "scipy",
+    "scipy.fftpack",
 ]
-
 
 # MOCK_MODULES = [
 #     "cupy",
@@ -34,6 +35,28 @@ MOCK_MODULES = [
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
+
+autodoc_mock_imports = [
+    "astra",
+    "astra.experimental",
+    "cupy",
+    "scipy",
+    "scipy.fftpack",
+    "bm3d",
+    "skimage",
+    "tomobar.astra_wrappers.astra_base",
+    "tomobar.astra_wrappers.astra_tools2d",
+    "tomobar.astra_wrappers.astra_tools3d",
+]
+
+class CustomMock(mock.Mock):
+    def __repr__(self):
+        return "<cp.ndarray>"
+
+
+sys.modules["cupy"] = CustomMock()
+sys.modules["numpy"] = CustomMock()
+
 
 # ------------------------------------------------------------------------------
 
@@ -61,14 +84,15 @@ extensions = [
     # Add links to highlighted source code
     "sphinx.ext.viewcode",
     # Allows a grid layout and dropdown boxes
-    "sphinx_panels",
+    "sphinx_design",
     # copy to clipboard button
     "sphinx_copybutton",
+    # use jupyter notebooks
+    "nbsphinx",
     #'IPython.sphinxext.ipython_console_highlighting',
     "sphinx.ext.githubpages",
     # Generate .nojekyll file for git pages build
 ]
-
 autosummary_generate = True
 numfig = True
 template_patterns = ["_templates"]
