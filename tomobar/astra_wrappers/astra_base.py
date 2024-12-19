@@ -224,7 +224,7 @@ class AstraBase:
         self.A_optomo = astra.OpTomo(self.proj_id)
 
     def _set_gpu_projection3d_parallel_geometry(self):
-        """the classical 3D projection geometry (cpu)"""
+        """the classical 3D projection geometry"""
         vectors = _vec_geom_init3D(self.angles_vec, 1.0, 1.0, self.centre_of_rotation)
         self.proj_geom = astra.create_proj_geom(
             "parallel3d_vec", self.detectors_y, self.detectors_x, vectors

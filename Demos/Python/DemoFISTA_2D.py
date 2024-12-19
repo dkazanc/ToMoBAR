@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Script to generate 2D analytical phantoms and their sinograms with added noise 
+"""Script to generate 2D analytical phantoms and their sinograms with added noise
 and then reconstruct using the regularised FISTA algorithm.
-
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -223,60 +221,4 @@ Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_os_reg[indicesROI])
 RMSE_FISTA_os_reg = Qtools.rmse()
 print("RMSE for FISTA-OS is {}".format(RMSE_FISTA_os))
 print("RMSE for regularised FISTA-OS is {}".format(RMSE_FISTA_os_reg))
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with FISTA-KL-OS method")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-
-# set parameters and initiate a class object
-Rectools = RecToolsIR(
-    DetectorsDimH=P,  # Horizontal detector dimension
-    DetectorsDimV=None,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="KL",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
-)
-
-# prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": noisy_sino, "OS_number": 10}  # data dictionary
-lc = Rectools.powermethod(
-    _data_
-)  # calculate Lipschitz constant (run once to initialise)
-
-# Run FISTA-OS reconstrucion algorithm without regularisation
-_algorithm_ = {"iterations": 50, "lipschitz_const": lc * 0.3}
-RecFISTA_os_kl = Rectools.FISTA(_data_, _algorithm_)
-
-# adding regularisation
-_regularisation_ = {
-    "method": "PD_TV",
-    "regul_param": 0.00003,
-    "iterations": 80,
-    "device_regulariser": "gpu",
-}
-
-# adding regularisation using the CCPi regularisation toolkit
-RecFISTA_os_kl_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
-
-plt.figure()
-plt.subplot(121)
-plt.imshow(RecFISTA_os_kl, vmin=0, vmax=1, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
-plt.title("FISTA-KL-OS reconstruction")
-plt.subplot(122)
-plt.imshow(RecFISTA_os_kl_reg, vmin=0, vmax=1, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
-plt.title("Regularised FISTA-KL-OS reconstruction")
-plt.show()
-
-# calculate errors
-Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_os_kl[indicesROI])
-RMSE_FISTA_os = Qtools.rmse()
-Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_os_kl_reg[indicesROI])
-RMSE_FISTA_os_reg = Qtools.rmse()
-print("RMSE for FISTA-KL-OS is {}".format(RMSE_FISTA_os))
-print("RMSE for regularised FISTA-KL-OS is {}".format(RMSE_FISTA_os_reg))
 # %%

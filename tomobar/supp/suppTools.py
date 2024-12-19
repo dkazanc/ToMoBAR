@@ -252,9 +252,9 @@ def normaliser(
         )
     if method != "dynamic":
         denom = flats - darks
-        denom[
-            (np.where(denom <= 0.0))
-        ] = 1.0  # remove zeros/negatives in the denominator if any
+        denom[(np.where(denom <= 0.0))] = (
+            1.0  # remove zeros/negatives in the denominator if any
+        )
         if axis == 1:
             denom = denom[:, np.newaxis, :]
             darks = darks[:, np.newaxis, :]
