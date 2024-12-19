@@ -34,7 +34,6 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             _regularisation_["regul_param"],
             _regularisation_["iterations"],
             _regularisation_["time_marching_step"],
-            _regularisation_["tolerance"],
             self.Atools.device_index,
         )
     if "PD_TV" in _regularisation_["method"]:
@@ -43,7 +42,6 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             X,
             _regularisation_["regul_param"],
             _regularisation_["iterations"],
-            _regularisation_["tolerance"],
             _regularisation_["methodTV"],
             self.nonneg_regul,
             _regularisation_["PD_LipschitzConstant"],

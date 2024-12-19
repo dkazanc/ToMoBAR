@@ -19,12 +19,14 @@ try:
 except ImportError:
     print("____! Astra-toolbox package is missing, please install !____")
 
+from tomobar.supp.funcs import _data_dims_swapper
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
-from tomobar.methodsIR import RecToolsIR
+from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
+from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 
 
-class RecToolsIRCuPy(RecToolsIR):
+class RecToolsIRCuPy:
     """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox, CCPi-RGL toolkit.
     Parameters for reconstruction algorithms are extracted from three dictionaries:
     _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters
@@ -49,27 +51,60 @@ class RecToolsIRCuPy(RecToolsIR):
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
-        DetectorsDimV,  # Vertical detector dimension (3D case)
+        DetectorsDimV,  # Vertical detector dimension (3D case), 0 or None for 2D case
         CenterRotOffset,  # The Centre of Rotation scalar or a vector
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS
+        datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS, SWLS (not all supported in cupy version)
         device_projector=0,  # provide a GPU index (integer) of a specific device
         cupyrun=True,
     ):
-        super().__init__(
-            DetectorsDimH,
-            DetectorsDimV,
-            CenterRotOffset,
-            AnglesVec,
-            ObjSize,
-            datafidelity=datafidelity,
-            device_projector=device_projector,
-            cupyrun=cupyrun,
-        )
 
         if DetectorsDimV == 0 or DetectorsDimV is None:
             raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
+
+        self.datafidelity = datafidelity
+        self.cupyrun = cupyrun
+
+        if DetectorsDimV == 0 or DetectorsDimV is None:
+            self.geom = "2D"
+            self.Atools = AstraTools2D(
+                DetectorsDimH,
+                AnglesVec,
+                CenterRotOffset,
+                ObjSize,
+                "gpu",
+                device_projector,
+            )
+        else:
+            self.geom = "3D"
+            self.Atools = AstraTools3D(
+                DetectorsDimH,
+                DetectorsDimV,
+                AnglesVec,
+                CenterRotOffset,
+                ObjSize,
+                "gpu",
+                device_projector,
+            )
+
+    @property
+    def datafidelity(self) -> int:
+        return self._datafidelity
+
+    @datafidelity.setter
+    def datafidelity(self, datafidelity_val):
+        if datafidelity_val not in ["LS", "PWLS", "SWLS", "KL"]:
+            raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
+        self._datafidelity = datafidelity_val
+
+    @property
+    def cupyrun(self) -> int:
+        return self._cupyrun
+
+    @cupyrun.setter
+    def cupyrun(self, cupyrun_val):
+        self._cupyrun = cupyrun_val
 
     def Landweber(
         self, _data_: dict, _algorithm_: Union[dict, None] = None
@@ -224,14 +259,93 @@ class RecToolsIRCuPy(RecToolsIR):
         projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
 
         Args:
-            _data_ (dict): Data dictionary, where input data as a cupy array is provided.
+            _data_ (dict): Data dictionary, where input data is provided.
 
         Returns:
             float: the Lipschitz constant
         """
-        cp._default_memory_pool.free_all_blocks()
-        # numpy-cupy agnostic function
-        return super().powermethod(_data_)
+
+        if "data_axes_labels_order" not in _data_:
+            _data_["data_axes_labels_order"] = None
+        if (
+            self.datafidelity in ["PWLS", "SWLS"]
+            and "projection_raw_data" not in _data_
+        ):
+            raise ValueError("Please provide projection_raw_data for this model")
+        if self.datafidelity in ["PWLS", "SWLS"]:
+            sqweight = _data_["projection_raw_data"]
+
+        if _data_["data_axes_labels_order"] is not None:
+            if self.geom == "2D":
+                _data_["projection_norm_data"] = _data_dims_swapper(
+                    _data_["projection_norm_data"],
+                    _data_["data_axes_labels_order"],
+                    ["angles", "detX"],
+                )
+                if self.datafidelity in ["PWLS", "SWLS"]:
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["angles", "detX"],
+                    )
+                    sqweight = _data_["projection_raw_data"]
+            else:
+                _data_["projection_norm_data"] = _data_dims_swapper(
+                    _data_["projection_norm_data"],
+                    _data_["data_axes_labels_order"],
+                    ["detY", "angles", "detX"],
+                )
+                if self.datafidelity in ["PWLS", "SWLS"]:
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["detY", "angles", "detX"],
+                    )
+                    sqweight = _data_["projection_raw_data"]
+                    # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
+            _data_["data_axes_labels_order"] = None
+
+        if _data_.get("OS_number") is None:
+            _data_["OS_number"] = 1  # the classical approach (default)
+        else:
+            _data_ = _reinitialise_atools_OS(self, _data_)
+
+        power_iterations = 15
+        s = 1.0
+        proj_geom = astra.geom_size(self.Atools.vol_geom)
+        x1 = cp.random.randn(*proj_geom, dtype=cp.float32)
+
+        if _data_["OS_number"] == 1:
+            # non-OS approach
+            y = self.Atools._forwprojCuPy(x1)
+            if self.datafidelity == "PWLS":
+                y = cp.multiply(sqweight, y)
+            for iterations in range(power_iterations):
+                x1 = self.Atools._backprojCuPy(y)
+                s = cp.linalg.norm(cp.ravel(x1), axis=0)
+                x1 = x1 / s
+                y = self.Atools._forwprojCuPy(x1)
+                if self.datafidelity == "PWLS":
+                    y = cp.multiply(sqweight, y)
+        else:
+            # OS approach
+            y = self.Atools._forwprojOSCuPy(x1, 0)
+            if self.datafidelity == "PWLS":
+                if self.geom == "2D":
+                    y = cp.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
+                else:
+                    y = cp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
+            for iterations in range(power_iterations):
+                x1 = self.Atools._backprojOSCuPy(y, 0)
+                s = cp.linalg.norm(cp.ravel(x1), axis=0)
+                x1 = x1 / s
+                y = self.Atools._forwprojOSCuPy(x1, 0)
+                if self.datafidelity == "PWLS":
+                    if self.geom == "2D":
+                        y = cp.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
+                    else:
+                        y = cp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
+        return s
 
     def FISTA(
         self,
