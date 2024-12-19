@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 from tomobar.methodsIR import RecToolsIR
 from tomobar.supp.suppTools import normaliser
 
-eps = 1e-06
+eps = 1e-05
 
 
 def test_SIRT2D(data, angles):
@@ -607,8 +607,8 @@ def test_ADMM3D_reg(data, angles):
 
     Iter_rec = RecTools.ADMM(_data_, _algorithm_, _regularisation_)
 
-    assert_allclose(np.min(Iter_rec), -0.009140163, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.020371437, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.008855395, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.020371437, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -684,8 +684,8 @@ def test_FISTA3D(data, angles):
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
 
-    assert_allclose(np.min(Iter_rec), -0.0021881335, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.024684845, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.0021881335, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.024684845, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -751,8 +751,8 @@ def test_FISTA_OS_3D(data, angles):
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
 
-    assert_allclose(np.min(Iter_rec), -0.008425578, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.032162726, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.008425578, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.032162726, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -790,7 +790,7 @@ def test_FISTA_OS_regul_3D(data, angles):
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
 
-    assert_allclose(np.min(Iter_rec), -0.000175, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.021823, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), -0.000174, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.021823, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)

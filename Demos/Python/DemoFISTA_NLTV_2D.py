@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Script to generate 2D analytical phantoms and their sinograms with added noise 
+"""Script to generate 2D analytical phantoms and their sinograms with added noise
 and then reconstruct using Non-local Total variation (NLTV) regularised FISTA algorithm.
-
 NLTV method is quite different to the generic structure of other regularisers, hence
 a separate implementation
-
 """
 import numpy as np
 import timeit
@@ -114,13 +111,12 @@ H_i, H_j, Weights = PatchSelect(
     pars["patchwindow"],
     pars["neighbours"],
     pars["edge_parameter"],
-    "gpu",
 )
-"""
-plt.figure()
-plt.imshow(Weights[0,:,:], vmin=0, vmax=1, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
-"""
+
+# plt.figure()
+# plt.imshow(Weights[0,:,:], vmin=0, vmax=1, cmap="gray")
+# plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%Reconstructing with FISTA-OS method%%%%%%%%%%%%%%")
@@ -155,10 +151,11 @@ print("Run FISTA-OS reconstrucion algorithm with NLTV regularisation...")
 _regularisation_ = {
     "method": "NLTV",
     "regul_param": 0.0025,
-    "iterations": 5,
     "NLTV_H_i": H_i,
     "NLTV_H_j": H_j,
     "NLTV_Weights": Weights,
+    "NumNeighb": pars["neighbours"],
+    "IterNumb": 5,
     "device_regulariser": "gpu",
 }
 
