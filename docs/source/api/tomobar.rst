@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   tomobar.astra_wrappers
    tomobar.cuda_kernels
    tomobar.supp
 
@@ -16,7 +17,7 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   tomobar.astra_wrappers
+   tomobar.fourier
    tomobar.methodsDIR
    tomobar.methodsDIR_CuPy
    tomobar.methodsIR

@@ -3,7 +3,10 @@
 Installation Guide
 ------------------
 ToMoBAR is a Python package with several :ref:`ref_dependencies`. To ensure its full functionality it is recommended to install them.
-It mostly relies on the GPU-enabled computations and therefore we suggest using a decent NVIDIA graphics card to support it.
+It mostly relies on the GPU-enabled computations and therefore we suggest using a decent NVIDIA graphics card to support it. ToMoBAR
+can run with `CuPy <https://cupy.dev/>`_ or using normal routines using pre-built CUDA modules of the Regularisation Toolkit.
+
+.. note:: CuPy-enabled ToMoBAR is the development in progress. Methods like FISTA can normally run several times faster, however, not every variation is supported.
 
 .. _ref_python:
 
@@ -22,6 +25,7 @@ or install with the dependencies into a new environment:
 .. code-block:: console
 
    $ conda install -c httomo -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser pypwt
+   $ conda install conda-forge::cupy # install only if you need CuPy-enabled modules
 
 one can also try this installation, especially for other than Linux OSs:
 
@@ -30,7 +34,8 @@ one can also try this installation, especially for other than Linux OSs:
    $ conda install -c httomo -c ccpi -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser
 
 Install ToMoBAR from PyPi:
-+++++++++++++++++++++++++++
+++++++++++++++++++++++++++
+
 One can install ToMoBAR from PyPi, however, not all dependencies might be at PyPi yet.
 
 .. code-block:: console

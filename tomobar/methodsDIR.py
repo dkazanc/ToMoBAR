@@ -1,6 +1,6 @@
-"""Reconstruction class for direct reconstructon methods.
+"""Reconstruction class for direct reconstruction methods.
 
-* Fourier Slice Theorem reconstruction (adopted from Tim Day's code)
+* Fourier Slice Theorem reconstruction (adopted from the Tim Day's code)
 * Forward/Backward projection (ASTRA)
 * Filtered Back Projection (ASTRA)
 """
@@ -8,7 +8,6 @@
 import numpy as np
 import scipy.fftpack
 
-from typing import Union
 from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
