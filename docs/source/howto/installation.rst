@@ -2,9 +2,8 @@
 
 Installation Guide
 ------------------
-ToMoBAR is a Python package with several :ref:`ref_dependencies` to ensure its full functionality.
-It mostly relies on the GPU-enabled computations and therefore we suggest having a decent NVIDIA
-graphics card to support it.
+ToMoBAR is a Python package with several :ref:`ref_dependencies`. To ensure its full functionality it is recommended to install them.
+It mostly relies on the GPU-enabled computations and therefore we suggest using a decent NVIDIA graphics card to support it.
 
 .. _ref_python:
 
@@ -18,7 +17,7 @@ Install ToMoBAR as a pre-built conda Python package:
 
    $ conda install -c httomo tomobar
 
-or install with the main dependencies into a new environment:
+or install with the dependencies into a new environment:
 
 .. code-block:: console
 
@@ -31,11 +30,12 @@ One can install ToMoBAR from PyPi, however, not all dependencies might be at PyP
 .. code-block:: console
 
    $ pip install tomobar
+   $ pip install ccpi-regularisation-cupy
 
-Create conda environment:
+Using conda environment:
 +++++++++++++++++++++++++
-Sometimes the one-liner above doesn't work. In that case we suggest creating a new conda environment,
-and **pip** install ToMoBAR into it as shown bellow.
+One can also create a new conda environment by using environment yaml file,
+and then **pip** install ToMoBAR into it.
 
 .. code-block:: console
 

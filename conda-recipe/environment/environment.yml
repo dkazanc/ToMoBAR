@@ -3,7 +3,6 @@ channels:
   - conda-forge
   - httomo
 dependencies:
-  - httomo::ccpi-regularisation-cupy
   - httomo::ccpi-regulariser
   - conda-forge::astra-toolbox
   - conda-forge::cupy
