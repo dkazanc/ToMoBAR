@@ -31,10 +31,6 @@ jobs:
             activate-environment: tomobar-docs
             environment-file: ./docs/source/doc-conda-requirements.yml
 
-        - name: pip install tomobar
-          run: |
-            pip install tomobar
-
         - name: Build api docs
           run: sphinx-apidoc -feT -t=./docs/source/_templates -o ./docs/source/api ./tomobar
 
