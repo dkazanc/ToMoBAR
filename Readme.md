@@ -2,11 +2,11 @@
     <tr>
         <td>
         <div align="left">
-          <img src="docs/source/_static//tomobar_logo.png" width="450"><br>  
+          <img src="docs/source/_static//tomobar_logo.png" width="450"><br>
         </div>
         </td>
         <td>
-        <font size="5"><b> TOmographic MOdel-BAsed Reconstruction software <a href="https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf">PAPER (CT Meeting 2020)</a></b></font>     
+        <font size="5"><b> TOmographic MOdel-BAsed Reconstruction software <a href="https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf">PAPER (CT Meeting 2020)</a></b></font>
         <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a Python and Matlab (not currently maintained) library of direct and model-based regularised iterative reconstruction algorithms with a plug-and-play capability. ToMoBAR offers you a selection of various data models and regularisers resulting in complex objectives for tomographic reconstruction. ToMoBAR can handle multi-GPU parallel reconstruction in Python and also device-to-device methods operating on CuPy arrays. </font></br>
         </td>
     </tr>
@@ -16,11 +16,15 @@
 |--------|-------------------|
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
-### NEW in ToMoBAR since v.2024.01:
-- [DOCUMENTATION](https://dkazanc.github.io/ToMoBAR/) is available. Various tutorials are presented and references to API given.
-- CuPy-enabled 3D FISTA-OS with regularisation all in-device implementation. It should be 3-5 times faster than the non-CuPy version depending on the GPU device in use and the size of the data.
-- Now one can specify the axes labels to describe the input data so it will be automatically passed in the right format to the method. See this [Demo](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/DemoFISTA_3D.py).
-- Demos changed to adhere the recent changes in TomoPhantom v.3.0.
+### NEW in ToMoBAR since v.2024.12:
+- Fixes to overcome some incompatibility issues in the new release of [CCPi-Regularisation-Toolkit](https://github.com/TomographicImaging/CCPi-Regularisation-Toolkit).
+- [DOCUMENTATION](https://dkazanc.github.io/ToMoBAR/) is updated, [API](https://dkazanc.github.io/ToMoBAR/reference/api.html) references improved.
+
+## ToMoBAR highlights:
+Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do). Please also see [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
+
+## Installation
+Please check the detailed [installation](https://dkazanc.github.io/ToMoBAR/howto/installation.html) guide where all [software dependencies](https://dkazanc.github.io/ToMoBAR/introduction/dependencies.html) are listed.
 
 ### Software includes:
  * A wrapper around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods available in ASTRA
@@ -34,20 +38,8 @@
   <img src="docs/source/_static/recsFISTA_stud.png" width="550">
 </div>
 <div align="center">
-  <img src="docs/source/_static/TomoRec_surf2.jpg" width="600">  
+  <img src="docs/source/_static/TomoRec_surf2.jpg" width="600">
 </div>
-
-## ToMoBAR highlights:
-Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do).
-
-### Software dependencies
-All dependencies are listed [here](https://dkazanc.github.io/ToMoBAR/introduction/dependencies.html).
- 
-## Installation
-Please check the detailed [installation](https://dkazanc.github.io/ToMoBAR/howto/installation.html) guide.
-
-## How to use ToMoBAR in Python:
-Please see [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python) for more details.
 
 ### References:
  1. [D. Kazantsev and N. Wadeson 2020. TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software for high resolution synchrotron X-ray tomography. CT Meeting 2020](https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf)
