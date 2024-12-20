@@ -1,6 +1,3 @@
-# -- General configuration ------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
 #!/usr/bin/env python
 import os
 import sys
@@ -21,8 +18,9 @@ sys.path.insert(0, os.path.abspath("../.."))
 MOCK_MODULES = [
     "cupy",
     "astra",
+    "scipy",
+    "scipy.fftpack",
 ]
-
 
 # MOCK_MODULES = [
 #     "cupy",
@@ -35,10 +33,34 @@ MOCK_MODULES = [
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
+autodoc_mock_imports = [
+    "astra",
+    "astra.experimental",
+    "cupy",
+    "scipy",
+    "scipy.fftpack",
+    "bm3d",
+    "skimage",
+    "tomobar.astra_wrappers.astra_base",
+    "tomobar.astra_wrappers.astra_tools2d",
+    "tomobar.astra_wrappers.astra_tools3d",
+]
+
+
+class CustomMock(mock.Mock):
+    def __repr__(self):
+        return "<cp.ndarray>"
+
+
+sys.modules["cupy"] = CustomMock()
+sys.modules["numpy"] = CustomMock()
+
+
 # ------------------------------------------------------------------------------
 
-project = "Tomobar"
-# copyright = f"{date.today().year}, Diamond Light Source"
+project = "ToMoBAR"
+author = "Daniil Kazantsev"
+copyright = f"{date.today().year}, Diamond Light Source and Manchester University, UK"
 
 # Specify a base language to help assistive technology
 language = "en"
@@ -61,14 +83,15 @@ extensions = [
     # Add links to highlighted source code
     "sphinx.ext.viewcode",
     # Allows a grid layout and dropdown boxes
-    "sphinx_panels",
+    "sphinx_design",
     # copy to clipboard button
     "sphinx_copybutton",
+    # use jupyter notebooks
+    "nbsphinx",
     #'IPython.sphinxext.ipython_console_highlighting',
     "sphinx.ext.githubpages",
     # Generate .nojekyll file for git pages build
 ]
-
 autosummary_generate = True
 numfig = True
 template_patterns = ["_templates"]
@@ -86,14 +109,6 @@ html_favicon = "_static/tomobar_logo_light.png"
 html_last_updated_fmt = ""
 html_static_path = ["_static"]
 html_use_smartypants = True
-
-"""
-html_theme_options = {
-    "logo_only": True,
-    "display_version": False,
-    "githuburl": "https://github.com/dkazanc/ToMoBAR",
-}
-"""
 
 html_theme_options = {
     "logo": {

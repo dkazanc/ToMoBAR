@@ -1,7 +1,5 @@
-"""Adding CuPy-enabled regularisers from the CCPi-regularisation toolkit and 
-initiate proximity operator for iterative methods.
-
-@author: Daniil Kazantsev: https://github.com/dkazanc
+"""Adding CuPy-enabled regularisers from the CCPi-regularisation toolkit and
+instantiate a proximal operator for iterative methods.
 """
 
 import cupy as cp
@@ -16,11 +14,11 @@ except ImportError:
 
 
 def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
-    """Enabling proximal operators step in interative reconstruction.
+    """Enabling proximal operators step in iterative reconstruction.
 
     Args:
         X (cp.ndarray): 2D or 3D CuPy array.
-        _regularisation_ (dict): Regularisation dictionary with parameters.
+        _regularisation_ (dict): Regularisation dictionary with parameters, see :mod:`tomobar.supp.dicts`.
 
     Returns:
         cp.ndarray: Filtered 2D or 3D CuPy array.

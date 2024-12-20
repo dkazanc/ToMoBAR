@@ -1,7 +1,5 @@
 """Adding regularisers from the CCPi-regularisation toolkit and
-initiate proximity operator for iterative methods.
-
-@author: Daniil Kazantsev: https://github.com/dkazanc
+instantiate a proximal operator for iterative methods.
 """
 
 import numpy as np
@@ -36,7 +34,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
 
     Args:
         X (np.ndarray): 2D or 3D numpy array.
-        _regularisation_ (dict): Regularisation dictionary with parameters.
+        _regularisation_ (dict): Regularisation dictionary with parameters, see :mod:`tomobar.supp.dicts`.
 
     Returns:
         np.ndarray or a tuple: Filtered 2D or 3D numpy array or a tuple.

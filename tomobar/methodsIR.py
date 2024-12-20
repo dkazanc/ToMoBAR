@@ -1,12 +1,8 @@
-"""Reconstruction class for regularised iterative methods.
+"""Reconstruction class for regularised iterative methods (2D/3D).
 
-* Regularised FISTA algorithm (A. Beck and M. Teboulle,  A fast iterative
-                               shrinkage-thresholding algorithm for linear inverse problems,
-                               SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.)
-* Regularised ADMM algorithm (Boyd, N. Parikh, E. Chu, B. Peleato, J. Eckstein, "Distributed optimization and
-                               statistical learning via the alternating direction method of multipliers", Found. Trends Mach. Learn.,
-                               vol. 3, no. 1, pp. 1-122, Jan. 2011)
-* SIRT, CGLS algorithms wrapped directly from the ASTRA package
+* :func:`RecToolsIR.FISTA` FISTA - iterative regularised algorithm [BT2009]_, [Xu2016]_.
+* :func:`RecToolsIR.ADMM` ADMM iterative regularised algorithm [Boyd2011]_.
+* :func:`RecToolsIR.SIRT` and :func:`RecToolsIR.CGLS` algorithms are wrapped directly from the ASTRA package.
 """
 
 import numpy as xp
@@ -39,9 +35,9 @@ from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 
 class RecToolsIR:
     """Iterative reconstruction algorithms (FISTA and ADMM) using ASTRA toolbox and CCPi-RGL toolkit.
-    Parameters for reconstruction algorithms are extracted from three dictionaries:
-    _data_, _algorithm_ and _regularisation_. See API for `tomobar.supp.dicts` function for all parameters
-    that are accepted.
+    Parameters for reconstruction algorithms should be provided in three dictionaries:
+    :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`
+    function of ToMoBAR's :ref:`ref_api` for all parameters explained.
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
@@ -112,7 +108,6 @@ class RecToolsIR:
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> xp.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
-           See `tomobar.supp.dicts` for all parameters to the dictionaries bellow.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -134,7 +129,6 @@ class RecToolsIR:
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> xp.ndarray:
         """Conjugate Gradient Least Squares from ASTRA toolbox.
-           See `tomobar.supp.dicts` for all parameters to the dictionaries bellow.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided
@@ -156,7 +150,7 @@ class RecToolsIR:
 
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
-        projection_raw_data is required for PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
+        projection_raw_data is required for PWLS fidelity, otherwise will be ignored.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -257,7 +251,7 @@ class RecToolsIR:
                     y = xp.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
                 else:
                     y = xp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
-            for iterations in range(power_iterations):
+            for _ in range(power_iterations):
                 if cupy_imported and self.cupyrun:
                     x1 = self.Atools._backprojOSCuPy(y, 0)
                 else:
@@ -286,7 +280,7 @@ class RecToolsIR:
     ) -> xp.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
         data fidelity terms provided in three dictionaries.
-        See `tomobar.supp.dicts` for all parameters to the dictionaries bellow.
+        See :mod:`tomobar.supp.dicts` for all parameters to the dictionaries bellow.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -673,8 +667,7 @@ class RecToolsIR:
         _regularisation_: Union[dict, None] = None,
     ) -> xp.ndarray:
         """Alternating Directions Method of Multipliers with various types of regularisation and
-        data fidelity terms provided in three dictionaries.
-        See `tomobar.supp.dicts` for all parameters to the dictionaries bellow.
+        data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -737,7 +730,7 @@ class RecToolsIR:
                 z - u
             )
             outputSolver = scipy.sparse.linalg.gmres(
-                A_to_solver, b_to_solver, tol=1e-05, maxiter=15
+                A_to_solver, b_to_solver, atol=1e-05, maxiter=15
             )
             X = xp.float32(outputSolver[0])  # get gmres solution
             if _algorithm_upd_["nonnegativity"] == "ENABLE":

@@ -3,7 +3,11 @@
 import os
 import numpy as np
 import pytest
-import cupy as cp
+
+try:
+    import cupy as cp
+except ImportError:
+    print("Cupy library is a required to run some tests")
 
 CUR_DIR = os.path.abspath(os.path.dirname(__file__))
 
