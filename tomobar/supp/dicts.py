@@ -2,7 +2,6 @@ import numpy as np
 from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 
-import typing
 from typing import Union
 from tomobar.supp.funcs import _data_dims_swapper
 
@@ -25,21 +24,20 @@ def dicts_check(
     _regularisation_: Union[dict, None] = None,
     method_run: str = "FISTA",
 ) -> tuple:
-    """This function checks the given _data_, _algorithm_, and  _regularisation_
-    dictionaries and populates parameters if required. Please note that the dictionaries are
-    required for iterative methods only as for direct methods the input is an array explicitly
-    given to the function as an argument. The most versatile method in terms of parametrisation
-    is currently FISTA, therefore most of the keywords arguments bellow are applicable to it.
+    """This function checks `_data_`, `_algorithm_`, and  `_regularisation_`
+    dictionaries and populates parameters in them, if required. Please note that the dictionaries are
+    needed for iterative methods only. The most versatile methods that accept a variety of different parameters
+    are FISTA and ADMM.
 
     Args:
-        _data_ (dict):  Data dictionary where data related items must be specified.
-        _algorithm_ (dict, optional): Algorithm dictionary. Defaults to {}.
-        _regularisation_ (dict, optional): Regularisation dictionary. Needed only for FISTA and ADMM algorithms. Defaults to {}.
-        method_run (str, optional): The name of the method to be run. Defaults to "FISTA".
+        _data_ (dict):  *Data dictionary where data-related items must be specified.*
+        _algorithm_ (dict, optional): *Algorithm dictionary. Defaults to None.*
+        _regularisation_ (dict, optional): Regularisation dictionary. Needed only for FISTA and ADMM algorithms. Defaults to None.
+        method_run (str): The name of the method to be run. Defaults to "FISTA".
 
     Keyword Args:
         _data_['projection_norm_data'] (ndarray):  The -log(normalised) projection data as a 2D sinogram or as a 3D data array.
-        _data_['projection_raw_data'] (ndarray): Raw data for PWLS and SWLS models. FISTA-related parameter.
+        _data_['projection_raw_data'] (ndarray): Raw data for PWLS and SWLS models. A FISTA-related parameter.
         _data_['data_axes_labels_order'] (list, None).  The order of the axes labels for the input data, use the following labels: ["detY", "angles", "detX"].
         _data_['OS_number'] (int): The number of ordered subsets, if None or 1 then the classical (full data) algorithm. Defaults to 1.
         _data_['huber_threshold'] (float): Parameter for the Huber data fidelity (to supress outliers).

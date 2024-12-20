@@ -1,19 +1,13 @@
-"""Supplementary data tools:
+"""Supplementary pre/post processing data tools:
 
 List of functions:
 
-* normaliser - to normalise the raw data and take the negative log (if needed). Options are: 'mean', 'median' and 'dynamic'.
+* normaliser - Projection data  normalise the raw data and take the negative log (if needed). Options are: 'mean', 'median' and 'dynamic'.
 * autocropper - automatically crops the 3D projection data to reduce its size.
 
-@authors:
-    Daniil Kazantsev: https://github.com/dkazanc
-
-    Gerard Jover Pujol https://github.com/IararIV/
 """
 
 import numpy as np
-import typing
-from typing import Union
 
 try:
     import cupy as xp
@@ -252,9 +246,9 @@ def normaliser(
         )
     if method != "dynamic":
         denom = flats - darks
-        denom[(np.where(denom <= 0.0))] = (
-            1.0  # remove zeros/negatives in the denominator if any
-        )
+        denom[
+            (np.where(denom <= 0.0))
+        ] = 1.0  # remove zeros/negatives in the denominator if any
         if axis == 1:
             denom = denom[:, np.newaxis, :]
             darks = darks[:, np.newaxis, :]

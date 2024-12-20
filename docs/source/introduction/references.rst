@@ -12,13 +12,13 @@ References
     iterative reconstruction of large data at Diamond Light Source.
     SoftwareX, 19, p.101157.
 
-.. [BT2009] A. Beck and M. Teboulle, A fast iterative shrinkage-thresholding
+.. [BT2009] A. Beck and M. Teboulle, 2009, A fast iterative shrinkage-thresholding
     algorithm for linear inverse problems, SIAM Journal on Imaging Sciences, vol. 2,
-    no. 1, pp. 183–202, 2009.
+    no. 1, pp. 183–202.
 
-.. [Boyd2011] Boyd, N. Parikh, E. Chu, B. Peleato, J. Eckstein, "Distributed optimization and
-   statistical learning via the alternating direction method of multipliers", Found. Trends Mach. Learn.,
-   vol. 3, no. 1, pp. 1-122, Jan. 2011
+.. [Boyd2011] Boyd, N. Parikh, E. Chu, B. Peleato, J. Eckstein, 2011, Distributed optimization and
+   statistical learning via the alternating direction method of multipliers, Found. Trends Mach. Learn.,
+   vol. 3, no. 1, pp. 1-122
 
 .. [PM2015] P. Paleo and A. Mirone 2015. Ring artifacts correction in
    compressed sensing tomographic reconstruction. Journal of synchrotron radiation,
@@ -27,6 +27,10 @@ References
 .. [HOA2017] H. Om Aggrawal et al. 2017. A Convex Reconstruction Model
    for X-ray tomographic Imaging with Uncertain Flat-fields", IEEE
    Transactions on Computational Imaging.
+
+.. [Xu2016] Q. Xu et al., 2016. Accelerated fast iterative shrinkage thresholding
+   algorithms for sparsity‐regularized cone‐beam CT image reconstruction.
+   Medical physics, 43(4), pp.1849-1872.
 
 .. [KAZ1_2017] D. Kazantsev et al. 2017. A Novel
     Tomographic Reconstruction Method Based on the Robust

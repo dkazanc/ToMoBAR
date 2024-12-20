@@ -24,10 +24,11 @@ or install with the dependencies into a new environment:
 
 .. code-block:: console
 
-   $ conda install -c httomo -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser pypwt
+   $ conda install -c httomo -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser
    $ conda install conda-forge::cupy # install only if you need CuPy-enabled modules
+   $ pip install pypwt # if wavelet regularisation is to be used
 
-one can also try this installation, especially for other than Linux OSs:
+the installation above is tested on Linux and Windows, but one can also try:
 
 .. code-block:: console
 
@@ -65,7 +66,8 @@ This sets the development environment to work in-place on the code.
    $ conda env create --name tomobar --file conda-recipe/environment/environment.yml
    $ conda activate tomobar
    $ pip install -e .[dev] # the editable environment
-   $ pytest tests/ # all tests should pass
+   $ pytest tests/test_RecToolsDIR.py tests/test_RecToolsIR.py
+   $ pytest tests/ # you'll need CuPy to run all tests
 
 Conda builds
 +++++++++++++
@@ -73,7 +75,7 @@ If one needs to conda-build the package, please follow the steps bellow:
 
 .. code-block:: console
 
-   $ export VERSION=$(date +%Y.%m) # OR set VERSION=2024.01 for Windows
+   $ export VERSION=$(date +%Y.%m) # OR set VERSION=2025.01 for Windows
    $ git clone git@github.com/dkazanc/ToMoBAR.git # clone the repo
    $ conda build conda-recipe/
    $ conda install path/to/the/tarball
@@ -82,6 +84,5 @@ If one needs to conda-build the package, please follow the steps bellow:
 
 Matlab
 ======
-Matlab part of ToMoBAR is not currently maintained and will be deprecated in future releases.
-The code and Demos we provide have been tested with Matlab 2018 and ASTRA-Toolbox version v1.8.3.
+.. warning:: Matlab's part of ToMoBAR is not currently maintained and will be deprecated in future releases. The code and demos were tested with Matlab 2018 and ASTRA-Toolbox version v1.8.3.
 
