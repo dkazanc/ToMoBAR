@@ -3,9 +3,14 @@
 References
 ***********
 
+.. note:: To cite ToMoBAR please use [CT2020]_ paper.
+
 .. [CT2020] D. Kazantsev and N. Wadeson. 2020, Tomographic MOdel-BAsed Reconstruction (ToMoBAR) software for high resolution
    synchrotron X-ray tomography, CT Meeting 2020.
    Download `here <https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf>`_.
+
+.. [VanAarle2015] W. Van Aarle, et.al., 2015. The ASTRA Toolbox: A platform for advanced algorithm
+   development in electron tomography. Ultramicroscopy, 157, pp.35-47.
 
 .. [SX2022] D. Kazantsev, N. Wadeson, M. Basham, 2022.
     High performance Savu software for fast 3D model-based
@@ -16,7 +21,7 @@ References
     algorithm for linear inverse problems, SIAM Journal on Imaging Sciences, vol. 2,
     no. 1, pp. 183–202.
 
-.. [Boyd2011] Boyd, N. Parikh, E. Chu, B. Peleato, J. Eckstein, 2011, Distributed optimization and
+.. [Boyd2011] N. Boyd et. al., 2011, Distributed optimization and
    statistical learning via the alternating direction method of multipliers, Found. Trends Mach. Learn.,
    vol. 3, no. 1, pp. 1-122
 
@@ -47,3 +52,7 @@ References
 .. [KAZ2017] D. Kazantsev et al. 2017. Model-based iterative
    reconstruction using higher-order regularization of dynamic
    synchrotron data. Measurement Science and Technology, 28(9), p.094004.
+
+.. [NIKITIN2017] V.V. Nikitin, et. al., 2017. Fast hyperbolic Radon transform
+   represented as convolutions in log-polar coordinates. Computers & Geosciences,
+   105, pp.21-33.

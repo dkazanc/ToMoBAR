@@ -34,6 +34,8 @@ the installation above is tested on Linux and Windows, but one can also try:
 
    $ conda install -c httomo -c ccpi -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser
 
+.. warning:: Packages installed from the CCPi channel might be of different versions and incompatible with the demos.
+
 Install ToMoBAR from PyPi:
 ++++++++++++++++++++++++++
 

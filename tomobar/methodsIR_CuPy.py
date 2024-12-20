@@ -1,9 +1,9 @@
 """Reconstruction class for regularised iterative methods using CuPy library.
 
-* FISTA regularised algorithm [BT2009]_ . Implemented using ASTRA with DirectLink and CuPy, Regularisation Toolkit-CuPy.
-* Landweber algorithm.
-* SIRT algorithm.
-* CGLS algorithm.
+* :func:`RecToolsIRCuPy.FISTA` iterative regularised algorithm [BT2009]_, [Xu2016]_. Implemented using ASTRA's DirectLink and CuPy, Regularisation Toolkit-CuPy.
+* :func:`RecToolsIRCuPy.Landweber` algorithm.
+* :func:`RecToolsIRCuPy.SIRT` algorithm.
+* :func:`RecToolsIRCuPy.CGLS` algorithm.
 """
 
 import numpy as np
@@ -29,8 +29,8 @@ from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 
 class RecToolsIRCuPy:
     """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox, CCPi-RGL toolkit.
-    Parameters for reconstruction algorithms are extracted from three dictionaries:
-    _data_, _algorithm_ and _regularisation_. See `tomobar.supp.dicts <https://dkazanc.github.io/ToMoBAR/api/tomobar.supp.dicts.html>`_
+    Parameters for reconstruction algorithms should be provided in three dictionaries:
+    :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`
     function of ToMoBAR's :ref:`ref_api` for all parameters explained.
 
     If FISTA is used it will require CuPy-enabled routines of the CCPi-regularisation toolkit.
@@ -258,7 +258,7 @@ class RecToolsIRCuPy:
 
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
-        projection_raw_data is required for the PWLS fidelity (self.datafidelity = PWLS), otherwise will be ignored.
+        projection_raw_data is required for the PWLS fidelity, otherwise will be ignored.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -359,10 +359,10 @@ class RecToolsIRCuPy:
         the regularisation toolkit [KAZ2019]_.
 
         All parameters for the algorithm should be provided in three dictionaries:
-        _data_, _algorithm_, and _regularisation_. See `tomobar.supp.dicts <https://dkazanc.github.io/ToMoBAR/api/tomobar.supp.dicts.html>`_
+        :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`
         function of ToMoBAR's :ref:`ref_api` for all parameters explained.
-        Please note that not all of the functionality supported in this CuPy implementation compared to FISTA from
-        `methodsIR <https://dkazanc.github.io/ToMoBAR/api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR.FISTA>`_.
+        Please note that not all of the functionality supported in this CuPy implementation compared to :func:`RecToolsIR.FISTA` from
+        :mod:`tomobar.methodsIR`.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -370,7 +370,7 @@ class RecToolsIRCuPy:
             _regularisation_ (dict, optional): Regularisation dictionary.
 
         Returns:
-            cp.ndarray: FISTA-reconstructed 3D cupy array
+            cp.ndarray: FISTA-reconstructed 3D CuPy array
         """
         cp._default_memory_pool.free_all_blocks()
         if self.geom == "2D":

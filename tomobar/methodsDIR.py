@@ -1,8 +1,8 @@
-"""Reconstruction class for direct reconstruction methods.
+"""Reconstruction class for direct reconstruction methods (2D/3D).
 
-* Fourier Slice Theorem reconstruction (adopted from the Tim Day's code)
-* Forward/Backward projection (ASTRA)
-* Filtered Back Projection (ASTRA)
+* :func:`RecToolsDIR.FORWPROJ` and :func:`RecToolsDIR.BACKPROJ` Forward/Backward 2D/3D projection (ASTRA-Toolbox)
+* :func:`RecToolsDIR.FOURIER` Fourier Slice Theorem-based reconstruction in 2D only (adopted from the Tim Day's code)
+* :func:`RecToolsDIR.FBP` Filtered Back Projection 2D/3D (ASTRA with the custom built filter).
 """
 
 import numpy as np

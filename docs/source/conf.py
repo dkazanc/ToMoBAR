@@ -1,6 +1,3 @@
-# -- General configuration ------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
 #!/usr/bin/env python
 import os
 import sys
@@ -49,6 +46,7 @@ autodoc_mock_imports = [
     "tomobar.astra_wrappers.astra_tools3d",
 ]
 
+
 class CustomMock(mock.Mock):
     def __repr__(self):
         return "<cp.ndarray>"
@@ -60,8 +58,9 @@ sys.modules["numpy"] = CustomMock()
 
 # ------------------------------------------------------------------------------
 
-project = "Tomobar"
-# copyright = f"{date.today().year}, Diamond Light Source"
+project = "ToMoBAR"
+author = "Daniil Kazantsev"
+copyright = f"{date.today().year}, Diamond Light Source and Manchester University, UK"
 
 # Specify a base language to help assistive technology
 language = "en"
@@ -110,14 +109,6 @@ html_favicon = "_static/tomobar_logo_light.png"
 html_last_updated_fmt = ""
 html_static_path = ["_static"]
 html_use_smartypants = True
-
-"""
-html_theme_options = {
-    "logo_only": True,
-    "display_version": False,
-    "githuburl": "https://github.com/dkazanc/ToMoBAR",
-}
-"""
 
 html_theme_options = {
     "logo": {

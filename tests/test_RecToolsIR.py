@@ -362,8 +362,8 @@ def test_FISTA_PWLS_2D(angles, raw_data, flats, darks):
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
     assert 17000 <= lc <= 17100
-    assert_allclose(np.min(Iter_rec), -0.0003682454, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.010147439, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.0003682454, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.010147439, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 

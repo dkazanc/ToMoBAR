@@ -2,8 +2,8 @@
 
 List of functions:
 
-* normaliser - Projection data  normalise the raw data and take the negative log (if needed). Options are: 'mean', 'median' and 'dynamic'.
-* autocropper - automatically crops the 3D projection data to reduce its size.
+* normaliser - Projection data normalisation module.
+* autocropper - automatically crops 3D projection data to reduce its size.
 
 """
 
@@ -41,7 +41,7 @@ except ImportError:
     pass
 
 
-def DFFC(data, flats, darks, downsample, nrPArepetions):
+def _DFFC(data, flats, darks, downsample, nrPArepetions):
     # Load frames
     meanDarkfield = np.mean(darks, axis=1, dtype=np.float64)
     whiteVect = np.zeros(
@@ -198,7 +198,7 @@ def normaliser(
     Args:
         data (np.array): 3d numpy array of raw data.
         flats (np.array): 2d numpy array for flat field.
-        darks (np.array): 2d numpy array for darks field.
+        darks (np.array): 2d numpy array for dark field.
         log (bool, optional): Take negative log. Defaults to True.
         method (str, optional): Normalisation method, choose "mean", "median" or "dynamic". Defaults to "mean".
         axis (int, optional): Define the ANGLES axis.
@@ -233,7 +233,7 @@ def normaliser(
                 dyn_iterations_v = value
             else:
                 dyn_iterations_v = 10
-        [data_norm, EFF, EFF_filt] = DFFC(
+        [data_norm, EFF, EFF_filt] = _DFFC(
             data,
             flats,
             darks,

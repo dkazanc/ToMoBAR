@@ -1,8 +1,8 @@
 """Reconstruction class for 3D direct methods using CuPy-library.
 
-* Forward/Backward projection (ASTRA with DirectLink and CuPy).
-* Filtered Back Projection (ASTRA, Filter implemented with CuPy).
-* Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method.
+* :func:`RecToolsDIRCuPy.FORWPROJ` and :func:`RecToolsDIRCuPy.BACKPROJ` - Forward/Backward projection modules (ASTRA with DirectLink and CuPy).
+* :func:`RecToolsDIRCuPy.FBP` - Filtered Back Projection (ASTRA, the filter is implemented with CuPy).
+* :func:`RecToolsDIRCuPy.FOURIER_INV` - Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method [NIKITIN2017]_.
 """
 
 import numpy as np
