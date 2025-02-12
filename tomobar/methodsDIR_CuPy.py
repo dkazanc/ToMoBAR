@@ -160,6 +160,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
+        gather_kernel_new = module.get_function("gather_kernel_new")
         wrap_kernel = module.get_function("wrap_kernel")
 
         # initialisation
@@ -251,11 +252,49 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP1: fft 1d
         datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
 
+        # print(m)
+        # print(mu)
+        # print(n)
+        # print(nproj)
+        # print(nz // 2)
+
+        # print(datac.shape)
+        # print(fde.shape)
+        # print(theta.shape)
+        # print(theta)
+        # x0 = (0 - n / 2) / n * np.cos(theta);
+        # x1 = (n - n / 2) / n * np.cos(theta);
+        # y0 = -(0 - n / 2) / n * np.sin(theta);
+        # y1 = -(n - n / 2) / n * np.sin(theta);
+        # print(x1 - x0)
+        # print(y1 - y0)
+
+        # block_dim_x = 32
+        # block_dim_y = 32
+
         # STEP2: interpolation (gathering) in the frequency domain
         # When profiling gather_kernel takes up to 50% of the time!
-        gather_kernel(
-            (int(xp.ceil(n / 32)), int(xp.ceil(nproj / 32)), nz // 2),
-            (32, 32, 1),
+        # gather_kernel(
+        #     (int(xp.ceil(n / block_dim_x)), int(xp.ceil(nproj / block_dim_y)), nz // 2),
+        #     (block_dim_x, block_dim_y, 1),
+        #     (
+        #         datac,
+        #         fde,
+        #         theta,
+        #         np.int32(m),
+        #         np.float32(mu),
+        #         np.int32(n),
+        #         np.int32(nproj),
+        #         np.int32(nz // 2),
+        #     ),
+        # )
+
+        block_dim_x = 256
+        block_dim_y = 1
+
+        gather_kernel_new(
+            (int(xp.ceil((2 * m + 2 * n) / block_dim_x)), int(xp.ceil((2 * m + 2 * n) / block_dim_y)), nz // 2),
+            (block_dim_x, block_dim_y, 1),
             (
                 datac,
                 fde,
@@ -267,6 +306,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(nz // 2),
             ),
         )
+
         wrap_kernel(
             (
                 int(np.ceil((2 * n + 2 * m) / 32)),
