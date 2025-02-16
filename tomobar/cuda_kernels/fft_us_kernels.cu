@@ -83,12 +83,12 @@ g (128, 241, 362)
 f (128, 732, 732)
 theta (241,)*/
 
-extern "C" __global__ void gather_kernel_new(float2 *g, float2 *f, float *theta, 
-                                             int m, float mu, int n, int nproj, int nz)
+extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *theta, 
+                                                int m, float mu, int n, int nproj, int nz)
 {
 
-  int tx = blockDim.x * blockIdx.x + threadIdx.x;
-  int ty = blockDim.y * blockIdx.y + threadIdx.y;
+  int tx = n + m - center_half_size + blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = n + m - center_half_size + blockDim.y * blockIdx.y + threadIdx.y;
   int tz = blockDim.z * blockIdx.z + threadIdx.z;
 
   if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
@@ -104,7 +104,6 @@ extern "C" __global__ void gather_kernel_new(float2 *g, float2 *f, float *theta,
 
   // offset f by [tz, n+m, n+m]
   f += tz * f_stride_2;
-  //f += n+m + (n+m) * f_stride + tz * f_stride_2;
 
   // index of the force
   int f_ind = tx + ty * f_stride;
@@ -122,12 +121,16 @@ extern "C" __global__ void gather_kernel_new(float2 *g, float2 *f, float *theta,
     float sintheta, costheta;
     __sincosf(theta[proj_index], &sintheta, &costheta);
 
-    float2 vector_polar = make_float2(costheta, sintheta);
+    float polar_radius   = 0.5;
+    float polar_radius_2 = polar_radius * polar_radius;
+
+    float2 vector_polar = make_float2(polar_radius * costheta, polar_radius * sintheta);
     float2 vector_point = make_float2(point.x,  point.y);
 
     float dot = vector_polar.x * vector_point.x + vector_polar.y * vector_point.y;
-    float2 mid_point = make_float2(dot * vector_polar.x, dot * vector_polar.y);
-    
+    float2 mid_point = make_float2(dot * vector_polar.x / polar_radius_2, 
+                                   dot * vector_polar.y / polar_radius_2); 
+
     float distance_2 = (mid_point.x - vector_point.x) * (mid_point.x - vector_point.x) +
                        (mid_point.y - vector_point.y) * (mid_point.y - vector_point.y);
 
@@ -138,11 +141,11 @@ extern "C" __global__ void gather_kernel_new(float2 *g, float2 *f, float *theta,
 
       int radius_min, radius_max;
       if( abs(vector_polar.x) > abs(vector_polar.y) ) {
-        radius_min = n/2 - 1 + floorf((mid_point.x - distance_to_intersect * vector_polar.x) / (2.f * vector_polar.x / n));
-        radius_max = n/2 + 1 + floorf((mid_point.x + distance_to_intersect * vector_polar.x) / (2.f * vector_polar.x / n));
+        radius_min = n/2 - 1 + floorf((mid_point.x - distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
+        radius_max = n/2 + 1 + floorf((mid_point.x + distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
       } else {
-        radius_min = n/2 - 1 + floorf((mid_point.y - distance_to_intersect * vector_polar.y) / (2.f * vector_polar.y / n));
-        radius_max = n/2 + 1 + floorf((mid_point.y + distance_to_intersect * vector_polar.y) / (2.f * vector_polar.y / n));
+        radius_min = n/2 - 1 + floorf((mid_point.y - distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
+        radius_max = n/2 + 1 + floorf((mid_point.y + distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
       }
 
       if( radius_min > radius_max ) {
