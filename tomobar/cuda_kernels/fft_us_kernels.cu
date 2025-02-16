@@ -2,13 +2,12 @@
 #define M_PI 3.1415926535897932384626433832795f
 #endif
 
-#define memory_multiplier 32
-#define center_size 256
-#define center_half_size center_size / 2
-
-extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float2 *f_center, 
-                                         float *theta, int m, float mu, int n, int nproj, int nz)
+extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta, 
+                                         int m, float mu, 
+                                         int center_size, int n, int nproj, int nz)    
 {
+
+  const int center_half_size = center_size/2;
 
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
   int ty = blockDim.y * blockIdx.y + threadIdx.y;
@@ -38,7 +37,7 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float2 *f_center,
   int stride1 = 2*n + 2*m;
   int stride2 = stride1 * stride1;
   f += n+m + (n+m) * stride1 + tz * stride2;
-  f_center += tz * memory_multiplier * center_size * center_size;
+  //f_center += tz * memory_multiplier * center_size * center_size;
   #pragma unroll
   for (int i1 = 0; i1 < 2 * m + 1; i1++)
   {
@@ -67,6 +66,8 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float2 *f_center,
         atomicAdd(&(f_center[f_ind_center].x), g0t.x);
         atomicAdd(&(f_center[f_ind_center].y), g0t.y);*/
       } else {
+        //f[f_ind].x += g0t.x;
+        //f[f_ind].y += g0t.y;
         atomicAdd(&(f[f_ind].x), g0t.x);
         atomicAdd(&(f[f_ind].y), g0t.y);
       }
@@ -84,11 +85,17 @@ f (128, 732, 732)
 theta (241,)*/
 
 extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *theta, 
-                                                int m, float mu, int n, int nproj, int nz)
+                                                int m, float mu,  
+                                                int center_size, int n, int nproj, int nz)            
 {
 
-  int tx = n + m - center_half_size + blockDim.x * blockIdx.x + threadIdx.x;
-  int ty = n + m - center_half_size + blockDim.y * blockIdx.y + threadIdx.y;
+  const int center_half_size = center_size/2;
+
+  //int tx = blockDim.x * blockIdx.x + threadIdx.x;
+  //int ty = blockDim.y * blockIdx.y + threadIdx.y;
+
+  int tx = max(0, n + m - center_half_size) + blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = max(0, n + m - center_half_size) + blockDim.y * blockIdx.y + threadIdx.y;
   int tz = blockDim.z * blockIdx.z + threadIdx.z;
 
   if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
@@ -141,10 +148,10 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
 
       int radius_min, radius_max;
       if( abs(vector_polar.x) > abs(vector_polar.y) ) {
-        radius_min = n/2 - 1 + floorf((mid_point.x - distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
+        radius_min = n/2     + floorf((mid_point.x - distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
         radius_max = n/2 + 1 + floorf((mid_point.x + distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
       } else {
-        radius_min = n/2 - 1 + floorf((mid_point.y - distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
+        radius_min = n/2     + floorf((mid_point.y - distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
         radius_max = n/2 + 1 + floorf((mid_point.y + distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
       }
 
@@ -190,7 +197,7 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   f[f_ind].y = f_value.y;
 }
 
-extern "C" __global__ void wrap_kernel(float2 *f, float2 *f_center, int n, int nz, int m)
+extern "C" __global__ void wrap_kernel(float2 *f, int n, int nz, int m)
 {
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
   int ty = blockDim.y * blockIdx.y + threadIdx.y;
