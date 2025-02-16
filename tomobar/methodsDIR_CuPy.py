@@ -160,7 +160,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
-        gather_kernel_new = module.get_function("gather_kernel_new")
+        gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
         # initialisation
@@ -294,8 +294,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim_x = 256
         block_dim_y = 1
 
+        size = (2 * m + 2 * n)
+        center_size = 256
+
         gather_kernel_center(
-            (int(xp.ceil((2 * m + 2 * n) / block_dim_x)), int(xp.ceil((2 * m + 2 * n) / block_dim_y)), nz // 2),
+            (int(xp.ceil(center_size / block_dim_x)), int(xp.ceil(center_size / block_dim_y)), nz // 2),
             (block_dim_x, block_dim_y, 1),
             (
                 datac,
