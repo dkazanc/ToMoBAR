@@ -6,7 +6,7 @@
 """
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 try:
     import cupy as xp
 
@@ -239,7 +239,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         [dx, dy] = xp.meshgrid(t, t)
         phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
         # padded fft, reusable by chunks
-        fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+        fde        = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+        fde_center = xp.zeros([nz // 2, 128, 32 * 128], dtype=xp.complex64)
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -292,30 +293,31 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # print(x1 - x0)
         # print(y1 - y0)
 
-        # block_dim_x = 32
-        # block_dim_y = 32
+        block_dim_x = 32
+        block_dim_y = 32
 
         # STEP2: interpolation (gathering) in the frequency domain
         # When profiling gather_kernel takes up to 50% of the time!
-        # gather_kernel(
-        #     (int(xp.ceil(n / block_dim_x)), int(xp.ceil(nproj / block_dim_y)), nz // 2),
-        #     (block_dim_x, block_dim_y, 1),
-        #     (
-        #         datac,
-        #         fde,
-        #         theta,
-        #         np.int32(m),
-        #         np.float32(mu),
-        #         np.int32(n),
-        #         np.int32(nproj),
-        #         np.int32(nz // 2),
-        #     ),
-        # )
+        gather_kernel(
+            (int(xp.ceil(n / block_dim_x)), int(xp.ceil(nproj / block_dim_y)), nz // 2),
+            (block_dim_x, block_dim_y, 1),
+            (
+                datac,
+                fde,
+                fde_center,
+                theta,
+                np.int32(m),
+                np.float32(mu),
+                np.int32(n),
+                np.int32(nproj),
+                np.int32(nz // 2),
+            ),
+        )
 
         block_dim_x = 256
         block_dim_y = 1
 
-        gather_kernel_new(
+        gather_kernel_center(
             (int(xp.ceil((2 * m + 2 * n) / block_dim_x)), int(xp.ceil((2 * m + 2 * n) / block_dim_y)), nz // 2),
             (block_dim_x, block_dim_y, 1),
             (
@@ -330,6 +332,22 @@ class RecToolsDIRCuPy(RecToolsDIR):
             ),
         )
 
+        # sliceSel = int(0.5 * n)
+
+        # plt.figure()
+        # plt.subplot(131)
+        # plt.imshow(fde[64, :, :].real.get())
+        # plt.title("3D FBP Reconstruction, axial view")
+
+        # plt.subplot(132)
+        # plt.imshow(fde[:, sliceSel, :].real.get())
+        # plt.title("3D FBP Reconstruction, coronal view")
+
+        # plt.subplot(133)
+        # plt.imshow(fde[:, :, sliceSel].real.get())
+        # plt.title("3D FBP Reconstruction, sagittal view")
+        # plt.show()
+
         wrap_kernel(
             (
                 int(np.ceil((2 * n + 2 * m) / 32)),
@@ -337,8 +355,24 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(nz // 2),
             ),
             (32, 32, 1),
-            (fde, n, nz // 2, m),
+            (fde, fde_center, n, nz // 2, m),
         )
+
+        # sliceSel = int(0.5 * n)
+
+        # plt.figure()
+        # plt.subplot(131)
+        # plt.imshow(fde[64, :, :].real.get())
+        # plt.title("3D FBP Reconstruction, axial view")
+
+        # plt.subplot(132)
+        # plt.imshow(fde[:, sliceSel, :].real.get())
+        # plt.title("3D FBP Reconstruction, coronal view")
+
+        # plt.subplot(133)
+        # plt.imshow(fde[:, :, sliceSel].real.get())
+        # plt.title("3D FBP Reconstruction, sagittal view")
+        # plt.show()
 
         # STEP3: ifft 2d
         fde2 = fde[
