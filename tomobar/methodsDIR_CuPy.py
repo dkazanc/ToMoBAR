@@ -217,7 +217,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
         # padded fft, reusable by chunks
         fde        = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
-        # fde_center = xp.zeros([nz // 2, 128, 32 * 128], dtype=xp.complex64)
+        # fde_center = xp.zeros([nz // 2, center_size, center_size], dtype=xp.complex64)
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -269,13 +269,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # y1 = -(n - n / 2) / n * np.sin(theta);
         # print(x1 - x0)
         # print(y1 - y0)
-
-        block_dim_x = 32
-        block_dim_y = 32
         center_size = 256
 
         # STEP2: interpolation (gathering) in the frequency domain
-        # When profiling gather_kernel takes up to 50% of the time!
+        block_dim_x = 32
+        block_dim_y = 8
+
         gather_kernel(
             (int(xp.ceil(n / block_dim_x)), int(xp.ceil(nproj / block_dim_y)), nz // 2),
             (block_dim_x, block_dim_y, 1),
@@ -296,7 +295,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim_y = 1
 
         gather_kernel_center(
-            (int(xp.ceil(center_size / block_dim_x)), int(xp.ceil(center_size / block_dim_y)), nz // 2),
+            (int(xp.ceil(center_size / block_dim_x)), int(xp.ceil(center_size)), nz // 2),
             (block_dim_x, block_dim_y, 1),
             (
                 datac,
@@ -334,7 +333,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(nz // 2),
             ),
             (32, 32, 1),
-            (fde, n, nz // 2, m),
+            (fde, center_size, n, nz // 2, m),
         )
 
         # sliceSel = int(0.5 * n)

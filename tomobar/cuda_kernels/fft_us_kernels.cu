@@ -31,11 +31,18 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta,
     x0 = 0.5f - 1e-5;
   if (y0 >= 0.5f)
     y0 = 0.5f - 1e-5;
+
+  int stride1 = 2*n + 2*m;
+  int stride2 = stride1 * stride1;
+
+  /*float radius_2 = float(center_half_size - m - 1) * float(center_half_size - m - 1) / stride2;
+  if( radius_2 > x0 * x0 + y0 * y0 )
+    return;*/
+
   g0.x = g[g_ind].x;
   g0.y = g[g_ind].y;
   // offset f by [tz, n+m, n+m]
-  int stride1 = 2*n + 2*m;
-  int stride2 = stride1 * stride1;
+
   f += n+m + (n+m) * stride1 + tz * stride2;
   //f_center += tz * memory_multiplier * center_size * center_size;
   #pragma unroll
@@ -86,7 +93,8 @@ theta (241,)*/
 
 extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *theta, 
                                                 int m, float mu,  
-                                                int center_size, int n, int nproj, int nz)            
+                                                int center_size,
+                                                int n, int nproj, int nz)            
 {
 
   const int center_half_size = center_size/2;
@@ -95,8 +103,11 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   //int ty = blockDim.y * blockIdx.y + threadIdx.y;
 
   int tx = max(0, n + m - center_half_size) + blockDim.x * blockIdx.x + threadIdx.x;
-  int ty = max(0, n + m - center_half_size) + blockDim.y * blockIdx.y + threadIdx.y;
+  int ty = max(0, n + m - center_half_size) + blockIdx.y; 
   int tz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  int proj_offset =  threadIdx.y;
+  int proj_count  = blockDim.y;
 
   if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
     return;
@@ -115,7 +126,7 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   // index of the force
   int f_ind = tx + ty * f_stride;
 
-  float radius_2 = float(2 * m + 1) * float(2 * m + 1) / f_stride_2;
+  float radius_2 = float(m + 1) * float(m + 1) / f_stride_2;
 
   f_value.x = 0;
   f_value.y = 0;
@@ -123,7 +134,7 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   // Point coordinates
   float2 point = make_float2(float(tx - (n+m)) / f_stride, float((n+m) - ty) / f_stride);
 
-  for( int proj_index = 0; proj_index < nproj; proj_index++) {
+  for( int proj_index = proj_offset; proj_index < nproj; proj_index+=proj_count) {
 
     float sintheta, costheta;
     __sincosf(theta[proj_index], &sintheta, &costheta);
@@ -192,13 +203,20 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
       }
     }
   }
-  
+
   f[f_ind].x = f_value.x;
   f[f_ind].y = f_value.y;
+
+  // atomicAdd(&(f[f_ind].x), f_value.x);
+  // atomicAdd(&(f[f_ind].y), f_value.y);
 }
 
-extern "C" __global__ void wrap_kernel(float2 *f, int n, int nz, int m)
+extern "C" __global__ void wrap_kernel(float2 *f,
+                                       int center_size,
+                                       int n, int nz, int m)
 {
+  const int center_half_size = center_size/2;
+
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
   int ty = blockDim.y * blockIdx.y + threadIdx.y;
   int tz = blockDim.z * blockIdx.z + threadIdx.z;
@@ -214,7 +232,26 @@ extern "C" __global__ void wrap_kernel(float2 *f, int n, int nz, int m)
 
     atomicAdd(&f[id2].x, f[id1].x);
     atomicAdd(&f[id2].y, f[id1].y);
-  }/* else if ( tx >= (n + m - center_half_size) && tx < (n + m + center_half_size) &&
+  } /*else if ( tx >= (n + m - center_half_size) && tx < (n + m + center_half_size) &&
+              ty >= (n + m - center_half_size) && ty < (n + m + center_half_size) ) {
+  
+    int stride1 = 2*n + 2*m;
+    int stride2 = stride1 * stride1;
+
+    f += tz * stride2;
+    f_center += tz * center_size * center_size;
+
+    int center_index_x = tx - (n + m - center_half_size);
+    int center_index_y = ty - (n + m - center_half_size);
+
+    int f_ind = tx + ty * stride1;
+    f[f_ind].x = f_center[f_ind].x;
+    f[f_ind].y = f_center[f_ind].y;  
+  }*/
+
+  
+  
+  /* else if ( tx >= (n + m - center_half_size) && tx < (n + m + center_half_size) &&
               ty >= (n + m - center_half_size) && ty < (n + m + center_half_size) ) {
     
     int stride1 = 2*n + 2*m;
