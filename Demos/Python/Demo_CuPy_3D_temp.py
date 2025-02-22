@@ -69,7 +69,7 @@ Fourier_cupy = RecToolsCP.FOURIER_INV(
 )
 
 tic = timeit.default_timer()
-for x in range(10):
+for x in range(80):
     Fourier_cupy = RecToolsCP.FOURIER_INV(
         projData3D_analyt_cupy,
         recon_mask_radius=0.95,
@@ -77,5 +77,5 @@ for x in range(10):
     )
 toc = timeit.default_timer()
 
-Run_time = (toc - tic)/10
+Run_time = (toc - tic)/80
 print("Fourier 3D reconstruction using CuPy (GPU) in {} seconds".format(Run_time))

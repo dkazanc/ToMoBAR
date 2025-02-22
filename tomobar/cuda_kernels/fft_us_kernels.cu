@@ -102,12 +102,16 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   //int tx = blockDim.x * blockIdx.x + threadIdx.x;
   //int ty = blockDim.y * blockIdx.y + threadIdx.y;
 
-  int tx = max(0, n + m - center_half_size) + blockDim.x * blockIdx.x + threadIdx.x;
-  int ty = max(0, n + m - center_half_size) + blockIdx.y; 
-  int tz = blockDim.z * blockIdx.z + threadIdx.z;
+  //int tx = max(0, n + m - center_half_size) + blockDim.x * blockIdx.x + threadIdx.x;
+  //int ty = max(0, n + m - center_half_size) + blockIdx.y; 
+  //int tz = blockDim.z * blockIdx.z + threadIdx.z;
 
-  int proj_offset =  threadIdx.y;
-  int proj_count  = blockDim.y;
+  int tx = max(0, n + m - center_half_size) + blockDim.z * blockIdx.z + threadIdx.z;
+  int ty = max(0, n + m - center_half_size) + blockDim.y * blockIdx.y + threadIdx.y; 
+  int tz = blockDim.x * blockIdx.x + threadIdx.x;
+
+  int proj_count  = 1; //blockDim.y;
+  int proj_offset = 0; //threadIdx.y % proj_count;
 
   if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
     return;
@@ -126,13 +130,13 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   // index of the force
   int f_ind = tx + ty * f_stride;
 
-  float radius_2 = float(m + 1) * float(m + 1) / f_stride_2;
+  float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
 
   f_value.x = 0;
   f_value.y = 0;
 
   // Point coordinates
-  float2 point = make_float2(float(tx - (n+m)) / f_stride, float((n+m) - ty) / f_stride);
+  float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
 
   for( int proj_index = proj_offset; proj_index < nproj; proj_index+=proj_count) {
 
