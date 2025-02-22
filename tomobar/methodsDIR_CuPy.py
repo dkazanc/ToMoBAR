@@ -314,12 +314,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
             ),
         )
 
-        block_dim_x = 256
+        block_dim_x = 32
         block_dim_y = 1
+        block_dim_z = 8
 
         gather_kernel_center(
-            (int(xp.ceil(center_size / block_dim_x)), int(xp.ceil(center_size)), nz // 2),
-            (block_dim_x, block_dim_y, 1),
+        #    (int(xp.ceil(center_size / block_dim_x)), int(xp.ceil(center_size)), nz // 2),
+            (int(xp.ceil(nz / (block_dim_x * 2))), int(xp.ceil(center_size)), int(xp.ceil(center_size / block_dim_z))),
+            (block_dim_x, block_dim_y, block_dim_z),
             (
                 datac,
                 fde,
@@ -332,22 +334,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(nz // 2),
             ),
         )
-
-        # sliceSel = int(0.5 * n)
-
-        # plt.figure()
-        # plt.subplot(131)
-        # plt.imshow(fde[64, :, :].real.get())
-        # plt.title("3D FBP Reconstruction, axial view")
-
-        # plt.subplot(132)
-        # plt.imshow(fde[:, sliceSel, :].real.get())
-        # plt.title("3D FBP Reconstruction, coronal view")
-
-        # plt.subplot(133)
-        # plt.imshow(fde[:, :, sliceSel].real.get())
-        # plt.title("3D FBP Reconstruction, sagittal view")
-        # plt.show()
 
         wrap_kernel(
             (
