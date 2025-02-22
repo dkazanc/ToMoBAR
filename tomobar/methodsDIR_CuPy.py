@@ -292,7 +292,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # y1 = -(n - n / 2) / n * np.sin(theta);
         # print(x1 - x0)
         # print(y1 - y0)
-        center_size = 256
+        center_size = 512
 
         # STEP2: interpolation (gathering) in the frequency domain
         block_dim_x = 32
