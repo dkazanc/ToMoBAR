@@ -159,9 +159,20 @@ class RecToolsDIRCuPy(RecToolsDIR):
         kwargs.update({"cupyrun": True})  # needed for agnostic array cropping
         cutoff_freq = 1.0  # default value
         filter_type = "shepp"  # default filter
+
+        center_size = 512
+        block_dim = [32, 8]
+        block_dim_center = [32, 8]
+
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+            elif key == "center_size" and value is not None:
+                center_size = value
+            elif key == "block_dim" and value is not None:
+                block_dim = value
+            elif key == "block_dim_center" and value is not None:
+                block_dim_center = value
             if key == "cutoff_freq" and value is not None:
                 cutoff_freq = value
             if key == "filter_type" and value is not None:
@@ -183,6 +194,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
+        gather_kernel_partial = module.get_function("gather_kernel_partial")
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
@@ -276,64 +288,54 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP1: fft 1d
         datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
 
-        # print(m)
-        # print(mu)
-        # print(n)
-        # print(nproj)
-        # print(nz // 2)
-
-        # print(datac.shape)
-        # print(fde.shape)
-        # print(theta.shape)
-        # print(theta)
-        # x0 = (0 - n / 2) / n * np.cos(theta);
-        # x1 = (n - n / 2) / n * np.cos(theta);
-        # y0 = -(0 - n / 2) / n * np.sin(theta);
-        # y1 = -(n - n / 2) / n * np.sin(theta);
-        # print(x1 - x0)
-        # print(y1 - y0)
-        center_size = 512
-
         # STEP2: interpolation (gathering) in the frequency domain
-        block_dim_x = 32
-        block_dim_y = 8
+        if center_size > 0:
+            gather_kernel_partial(
+                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                (block_dim[0], block_dim[1], 1),
+                (
+                    datac,
+                    fde,
+                    theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(nproj),
+                    np.int32(nz // 2),
+                ),
+            )
 
-        gather_kernel(
-            (int(xp.ceil(n / block_dim_x)), int(xp.ceil(nproj / block_dim_y)), nz // 2),
-            (block_dim_x, block_dim_y, 1),
-            (
-                datac,
-                fde,
-                theta,
-                np.int32(m),
-                np.float32(mu),
-                np.int32(center_size),
-                np.int32(n),
-                np.int32(nproj),
-                np.int32(nz // 2),
-            ),
-        )
-
-        block_dim_x = 32
-        block_dim_y = 1
-        block_dim_z = 8
-
-        gather_kernel_center(
-        #    (int(xp.ceil(center_size / block_dim_x)), int(xp.ceil(center_size)), nz // 2),
-            (int(xp.ceil(nz / (block_dim_x * 2))), int(xp.ceil(center_size)), int(xp.ceil(center_size / block_dim_z))),
-            (block_dim_x, block_dim_y, block_dim_z),
-            (
-                datac,
-                fde,
-                theta,
-                np.int32(m),
-                np.float32(mu),
-                np.int32(center_size),
-                np.int32(n),
-                np.int32(nproj),
-                np.int32(nz // 2),
-            ),
-        )
+            gather_kernel_center(
+                (int(xp.ceil(nz / (block_dim_center[0] * 2))), int(xp.ceil(center_size)), int(xp.ceil(center_size / block_dim_center[1]))),
+                (block_dim_center[0] , 1, block_dim_center[1]),
+                (
+                    datac,
+                    fde,
+                    theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(nproj),
+                    np.int32(nz // 2),
+                ),
+            )
+        else:
+            gather_kernel(
+                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                (block_dim[0], block_dim[1], 1),
+                (
+                    datac,
+                    fde,
+                    theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(n),
+                    np.int32(nproj),
+                    np.int32(nz // 2),
+                ),
+            )
 
         wrap_kernel(
             (
@@ -342,7 +344,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(nz // 2),
             ),
             (32, 32, 1),
-            (fde, center_size, n, nz // 2, m),
+            (fde, n, nz // 2, m),
         )
 
         # sliceSel = int(0.5 * n)
@@ -360,6 +362,80 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # plt.imshow(fde[:, :, sliceSel].real.get())
         # plt.title("3D FBP Reconstruction, sagittal view")
         # plt.show()
+
+        fde_original = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+
+        block_dim_x = 32
+        block_dim_y = 8
+
+        gather_kernel(
+            (int(xp.ceil(n / block_dim_x)), int(xp.ceil(nproj / block_dim_y)), nz // 2),
+            (block_dim_x, block_dim_y, 1),
+            (
+                datac,
+                fde_original,
+                theta,
+                np.int32(m),
+                np.float32(mu),
+                np.int32(n),
+                np.int32(nproj),
+                np.int32(nz // 2),
+            ),
+        )
+
+        wrap_kernel(
+            (
+                int(np.ceil((2 * n + 2 * m) / 32)),
+                int(np.ceil((2 * n + 2 * m) / 32)),
+                np.int32(nz // 2),
+            ),
+            (32, 32, 1),
+            (fde_original, n, nz // 2, m),
+        )
+
+        sliceSel = int(0.5 * n)
+
+        plt.figure()
+        plt.subplot(131)
+        plt.imshow(fde_original[64, :, :].real.get())
+        plt.title("3D FBP Reconstruction, axial view")
+
+        plt.subplot(132)
+        plt.imshow(fde_original[:, sliceSel, :].real.get())
+        plt.title("3D FBP Reconstruction, coronal view")
+
+        plt.subplot(133)
+        plt.imshow(fde_original[:, :, sliceSel].real.get())
+        plt.title("3D FBP Reconstruction, sagittal view")
+        plt.show()
+
+        plt.figure()
+        plt.subplot(131)
+        plt.imshow(fde[64, :, :].real.get())
+        plt.title("3D FBP Reconstruction, axial view")
+
+        plt.subplot(132)
+        plt.imshow(fde[:, sliceSel, :].real.get())
+        plt.title("3D FBP Reconstruction, coronal view")
+
+        plt.subplot(133)
+        plt.imshow(fde[:, :, sliceSel].real.get())
+        plt.title("3D FBP Reconstruction, sagittal view")
+        plt.show()
+
+        plt.figure()
+        plt.subplot(131)
+        plt.imshow((fde[64, :, :].real.get() - fde_original[64, :, :].real.get()) / fde_original[64, :, :].real.get(), vmin=-0.05, vmax=0.05)
+        plt.title("3D FBP Reconstruction, axial view")
+
+        plt.subplot(132)
+        plt.imshow(fde[:, sliceSel, :].real.get() - fde_original[:, sliceSel, :].real.get(), vmin=0, vmax=0.5)
+        plt.title("3D FBP Reconstruction, coronal view")
+
+        plt.subplot(133)
+        plt.imshow(fde[:, :, sliceSel].real.get() - fde_original[:, :, sliceSel].real.get(), vmin=0, vmax=0.5)
+        plt.title("3D FBP Reconstruction, sagittal view")
+        plt.show()
 
         # STEP3: ifft 2d
         fde2 = fde[
