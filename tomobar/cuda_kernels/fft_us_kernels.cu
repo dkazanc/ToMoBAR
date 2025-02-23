@@ -2,22 +2,61 @@
 #define M_PI 3.1415926535897932384626433832795f
 #endif
 
-extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta, 
-                                         int m, float mu, 
-                                         int center_size, int n, int nproj, int nz)    
+template<bool use_center_filter>
+__device__ void update_f_value(float2 *f, float2 g0t, float x0, float y0,
+                               float coeff0, float coeff1,
+                               int center_half_size, int ell0, int ell1,
+                               int stride, int n);
+
+template<>
+__device__ void update_f_value<false>(float2 *f, float2 g0, float x0, float y0,
+                                      float coeff0, float coeff1,
+                                      int center_half_size, int ell0, int ell1,
+                                      int stride, int n)
 {
+  float w0 = ell0 / (float)(2 * n) - x0;
+  float w1 = ell1 / (float)(2 * n) - y0;
+  float w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
+  float2 g0t = make_float2(w*g0.x, w*g0.y);
+  int f_ind = ell0 + stride * ell1;
+  atomicAdd(&(f[f_ind].x), g0t.x);
+  atomicAdd(&(f[f_ind].y), g0t.y);
+}
 
-  const int center_half_size = center_size/2;
+template<>
+__device__ void update_f_value<true>(float2 *f, float2 g0, float x0, float y0,
+                                     float coeff0, float coeff1,
+                                     int center_half_size, int ell0, int ell1,
+                                     int stride, int n)
+{ 
+  if( ell0 < -center_half_size || ell0 >= center_half_size ||
+      ell1 < -center_half_size || ell1 >= center_half_size ) {      
+    float w0 = ell0 / (float)(2 * n) - x0;
+    float w1 = ell1 / (float)(2 * n) - y0;
+    float w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
+    float2 g0t = make_float2(w*g0.x, w*g0.y);
+    int f_ind = ell0 + stride * ell1;
+    atomicAdd(&(f[f_ind].x), g0t.x);
+    atomicAdd(&(f[f_ind].y), g0t.y);
+  }
+}
 
+template<bool use_center_filter>
+__device__ void gather_kernel_common(float2 *g, float2 *f, float *theta, 
+                                     int m, float mu, 
+                                     int center_size, int n, int nproj, int nz)    
+{
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
   int ty = blockDim.y * blockIdx.y + threadIdx.y;
   int tz = blockDim.z * blockIdx.z + threadIdx.z;
 
+  const int center_half_size = center_size/2;
+
   if (tx >= n || ty >= nproj || tz >= nz)
     return;
   float2 g0, g0t;
-  float w, coeff0;
-  float w0, w1, x0, y0, coeff1;
+  float coeff0, coeff1;
+  float x0, y0;
   int ell0, ell1, g_ind, f_ind;
 
   g_ind = tx + ty * n + tz * n * nproj;
@@ -35,16 +74,12 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta,
   int stride1 = 2*n + 2*m;
   int stride2 = stride1 * stride1;
 
-  /*float radius_2 = float(center_half_size - m - 1) * float(center_half_size - m - 1) / stride2;
-  if( radius_2 > x0 * x0 + y0 * y0 )
-    return;*/
-
   g0.x = g[g_ind].x;
   g0.y = g[g_ind].y;
-  // offset f by [tz, n+m, n+m]
 
+  // offset f by [tz, n+m, n+m]
   f += n+m + (n+m) * stride1 + tz * stride2;
-  //f_center += tz * memory_multiplier * center_size * center_size;
+  
   #pragma unroll
   for (int i1 = 0; i1 < 2 * m + 1; i1++)
   {
@@ -53,33 +88,24 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta,
     for (int i0 = 0; i0 < 2 * m + 1; i0++)
     {
       ell0 = floorf(2 * n * x0) - m + i0;
-      w0 = ell0 / (float)(2 * n) - x0;
-      w1 = ell1 / (float)(2 * n) - y0;
-      w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
-      g0t.x = w*g0.x;
-      g0t.y = w*g0.y;
-      f_ind = ell0 + stride1 * ell1 ;
-      //f[f_ind].x += g0t.x;
-      //f[f_ind].y += g0t.y;
-      if( ell0 >= -center_half_size && ell0 < center_half_size &&
-          ell1 >= -center_half_size && ell1 < center_half_size )
-      {
-        /*int f_ind_center = ty % memory_multiplier + 
-                           (ell0 + center_half_size) * memory_multiplier +
-                           (ell1 + center_half_size) * memory_multiplier *  center_size;
-
-        //f_center[f_ind_center].x += g0t.x;
-        //f_center[f_ind_center].y += g0t.y;
-        atomicAdd(&(f_center[f_ind_center].x), g0t.x);
-        atomicAdd(&(f_center[f_ind_center].y), g0t.y);*/
-      } else {
-        //f[f_ind].x += g0t.x;
-        //f[f_ind].y += g0t.y;
-        atomicAdd(&(f[f_ind].x), g0t.x);
-        atomicAdd(&(f[f_ind].y), g0t.y);
-      }
+      update_f_value<use_center_filter>(f, g0, x0, y0, coeff0, coeff1, 
+                                        center_half_size, 
+                                        ell0, ell1, stride1, n);
     }
   }
+}
+
+extern "C" __global__ void gather_kernel_partial(float2 *g, float2 *f, float *theta, 
+                                                 int m, float mu, 
+                                                 int center_size, int n, int nproj, int nz)    
+{
+  gather_kernel_common<true>(g, f, theta, m, mu, center_size, n, nproj, nz);
+}
+
+extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta, 
+                                         int m, float mu, int n, int nproj, int nz)    
+{
+  gather_kernel_common<false>(g, f, theta, m, mu, 0, n, nproj, nz);
 }
 
 /*m = 4
@@ -106,24 +132,22 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
     return;
 
-  float2 f_value;
-
   const float coeff0 = M_PI / mu;
   const float coeff1 = -M_PI * M_PI / mu;
 
   int f_stride = 2*n + 2*m;
   int f_stride_2 = f_stride * f_stride;
 
-  // offset f by [tz, n+m, n+m]
+  // offset f by tz
   f += tz * f_stride_2;
 
   // index of the force
   int f_ind = tx + ty * f_stride;
 
-  float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
+  const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
 
-  f_value.x = 0;
-  f_value.y = 0;
+  // Result value
+  float2 f_value = make_float2(0.f, 0.f);
 
   // Point coordinates
   float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
@@ -152,11 +176,11 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
       float distance_to_intersect = sqrtf(radius_2 - distance_2);
 
       int radius_min, radius_max;
-      if( abs(vector_polar.x) > abs(vector_polar.y) ) {
-        radius_min = n/2     + floorf((mid_point.x - distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
+      if( fabsf(vector_polar.x) > fabsf(vector_polar.y) ) {
+        radius_min = n/2 - 1 + floorf((mid_point.x - distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
         radius_max = n/2 + 1 + floorf((mid_point.x + distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
       } else {
-        radius_min = n/2     + floorf((mid_point.y - distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
+        radius_min = n/2 - 1 + floorf((mid_point.y - distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
         radius_max = n/2 + 1 + floorf((mid_point.y + distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
       }
 
@@ -164,10 +188,8 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
         int temp(radius_max); radius_max = radius_min; radius_min = temp;
       }
 
-      radius_min = radius_min < 0     ?     0 : radius_min;
-      radius_min = radius_min > (n-1) ? (n-1) : radius_min;
-      radius_max = radius_max < 0     ?     0 : radius_max;
-      radius_max = radius_max > (n-1) ? (n-1) : radius_max;
+      radius_min = min( max(radius_min, 0), (n-1));
+      radius_max = min( max(radius_max, 0), (n-1));
 
       constexpr int length = 4;
       float2 f_values[length];
@@ -217,11 +239,8 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
 }
 
 extern "C" __global__ void wrap_kernel(float2 *f,
-                                       int center_size,
                                        int n, int nz, int m)
 {
-  const int center_half_size = center_size/2;
-
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
   int ty = blockDim.y * blockIdx.y + threadIdx.y;
   int tz = blockDim.z * blockIdx.z + threadIdx.z;
@@ -237,49 +256,5 @@ extern "C" __global__ void wrap_kernel(float2 *f,
 
     atomicAdd(&f[id2].x, f[id1].x);
     atomicAdd(&f[id2].y, f[id1].y);
-  } /*else if ( tx >= (n + m - center_half_size) && tx < (n + m + center_half_size) &&
-              ty >= (n + m - center_half_size) && ty < (n + m + center_half_size) ) {
-  
-    int stride1 = 2*n + 2*m;
-    int stride2 = stride1 * stride1;
-
-    f += tz * stride2;
-    f_center += tz * center_size * center_size;
-
-    int center_index_x = tx - (n + m - center_half_size);
-    int center_index_y = ty - (n + m - center_half_size);
-
-    int f_ind = tx + ty * stride1;
-    f[f_ind].x = f_center[f_ind].x;
-    f[f_ind].y = f_center[f_ind].y;  
-  }*/
-
-  
-  
-  /* else if ( tx >= (n + m - center_half_size) && tx < (n + m + center_half_size) &&
-              ty >= (n + m - center_half_size) && ty < (n + m + center_half_size) ) {
-    
-    int stride1 = 2*n + 2*m;
-    int stride2 = stride1 * stride1;
-    f += tz * stride2;
-    f_center += tz * memory_multiplier * center_size * center_size;
-
-    int center_index_x = tx - (n + m - center_half_size);
-    int center_index_y = ty - (n + m - center_half_size);
-
-    f_center += center_index_x * memory_multiplier + center_index_y * memory_multiplier * center_size;
-
-    float2 value = make_float2(0.f, 0.f);
-    #pragma unroll
-    for(unsigned int i = 0; i < memory_multiplier; i++)
-    {
-      value.x += f_center[i].x;
-      value.y += f_center[i].y;
-    }
-
-
-    int f_ind = tx + ty * stride1;
-    atomicAdd(&f[f_ind].x, value.x);
-    atomicAdd(&f[f_ind].y, value.y);
-  }*/
+  }
 }
