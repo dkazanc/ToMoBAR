@@ -252,7 +252,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
         # padded fft, reusable by chunks
         fde        = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
-        # fde_center = xp.zeros([nz // 2, center_size, center_size], dtype=xp.complex64)
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -363,79 +362,79 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # plt.title("3D FBP Reconstruction, sagittal view")
         # plt.show()
 
-        fde_original = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+        # fde_original = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
 
-        block_dim_x = 32
-        block_dim_y = 8
+        # block_dim_x = 32
+        # block_dim_y = 8
 
-        gather_kernel(
-            (int(xp.ceil(n / block_dim_x)), int(xp.ceil(nproj / block_dim_y)), nz // 2),
-            (block_dim_x, block_dim_y, 1),
-            (
-                datac,
-                fde_original,
-                theta,
-                np.int32(m),
-                np.float32(mu),
-                np.int32(n),
-                np.int32(nproj),
-                np.int32(nz // 2),
-            ),
-        )
+        # gather_kernel(
+        #     (int(xp.ceil(n / block_dim_x)), int(xp.ceil(nproj / block_dim_y)), nz // 2),
+        #     (block_dim_x, block_dim_y, 1),
+        #     (
+        #         datac,
+        #         fde_original,
+        #         theta,
+        #         np.int32(m),
+        #         np.float32(mu),
+        #         np.int32(n),
+        #         np.int32(nproj),
+        #         np.int32(nz // 2),
+        #     ),
+        # )
 
-        wrap_kernel(
-            (
-                int(np.ceil((2 * n + 2 * m) / 32)),
-                int(np.ceil((2 * n + 2 * m) / 32)),
-                np.int32(nz // 2),
-            ),
-            (32, 32, 1),
-            (fde_original, n, nz // 2, m),
-        )
+        # wrap_kernel(
+        #     (
+        #         int(np.ceil((2 * n + 2 * m) / 32)),
+        #         int(np.ceil((2 * n + 2 * m) / 32)),
+        #         np.int32(nz // 2),
+        #     ),
+        #     (32, 32, 1),
+        #     (fde_original, n, nz // 2, m),
+        # )
 
-        sliceSel = int(0.5 * n)
+        # sliceSel = int(0.5 * n)
 
-        plt.figure()
-        plt.subplot(131)
-        plt.imshow(fde_original[64, :, :].real.get())
-        plt.title("3D FBP Reconstruction, axial view")
+        # plt.figure()
+        # plt.subplot(131)
+        # plt.imshow(fde_original[64, :, :].real.get())
+        # plt.title("3D FBP Reconstruction, axial view")
 
-        plt.subplot(132)
-        plt.imshow(fde_original[:, sliceSel, :].real.get())
-        plt.title("3D FBP Reconstruction, coronal view")
+        # plt.subplot(132)
+        # plt.imshow(fde_original[:, sliceSel, :].real.get())
+        # plt.title("3D FBP Reconstruction, coronal view")
 
-        plt.subplot(133)
-        plt.imshow(fde_original[:, :, sliceSel].real.get())
-        plt.title("3D FBP Reconstruction, sagittal view")
-        plt.show()
+        # plt.subplot(133)
+        # plt.imshow(fde_original[:, :, sliceSel].real.get())
+        # plt.title("3D FBP Reconstruction, sagittal view")
+        # plt.show()
 
-        plt.figure()
-        plt.subplot(131)
-        plt.imshow(fde[64, :, :].real.get())
-        plt.title("3D FBP Reconstruction, axial view")
+        # plt.figure()
+        # plt.subplot(131)
+        # plt.imshow(fde[64, :, :].real.get())
+        # plt.title("3D FBP Reconstruction, axial view")
 
-        plt.subplot(132)
-        plt.imshow(fde[:, sliceSel, :].real.get())
-        plt.title("3D FBP Reconstruction, coronal view")
+        # plt.subplot(132)
+        # plt.imshow(fde[:, sliceSel, :].real.get())
+        # plt.title("3D FBP Reconstruction, coronal view")
 
-        plt.subplot(133)
-        plt.imshow(fde[:, :, sliceSel].real.get())
-        plt.title("3D FBP Reconstruction, sagittal view")
-        plt.show()
+        # plt.subplot(133)
+        # plt.imshow(fde[:, :, sliceSel].real.get())
+        # plt.title("3D FBP Reconstruction, sagittal view")
+        # plt.show()
 
-        plt.figure()
-        plt.subplot(131)
-        plt.imshow((fde[64, :, :].real.get() - fde_original[64, :, :].real.get()) / fde_original[64, :, :].real.get(), vmin=-0.05, vmax=0.05)
-        plt.title("3D FBP Reconstruction, axial view")
+        # plt.figure()
+        # plt.subplot(131)
+        # plt.imshow((fde[64, :, :].real.get() - fde_original[64, :, :].real.get()), vmin=-0.5, vmax=0.5)
+        # plt.title("3D FBP Reconstruction, axial view")
 
-        plt.subplot(132)
-        plt.imshow(fde[:, sliceSel, :].real.get() - fde_original[:, sliceSel, :].real.get(), vmin=0, vmax=0.5)
-        plt.title("3D FBP Reconstruction, coronal view")
+        # plt.subplot(132)
+        # plt.imshow(fde[:, sliceSel, :].real.get() - fde_original[:, sliceSel, :].real.get(), vmin=0, vmax=0.5)
+        # plt.title("3D FBP Reconstruction, coronal view")
 
-        plt.subplot(133)
-        plt.imshow(fde[:, :, sliceSel].real.get() - fde_original[:, :, sliceSel].real.get(), vmin=0, vmax=0.5)
-        plt.title("3D FBP Reconstruction, sagittal view")
-        plt.show()
+        # plt.subplot(133)
+        # plt.imshow(fde[:, :, sliceSel].real.get() - fde_original[:, :, sliceSel].real.get(), vmin=0, vmax=0.5)
+        # plt.title("3D FBP Reconstruction, sagittal view")
+        # plt.show()
 
         # STEP3: ifft 2d
         fde2 = fde[
