@@ -117,7 +117,62 @@ g (128, 241, 362)
 f (128, 732, 732)
 theta (241,)*/
 
-extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *theta, 
+extern "C" __global__ void gather_kernel_center_prune(int *angle_index_out, float *theta, 
+                                                      int m, 
+                                                      int center_size,
+                                                      int n, int nproj)            
+{
+
+  const int center_half_size = center_size/2;
+
+  int tx = max(0, n + m - center_half_size) + blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = max(0, n + m - center_half_size) + blockDim.y * blockIdx.y + threadIdx.y; 
+
+  if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m)
+    return;
+
+  int f_stride = 2*n + 2*m;
+  int f_stride_2 = f_stride * f_stride;
+
+  const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
+
+  int angled_pointer_index = (blockDim.x * blockIdx.x + threadIdx.x + (blockDim.y * blockIdx.y + threadIdx.y) * center_size)*nproj;
+
+  // Point coordinates
+  float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
+
+  // Result value
+  int valid_index = 0;
+  for (int proj_index = 0; proj_index < nproj; proj_index++) {
+
+    float sintheta, costheta;
+    __sincosf(theta[proj_index], &sintheta, &costheta);
+
+    float polar_radius   = 0.5;
+    float polar_radius_2 = polar_radius * polar_radius;
+
+    float2 vector_polar = make_float2(polar_radius * costheta, polar_radius * sintheta);
+    float2 vector_point = make_float2(point.x,  point.y);
+
+    float dot = vector_polar.x * vector_point.x + vector_polar.y * vector_point.y;
+    float2 mid_point = make_float2(dot * vector_polar.x / polar_radius_2, 
+                                   dot * vector_polar.y / polar_radius_2); 
+
+    float distance_2 = (mid_point.x - vector_point.x) * (mid_point.x - vector_point.x) +
+                       (mid_point.y - vector_point.y) * (mid_point.y - vector_point.y);
+
+    if( radius_2 >= distance_2 ) {
+      angle_index_out[angled_pointer_index + valid_index++] = proj_index;
+    }
+  }
+
+  for (int proj_index = valid_index; proj_index < nproj; proj_index++) {
+    angle_index_out[angled_pointer_index + proj_index] = -1;
+  }
+}
+
+extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, 
+                                                int *angle_index_out, float *theta, 
                                                 int m, float mu,  
                                                 int center_size,
                                                 int n, int nproj, int nz)            
@@ -125,9 +180,14 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
 
   const int center_half_size = center_size/2;
 
-  int tx = max(0, n + m - center_half_size) + blockDim.z * blockIdx.z + threadIdx.z;
+  // int tx = max(0, n + m - center_half_size) + blockDim.z * blockIdx.z + threadIdx.z;
+  // int ty = max(0, n + m - center_half_size) + blockDim.y * blockIdx.y + threadIdx.y; 
+  // int tz = blockDim.x * blockIdx.x + threadIdx.x;
+
+  int tx = max(0, n + m - center_half_size) + blockDim.x * blockIdx.x + threadIdx.x;
   int ty = max(0, n + m - center_half_size) + blockDim.y * blockIdx.y + threadIdx.y; 
-  int tz = blockDim.x * blockIdx.x + threadIdx.x;
+  int tz = blockDim.z * blockIdx.z + threadIdx.z;
+
 
   if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
     return;
@@ -142,7 +202,8 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   f += tz * f_stride_2;
 
   // index of the force
-  int f_ind = tx + ty * f_stride;
+  int f_ind                = tx + ty * f_stride;
+  int angled_pointer_index = (blockDim.x * blockIdx.x + threadIdx.x + (blockDim.y * blockIdx.y + threadIdx.y) * center_size)*nproj;
 
   const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
 
@@ -152,7 +213,11 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, float *the
   // Point coordinates
   float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
 
-  for (int proj_index = 0; proj_index < nproj; proj_index++) {
+  for (int angle_index = 0; angle_index < nproj; angle_index++) {
+
+    int proj_index = angle_index_out[angled_pointer_index + angle_index];
+    if( proj_index == -1 )
+      break;
 
     float sintheta, costheta;
     __sincosf(theta[proj_index], &sintheta, &costheta);
