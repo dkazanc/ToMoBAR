@@ -269,6 +269,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # print(phi)
         # print(mu)
 
+        # Limit the center size parameter
+        center_size = min(center_size, n * 2 + m * 2)
+
         # STEP2: interpolation (gathering) in the frequency domain
         if center_size > 0:
 
@@ -288,10 +291,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 ),
             )
 
-            angle_index = xp.zeros([center_size, center_size, nproj], dtype=xp.int32)
+            angle_index = xp.zeros([center_size, center_size, nproj], dtype=xp.int16)
 
             gather_kernel_center_prune(
-                (int(xp.ceil(center_size / 32)), int(xp.ceil(center_size / 4)), 1),
+                (1, int(xp.ceil(center_size / 4)), center_size),
                 (32, 4, 1),
                 (
                     angle_index,
