@@ -117,16 +117,19 @@ g (128, 241, 362)
 f (128, 732, 732)
 theta (241,)*/
 
-extern "C" __global__ void gather_kernel_center_prune(int *angle_index_out, float *theta, 
-                                                      int m, 
-                                                      int center_size,
-                                                      int n, int nproj)            
+extern "C" __global__ void gather_kernel_center_prune(short *angle_index_out, float *theta, 
+                                                      int m, int center_size,
+                                                      int n, int nproj)
 {
 
   const int center_half_size = center_size/2;
 
-  int tx = max(0, n + m - center_half_size) + blockDim.x * blockIdx.x + threadIdx.x;
-  int ty = max(0, n + m - center_half_size) + blockDim.y * blockIdx.y + threadIdx.y; 
+  int thread_x = threadIdx.x;
+  int thread_y = blockDim.y * blockIdx.y + threadIdx.y;
+  int thread_z = blockDim.z * blockIdx.z + threadIdx.z;
+
+  int tx = max(0, n + m - center_half_size) + thread_y;
+  int ty = max(0, n + m - center_half_size) + thread_z; 
 
   if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m)
     return;
@@ -136,14 +139,17 @@ extern "C" __global__ void gather_kernel_center_prune(int *angle_index_out, floa
 
   const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
 
-  int angled_pointer_index = (blockDim.x * blockIdx.x + threadIdx.x + (blockDim.y * blockIdx.y + threadIdx.y) * center_size)*nproj;
+  // offset
+  angle_index_out += (thread_y + (thread_z) * center_size) * nproj;
 
   // Point coordinates
   float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
 
+  unsigned thread_mask = 0xffffffff >> (32 - thread_x);
+
   // Result value
   int valid_index = 0;
-  for (int proj_index = 0; proj_index < nproj; proj_index++) {
+  for (int proj_index = thread_x; proj_index < nproj; proj_index+=32) {
 
     float sintheta, costheta;
     __sincosf(theta[proj_index], &sintheta, &costheta);
@@ -160,19 +166,23 @@ extern "C" __global__ void gather_kernel_center_prune(int *angle_index_out, floa
 
     float distance_2 = (mid_point.x - vector_point.x) * (mid_point.x - vector_point.x) +
                        (mid_point.y - vector_point.y) * (mid_point.y - vector_point.y);
-
-    if( radius_2 >= distance_2 ) {
-      angle_index_out[angled_pointer_index + valid_index++] = proj_index;
+  
+    unsigned mask = __ballot_sync(0xffffffff, radius_2 >= distance_2);
+    
+    if(radius_2 >= distance_2) {
+      angle_index_out[valid_index + __popc(mask&thread_mask)] = proj_index;
     }
+
+    valid_index += __popc(mask);
   }
 
-  for (int proj_index = valid_index; proj_index < nproj; proj_index++) {
-    angle_index_out[angled_pointer_index + proj_index] = -1;
+  for (int proj_index = valid_index; proj_index < nproj; proj_index+=32) {
+    angle_index_out[proj_index] = -1;
   }
 }
 
 extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, 
-                                                int *angle_index_out, float *theta, 
+                                                short *angle_index_out, float *theta, 
                                                 int m, float mu,  
                                                 int center_size,
                                                 int n, int nproj, int nz)            
