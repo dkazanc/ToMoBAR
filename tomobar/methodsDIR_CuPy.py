@@ -6,6 +6,7 @@
 """
 
 import numpy as np
+import timeit
 import matplotlib.pyplot as plt
 try:
     import cupy as xp
@@ -253,6 +254,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
         phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
         # padded fft, reusable by chunks
         fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+
+        if center_size > 0:
+            angle_range = xp.empty([center_size, center_size, 3], dtype=xp.int32)
+
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -295,33 +300,35 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # Limit the center size parameter
         center_size = min(center_size, n * 2 + m * 2)
+        # print(n * 2 + m * 2)
+        # print(center_size)
 
         # STEP2: interpolation (gathering) in the frequency domain
         if center_size > 0:
+            
+            if center_size != (n * 2 + m * 2):
 
-            gather_kernel_partial(
-                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
-                (block_dim[0], block_dim[1], 1),
-                (
-                    datac,
-                    fde,
-                    theta,
-                    np.int32(m),
-                    np.float32(mu),
-                    np.int32(center_size),
-                    np.int32(n),
-                    np.int32(nproj),
-                    np.int32(nz // 2),
-                ),
-            )
-
-            angle_index = xp.zeros([center_size, center_size, nproj], dtype=xp.int16)
+                gather_kernel_partial(
+                    (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                    (block_dim[0], block_dim[1], 1),
+                    (
+                        datac,
+                        fde,
+                        theta,
+                        np.int32(m),
+                        np.float32(mu),
+                        np.int32(center_size),
+                        np.int32(n),
+                        np.int32(nproj),
+                        np.int32(nz // 2),
+                    ),
+                )
 
             gather_kernel_center_prune(
                 (1, int(xp.ceil(center_size / 4)), center_size),
                 (32, 4, 1),
                 (
-                    angle_index,
+                    angle_range,
                     theta,
                     np.int32(m),
                     np.int32(center_size),
@@ -330,13 +337,31 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 ),
             )
 
+            # plt.figure()
+            # plt.subplot(131)
+            # plt.imshow(angle_range[:, :, 0].get(), vmin = 0)
+            # plt.title("Angle count")
+
+            # plt.subplot(132)
+            # plt.imshow(angle_range[:, :, 1].get())
+            # plt.title("Angle min")
+
+            # plt.subplot(133)
+            # plt.imshow(angle_range[:, :, 2].get(), vmin = 0)
+            # plt.title("Angle max")
+            # plt.show()
+
             gather_kernel_center(
-                (int(xp.ceil(center_size / block_dim_center[0])), int(xp.ceil(center_size / block_dim_center[1])), int(xp.ceil(nz / 2))),
+                (
+                    int(xp.ceil(center_size / block_dim_center[0])),
+                    int(xp.ceil(center_size / block_dim_center[1])),
+                    nz // 2,
+                ),
                 (block_dim_center[0], block_dim_center[1], 1),
                 (
                     datac,
                     fde,
-                    angle_index,
+                    angle_range,
                     theta,
                     np.int32(m),
                     np.float32(mu),
@@ -346,6 +371,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
+
         else:
             gather_kernel(
                 (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
@@ -422,7 +448,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # plt.figure()
         # plt.subplot(131)
-        # plt.imshow(fde_original[nz // 2, :, :].real.get())
+        # plt.imshow(fde_original[nz // 4, :, :].real.get())
         # plt.title("3D FBP Reconstruction, axial view")
 
         # plt.subplot(132)
@@ -436,7 +462,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # plt.figure()
         # plt.subplot(131)
-        # plt.imshow(fde[64, :, :].real.get())
+        # plt.imshow(fde[nz // 4, :, :].real.get())
         # plt.title("3D FBP Reconstruction, axial view")
 
         # plt.subplot(132)
@@ -450,7 +476,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # plt.figure()
         # plt.subplot(131)
-        # plt.imshow((fde[64, :, :].real.get() - fde_original[64, :, :].real.get()), vmin=-0.2, vmax=0.2)
+        # plt.imshow(((fde[nz // 4, :, :].real.get() - fde_original[nz // 4, :, :].real.get())) / fde_original[nz // 4, :, :].real.get(), vmin=-0.2, vmax=0.2)
         # plt.title("3D FBP Reconstruction, axial view")
 
         # plt.subplot(132)
