@@ -154,7 +154,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             xp.ndarray: The NUFFT reconstructed volume as a CuPy array.
         """
         center_size = 512
-        block_dim = [32, 8]
+        block_dim = [32, 32]
         block_dim_center = [32, 8]
 
         for key, value in kwargs.items():
@@ -171,6 +171,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
         gather_kernel_partial = module.get_function("gather_kernel_partial")
+        gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
@@ -227,7 +228,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         [dx, dy] = xp.meshgrid(t, t)
         phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
         # padded fft, reusable by chunks
-        fde        = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+        fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -263,8 +264,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP1: fft 1d
         datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
 
+        # print(xp.shape(datac))
+        # print(xp.shape(fde))
+        # print(phi)
+        # print(mu)
+
         # STEP2: interpolation (gathering) in the frequency domain
         if center_size > 0:
+
             gather_kernel_partial(
                 (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
                 (block_dim[0], block_dim[1], 1),
@@ -281,12 +288,28 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 ),
             )
 
+            angle_index = xp.zeros([center_size, center_size, nproj], dtype=xp.int32)
+
+            gather_kernel_center_prune(
+                (int(xp.ceil(center_size / 32)), int(xp.ceil(center_size / 4)), 1),
+                (32, 4, 1),
+                (
+                    angle_index,
+                    theta,
+                    np.int32(m),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(nproj),
+                ),
+            )
+
             gather_kernel_center(
-                (int(xp.ceil(nz / (block_dim_center[0] * 2))), int(xp.ceil(center_size)), int(xp.ceil(center_size / block_dim_center[1]))),
-                (block_dim_center[0] , 1, block_dim_center[1]),
+                (int(xp.ceil(center_size / block_dim_center[0])), int(xp.ceil(center_size / block_dim_center[1])), int(xp.ceil(nz / 2))),
+                (block_dim_center[0], block_dim_center[1], 1),
                 (
                     datac,
                     fde,
+                    angle_index,
                     theta,
                     np.int32(m),
                     np.float32(mu),
@@ -326,15 +349,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # plt.figure()
         # plt.subplot(131)
-        # plt.imshow(fde[64, :, :].real.get())
+        # plt.imshow(fde[nz // 4, :, :].real.get(), vmin = 0)
         # plt.title("3D FBP Reconstruction, axial view")
 
         # plt.subplot(132)
-        # plt.imshow(fde[:, sliceSel, :].real.get())
+        # plt.imshow(fde[:, sliceSel, :].real.get(), vmin = 0)
         # plt.title("3D FBP Reconstruction, coronal view")
 
         # plt.subplot(133)
-        # plt.imshow(fde[:, :, sliceSel].real.get())
+        # plt.imshow(fde[:, :, sliceSel].real.get(), vmin = 0)
         # plt.title("3D FBP Reconstruction, sagittal view")
         # plt.show()
 
@@ -372,7 +395,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # plt.figure()
         # plt.subplot(131)
-        # plt.imshow(fde_original[64, :, :].real.get())
+        # plt.imshow(fde_original[nz // 2, :, :].real.get())
         # plt.title("3D FBP Reconstruction, axial view")
 
         # plt.subplot(132)
@@ -400,15 +423,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # plt.figure()
         # plt.subplot(131)
-        # plt.imshow((fde[64, :, :].real.get() - fde_original[64, :, :].real.get()), vmin=-0.5, vmax=0.5)
+        # plt.imshow((fde[64, :, :].real.get() - fde_original[64, :, :].real.get()), vmin=-0.2, vmax=0.2)
         # plt.title("3D FBP Reconstruction, axial view")
 
         # plt.subplot(132)
-        # plt.imshow(fde[:, sliceSel, :].real.get() - fde_original[:, sliceSel, :].real.get(), vmin=0, vmax=0.5)
+        # plt.imshow(fde[:, sliceSel, :].real.get() - fde_original[:, sliceSel, :].real.get(), vmin=-0.2, vmax=0.2)
         # plt.title("3D FBP Reconstruction, coronal view")
 
         # plt.subplot(133)
-        # plt.imshow(fde[:, :, sliceSel].real.get() - fde_original[:, :, sliceSel].real.get(), vmin=0, vmax=0.5)
+        # plt.imshow(fde[:, :, sliceSel].real.get() - fde_original[:, :, sliceSel].real.get(), vmin=-0.2, vmax=0.2)
         # plt.title("3D FBP Reconstruction, sagittal view")
         # plt.show()
 
