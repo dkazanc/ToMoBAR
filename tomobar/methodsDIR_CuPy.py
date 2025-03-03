@@ -119,7 +119,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         Returns:
             xp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
-        cutoff_freq = 1.1  # default value
+        cutoff_freq = 0.35  # default value
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
@@ -149,13 +149,36 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
                         When "None" we assume  ["angles", "detX"] for 2D and ["angles", "detY", "detX"] for 3D.
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
+            filter_type (str): Filter type, the accepted values are: none, ramp, shepp, cosine, cosine2, hamming, hann, parzen.
+            cutoff_freq (float): Cutoff frequency parameter for different filter. The higher values increase resolution and noise.
 
         Returns:
             xp.ndarray: The NUFFT reconstructed volume as a CuPy array.
         """
+
+        cutoff_freq = 1.0  # default value
+        filter_type = "shepp"  # default filter
+
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+            if key == "cutoff_freq" and value is not None:
+                cutoff_freq = value
+            if key == "filter_type" and value is not None:
+                if key not in [
+                    "none",
+                    "ramp",
+                    "shepp",
+                    "cosine",
+                    "cosine2",
+                    "hamming",
+                    "hann",
+                    "parzen",
+                ]:
+                    print(
+                        "Unknown filter name, please use: none, ramp, shepp, cosine, cosine2, hamming, hann or parzen. Set to shepp"
+                    )
+                cutoff_freq = value
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
@@ -194,7 +217,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
 
         # usfft parameters
-        eps = 1e-3  # accuracy of usfft
+        eps = 1e-4  # accuracy of usfft
         mu = -np.log(eps) / (2 * n * n)
         m = int(
             np.ceil(
@@ -230,11 +253,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
         ne = oversampling_level * n
         padding_m = ne // 2 - n // 2
         padding_p = ne // 2 + n // 2
-        wfilter = calc_filter(ne, "ramp")
+        wfilter = calc_filter(ne, filter_type, cutoff_freq)
 
         # STEP0: FBP filtering
         t = rfftfreq(ne).astype(xp.float32)
-        w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (-rotation_axis))
+        w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (rotation_axis))
         # I remember the bellow part may use a lot of memory due to "w*" operation,
         # if so you can do it as a loop over slices/angles
         tmp = xp.pad(data, ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")

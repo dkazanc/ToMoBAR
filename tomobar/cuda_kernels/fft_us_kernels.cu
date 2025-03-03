@@ -56,7 +56,7 @@ extern "C" __global__ void wrap_kernel(float2 *f, int n, int nz, int m)
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
   int ty = blockDim.y * blockIdx.y + threadIdx.y;
   int tz = blockDim.z * blockIdx.z + threadIdx.z;
-  return;
+
   if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
     return;
   if (tx < m || tx >= 2 * n + m || ty < m || ty >= 2 * n + m)
