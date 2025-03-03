@@ -110,35 +110,50 @@ def _wint(n, t):
     return wn
 
 
-def calc_filter(n, filter):
+def calc_filter(n, filter, cutoff_freq):
     """fbp filters, higher order integrals discretization"""
     d = 0.5
     t = np.arange(0, n / 2 + 1) / n
 
     if filter == "none":
-        wfa = n * 0.5 + t * 0
-        return wfa.astype("float32")
+        wfa = n * cutoff_freq + t * 0
+        return xp.asarray(wfa, dtype=xp.float32)
     elif filter == "ramp":
         # .*(t/(2*d)<=1)%compute the weigths
-        wfa = n * 0.5 * _wint(12, t)
+        wfa = n * cutoff_freq * _wint(12, t)
     elif filter == "shepp":
-        wfa = n * 0.5 * _wint(12, t) * np.sinc(t / (2 * d)) * (t / d <= 2)
+        wfa = n * cutoff_freq * _wint(12, t) * np.sinc(t / (2 * d)) * (t / d <= 2)
     elif filter == "cosine":
-        wfa = n * 0.5 * _wint(12, t) * np.cos(np.pi * t / (2 * d)) * (t / d <= 1)
+        wfa = (
+            n * cutoff_freq * _wint(12, t) * np.cos(np.pi * t / (2 * d)) * (t / d <= 1)
+        )
     elif filter == "cosine2":
-        wfa = n * 0.5 * _wint(12, t) * (np.cos(np.pi * t / (2 * d))) ** 2 * (t / d <= 1)
+        wfa = (
+            n
+            * cutoff_freq
+            * _wint(12, t)
+            * (np.cos(np.pi * t / (2 * d))) ** 2
+            * (t / d <= 1)
+        )
     elif filter == "hamming":
         wfa = (
             n
-            * 0.5
+            * cutoff_freq
             * _wint(12, t)
             * (0.54 + 0.46 * np.cos(np.pi * t / d))
             * (t / d <= 1)
         )
     elif filter == "hann":
-        wfa = n * 0.5 * _wint(12, t) * (1 + np.cos(np.pi * t / d)) / 2.0 * (t / d <= 1)
+        wfa = (
+            n
+            * cutoff_freq
+            * _wint(12, t)
+            * (1 + np.cos(np.pi * t / d))
+            / 2.0
+            * (t / d <= 1)
+        )
     elif filter == "parzen":
-        wfa = n * 0.5 * _wint(12, t) * pow(1 - t / d, 3) * (t / d <= 1)
+        wfa = n * cutoff_freq * _wint(12, t) * pow(1 - t / d, 3) * (t / d <= 1)
 
     wfa = 2 * wfa * (wfa >= 0)
     wfa[0] *= 2
