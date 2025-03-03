@@ -7,6 +7,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 try:
     import cupy as xp
 
@@ -202,6 +203,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             del data_p
 
         rotation_axis = self.Atools.centre_of_rotation - 0.5
+        print(rotation_axis)
         if odd_horiz:
             rotation_axis -= 1
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
@@ -247,7 +249,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP0: FBP filtering
         t = rfftfreq(ne).astype(xp.float32)
-        w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (-rotation_axis))
+        w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (rotation_axis))
         # I remember the bellow part may use a lot of memory due to "w*" operation,
         # if so you can do it as a loop over slices/angles
         tmp = xp.pad(data, ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
@@ -274,9 +276,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP2: interpolation (gathering) in the frequency domain
         if center_size > 0:
-
             gather_kernel_partial(
-                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                (
+                    int(xp.ceil(n / block_dim[0])),
+                    int(xp.ceil(nproj / block_dim[1])),
+                    nz // 2,
+                ),
                 (block_dim[0], block_dim[1], 1),
                 (
                     datac,
@@ -307,7 +312,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
 
             gather_kernel_center(
-                (int(xp.ceil(center_size / block_dim_center[0])), int(xp.ceil(center_size / block_dim_center[1])), int(xp.ceil(nz / 2))),
+                (
+                    int(xp.ceil(center_size / block_dim_center[0])),
+                    int(xp.ceil(center_size / block_dim_center[1])),
+                    int(xp.ceil(nz / 2)),
+                ),
                 (block_dim_center[0], block_dim_center[1], 1),
                 (
                     datac,
@@ -324,7 +333,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
         else:
             gather_kernel(
-                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                (
+                    int(xp.ceil(n / block_dim[0])),
+                    int(xp.ceil(nproj / block_dim[1])),
+                    nz // 2,
+                ),
                 (block_dim[0], block_dim[1], 1),
                 (
                     datac,
@@ -458,6 +471,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         del fde, fde2, datac
         xp._default_memory_pool.free_all_blocks()
+        cache = xp.fft.config.get_plan_cache()
+        cache.clear()
+
         if odd_vert:
             unpad_z = nz - 1
         else:
