@@ -305,28 +305,23 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP2: interpolation (gathering) in the frequency domain
         if center_size > 0:
             
-            tic = timeit.default_timer()
+            if center_size != (n * 2 + m * 2):
 
-            gather_kernel_partial(
-                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
-                (block_dim[0], block_dim[1], 1),
-                (
-                    datac,
-                    fde,
-                    theta,
-                    np.int32(m),
-                    np.float32(mu),
-                    np.int32(center_size),
-                    np.int32(n),
-                    np.int32(nproj),
-                    np.int32(nz // 2),
-                ),
-            )
-
-            # Run_time = (timeit.default_timer() - tic)
-            # print("gather_kernel_partial in {} seconds".format(Run_time))
-
-            tic = timeit.default_timer()
+                gather_kernel_partial(
+                    (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                    (block_dim[0], block_dim[1], 1),
+                    (
+                        datac,
+                        fde,
+                        theta,
+                        np.int32(m),
+                        np.float32(mu),
+                        np.int32(center_size),
+                        np.int32(n),
+                        np.int32(nproj),
+                        np.int32(nz // 2),
+                    ),
+                )
 
             gather_kernel_center_prune(
                 (1, int(xp.ceil(center_size / 4)), center_size),
@@ -355,11 +350,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             # plt.title("Angle max")
             # plt.show()
 
-            # Run_time = (timeit.default_timer() - tic)
-            # print("gather_kernel_center_prune in {} seconds".format(Run_time))
-
-            tic = timeit.default_timer()
-
             gather_kernel_center(
                 (
                     int(xp.ceil(center_size / block_dim_center[0])),
@@ -381,12 +371,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 ),
             )
 
-            # Run_time = (timeit.default_timer() - tic)
-            # print("gather_kernel_center in {} seconds".format(Run_time))
-
         else:
-            tic = timeit.default_timer()
-
             gather_kernel(
                 (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
                 (block_dim[0], block_dim[1], 1),
@@ -401,9 +386,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
-
-            # Run_time = (timeit.default_timer() - tic)
-            # print("gather_kernel in {} seconds".format(Run_time))
 
         wrap_kernel(
             (
