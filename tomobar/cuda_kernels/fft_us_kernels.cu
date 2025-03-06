@@ -342,7 +342,7 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f,
   // Point coordinates
   float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
   
-  /*if( angle_range[2] ) {
+  if( angle_range[2] ) {
     for (int proj_index = angle_range[0]; proj_index <= angle_range[1]; proj_index++) {
       gather_kernel_center_common(g, theta, 
                                   f_value, point,
@@ -370,86 +370,6 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f,
                                   coeff0,
                                   coeff1,
                                   n, nproj);
-    }
-  }*/
-  for (int proj_index = 0; proj_index < nproj; proj_index++) {
-    float sintheta, costheta;
-    __sincosf(theta[proj_index], &sintheta, &costheta);
-
-    float polar_radius   = 0.5;
-    float polar_radius_2 = polar_radius * polar_radius;
-
-    float2 vector_polar = make_float2(polar_radius * costheta, polar_radius * sintheta);
-    float2 vector_point = make_float2(point.x, point.y);
-
-    float dot = vector_polar.x * vector_point.x + vector_polar.y * vector_point.y;
-    float2 mid_point = make_float2(dot * vector_polar.x / polar_radius_2, 
-                                  dot * vector_polar.y / polar_radius_2); 
-
-    float distance_2 = (mid_point.x - vector_point.x) * (mid_point.x - vector_point.x) +
-                      (mid_point.y - vector_point.y) * (mid_point.y - vector_point.y);
-
-    if( radius_2 >= distance_2 ) {
-      
-      // Distance to intersect
-      float distance_to_intersect = sqrtf(radius_2 - distance_2);
-
-      int radius_min, radius_max;
-      if( fabsf(vector_polar.x) > fabsf(vector_polar.y) ) {
-        radius_min = n/2 - 1 + floorf((mid_point.x - distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
-        radius_max = n/2 + 1 + floorf((mid_point.x + distance_to_intersect * vector_polar.x / polar_radius) / (2.f * vector_polar.x / n));
-      } else {
-        radius_min = n/2 - 1 + floorf((mid_point.y - distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
-        radius_max = n/2 + 1 + floorf((mid_point.y + distance_to_intersect * vector_polar.y / polar_radius) / (2.f * vector_polar.y / n));
-      }
-
-      if( radius_min > radius_max ) {
-        int temp(radius_max); radius_max = radius_min; radius_min = temp;
-      }
-
-      radius_min = min( max(radius_min, 0), (n-1));
-      radius_max = min( max(radius_max, 0), (n-1));
-
-      constexpr int length = 4;
-      float2 f_values[length];
-      for (int radius_index = radius_min; radius_index < radius_max; radius_index+=length) {
-        
-        #pragma unroll
-        for (int i = 0; i < length; i++) {
-          int g_ind = radius_index + i + proj_index * n + tz * n * nproj;
-          if( radius_index + i < radius_max ) {
-            f_values[i].x = g[g_ind].x;
-            f_values[i].y = g[g_ind].y;
-          } else {
-            f_values[i].x = 0.f;
-            f_values[i].y = 0.f;
-          }
-        }
-
-        #pragma unroll
-        for (int i = 0; i < length; i++) {
-          float x0 = (radius_index + i - n / 2) / (float)n * costheta;
-          float y0 = (radius_index + i - n / 2) / (float)n * sintheta;
-
-          if (x0 >= 0.5f)
-            x0 = 0.5f - 1e-5;
-          if (y0 >= 0.5f)
-            y0 = 0.5f - 1e-5;
-
-          float w0 = point.x - x0;
-          float w1 = point.y - y0;
-          float w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
-
-          f_values[i].x *= w;
-          f_values[i].y *= w;
-        }
-
-        #pragma unroll
-        for (int i = 0; i < length; i++) {
-          f_value.x += f_values[i].x;
-          f_value.y += f_values[i].y;
-        }
-      }
     }
   }
 
