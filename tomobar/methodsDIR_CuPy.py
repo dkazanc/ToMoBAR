@@ -211,7 +211,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             odd_vert = True
             del data_p
 
-        rotation_axis = self.Atools.centre_of_rotation - 0.5
+        rotation_axis = self.Atools.centre_of_rotation + 0.5
         if odd_horiz:
             rotation_axis -= 1
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
