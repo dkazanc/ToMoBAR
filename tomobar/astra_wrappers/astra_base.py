@@ -8,6 +8,7 @@ import numpy as np
 from typing import Union
 from tomobar.supp.funcs import _vec_geom_init2D, _vec_geom_init3D
 from astra.experimental import direct_BP3D, direct_FP3D
+from astra.pythonutils import GPULink
 
 try:
     import cupy as xp
@@ -503,7 +504,7 @@ class AstraBase:
             xp.ndarray: A CuPy array containing back-projected volume.
         """
         # set ASTRA configuration for 3D reconstructor using CuPy arrays
-        proj_link = astra.data3d.GPULink(
+        proj_link = GPULink(
             proj_data.data.ptr, *proj_data.shape[::-1], 4 * proj_data.shape[2]
         )
         if self.ordsub_number != 1 and os_index is not None:
@@ -519,7 +520,7 @@ class AstraBase:
         # create a CuPy array with ASTRA link to it
         recon_volume = xp.empty(astra.geom_size(self.vol_geom), dtype=xp.float32)
 
-        rec_link = astra.data3d.GPULink(
+        rec_link = GPULink(
             recon_volume.data.ptr, *recon_volume.shape[::-1], 4 * recon_volume.shape[2]
         )
 
@@ -543,7 +544,7 @@ class AstraBase:
             xp.ndarray: projected volume array as a cupy array
         """
         # Enable GPUlink to the volume
-        volume_link = astra.data3d.GPULink(
+        volume_link = GPULink(
             volume_data.data.ptr, *volume_data.shape[::-1], 4 * volume_data.shape[2]
         )
         volume_id = astra.data3d.link("-vol", self.vol_geom, volume_link)
@@ -553,7 +554,7 @@ class AstraBase:
             proj_volume = xp.empty(
                 astra.geom_size(self.proj_geom_OS[os_index]), dtype=xp.float32
             )
-            gpu_link_sino = astra.data3d.GPULink(
+            gpu_link_sino = GPULink(
                 proj_volume.data.ptr, *proj_volume.shape[::-1], 4 * proj_volume.shape[2]
             )
             projector_id = astra.create_projector(
@@ -563,7 +564,7 @@ class AstraBase:
             # traditional full data parallel beam projection geometry
             # Enabling GPUlink to the created empty CuPy array
             proj_volume = xp.empty(astra.geom_size(self.proj_geom), dtype=xp.float32)
-            gpu_link_sino = astra.data3d.GPULink(
+            gpu_link_sino = GPULink(
                 proj_volume.data.ptr, *proj_volume.shape[::-1], 4 * proj_volume.shape[2]
             )
             projector_id = astra.create_projector(

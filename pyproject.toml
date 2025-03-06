@@ -20,7 +20,7 @@ dev_template = "{tag}"
 
 [project]
 name = "tomobar"
-version = "2024.11"
+version = "2025.03"
 description = "TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software"
 readme = "Readme.md"
 license = {text = "GPLv3"}
@@ -34,10 +34,10 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Environment :: GPU :: NVIDIA CUDA"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "numpy",
-    "astra-toolbox",
+    "astra-toolbox>=2.3.0",
     "scipy",
     "pillow",
     "scikit-image"
