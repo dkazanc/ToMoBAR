@@ -130,7 +130,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         data = _filtersinc3D_cupy(data, cutoff=cutoff_freq)
         data = xp.ascontiguousarray(xp.swapaxes(data, 0, 1))
         cache = xp.fft.config.get_plan_cache()
-        cache.clear()  # flush FFT cache here before backprojection        
+        cache.clear()  # flush FFT cache here before backprojection
         xp._default_memory_pool.free_all_blocks()  # free everything related to the filtering before starting Astra
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
         xp._default_memory_pool.free_all_blocks()
@@ -176,7 +176,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     "parzen",
                 ]:
                     print(
-                        "Unknown filter name, please use: none, ramp, shepp, cosine, cosine2, hamming, hann or parzen. Set to shepp"
+                        "Unknown filter name, please use: none, ramp, shepp, cosine, cosine2, hamming, hann or parzen. Set to shepp filter"
                     )
                 cutoff_freq = value
 
