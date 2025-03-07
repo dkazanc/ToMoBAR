@@ -160,9 +160,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         cutoff_freq = 1.0  # default value
         filter_type = "shepp"  # default filter
 
-        center_size = 512
-        block_dim = [32, 32]
-        block_dim_center = [32, 8]
+        center_size = 2048
+        block_dim = [16, 16]
+        block_dim_center = [32, 4]
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
