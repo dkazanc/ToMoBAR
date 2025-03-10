@@ -162,6 +162,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         center_size = 2048
         block_dim = [16, 16]
+        block_dim_prune = 4
         block_dim_center = [32, 4]
 
         for key, value in kwargs.items():
@@ -171,6 +172,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 center_size = value
             elif key == "block_dim" and value is not None:
                 block_dim = value
+            elif key == "block_dim_prune" and value is not None:
+                block_dim_prune = value
             elif key == "block_dim_center" and value is not None:
                 block_dim_center = value
             if key == "cutoff_freq" and value is not None:
@@ -240,6 +243,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
         oversampling_level = 2  # at least 2 or larger required
 
+        center_size = min(center_size, n * 2 + m * 2)
+
         # memory for recon
         if odd_horiz:
             recon_up = xp.empty([nz, n + 1, n + 1], dtype=xp.float32)
@@ -298,7 +303,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # print(mu)
 
         # Limit the center size parameter
-        center_size = min(center_size, n * 2 + m * 2)
+
         # print(n * 2 + m * 2)
         # print(center_size)
 
@@ -324,8 +329,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 )
 
             gather_kernel_center_prune(
-                (1, int(xp.ceil(center_size / 4)), center_size),
-                (32, 4, 1),
+                (1, int(xp.ceil(center_size / block_dim_prune)), center_size),
+                (32, block_dim_prune, 1),
                 (
                     angle_range,
                     theta,
