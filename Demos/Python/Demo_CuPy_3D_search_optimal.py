@@ -82,7 +82,28 @@ for N_size in [512, 1024, 1536, 2048]:
             # Run_time = (toc - tic)/80
             # print("Phantom size: {}, angle number: {}, and slice number: {}, in time: {} seconds".format(N_size, angles_num, slice_number, Run_time))
 
-            for center_size in [0, 128, 256, 384, 448, 512, 640, 672, 704, 768, 800, 864, 928, 1024, 1280, 1536, 1792, 2048, 2560, 3072]:
+            for center_size in [
+                0,
+                128,
+                256,
+                384,
+                448,
+                512,
+                640,
+                672,
+                704,
+                768,
+                800,
+                864,
+                928,
+                1024,
+                1280,
+                1536,
+                1792,
+                2048,
+                2560,
+                3072,
+            ]:
                 tic = timeit.default_timer()
                 for x in range(80):
                     Fourier_cupy = RecToolsCP.FOURIER_INV(
@@ -92,5 +113,9 @@ for N_size in [512, 1024, 1536, 2048]:
                         data_axes_labels_order=input_data_labels,
                     )
                 toc = timeit.default_timer()
-                Run_time = (toc - tic)/80
-                print("{}, {}, {}, {}, {}".format(center_size, N_size, angles_num, slice_number, Run_time))
+                Run_time = (toc - tic) / 80
+                print(
+                    "{}, {}, {}, {}, {}".format(
+                        center_size, N_size, angles_num, slice_number, Run_time
+                    )
+                )

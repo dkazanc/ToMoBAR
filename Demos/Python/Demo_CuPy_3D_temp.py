@@ -77,7 +77,7 @@ for x in range(80):
     )
 toc = timeit.default_timer()
 
-Run_time = (toc - tic)/80
+Run_time = (toc - tic) / 80
 print("Log-polar 3D reconstruction in {} seconds".format(Run_time))
 
 # for block_dim in [[32, 8], [64, 4], [32, 16], [16, 16], [32, 32]]:

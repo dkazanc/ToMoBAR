@@ -2,12 +2,12 @@
 
 * :func:`RecToolsDIRCuPy.FORWPROJ` and :func:`RecToolsDIRCuPy.BACKPROJ` - Forward/Backward projection modules (ASTRA with DirectLink and CuPy).
 * :func:`RecToolsDIRCuPy.FBP` - Filtered Back Projection (ASTRA, the filter is implemented with CuPy).
-* :func:`RecToolsDIRCuPy.FOURIER_INV` - Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method [NIKITIN2017]_.
+* :func:`RecToolsDIRCuPy.FOURIER_INV` - Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method [Nikitin2017]_.
 """
 
 import numpy as np
 import timeit
-import matplotlib.pyplot as plt
+
 try:
     import cupy as xp
 
@@ -151,7 +151,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                         When "None" we assume  ["angles", "detX"] for 2D and ["angles", "detY", "detX"] for 3D.
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
             filter_type (str): Filter type, the accepted values are: none, ramp, shepp, cosine, cosine2, hamming, hann, parzen.
-            cutoff_freq (float): Cutoff frequency parameter for different filter. The higher values increase resolution and noise.
+            cutoff_freq (float): Cutoff frequency parameter for different filters (see filter_type). The higher values increase the resolution and noise.
 
         Returns:
             xp.ndarray: The NUFFT reconstructed volume as a CuPy array.
@@ -160,7 +160,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         cutoff_freq = 1.0  # default value
         filter_type = "shepp"  # default filter
 
-        center_size = 2048
+        center_size = 2048 # this is estimated to give a better performance with the larger number of vertical slices
         block_dim = [16, 16]
         block_dim_prune = 4
         block_dim_center = [32, 4]
@@ -301,11 +301,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP2: interpolation (gathering) in the frequency domain
         if center_size > 0:
-            
+
             if center_size != (n * 2 + m * 2):
 
                 gather_kernel_partial(
-                    (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                    (
+                        int(xp.ceil(n / block_dim[0])),
+                        int(xp.ceil(nproj / block_dim[1])),
+                        nz // 2,
+                    ),
                     (block_dim[0], block_dim[1], 1),
                     (
                         datac,
@@ -356,7 +360,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         else:
             gather_kernel(
-                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                (
+                    int(xp.ceil(n / block_dim[0])),
+                    int(xp.ceil(nproj / block_dim[1])),
+                    nz // 2,
+                ),
                 (block_dim[0], block_dim[1], 1),
                 (
                     datac,

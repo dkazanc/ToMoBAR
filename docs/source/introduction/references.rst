@@ -53,6 +53,6 @@ References
    reconstruction using higher-order regularization of dynamic
    synchrotron data. Measurement Science and Technology, 28(9), p.094004.
 
-.. [NIKITIN2017] V.V. Nikitin, et. al., 2017. Fast hyperbolic Radon transform
+.. [Nikitin2017] V.V. Nikitin, et. al., 2017. Fast hyperbolic Radon transform
    represented as convolutions in log-polar coordinates. Computers & Geosciences,
    105, pp.21-33.

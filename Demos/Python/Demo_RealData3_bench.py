@@ -15,6 +15,7 @@ from tomobar.supp.suppTools import normaliser
 from numpy import float32
 from typing import Tuple
 
+
 def normalize_origin(
     data: cp.ndarray,
     flats: cp.ndarray,
@@ -94,6 +95,7 @@ def normalize_origin(
 
     return out
 
+
 def _check_valid_input(data, flats, darks) -> None:
     """Helper function to check the validity of inputs to normalisation functions"""
     if data.ndim != 3:
@@ -114,18 +116,18 @@ def _check_valid_input(data, flats, darks) -> None:
 # data = np.load("data/i12_dataset2.npz")
 # data = np.load("data/i13_dataset2.npz")
 data = np.load("data/geant4_dataset1.npz")
-projdata = cp.asarray(data['projdata'])
-angles =  data['angles']
-flats =  cp.asarray(data['flats'])
-darks =  cp.asarray(data['darks'])
+projdata = cp.asarray(data["projdata"])
+angles = data["angles"]
+flats = cp.asarray(data["flats"])
+darks = cp.asarray(data["darks"])
 del data
-#%% normalising data
+# %% normalising data
 data_normalised = normalize_origin(projdata, flats, darks, minus_log=True)
 
 del projdata, flats, darks
 cp._default_memory_pool.free_all_blocks()
 
-data_labels3D = ["angles", "detY", "detX"] # set the input data labels
+data_labels3D = ["angles", "detY", "detX"]  # set the input data labels
 angles_number, detectorVec, detectorHoriz = np.shape(data_normalised)
 print(np.shape(data_normalised))
 angles_rad = angles[:] * (np.pi / 180.0)
@@ -145,7 +147,7 @@ RecToolsCP = RecToolsDIRCuPy(
     DetectorsDimV=detectorVec,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar) 
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
 )
 
@@ -169,7 +171,7 @@ for x in range(10):
     )
 toc = timeit.default_timer()
 
-Run_time = (toc - tic)/10
+Run_time = (toc - tic) / 10
 print("Log-polar 3D reconstruction in {} seconds".format(Run_time))
 
 # for block_dim in [[32, 8], [64, 4], [32, 16], [16, 16], [32, 32]]:

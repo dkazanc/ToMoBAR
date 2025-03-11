@@ -15,6 +15,7 @@ from tomobar.supp.suppTools import normaliser
 from numpy import float32
 from typing import Tuple
 
+
 def normalize_origin(
     data: cp.ndarray,
     flats: cp.ndarray,
@@ -94,6 +95,7 @@ def normalize_origin(
 
     return out
 
+
 def _check_valid_input(data, flats, darks) -> None:
     """Helper function to check the validity of inputs to normalisation functions"""
     if data.ndim != 3:
@@ -111,28 +113,27 @@ def _check_valid_input(data, flats, darks) -> None:
         darks = darks[cp.newaxis, :, :]
 
 
-
 # data = np.load("data/i13_dataset2.npz")
 data = np.load("data/geant4_dataset1.npz")
-projdata = cp.asarray(data['projdata'])
-angles =  data['angles']
-flats =  cp.asarray(data['flats'])
-darks =  cp.asarray(data['darks'])
+projdata = cp.asarray(data["projdata"])
+angles = data["angles"]
+flats = cp.asarray(data["flats"])
+darks = cp.asarray(data["darks"])
 del data
-#%% normalising data
+# %% normalising data
 data_normalised = normalize_origin(projdata, flats, darks, minus_log=True)
 
 del projdata, flats, darks
 cp._default_memory_pool.free_all_blocks()
 
-data_labels3D = ["angles", "detY", "detX"] # set the input data labels
+data_labels3D = ["angles", "detY", "detX"]  # set the input data labels
 
 print(angles)
 print(np.shape(data_normalised))
 
 angles_number, detectorVec, detectorHoriz = np.shape(data_normalised)
 plt.figure(1)
-plt.imshow(data_normalised[:, detectorVec/2, :].get(), cmap="gray")
+plt.imshow(data_normalised[:, detectorVec / 2, :].get(), cmap="gray")
 plt.title("Sinogram of i23 data")
 plt.show()
 
@@ -153,7 +154,7 @@ RecToolsCP = RecToolsDIRCuPy(
     DetectorsDimV=detectorVec,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar) 
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector="gpu",
 )
 
@@ -173,14 +174,14 @@ recon_x, recon_y, recon_z = cp.shape(Fourier_cupy)
 
 plt.figure()
 plt.subplot(131)
-plt.imshow(Fourier_cupy[recon_x//2, :, :], cmap='gray')
+plt.imshow(Fourier_cupy[recon_x // 2, :, :], cmap="gray")
 plt.title("3D Fourier Reconstruction, axial view")
 
 plt.subplot(132)
-plt.imshow(Fourier_cupy[:, recon_y//2, :], cmap='gray')
+plt.imshow(Fourier_cupy[:, recon_y // 2, :], cmap="gray")
 plt.title("3D Fourier Reconstruction, coronal view")
 
 plt.subplot(133)
-plt.imshow(Fourier_cupy[:, :, recon_z//2], cmap='gray')
+plt.imshow(Fourier_cupy[:, :, recon_z // 2], cmap="gray")
 plt.title("3D Fourier Reconstruction, sagittal view")
 plt.show()
