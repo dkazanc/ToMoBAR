@@ -404,7 +404,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         else:
             recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
 
-        del fde, fde2, datac
+        del fde, fde2
         xp._default_memory_pool.free_all_blocks()
         if odd_vert:
             unpad_z = nz - 1
