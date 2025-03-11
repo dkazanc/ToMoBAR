@@ -6,7 +6,8 @@
 """
 
 import numpy as np
-
+import timeit
+import matplotlib.pyplot as plt
 try:
     import cupy as xp
 
@@ -159,9 +160,22 @@ class RecToolsDIRCuPy(RecToolsDIR):
         cutoff_freq = 1.0  # default value
         filter_type = "shepp"  # default filter
 
+        center_size = 2048
+        block_dim = [16, 16]
+        block_dim_prune = 4
+        block_dim_center = [32, 4]
+
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+            elif key == "center_size" and value is not None:
+                center_size = value
+            elif key == "block_dim" and value is not None:
+                block_dim = value
+            elif key == "block_dim_prune" and value is not None:
+                block_dim_prune = value
+            elif key == "block_dim_center" and value is not None:
+                block_dim_center = value
             if key == "cutoff_freq" and value is not None:
                 cutoff_freq = value
             if key == "filter_type" and value is not None:
@@ -183,6 +197,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
+        gather_kernel_partial = module.get_function("gather_kernel_partial")
+        gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
+        gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
         # initialisation
@@ -226,6 +243,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
         oversampling_level = 2  # at least 2 or larger required
 
+        # Limit the center size parameter
+        center_size = min(center_size, n * 2 + m * 2)
+
         # memory for recon
         if odd_horiz:
             recon_up = xp.empty([nz, n + 1, n + 1], dtype=xp.float32)
@@ -237,8 +257,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
         t = xp.linspace(-1 / 2, 1 / 2, n, endpoint=False, dtype=xp.float32)
         [dx, dy] = xp.meshgrid(t, t)
         phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
-        # padded fft, reusable by chunks
-        fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+
+        if center_size > 0:
+            angle_range = xp.empty([center_size, center_size, 3], dtype=xp.int32)
+
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -271,25 +293,83 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # can be done without introducing array datac, saves memory, see tomocupy (TODO)
         del tmp_p
 
+        # padded fft, reusable by chunks
+        fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+
         # STEP1: fft 1d
         datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
 
         # STEP2: interpolation (gathering) in the frequency domain
-        # When profiling gather_kernel takes up to 50% of the time!
-        gather_kernel(
-            (int(xp.ceil(n / 32)), int(xp.ceil(nproj / 32)), nz // 2),
-            (32, 32, 1),
-            (
-                datac,
-                fde,
-                theta,
-                np.int32(m),
-                np.float32(mu),
-                np.int32(n),
-                np.int32(nproj),
-                np.int32(nz // 2),
-            ),
-        )
+        if center_size > 0:
+            
+            if center_size != (n * 2 + m * 2):
+
+                gather_kernel_partial(
+                    (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                    (block_dim[0], block_dim[1], 1),
+                    (
+                        datac,
+                        fde,
+                        theta,
+                        np.int32(m),
+                        np.float32(mu),
+                        np.int32(center_size),
+                        np.int32(n),
+                        np.int32(nproj),
+                        np.int32(nz // 2),
+                    ),
+                )
+
+            gather_kernel_center_prune(
+                (1, int(xp.ceil(center_size / block_dim_prune)), center_size),
+                (32, block_dim_prune, 1),
+                (
+                    angle_range,
+                    theta,
+                    np.int32(m),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(nproj),
+                ),
+            )
+
+            gather_kernel_center(
+                (
+                    int(xp.ceil(center_size / block_dim_center[0])),
+                    int(xp.ceil(center_size / block_dim_center[1])),
+                    nz // 2,
+                ),
+                (block_dim_center[0], block_dim_center[1], 1),
+                (
+                    datac,
+                    fde,
+                    angle_range,
+                    theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(nproj),
+                    np.int32(nz // 2),
+                ),
+            )
+
+        else:
+            gather_kernel(
+                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                (block_dim[0], block_dim[1], 1),
+                (
+                    datac,
+                    fde,
+                    theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(n),
+                    np.int32(nproj),
+                    np.int32(nz // 2),
+                ),
+            )
+
         wrap_kernel(
             (
                 int(np.ceil((2 * n + 2 * m) / 32)),
@@ -299,6 +379,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (32, 32, 1),
             (fde, n, nz // 2, m),
         )
+
+        if center_size > 0:
+            del angle_range, datac
+        else:
+            del datac
+        xp._default_memory_pool.free_all_blocks()
 
         # STEP3: ifft 2d
         fde2 = fde[
