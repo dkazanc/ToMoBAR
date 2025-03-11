@@ -109,7 +109,7 @@ class RecToolsIRCuPy:
     def Landweber(
         self, _data_: dict, _algorithm_: Union[dict, None] = None
     ) -> cp.ndarray:
-        """Using Landweber iterative technique to reconstruct projection data given as a CuPy array.
+        r"""Using Landweber iterative technique to reconstruct projection data given as a CuPy array.
         We perform the following iterations: :math:`x^{k+1} = x^{k} + \\tau * \mathbf{A}^{\intercal}(\mathbf{A}x^{k} - b)`.
 
 
@@ -147,7 +147,7 @@ class RecToolsIRCuPy:
         return x_rec
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
-        """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
+        r"""Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
         reconstruct projection data given as a CuPy array.
         We perform the following iterations: :math:`x^{k+1} = \mathbf{C}\mathbf{A}^{\intercal}\mathbf{R}(b - \mathbf{A}x^{k})`.
 
@@ -197,7 +197,7 @@ class RecToolsIRCuPy:
         return x_rec
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
-        """Conjugate Gradients Least Squares iterative technique to reconstruct projection data
+        r"""Conjugate Gradients Least Squares iterative technique to reconstruct projection data
         given as a CuPy array. The algorithm aim to solve the system of normal equations
         :math:`\mathbf{A}^{\intercal}\mathbf{A}x = \mathbf{A}^{\intercal} b`.
 
@@ -257,7 +257,7 @@ class RecToolsIRCuPy:
         return cp.reshape(x_rec, newshape=x_shape_3d, order="C")
 
     def powermethod(self, _data_: dict) -> float:
-        """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
+        r"""Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
         projection_raw_data is required for the PWLS fidelity, otherwise will be ignored.
 
         Args:
@@ -355,7 +355,7 @@ class RecToolsIRCuPy:
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
     ) -> cp.ndarray:
-        """A Fast Iterative Shrinkage-Thresholding Algorithm [BT2009]_ with various types of regularisation from
+        r"""A Fast Iterative Shrinkage-Thresholding Algorithm [BT2009]_ with various types of regularisation from
         the regularisation toolkit [KAZ2019]_.
 
         All parameters for the algorithm should be provided in three dictionaries:
