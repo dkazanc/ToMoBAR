@@ -15,7 +15,6 @@ Dependencies:
 """
 import timeit
 import os
-import matplotlib.pyplot as plt
 import numpy as np
 import cupy as cp
 import tomophantom
@@ -45,6 +44,8 @@ projData3D_analyt = TomoP3D.ModelSino(
     model, N_size, Horiz_det, Vert_det, angles, path_library3D
 )
 input_data_labels = ["detY", "angles", "detX"]
+
+print(np.shape(projData3D_analyt))
 
 # transfering numpy array to CuPy array
 projData3D_analyt_cupy = cp.asarray(projData3D_analyt, order="C")
@@ -82,7 +83,7 @@ print("Log-polar 3D reconstruction in {} seconds".format(Run_time))
 
 # for block_dim in [[32, 8], [64, 4], [32, 16], [16, 16], [32, 32]]:
 #     for block_dim_center in [[32, 8], [64, 4], [32, 16], [32, 4]]:
-#         for center_size in [448, 512, 640, 672, 704, 768]:
+#         for center_size in [448, 512, 640, 672, 704, 768, 800, 864, 928, 1024, 1280, 1536, 1792, 2048, 2560, 3072]:
 #             tic = timeit.default_timer()
 #             for x in range(80):
 #                 Fourier_cupy = RecToolsCP.FOURIER_INV(
