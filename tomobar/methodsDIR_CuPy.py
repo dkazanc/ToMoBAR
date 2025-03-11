@@ -493,6 +493,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # plt.title("3D FBP Reconstruction, sagittal view")
         # plt.show()
 
+        if center_size > 0:
+            del angle_range, datac
+        else:
+            del datac
+        xp._default_memory_pool.free_all_blocks()
+
         # STEP3: ifft 2d
         fde2 = fde[
             :, m:-m, m:-m
