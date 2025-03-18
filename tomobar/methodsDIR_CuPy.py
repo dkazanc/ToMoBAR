@@ -6,6 +6,7 @@
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 import timeit
 try:
     import cupy as xp
@@ -198,6 +199,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         gather_kernel = module.get_function("gather_kernel")
         gather_kernel_partial = module.get_function("gather_kernel_partial")
         gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
+        gather_kernel_center_prune_v2 = module.get_function("gather_kernel_center_prune_v2")
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
@@ -281,22 +283,32 @@ class RecToolsDIRCuPy(RecToolsDIR):
         w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (rotation_axis))
         # I remember the bellow part may use a lot of memory due to "w*" operation,
         # if so you can do it as a loop over slices/angles
-        tmp = xp.pad(data, ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
-        tmp = irfft(w * rfft(tmp, axis=2), axis=2)
-        tmp_p = tmp[:, :, padding_m:padding_p]
-        del tmp
+        chunk_count = 1
+        slices_per_chunk = int(xp.ceil(nz / chunk_count))
+        tmp_p = xp.empty(data.shape, dtype=xp.float32)
+        for chunk_index in range(0, chunk_count):
+            start_index = chunk_index * slices_per_chunk
+            end_index   = min((chunk_index + 1) * slices_per_chunk, nz)
+            tmp = xp.pad(data[start_index:end_index, :, :], ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
+            tmp = irfft(w * rfft(tmp, axis=2), axis=2)
+            tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
+            del tmp
+
 
         # BACKPROJECTION
         # !work with complex numbers by setting a half of the array as real and another half as imag
         datac = tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
         # can be done without introducing array datac, saves memory, see tomocupy (TODO)
         del tmp_p
+        xp._default_memory_pool.free_all_blocks()
 
         # padded fft, reusable by chunks
         fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
 
         # STEP1: fft 1d
         datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
+
+        # theta.get().tofile('angles_rad.csv',sep=',')
 
         # STEP2: interpolation (gathering) in the frequency domain
         if center_size > 0:
@@ -319,9 +331,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     ),
                 )
 
-            gather_kernel_center_prune(
-                (1, int(xp.ceil(center_size / block_dim_prune)), center_size),
-                (32, block_dim_prune, 1),
+            binary_file_path = 'angle_range.npy'
+            # np.save(binary_file_path, angle_range)
+            angle_range_ok = np.load(binary_file_path)
+
+            gather_kernel_center_prune_v2(
+                (int(xp.ceil(center_size / 256)), center_size, 1),
+                (256, 1, 1),
                 (
                     angle_range,
                     theta,
@@ -332,6 +348,64 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 ),
             )
 
+            # gather_kernel_center_prune(
+            #     grid=(1, int(xp.ceil(center_size / 8)), 4*m),
+            #     block=(32, 8, 1),
+            #     args=(
+            #         angle_range,
+            #         theta,
+            #         np.int32(m),
+            #         np.int32(center_size),
+            #         np.int32(center_size),
+            #         np.int32(4*m),
+            #         np.int32(n),
+            #         np.int32(nproj),
+            #     )
+            # )
+
+            gather_kernel_center_prune(
+                grid=(1, int(xp.ceil(64 / 8)), 64),
+                block=(32, 8, 1),
+                args=(
+                    angle_range,
+                    theta,
+                    np.int32(m),
+                    np.int32(center_size),
+                    np.int32(64),
+                    np.int32(64),
+                    np.int32(n),
+                    np.int32(nproj),
+                )
+            )
+
+            plt.figure()
+            plt.subplot(131)
+            plt.imshow(angle_range[:, :, 0].get())
+            plt.title("Angle max")
+
+            plt.subplot(132)
+            plt.imshow(angle_range[:, :, 1].get())
+            plt.title("Angle min")
+
+            plt.subplot(133)
+            plt.imshow(angle_range[:, :, 2].get())
+            plt.title("Angle type")
+            plt.show()
+
+            plt.figure()
+            plt.subplot(131)
+            plt.imshow(angle_range_ok[:, :, 0] - angle_range[:, :, 0].get())
+            plt.title("Angle max")
+
+            plt.subplot(132)
+            plt.imshow(angle_range_ok[:, :, 1] - angle_range[:, :, 1].get())
+            plt.title("Angle min")
+
+            plt.subplot(133)
+            plt.imshow(angle_range_ok[:, :, 2] - angle_range[:, :, 2].get())
+            plt.title("Angle type")
+            plt.show()
+          
             gather_kernel_center(
                 (
                     int(xp.ceil(center_size / block_dim_center[0])),
