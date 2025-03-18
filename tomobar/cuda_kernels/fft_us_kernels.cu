@@ -117,23 +117,129 @@ g (128, 241, 362)
 f (128, 732, 732)
 theta (241,)*/
 
+bool __device__ compare(float *theta, int nproj, int index, float value, bool less) {
+  if( index == 0 && value > theta[0] )
+    return true;
+  if( index == (nproj - 1)  && value < theta[(nproj - 1) ])
+    return true;
+  
+  if(less) {
+    if (theta[index - 1] > value && value >= theta[index])
+      return true;
+    else
+      return false;
+  } else {
+    if (theta[index] > value && value >= theta[index + 1])
+      return true;
+    else
+      return false;
+  }
+}
+
+int __device__ binary_search(float *theta, int nproj, float value, bool less) {
+    int low = 0, high = nproj - 1; 
+    while (low <= high) {
+        int middle = low + (high - low) / 2;
+
+        if (compare(theta, nproj, middle, value, less))
+            return middle;
+
+        if (theta[middle] > value)
+            low = middle + 1;
+        else
+            high = middle - 1;
+    }
+
+    return low;
+}
+
+extern "C" __global__ void gather_kernel_center_prune_v2(int* angle_range, float *theta,
+                                                         int m, int center_size,
+                                                         int n, int nproj)
+{
+
+  const int center_half_size = center_size/2;
+
+  int thread_x = blockDim.x * blockIdx.x + threadIdx.x;
+  int thread_y = blockDim.y * blockIdx.y + threadIdx.y;
+
+  int tx = max(0, n + m - center_half_size) + thread_x;
+  int ty = max(0, n + m - center_half_size) + thread_y; 
+
+  if (thread_x >= center_size || thread_y >= center_size)
+    return;
+
+  int f_stride = 2*n + 2*m;
+  int f_stride_2 = f_stride * f_stride;
+
+  const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
+
+  float theta_min = theta[nproj-1];
+  float theta_max = theta[0];
+
+  // offset angle_index_out by thread_x and thread_y
+  angle_range += (unsigned long long)3 * (thread_x + thread_y * center_size);
+  // Point coordinates
+  float2 point   = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
+  float length_2 = point.x * point.x + point.y * point.y;
+
+  if( radius_2 >= length_2 ) {
+    angle_range[0] = 0;
+    angle_range[1] = nproj - 1;
+    angle_range[2] = 1;
+  } else {
+    double radius     = sqrt(radius_2);
+    double length     = sqrt(length_2);
+    double acosangle  = acos((double)point.x/length);
+    double angle      = point.y > 0.f ? -(M_PI - acosangle) : -acosangle;
+    float angle_delta = atan(radius/length);
+
+    float angle_min = angle + angle_delta;
+    float angle_max = angle - angle_delta;
+
+    if( fabsf(point.y) > radius ) {
+      angle_range[0] = binary_search(theta, nproj, angle_min, false);
+      angle_range[1] = binary_search(theta, nproj, angle_max, true);
+      angle_range[2] = 1;
+    } else {
+      angle_min = angle_min < theta_min ? (angle_min + M_PI) : angle_min;
+      angle_max = angle_max < theta_min ? (angle_max + M_PI) : angle_max;
+
+      angle_min = angle_min > theta_max ? (angle_min - M_PI) : angle_min;
+      angle_max = angle_max > theta_max ? (angle_max - M_PI) : angle_max;
+
+      int index_min = binary_search(theta, nproj, angle_min, true);
+      int index_max = binary_search(theta, nproj, angle_max, false);
+      if(index_min < index_max) {
+        angle_range[0] = index_min;
+        angle_range[1] = index_max;
+      } else {
+        angle_range[0] = index_max;
+        angle_range[1] = index_min;
+      }
+      angle_range[2] = 0;
+    }
+  }
+}
+
 #define FULL_MASK 0xffffffff
 
 extern "C" __global__ void gather_kernel_center_prune(int* angle_range, float *theta, 
-                                                      int m, int center_size,
+                                                      int m, 
+                                                      int center_size, 
+                                                      int center_size_x, int center_size_y,
                                                       int n, int nproj)
 {
-
   const int center_half_size = center_size/2;
 
   int thread_x = threadIdx.x;
   int thread_y = blockDim.y * blockIdx.y + threadIdx.y;
   int thread_z = blockDim.z * blockIdx.z + threadIdx.z;
 
-  int tx = max(0, n + m - center_half_size) + thread_y;
-  int ty = max(0, n + m - center_half_size) + thread_z; 
+  int tx = max(0, n + m - center_size_x / 2) + thread_y;
+  int ty = max(0, n + m - center_size_y / 2) + thread_z; 
 
-  if (thread_y >= center_size || thread_z >= center_size)
+  if (thread_y >= center_size_x || thread_z >= center_size_y)
     return;
 
   int f_stride = 2*n + 2*m;
@@ -142,7 +248,7 @@ extern "C" __global__ void gather_kernel_center_prune(int* angle_range, float *t
   const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
 
   // offset angle_index_out by thread_x and thread_y
-  angle_range += (unsigned long long)3 * (thread_y + thread_z * center_size);
+  angle_range += (unsigned long long)3 * (thread_y + (center_size - center_size_x)/2  + ((center_size - center_size_y)/2 + thread_z) * center_size);
   // Point coordinates
   float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
 
@@ -176,7 +282,6 @@ extern "C" __global__ void gather_kernel_center_prune(int* angle_range, float *t
     
     if( proj_index < nproj ) {
       if(radius_2 >= distance_2) {
-        int valid_count = __popc(mask&thread_mask);
         proj_valid_index_min = min(proj_valid_index_min, proj_index);
         proj_valid_index_max = max(proj_valid_index_max, proj_index);
       } else {
