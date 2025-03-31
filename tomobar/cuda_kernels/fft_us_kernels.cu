@@ -174,9 +174,6 @@ extern "C" __global__ void gather_kernel_center_prune_v2(int* angle_range, float
 
   const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
 
-  float theta_min = theta[nproj-1];
-  float theta_max = theta[0];
-
   // offset angle_index_out by thread_x and thread_y
   angle_range += (unsigned long long)3 * (thread_x + thread_y * center_size);
   // Point coordinates
@@ -197,16 +194,25 @@ extern "C" __global__ void gather_kernel_center_prune_v2(int* angle_range, float
     float angle_min = angle + angle_delta;
     float angle_max = angle - angle_delta;
 
+    //float angle_range_delta = atan(radius/0.5f);
+
+    //float angle_range_min = theta[nproj - 1]; // - fabsf(angle_range_delta);
+    //float angle_range_max = theta[0]          + fabsf(angle_range_delta);
+
     if( fabsf(point.y) > radius ) {
+    //if( abs(double((n+m) - ty) / double(2 * n)) > radius ) {
+
+    //if( angle_range_min < angle_min && angle_min < angle_range_max &&
+    //    angle_range_min < angle_max && angle_max < angle_range_max ) {
       angle_range[0] = binary_search(theta, nproj, angle_min, false);
       angle_range[1] = binary_search(theta, nproj, angle_max, true);
       angle_range[2] = 1;
     } else {
-      angle_min = angle_min < theta_min ? (angle_min + M_PI) : angle_min;
-      angle_max = angle_max < theta_min ? (angle_max + M_PI) : angle_max;
+      angle_min = angle_min < -M_PI ? (angle_min + M_PI) : angle_min;
+      angle_max = angle_max < -M_PI ? (angle_max + M_PI) : angle_max;
 
-      angle_min = angle_min > theta_max ? (angle_min - M_PI) : angle_min;
-      angle_max = angle_max > theta_max ? (angle_max - M_PI) : angle_max;
+      angle_min = angle_min > 0 ? (angle_min - M_PI) : angle_min;
+      angle_max = angle_max > 0 ? (angle_max - M_PI) : angle_max;
 
       int index_min = binary_search(theta, nproj, angle_min, true);
       int index_max = binary_search(theta, nproj, angle_max, false);
