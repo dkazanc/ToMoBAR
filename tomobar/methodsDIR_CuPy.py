@@ -62,6 +62,16 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # if DetectorsDimV == 0 or DetectorsDimV is None:
         #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
+    @staticmethod
+    def _get_available_gpu_memory() -> int:
+        dev = xp.cuda.Device()
+        # first, let's make some space
+        xp.get_default_memory_pool().free_all_blocks()
+        cache = xp.fft.config.get_plan_cache()
+        cache.clear()
+        available_memory = dev.mem_info[0] + xp.get_default_memory_pool().free_bytes()
+        return int(available_memory * 0.9)  # 10% safety margin
+
     def FORWPROJ(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
 
@@ -199,7 +209,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         gather_kernel = module.get_function("gather_kernel")
         gather_kernel_partial = module.get_function("gather_kernel_partial")
         gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
-        gather_kernel_center_prune_v2 = module.get_function("gather_kernel_center_prune_v2")
+        gather_kernel_center_prune_arctan = module.get_function("gather_kernel_center_prune_arctan")
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
@@ -259,6 +269,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         [dx, dy] = xp.meshgrid(t, t)
         phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
 
+        # Memory clean up of interpolation extra arrays
+        del t, dx, dy
+
         if center_size > 0:
             angle_range = xp.empty([center_size, center_size, 3], dtype=xp.int32)
 
@@ -281,11 +294,27 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP0: FBP filtering
         t = rfftfreq(ne).astype(xp.float32)
         w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (rotation_axis))
-        # I remember the bellow part may use a lot of memory due to "w*" operation,
-        # if so you can do it as a loop over slices/angles
-        chunk_count = 1
-        slices_per_chunk = int(xp.ceil(nz / chunk_count))
+
+        # FBP filtering output
         tmp_p = xp.empty(data.shape, dtype=xp.float32)
+        
+        # Calculate the number of chunks
+        available_memory = self._get_available_gpu_memory()
+        # print(available_memory)
+
+        slice_size = data.shape[2] * data.shape[1] * xp.float32().itemsize + (data.shape[2] + padding_m * 2) * data.shape[1] * xp.float32().itemsize
+        max_slices = available_memory / slice_size
+        chunk_count = int(xp.ceil(nz / max_slices))
+        slices_per_chunk = int(xp.ceil(nz / chunk_count))
+
+
+        # print(data.shape[2] + padding_m * 2) 
+        # print(xp.float32().itemsize)
+        # print(slice_size)
+        # print(max_slices)
+        # print(chunk_count)
+
+        # Loop over the chunks
         for chunk_index in range(0, chunk_count):
             start_index = chunk_index * slices_per_chunk
             end_index   = min((chunk_index + 1) * slices_per_chunk, nz)
@@ -299,7 +328,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # !work with complex numbers by setting a half of the array as real and another half as imag
         datac = tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
         # can be done without introducing array datac, saves memory, see tomocupy (TODO)
-        del tmp_p
+
+        # Memory clean up of interpolation extra arrays
+        del tmp_p, t, wfilter, w
         xp._default_memory_pool.free_all_blocks()
 
         # padded fft, reusable by chunks
@@ -329,7 +360,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     ),
                 )
 
-            gather_kernel_center_prune_v2(
+            gather_kernel_center_prune_arctan(
                 (int(xp.ceil(center_size / 256)), center_size, 1),
                 (256, 1, 1),
                 (
@@ -342,20 +373,20 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 ),
             )
 
-            # gather_kernel_center_prune(
-            #     grid=(1, int(xp.ceil(center_size / 8)), 64),
-            #     block=(32, 8, 1),
-            #     args=(
-            #         angle_range,
-            #         theta,
-            #         np.int32(m),
-            #         np.int32(center_size),
-            #         np.int32(center_size),
-            #         np.int32(64),
-            #         np.int32(n),
-            #         np.int32(nproj),
-            #     )
-            # )
+            gather_kernel_center_prune(
+                grid=(1, int(xp.ceil(center_size / 8)), 4*m),
+                block=(32, 8, 1),
+                args=(
+                    angle_range,
+                    theta,
+                    np.int32(m),
+                    np.int32(center_size),
+                    np.int32(center_size),
+                    np.int32(4*m),
+                    np.int32(n),
+                    np.int32(nproj),
+                )
+            )
 
             gather_kernel_center_prune(
                 grid=(1, 8, 64),
@@ -372,65 +403,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 )
             )
 
-            # plt.figure()
-            # plt.subplot(131)
-            # plt.imshow(angle_range[:, :, 0].get())
-            # plt.title("Angle max")
-
-            # plt.subplot(132)
-            # plt.imshow(angle_range[:, :, 1].get())
-            # plt.title("Angle min")
-
-            # plt.subplot(133)
-            # plt.imshow(angle_range[:, :, 2].get())
-            # plt.title("Angle type")
-            # plt.show()
-
-            # angle_range_ok = xp.empty([center_size, center_size, 3], dtype=xp.int32)
-
-            # gather_kernel_center_prune(
-            #     grid=( 1, int(xp.ceil(center_size / 8)), center_size),
-            #     block=(32, 8, 1),
-            #     args=(
-            #         angle_range_ok,
-            #         theta,
-            #         np.int32(m),
-            #         np.int32(center_size),
-            #         np.int32(center_size),
-            #         np.int32(center_size),
-            #         np.int32(n),
-            #         np.int32(nproj),
-            #     )
-            # )
-
-            # plt.figure()
-            # plt.subplot(131)
-            # plt.imshow(angle_range_ok[:, :, 0].get())
-            # plt.title("Angle max")
-
-            # plt.subplot(132)
-            # plt.imshow(angle_range_ok[:, :, 1].get())
-            # plt.title("Angle min")
-
-            # plt.subplot(133)
-            # plt.imshow(angle_range_ok[:, :, 2].get())
-            # plt.title("Angle type")
-            # plt.show()
-
-            # plt.figure()
-            # plt.subplot(131)
-            # plt.imshow(angle_range_ok[:, :, 0].get() - angle_range[:, :, 0].get())
-            # plt.title("Angle max")
-
-            # plt.subplot(132)
-            # plt.imshow(angle_range_ok[:, :, 1].get() - angle_range[:, :, 1].get())
-            # plt.title("Angle min")
-
-            # plt.subplot(133)
-            # plt.imshow(angle_range_ok[:, :, 2].get() - angle_range[:, :, 2].get())
-            # plt.title("Angle type")
-            # plt.show()
-          
             gather_kernel_center(
                 (
                     int(xp.ceil(center_size / block_dim_center[0])),
@@ -479,15 +451,20 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
 
         if center_size > 0:
-            del angle_range, datac
+            del angle_range, c1dfftshift, datac
         else:
-            del datac
+            del datac, c1dfftshift
         xp._default_memory_pool.free_all_blocks()
 
         # STEP3: ifft 2d
+        # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
         fde2 = fde[
             :, m:-m, m:-m
-        ]  # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
+        ]
+        
+        # Delete fde array
+        del fde
+        
         fde2 = cupyx.scipy.fft.ifft2(
             fde2 * c2dfftshift, axes=(-2, -1), overwrite_x=True
         )
@@ -502,7 +479,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         else:
             recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
 
-        del fde, fde2
+        del fde2, c2dfftshift
         xp._default_memory_pool.free_all_blocks()
         if odd_vert:
             unpad_z = nz - 1
