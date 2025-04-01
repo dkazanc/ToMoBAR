@@ -341,7 +341,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
 
         # STEP2: interpolation (gathering) in the frequency domain
-        if center_size > 0:
+        # Use original one kernel at low dimension.
+        if center_size >= 64:
             
             if center_size != (n * 2 + m * 2):
 
