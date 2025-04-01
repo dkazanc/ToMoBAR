@@ -153,9 +153,9 @@ int __device__ binary_search(float *theta, int nproj, float value, bool less) {
     return low;
 }
 
-extern "C" __global__ void gather_kernel_center_prune_v2(int* angle_range, float *theta,
-                                                         int m, int center_size,
-                                                         int n, int nproj)
+extern "C" __global__ void gather_kernel_center_prune_arctan(int* angle_range, float *theta,
+                                                             int m, int center_size,
+                                                             int n, int nproj)
 {
 
   const int center_half_size = center_size/2;
