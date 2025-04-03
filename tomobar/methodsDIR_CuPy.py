@@ -331,7 +331,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # Memory clean up of interpolation extra arrays
         del tmp_p, t, wfilter, w
-        xp._default_memory_pool.free_all_blocks()
 
         # padded fft, reusable by chunks
         fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
@@ -455,7 +454,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             del angle_range, c1dfftshift, datac
         else:
             del datac, c1dfftshift
-        xp._default_memory_pool.free_all_blocks()
 
         # STEP3: ifft 2d
         # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
@@ -481,7 +479,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
 
         del fde2, c2dfftshift
-        xp._default_memory_pool.free_all_blocks()
+
         if odd_vert:
             unpad_z = nz - 1
         else:
