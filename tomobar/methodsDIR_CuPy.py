@@ -6,7 +6,7 @@
 """
 
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import timeit
 try:
     import cupy as xp
@@ -210,7 +210,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         gather_kernel = module.get_function("gather_kernel")
         gather_kernel_partial = module.get_function("gather_kernel_partial")
         gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
-        gather_kernel_center_prune_arctan = module.get_function("gather_kernel_center_prune_arctan")
+        gather_kernel_center_prune_atan = module.get_function("gather_kernel_center_prune_atan")
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
@@ -324,7 +324,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
             del tmp
 
-
         # BACKPROJECTION
         # !work with complex numbers by setting a half of the array as real and another half as imag
         datac = tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
@@ -342,7 +341,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP2: interpolation (gathering) in the frequency domain
         # Use original one kernel at low dimension.
-        if center_size >= 64:
+        if center_size >= 128:
             
             if center_size != (n * 2 + m * 2):
 
@@ -362,7 +361,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     ),
                 )
 
-            gather_kernel_center_prune_arctan(
+            gather_kernel_center_prune_atan(
                 (int(xp.ceil(center_size / 256)), center_size, 1),
                 (256, 1, 1),
                 (
@@ -391,15 +390,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
 
             gather_kernel_center_prune(
-                grid=(1, 8, 64),
+                grid=(1, 16, 128),
                 block=(32, 8, 1),
                 args=(
                     angle_range,
                     theta,
                     np.int32(m),
                     np.int32(center_size),
-                    np.int32(64),
-                    np.int32(64),
+                    np.int32(128),
+                    np.int32(128),
                     np.int32(n),
                     np.int32(nproj),
                 )

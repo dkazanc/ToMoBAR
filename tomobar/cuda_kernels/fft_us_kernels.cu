@@ -117,45 +117,82 @@ g (128, 241, 362)
 f (128, 732, 732)
 theta (241,)*/
 
-bool __device__ compare(float *theta, int nproj, int index, float value, bool less) {
+template<bool previous>
+bool __device__ eq_in_between(float *theta, int nproj, int index, float value)
+{}
+
+template<>
+bool __device__ eq_in_between<true>(float *theta, int nproj, int index, float value)
+{
+  if (theta[index - 1] < value && value <= theta[index])
+    return true;
+  else
+    return false;
+}
+
+template<>
+bool __device__ eq_in_between<false>(float *theta, int nproj, int index, float value)
+{
+  if (theta[index] < value && value <= theta[index + 1])
+    return true;
+  else
+    return false;
+}
+
+template<bool ascending>
+bool __device__ out_of_range(float *theta, int nproj, int index, float value)
+{}
+
+template<>
+bool __device__ out_of_range<true>(float *theta, int nproj, int index, float value)
+{
+  if( index == 0 && value < theta[0] )
+    return true;
+  if( index == (nproj - 1) && value > theta[(nproj - 1) ])
+    return true;
+
+  return false;
+}
+
+template<>
+bool __device__ out_of_range<false>(float *theta, int nproj, int index, float value)
+{
   if( index == 0 && value > theta[0] )
     return true;
-  if( index == (nproj - 1)  && value < theta[(nproj - 1) ])
+  if( index == (nproj - 1) && value < theta[(nproj - 1) ])
     return true;
-  
-  if(less) {
-    if (theta[index - 1] > value && value >= theta[index])
-      return true;
-    else
-      return false;
-  } else {
-    if (theta[index] > value && value >= theta[index + 1])
-      return true;
-    else
-      return false;
-  }
+
+  return false;
 }
 
-int __device__ binary_search(float *theta, int nproj, float value, bool less) {
-    int low = 0, high = nproj - 1; 
-    while (low <= high) {
-        int middle = low + (high - low) / 2;
+template<bool ascending, bool previous>
+int __device__ binary_search(float *theta, int nproj, float value) {
+  int low = 0, high = nproj - 1; 
+  while (low <= high) {
+    int middle = low + (high - low) / 2;
 
-        if (compare(theta, nproj, middle, value, less))
-            return middle;
+    if (out_of_range<ascending>(theta, nproj, middle, value) ||
+        eq_in_between<previous>(theta, nproj, middle, value))
+          return middle;
 
-        if (theta[middle] > value)
-            low = middle + 1;
+      if (theta[middle] > value)
+        if (ascending)
+          high = middle - 1;
         else
-            high = middle - 1;
+          low = middle + 1;
+      else
+        if (ascending)
+          low = middle + 1;
+        else
+          high = middle - 1;
     }
 
-    return low;
+  return low;
 }
 
-extern "C" __global__ void gather_kernel_center_prune_arctan(int* angle_range, float *theta,
-                                                             int m, int center_size,
-                                                             int n, int nproj)
+extern "C" __global__ void gather_kernel_center_prune_atan(int* angle_range, float *theta,
+                                                           int m, int center_size,
+                                                           int n, int nproj)
 {
 
   const int center_half_size = center_size/2;
@@ -180,6 +217,11 @@ extern "C" __global__ void gather_kernel_center_prune_arctan(int* angle_range, f
   float2 point   = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
   float length_2 = point.x * point.x + point.y * point.y;
 
+  // Theta direction
+  bool ascending = theta[0] < theta[nproj-1];
+  int theta_min_index = ascending ? 0 : (nproj-1);
+  int theta_max_index = ascending ? (nproj-1) : 0;
+
   if( radius_2 >= length_2 ) {
     angle_range[0] = 0;
     angle_range[1] = nproj - 1;
@@ -188,34 +230,53 @@ extern "C" __global__ void gather_kernel_center_prune_arctan(int* angle_range, f
     double radius     = sqrt(radius_2);
     double length     = sqrt(length_2);
     double acosangle  = acos((double)point.x/length);
-    double angle      = point.y > 0.f ? -(M_PI - acosangle) : -acosangle;
-    float angle_delta = atan(radius/length);
+    double angle;
+    if (ascending)
+      angle = point.y < 0.f ? (M_PI - acosangle) : acosangle;
+    else
+      angle = point.y > 0.f ? -(M_PI - acosangle) : -acosangle;
+    float angle_delta = ascending ? atan(radius/length) : -atan(radius/length);
 
-    float angle_min = angle + angle_delta;
-    float angle_max = angle - angle_delta;
+    float angle_start = angle - angle_delta;
+    float angle_end   = angle + angle_delta;
 
-    //float angle_range_delta = atan(radius/0.5f);
+    float angle_range_delta = fabsf(tan(radius/0.5f));
 
-    //float angle_range_min = theta[nproj - 1]; // - fabsf(angle_range_delta);
-    //float angle_range_max = theta[0]          + fabsf(angle_range_delta);
+    float angle_range_min = theta[theta_min_index] - angle_range_delta;
+    float angle_range_max = theta[theta_max_index] + angle_range_delta;
 
     if( fabsf(point.y) > radius ) {
     //if( abs(double((n+m) - ty) / double(2 * n)) > radius ) {
 
     //if( angle_range_min < angle_min && angle_min < angle_range_max &&
     //    angle_range_min < angle_max && angle_max < angle_range_max ) {
-      angle_range[0] = binary_search(theta, nproj, angle_min, false);
-      angle_range[1] = binary_search(theta, nproj, angle_max, true);
+      angle_range[0] = ascending ? 
+        binary_search<true, false>(theta, nproj, angle_start):
+        binary_search<false, true>(theta, nproj, angle_start);
+      angle_range[1] = ascending ? 
+        binary_search<true, true>(theta, nproj, angle_end):
+        binary_search<false, false>(theta, nproj, angle_end);
+
+      // TODO: Remove descending option
+      if(!ascending){
+        angle_range[0] = angle_range[0] == 0 ? 0 : angle_range[0] - 1;
+      }
+
       angle_range[2] = 1;
     } else {
-      angle_min = angle_min < -M_PI ? (angle_min + M_PI) : angle_min;
-      angle_max = angle_max < -M_PI ? (angle_max + M_PI) : angle_max;
+      angle_start = angle_start < angle_range_min ? (angle_start + M_PI) : angle_start;
+      angle_end   = angle_end   < angle_range_min ? (angle_end   + M_PI) : angle_end;
 
-      angle_min = angle_min > 0 ? (angle_min - M_PI) : angle_min;
-      angle_max = angle_max > 0 ? (angle_max - M_PI) : angle_max;
+      angle_start = angle_start > angle_range_max ? (angle_start - M_PI) : angle_start;
+      angle_end   = angle_end   > angle_range_max ? (angle_end   - M_PI) : angle_end;
 
-      int index_min = binary_search(theta, nproj, angle_min, true);
-      int index_max = binary_search(theta, nproj, angle_max, false);
+      int index_min = ascending ? 
+        binary_search<true, true>(theta, nproj, angle_start):
+        binary_search<false, false>(theta, nproj, angle_start);
+      int index_max = ascending ? 
+        binary_search<true, false>(theta, nproj, angle_end):
+        binary_search<false, true>(theta, nproj, angle_end);
+
       if(index_min < index_max) {
         angle_range[0] = index_min;
         angle_range[1] = index_max;
@@ -223,6 +284,7 @@ extern "C" __global__ void gather_kernel_center_prune_arctan(int* angle_range, f
         angle_range[0] = index_max;
         angle_range[1] = index_min;
       }
+
       angle_range[2] = 0;
     }
   }
