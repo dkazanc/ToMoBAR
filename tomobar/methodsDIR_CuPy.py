@@ -323,8 +323,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
             del tmp
 
-        np.savetxt("theta.csv", theta.get(), delimiter=",")
-
         # BACKPROJECTION
         # !work with complex numbers by setting a half of the array as real and another half as imag
         datac = tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
@@ -342,7 +340,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP2: interpolation (gathering) in the frequency domain
         # Use original one kernel at low dimension.
-        if center_size >= 64:
+        if center_size >= 128:
             
             if center_size != (n * 2 + m * 2):
 
@@ -391,79 +389,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
 
             gather_kernel_center_prune(
-                grid=(1, 8, 64),
+                grid=(1, 16, 128),
                 block=(32, 8, 1),
                 args=(
                     angle_range,
                     theta,
                     np.int32(m),
                     np.int32(center_size),
-                    np.int32(64),
-                    np.int32(64),
+                    np.int32(128),
+                    np.int32(128),
                     np.int32(n),
                     np.int32(nproj),
                 )
             )
-
-            plt.figure()
-            plt.subplot(131)
-            plt.imshow(angle_range[:, :, 0].get())
-            plt.title("Angle max")
-
-            plt.subplot(132)
-            plt.imshow(angle_range[:, :, 1].get())
-            plt.title("Angle min")
-
-            plt.subplot(133)
-            plt.imshow(angle_range[:, :, 2].get())
-            plt.title("Angle type")
-            plt.show()
-
-            angle_range_ok = xp.empty([center_size, center_size, 3], dtype=xp.int32)
-
-            gather_kernel_center_prune(
-                grid=( 1, int(xp.ceil(center_size / 8)), center_size),
-                block=(32, 8, 1),
-                args=(
-                    angle_range_ok,
-                    theta,
-                    np.int32(m),
-                    np.int32(center_size),
-                    np.int32(center_size),
-                    np.int32(center_size),
-                    np.int32(n),
-                    np.int32(nproj),
-                )
-            )
-
-            plt.figure()
-            plt.subplot(131)
-            plt.imshow(angle_range_ok[:, :, 0].get())
-            plt.title("Angle max")
-
-            plt.subplot(132)
-            plt.imshow(angle_range_ok[:, :, 1].get())
-            plt.title("Angle min")
-
-            plt.subplot(133)
-            plt.imshow(angle_range_ok[:, :, 2].get())
-            plt.title("Angle type")
-            plt.show()
-
-            plt.figure()
-            plt.subplot(131)
-            plt.imshow(angle_range_ok[:, :, 0].get() - angle_range[:, :, 0].get())
-            plt.title("Angle max")
-
-            plt.subplot(132)
-            plt.imshow(angle_range_ok[:, :, 1].get() - angle_range[:, :, 1].get())
-            plt.title("Angle min")
-
-            plt.subplot(133)
-            plt.imshow(angle_range_ok[:, :, 2].get() - angle_range[:, :, 2].get())
-            plt.title("Angle type")
-            plt.show()
-
 
             gather_kernel_center(
                 (
