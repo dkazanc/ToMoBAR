@@ -176,6 +176,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim_prune = 512
         block_dim_center = [32, 4]
 
+        chunk_count = 1
+        slice_count_per_chunk = None
+
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
@@ -203,7 +206,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     print(
                         "Unknown filter name, please use: none, ramp, shepp, cosine, cosine2, hamming, hann or parzen. Set to shepp filter"
                     )
-                cutoff_freq = value
+                else:
+                    filter_type = value
+            if key == "chunk_count" and value is not None:
+                if value is not int or value <= 0:
+                    print(f"Invalid chunk count: {value}. Set to 1")
+                else:
+                    chunk_count = value
+            if key == "slice_count_per_chunk" and value is not None:
+                if slice_count_per_chunk is not int or value <= 0:
+                    print(f"Invalid slice count: {value}. Set to slice count of input data")
+                else:
+                    slice_count_per_chunk = value
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
@@ -239,6 +253,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
             nz += 1
             odd_vert = True
             del data_p
+
+        if not slice_count_per_chunk:
+            slice_count_per_chunk = nz
 
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         if odd_horiz:
@@ -298,27 +315,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # FBP filtering output
         tmp_p = xp.empty(data.shape, dtype=xp.float32)
-        
-        # Calculate the number of chunks
-        available_memory = self._get_available_gpu_memory()
-        # print(available_memory)
-
-        slice_size = data.shape[2] * data.shape[1] * xp.float32().itemsize + (data.shape[2] + padding_m * 2) * data.shape[1] * xp.float32().itemsize
-        max_slices = available_memory / slice_size
-        chunk_count = int(xp.ceil(nz / max_slices))
-        slices_per_chunk = int(xp.ceil(nz / chunk_count))
-
 
         # print(data.shape[2] + padding_m * 2) 
         # print(xp.float32().itemsize)
-        # print(slice_size)
-        # print(max_slices)
         # print(chunk_count)
 
         # Loop over the chunks
         for chunk_index in range(0, chunk_count):
-            start_index = chunk_index * slices_per_chunk
-            end_index   = min((chunk_index + 1) * slices_per_chunk, nz)
+            start_index = chunk_index * slice_count_per_chunk
+            end_index   = min((chunk_index + 1) * slice_count_per_chunk, nz)
             tmp = xp.pad(data[start_index:end_index, :, :], ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
             tmp = irfft(w * rfft(tmp, axis=2), axis=2)
             tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
