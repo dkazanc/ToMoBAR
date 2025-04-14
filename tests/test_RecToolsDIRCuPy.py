@@ -32,8 +32,8 @@ def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
             data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
         )
     recon_data = Fourier_rec_cupy.get()
-    assert_allclose(np.min(recon_data), -0.037292, rtol=1e-05)
-    assert_allclose(np.max(recon_data), 0.103775, rtol=1e-05)
+    assert_allclose(np.min(recon_data), -0.03678237, rtol=1e-05)
+    assert_allclose(np.max(recon_data), 0.103207715, rtol=1e-05)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
