@@ -8,6 +8,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import timeit
+
 try:
     import cupy as xp
 
@@ -93,6 +94,60 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 )
 
         return projected
+
+    @staticmethod
+    def _prune_center(
+        gather_kernel_center_prune_atan: xp.RawKernel,
+        gather_kernel_center_prune: xp.RawKernel,
+        angle_range: xp.ndarray,
+        theta: xp.ndarray,
+        detector_width: int,
+        projection_count: int,
+        oversampled_grid_size: int,
+        center_size: int,
+    ):
+        gather_kernel_center_prune_atan(
+            (int(np.ceil(center_size / 256)), center_size, 1),
+            (256, 1, 1),
+            (
+                angle_range,
+                theta,
+                np.int32(oversampled_grid_size),
+                np.int32(center_size),
+                np.int32(detector_width),
+                np.int32(projection_count),
+            ),
+        )
+
+        gather_kernel_center_prune(
+            grid=(1, int(np.ceil(center_size / 8)), 4 * oversampled_grid_size),
+            block=(32, 8, 1),
+            args=(
+                angle_range,
+                theta,
+                np.int32(oversampled_grid_size),
+                np.int32(center_size),
+                np.int32(center_size),
+                np.int32(4 * oversampled_grid_size),
+                np.int32(detector_width),
+                np.int32(projection_count),
+            ),
+        )
+
+        gather_kernel_center_prune(
+            grid=(1, 16, 128),
+            block=(32, 8, 1),
+            args=(
+                angle_range,
+                theta,
+                np.int32(oversampled_grid_size),
+                np.int32(center_size),
+                np.int32(128),
+                np.int32(128),
+                np.int32(detector_width),
+                np.int32(projection_count),
+            ),
+        )
 
     def BACKPROJ(self, projdata: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
@@ -215,7 +270,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     chunk_count = value
             if key == "slice_count_per_chunk" and value is not None:
                 if slice_count_per_chunk is not int or value <= 0:
-                    print(f"Invalid slice count: {value}. Set to slice count of input data")
+                    print(
+                        f"Invalid slice count: {value}. Set to slice count of input data"
+                    )
                 else:
                     slice_count_per_chunk = value
 
@@ -224,7 +281,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         gather_kernel = module.get_function("gather_kernel")
         gather_kernel_partial = module.get_function("gather_kernel_partial")
         gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
-        gather_kernel_center_prune_atan = module.get_function("gather_kernel_center_prune_atan")
+        gather_kernel_center_prune_atan = module.get_function(
+            "gather_kernel_center_prune_atan"
+        )
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
@@ -316,15 +375,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # FBP filtering output
         tmp_p = xp.empty(data.shape, dtype=xp.float32)
 
-        # print(data.shape[2] + padding_m * 2) 
+        # print(data.shape[2] + padding_m * 2)
         # print(xp.float32().itemsize)
         # print(chunk_count)
 
         # Loop over the chunks
         for chunk_index in range(0, chunk_count):
             start_index = chunk_index * slice_count_per_chunk
-            end_index   = min((chunk_index + 1) * slice_count_per_chunk, nz)
-            tmp = xp.pad(data[start_index:end_index, :, :], ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
+            end_index = min((chunk_index + 1) * slice_count_per_chunk, nz)
+            tmp = xp.pad(
+                data[start_index:end_index, :, :],
+                ((0, 0), (0, 0), (padding_m, padding_m)),
+                mode="edge",
+            )
             tmp = irfft(w * rfft(tmp, axis=2), axis=2)
             tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
             del tmp
@@ -347,11 +410,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP2: interpolation (gathering) in the frequency domain
         # Use original one kernel at low dimension.
         if center_size >= 128:
-            
             if center_size != (n * 2 + m * 2):
-
                 gather_kernel_partial(
-                    (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                    (
+                        int(xp.ceil(n / block_dim[0])),
+                        int(xp.ceil(nproj / block_dim[1])),
+                        nz // 2,
+                    ),
                     (block_dim[0], block_dim[1], 1),
                     (
                         datac,
@@ -366,47 +431,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     ),
                 )
 
-            gather_kernel_center_prune_atan(
-                (int(xp.ceil(center_size / 256)), center_size, 1),
-                (256, 1, 1),
-                (
-                    angle_range,
-                    theta,
-                    np.int32(m),
-                    np.int32(center_size),
-                    np.int32(n),
-                    np.int32(nproj),
-                ),
-            )
-
-            gather_kernel_center_prune(
-                grid=(1, int(xp.ceil(center_size / 8)), 4*m),
-                block=(32, 8, 1),
-                args=(
-                    angle_range,
-                    theta,
-                    np.int32(m),
-                    np.int32(center_size),
-                    np.int32(center_size),
-                    np.int32(4*m),
-                    np.int32(n),
-                    np.int32(nproj),
-                )
-            )
-
-            gather_kernel_center_prune(
-                grid=(1, 16, 128),
-                block=(32, 8, 1),
-                args=(
-                    angle_range,
-                    theta,
-                    np.int32(m),
-                    np.int32(center_size),
-                    np.int32(128),
-                    np.int32(128),
-                    np.int32(n),
-                    np.int32(nproj),
-                )
+            RecToolsDIRCuPy._prune_center(
+                gather_kernel_center_prune_atan,
+                gather_kernel_center_prune,
+                angle_range,
+                theta,
+                n,
+                nproj,
+                m,
+                center_size,
             )
 
             gather_kernel_center(
@@ -432,7 +465,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         else:
             gather_kernel(
-                (int(xp.ceil(n / block_dim[0])), int(xp.ceil(nproj / block_dim[1])), nz // 2),
+                (
+                    int(xp.ceil(n / block_dim[0])),
+                    int(xp.ceil(nproj / block_dim[1])),
+                    nz // 2,
+                ),
                 (block_dim[0], block_dim[1], 1),
                 (
                     datac,
@@ -464,13 +501,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP3: ifft 2d
         # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
-        fde2 = fde[
-            :, m:-m, m:-m
-        ]
-        
+        fde2 = fde[:, m:-m, m:-m]
+
         # Delete fde array
         del fde
-        
+
         fde2 = cupyx.scipy.fft.ifft2(
             fde2 * c2dfftshift, axes=(-2, -1), overwrite_x=True
         )
