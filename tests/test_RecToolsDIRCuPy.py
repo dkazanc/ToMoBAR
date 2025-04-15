@@ -1,7 +1,7 @@
 import math
 import cupy as cp
 import numpy as np
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 from cupy import float32
 import time
 
@@ -9,9 +9,100 @@ import time
 from cupyx.profiler import time_range
 import pytest
 
+from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 eps = 2e-06
+
+# start theta
+# end theta
+# another test with randomized start and end theta pairs
+
+
+@pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
+@pytest.mark.parametrize("theta_range_endpoint", [-2 * np.pi, -np.pi, np.pi, 2 * np.pi])
+@pytest.mark.parametrize("center_size", [128, 256, 512, 1024, 2048, 6144])
+def test_Fourier3D_inv_prune(
+    projection_count, theta_range_endpoint, center_size, ensure_clean_memory
+):
+    module = load_cuda_module("fft_us_kernels")
+    gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
+    gather_kernel_center_prune_atan = module.get_function(
+        "gather_kernel_center_prune_atan"
+    )
+
+    detector_width = center_size * 2
+
+    mu = -np.log(eps) / (2 * detector_width * detector_width)
+    oversampled_grid_size = int(
+        np.ceil(
+            2
+            * detector_width
+            * 1
+            / np.pi
+            * np.sqrt(
+                -mu * np.log(eps) + (mu * detector_width) * (mu * detector_width) / 4
+            )
+        )
+    )
+
+    angles = np.linspace(
+        0,
+        theta_range_endpoint,
+        projection_count,
+        dtype="float32",
+    )  # in degrees
+    theta = cp.array(angles, dtype=cp.float32)
+
+    angle_range_expected = cp.empty([center_size, center_size, 3], dtype=cp.int32)
+
+    with time_range("fourier_inv_prune_expected", color_id=0, sync=True):
+        gather_kernel_center_prune(
+            grid=(1, int(np.ceil(center_size / 8)), center_size),
+            block=(32, 8, 1),
+            args=(
+                angle_range_expected,
+                theta,
+                np.int32(oversampled_grid_size),
+                np.int32(center_size),
+                np.int32(center_size),
+                np.int32(center_size),
+                np.int32(detector_width),
+                np.int32(projection_count),
+            ),
+        )
+
+    angle_range_actual = cp.empty([center_size, center_size, 3], dtype=cp.int32)
+
+    with time_range("fourier_inv_prune_actual", color_id=1, sync=True):
+        RecToolsDIRCuPy._prune_center(
+            gather_kernel_center_prune_atan,
+            gather_kernel_center_prune,
+            angle_range_actual,
+            theta,
+            detector_width,
+            projection_count,
+            oversampled_grid_size,
+            center_size,
+        )
+
+    host_angle_range_expected = cp.asnumpy(angle_range_expected)
+    host_angle_range_actual = cp.asnumpy(angle_range_actual)
+
+    diff = host_angle_range_expected[:, :, 0] - host_angle_range_actual[:, :, 0]
+    allowed = (diff == 0) | (diff == 1)
+    assert np.all(allowed), "Angle min elements differ by more than 1 or are less than expected"
+
+    diff = host_angle_range_actual[:, :, 1] - host_angle_range_expected[:, :, 1]
+    allowed = (diff == 0) | (diff == 1)
+    assert np.all(allowed), (
+        "Angle max elements differ by more than 1 or are less than expected"
+    )
+
+    assert_array_equal(host_angle_range_actual[:, :, 2], host_angle_range_expected[:, :, 2])
+
+    assert angle_range_actual.shape == (center_size, center_size, 3)
+    assert angle_range_actual.dtype == np.int32
 
 
 def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
