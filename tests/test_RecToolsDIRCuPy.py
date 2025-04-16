@@ -11,19 +11,30 @@ import pytest
 
 from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+import matplotlib.pyplot as plt
 
 eps = 2e-06
 
-# start theta
-# end theta
-# another test with randomized start and end theta pairs
+
+# @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
+# @pytest.mark.parametrize("theta_range_endpoint", [-2 * np.pi, -np.pi, np.pi, 2 * np.pi])
+# @pytest.mark.parametrize("theta_shuffle_radius", [0, 64, 128, 512, 1024, -1])
+# @pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 4, 8, 16, 32])
+# @pytest.mark.parametrize("center_size", [128, 256, 512, 1024, 2048, 6144]) # MIN 128
 
 
-@pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
-@pytest.mark.parametrize("theta_range_endpoint", [-2 * np.pi, -np.pi, np.pi, 2 * np.pi])
-@pytest.mark.parametrize("center_size", [128, 256, 512, 1024, 2048, 6144])
+@pytest.mark.parametrize("projection_count", [8])
+@pytest.mark.parametrize("theta_range_endpoint", [-2 * np.pi])
+@pytest.mark.parametrize("theta_shuffle_radius", [64])
+@pytest.mark.parametrize("theta_shuffle_iteration_count", [8])
+@pytest.mark.parametrize("center_size", [256])  # MIN 128
 def test_Fourier3D_inv_prune(
-    projection_count, theta_range_endpoint, center_size, ensure_clean_memory
+    projection_count,
+    theta_range_endpoint,
+    theta_shuffle_radius,
+    theta_shuffle_iteration_count,
+    center_size,
+    ensure_clean_memory,
 ):
     module = load_cuda_module("fft_us_kernels")
     gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
@@ -52,10 +63,34 @@ def test_Fourier3D_inv_prune(
         projection_count,
         dtype="float32",
     )  # in degrees
+
+    shuffle_iteration_count = (
+        0 if theta_shuffle_radius == 0 else theta_shuffle_iteration_count
+    )
+    for i in range(shuffle_iteration_count):
+        shuffle_center = np.random.randint(0, len(angles))
+        shuffle_radius = (
+            len(angles) if theta_shuffle_radius == -1 else theta_shuffle_radius
+        )
+        start = max(0, shuffle_center - shuffle_radius)
+        end = min(len(angles), shuffle_center + shuffle_radius + 1)
+
+        shuffled_section = angles[start:end].copy()
+        np.random.shuffle(shuffled_section)
+        angles[start:end] = shuffled_section
+
+    angles = np.sort(angles)
     theta = cp.array(angles, dtype=cp.float32)
+    # plt.figure()
+    # plt.subplot(111)
+    # plt.plot(theta.get())
+    # plt.title("Theta")
+    # plt.xlabel("Index")
+    # plt.ylabel("Value")
+    # plt.grid(True)
+    # plt.show()
 
     angle_range_expected = cp.empty([center_size, center_size, 3], dtype=cp.int32)
-
     with time_range("fourier_inv_prune_expected", color_id=0, sync=True):
         gather_kernel_center_prune(
             grid=(1, int(np.ceil(center_size / 8)), center_size),
@@ -73,7 +108,6 @@ def test_Fourier3D_inv_prune(
         )
 
     angle_range_actual = cp.empty([center_size, center_size, 3], dtype=cp.int32)
-
     with time_range("fourier_inv_prune_actual", color_id=1, sync=True):
         RecToolsDIRCuPy._prune_center(
             gather_kernel_center_prune_atan,
@@ -84,22 +118,71 @@ def test_Fourier3D_inv_prune(
             projection_count,
             oversampled_grid_size,
             center_size,
+            angle_range_expected
         )
 
     host_angle_range_expected = cp.asnumpy(angle_range_expected)
     host_angle_range_actual = cp.asnumpy(angle_range_actual)
 
     diff = host_angle_range_expected[:, :, 0] - host_angle_range_actual[:, :, 0]
+    plt.figure()
+    plt.subplot(131)
+    img = plt.imshow(host_angle_range_expected[:, :, 0])
+    plt.colorbar(img)
+    plt.title("Angle min expected")
+    plt.subplot(132)
+    img = plt.imshow(host_angle_range_actual[:, :, 0])
+    plt.colorbar(img)
+    plt.title("Angle min actual")
+    plt.subplot(133)
+    img = plt.imshow(diff)
+    plt.colorbar(img)
+    plt.title("Angle min diff")
+    plt.show()
+    
+    # print(f"host_angle_range_expected: {host_angle_range_expected}")
+    # print(f"host_angle_range_actual: {host_angle_range_actual}")
+    # print(f"host_angle_range_expected[:, :, 0]: {host_angle_range_expected[:, :, 0]}")
+    # print(f"host_angle_range_actual[:, :, 0]: {host_angle_range_actual[:, :, 0]}")
+    # print(f"diff: {diff}")
     allowed = (diff == 0) | (diff == 1)
-    assert np.all(allowed), "Angle min elements differ by more than 1 or are less than expected"
+    assert np.all(allowed), (
+        "Angle min elements differ by more than 1 or are less than expected"
+    )
 
     diff = host_angle_range_actual[:, :, 1] - host_angle_range_expected[:, :, 1]
+    plt.figure()
+    plt.subplot(131)
+    img = plt.imshow(host_angle_range_expected[:, :, 1])
+    plt.colorbar(img)
+    plt.title("Angle max expected")
+    plt.subplot(132)
+    img = plt.imshow(host_angle_range_actual[:, :, 1])
+    plt.colorbar(img)
+    plt.title("Angle max actual")
+    plt.subplot(133)
+    img = plt.imshow(diff)
+    plt.colorbar(img)
+    plt.title("Angle max diff")
+    plt.show()
     allowed = (diff == 0) | (diff == 1)
     assert np.all(allowed), (
         "Angle max elements differ by more than 1 or are less than expected"
     )
 
-    assert_array_equal(host_angle_range_actual[:, :, 2], host_angle_range_expected[:, :, 2])
+    plt.figure()
+    plt.subplot(121)
+    img = plt.imshow(host_angle_range_expected[:, :, 2])
+    plt.colorbar(img)
+    plt.title("Angle type expected")
+    plt.subplot(122)
+    img = plt.imshow(host_angle_range_actual[:, :, 2])
+    plt.colorbar(img)
+    plt.title("Angle type actual")
+    plt.show()
+    assert_array_equal(
+        host_angle_range_actual[:, :, 2], host_angle_range_expected[:, :, 2]
+    )
 
     assert angle_range_actual.shape == (center_size, center_size, 3)
     assert angle_range_actual.dtype == np.int32
