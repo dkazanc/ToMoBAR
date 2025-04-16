@@ -218,7 +218,8 @@ extern "C" __global__ void gather_kernel_center_prune_atan(int* angle_range, flo
   float length_2 = point.x * point.x + point.y * point.y;
 
   // Theta direction
-  bool ascending = theta[0] < theta[nproj-1];
+  // bool ascending = theta[0] < theta[nproj-1];
+  bool ascending = true;
   int theta_min_index = ascending ? 0 : (nproj-1);
   int theta_max_index = ascending ? (nproj-1) : 0;
 
