@@ -6,7 +6,6 @@
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 import timeit
 
 try:
@@ -105,7 +104,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         projection_count: int,
         oversampled_grid_size: int,
         center_size: int,
-        angle_range_expected: xp.ndarray | None = None,
     ):
         gather_kernel_center_prune_atan(
             (int(np.ceil(center_size / 256)), center_size, 1),
@@ -119,8 +117,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(projection_count),
             ),
         )
-
-        angle_range_0 = angle_range.get()
 
         gather_kernel_center_prune(
             grid=(1, int(np.ceil(center_size / 8)), 4 * oversampled_grid_size),
@@ -137,8 +133,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             ),
         )
 
-        angle_range_1 = angle_range.get()
-
         gather_kernel_center_prune(
             grid=(1, 16, 128),
             block=(32, 8, 1),
@@ -153,44 +147,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(projection_count),
             ),
         )
-
-        angle_range_2 = angle_range.get()
-
-        plt.figure()
-        if angle_range_expected is not None:
-            plt.subplot(421)
-            img = plt.imshow(angle_range_expected[:, :, 0].get())
-            plt.colorbar(img)
-            plt.title("Expected Angle min")
-            plt.subplot(422)
-            img = plt.imshow(angle_range_expected[:, :, 1].get())
-            plt.colorbar(img)
-            plt.title("Expected Angle max")
-        plt.subplot(423)
-        img = plt.imshow(angle_range_0[:, :, 0])
-        plt.colorbar(img)
-        plt.title("0 Angle min")
-        plt.subplot(424)
-        img = plt.imshow(angle_range_0[:, :, 1])
-        plt.colorbar(img)
-        plt.title("0 Angle max")
-        plt.subplot(425)
-        img = plt.imshow(angle_range_1[:, :, 0])
-        plt.colorbar(img)
-        plt.title("1 Angle min")
-        plt.subplot(426)
-        img = plt.imshow(angle_range_1[:, :, 1])
-        plt.colorbar(img)
-        plt.title("1 Angle max")
-        plt.subplot(427)
-        img = plt.imshow(angle_range_2[:, :, 0])
-        plt.colorbar(img)
-        plt.title("2 Angle min")
-        plt.subplot(428)
-        img = plt.imshow(angle_range_2[:, :, 1])
-        plt.colorbar(img)
-        plt.title("2 Angle max")
-        plt.show()
 
     def BACKPROJ(self, projdata: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
@@ -474,11 +430,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     ),
                 )
 
+            sorted_theta_indices = xp.argsort(theta)
+            sorted_theta = theta[sorted_theta_indices]
+
             RecToolsDIRCuPy._prune_center(
                 gather_kernel_center_prune_atan,
                 gather_kernel_center_prune,
                 angle_range,
-                theta,
+                sorted_theta,
                 n,
                 nproj,
                 m,
@@ -497,6 +456,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     fde,
                     angle_range,
                     theta,
+                    sorted_theta_indices,
                     np.int32(m),
                     np.float32(mu),
                     np.int32(center_size),

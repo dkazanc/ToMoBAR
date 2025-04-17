@@ -146,9 +146,9 @@ bool __device__ out_of_range(float *theta, int nproj, int index, float value)
 template<>
 bool __device__ out_of_range<true>(float *theta, int nproj, int index, float value)
 {
-  if( index == 0 && value < theta[0] )
+  if (index == 0 && value < theta[0])
     return true;
-  if( index == (nproj - 1) && value > theta[(nproj - 1) ])
+  if (index == (nproj - 1) && value > theta[nproj - 1])
     return true;
 
   return false;
@@ -157,9 +157,9 @@ bool __device__ out_of_range<true>(float *theta, int nproj, int index, float val
 template<>
 bool __device__ out_of_range<false>(float *theta, int nproj, int index, float value)
 {
-  if( index == 0 && value > theta[0] )
+  if (index == 0 && value > theta[0])
     return true;
-  if( index == (nproj - 1) && value < theta[(nproj - 1) ])
+  if (index == (nproj - 1) && value < theta[nproj - 1])
     return true;
 
   return false;
@@ -190,7 +190,7 @@ int __device__ binary_search(float *theta, int nproj, float value) {
   return low;
 }
 
-extern "C" __global__ void gather_kernel_center_prune_atan(int* angle_range, float *theta,
+extern "C" __global__ void gather_kernel_center_prune_atan(int* angle_range, float *theta, 
                                                            int m, int center_size,
                                                            int n, int nproj)
 {
@@ -218,21 +218,20 @@ extern "C" __global__ void gather_kernel_center_prune_atan(int* angle_range, flo
   float length_2 = point.x * point.x + point.y * point.y;
 
   // Theta direction
-  // bool ascending = theta[0] < theta[nproj-1];
-  bool ascending = true;
+  bool ascending = theta[0] < theta[nproj-1];
   int theta_min_index = ascending ? 0 : (nproj-1);
   int theta_max_index = ascending ? (nproj-1) : 0;
 
   if( radius_2 >= length_2 ) {
-    angle_range[0] = 0;
-    angle_range[1] = nproj - 1;
+    angle_range[0] = theta_min_index;
+    angle_range[1] = theta_max_index;
     angle_range[2] = 1;
   } else {
     double radius     = sqrt(radius_2);
     double length     = sqrt(length_2);
     double acosangle  = acos((double)point.x/length);
     double angle;
-    if (ascending)
+    if (theta[theta_min_index] >= 0.0f)
       angle = point.y < 0.f ? (M_PI - acosangle) : acosangle;
     else
       angle = point.y > 0.f ? -(M_PI - acosangle) : -acosangle;
@@ -293,7 +292,7 @@ extern "C" __global__ void gather_kernel_center_prune_atan(int* angle_range, flo
 
 #define FULL_MASK 0xffffffff
 
-extern "C" __global__ void gather_kernel_center_prune(int* angle_range, float *theta, 
+extern "C" __global__ void gather_kernel_center_prune(int* angle_range, float *theta,
                                                       int m, 
                                                       int center_size, 
                                                       int center_size_x, int center_size_y,
@@ -390,7 +389,7 @@ extern "C" __global__ void gather_kernel_center_prune(int* angle_range, float *t
 }
 
 __device__ void inline 
-gather_kernel_center_common(float2 *g, float *theta, 
+gather_kernel_center_common(float2 *g, float *theta,
                             float2& f_value, const float2& point,
                             const float& radius_2,
                             int proj_index, int tz,
@@ -479,7 +478,8 @@ gather_kernel_center_common(float2 *g, float *theta,
 }
 
 extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, 
-                                                int* angle_range, float *theta, 
+                                                int* angle_range, float *theta,
+                                                long long* sorted_theta_indices,
                                                 int m, float mu,  
                                                 int center_size,
                                                 int n, int nproj, int nz)            
@@ -518,29 +518,29 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f,
   
   if( angle_range[2] ) {
     for (int proj_index = angle_range[0]; proj_index <= angle_range[1]; proj_index++) {
-      gather_kernel_center_common(g, theta, 
+      gather_kernel_center_common(g, theta,
                                   f_value, point,
                                   radius_2,
-                                  proj_index, tz,
+                                  sorted_theta_indices[proj_index], tz,
                                   coeff0,
                                   coeff1,
                                   n, nproj);
     }
   } else {
     for (int proj_index = 0; proj_index < angle_range[0]; proj_index++) {
-      gather_kernel_center_common(g, theta, 
+      gather_kernel_center_common(g, theta,
                                   f_value, point,
                                   radius_2,
-                                  proj_index, tz,
+                                  sorted_theta_indices[proj_index], tz,
                                   coeff0,
                                   coeff1,
                                   n, nproj);
     }
     for (int proj_index = angle_range[1] + 1; proj_index < nproj; proj_index++) {
-      gather_kernel_center_common(g, theta, 
+      gather_kernel_center_common(g, theta,
                                   f_value, point,
                                   radius_2,
-                                  proj_index, tz,
+                                  sorted_theta_indices[proj_index], tz,
                                   coeff0,
                                   coeff1,
                                   n, nproj);
