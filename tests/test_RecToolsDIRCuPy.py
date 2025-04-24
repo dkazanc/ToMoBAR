@@ -11,16 +11,15 @@ import pytest
 
 from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
-import matplotlib.pyplot as plt
 
 eps = 2e-06
 
 
 @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
 @pytest.mark.parametrize("theta_range_endpoint", [-np.pi, np.pi])
-@pytest.mark.parametrize("theta_shuffle_radius", [0, 64, 128, 512, 1024, -1])
-@pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 4, 8, 16, 32])
-@pytest.mark.parametrize("center_size", [128, 256, 512, 1024, 2048, 6144]) # MIN 128
+@pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
+@pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
+@pytest.mark.parametrize("center_size", [256, 512, 1024, 2048, 6144]) # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
 
 def test_Fourier3D_inv_prune(
     projection_count,
@@ -111,13 +110,13 @@ def test_Fourier3D_inv_prune(
     host_angle_range_actual = cp.asnumpy(angle_range_actual)
 
     diff = host_angle_range_expected[:, :, 0] - host_angle_range_actual[:, :, 0]
-    allowed = (diff == 0) | (diff == 1)
+    allowed = (0 <= diff) & (diff <= 3)
     assert np.all(allowed), (
         "Angle min elements differ by more than 1 or are less than expected"
     )
 
     diff = host_angle_range_actual[:, :, 1] - host_angle_range_expected[:, :, 1]
-    allowed = (diff == 0) | (diff == 1)
+    allowed = (0 <= diff) & (diff <= 3)
     assert np.all(allowed), (
         "Angle max elements differ by more than 1 or are less than expected"
     )

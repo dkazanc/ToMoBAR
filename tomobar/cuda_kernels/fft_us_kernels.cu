@@ -257,11 +257,8 @@ extern "C" __global__ void gather_kernel_center_prune_atan(int* angle_range, flo
         binary_search<true, true>(theta, nproj, angle_end):
         binary_search<false, false>(theta, nproj, angle_end);
 
-      // TODO: Remove descending option
-      if(!ascending){
-        angle_range[0] = angle_range[0] == 0 ? 0 : angle_range[0] - 1;
-      }
-
+      angle_range[0] = max(0, angle_range[0] - 1);
+      angle_range[1] = min(nproj - 1, angle_range[1] + 1);
       angle_range[2] = 1;
     } else {
       angle_start = angle_start < angle_range_min ? (angle_start + M_PI) : angle_start;
