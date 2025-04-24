@@ -29,6 +29,7 @@ from tomobar.cuda_kernels import load_cuda_module
 
 from tomobar.methodsDIR import RecToolsDIR
 
+_CENTER_SIZE_MIN = 192   # must be divisible by 8
 
 class RecToolsDIRCuPy(RecToolsDIR):
     """Reconstruction class using direct methods with CuPy API.
@@ -134,15 +135,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
 
         gather_kernel_center_prune(
-            grid=(1, 16, 128),
+            grid=(1, _CENTER_SIZE_MIN / 8, _CENTER_SIZE_MIN),
             block=(32, 8, 1),
             args=(
                 angle_range,
                 theta,
                 np.int32(oversampled_grid_size),
                 np.int32(center_size),
-                np.int32(128),
-                np.int32(128),
+                np.int32(_CENTER_SIZE_MIN),
+                np.int32(_CENTER_SIZE_MIN),
                 np.int32(detector_width),
                 np.int32(projection_count),
             ),
@@ -408,7 +409,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP2: interpolation (gathering) in the frequency domain
         # Use original one kernel at low dimension.
-        if center_size >= 128:
+        if center_size >= _CENTER_SIZE_MIN:
             if center_size != (n * 2 + m * 2):
                 gather_kernel_partial(
                     (
