@@ -113,6 +113,33 @@ def test_fbp2D_astra_gpu(data, angles, filters_type, filter_parameter, filter_d)
     assert FBPrec.shape == (160, 160)
 
 
+def test_fbp2D_recon_circ_mask(data, angles):
+    detX = np.shape(data)[2]
+    data2D = data[:, 60, :]
+    N_size = detX
+
+    RecTools = RecToolsDIR(
+        DetectorsDimH=detX,
+        DetectorsDimV=None,
+        CenterRotOffset=0.0,
+        AnglesVec=angles,
+        ObjSize=N_size,
+        device_projector="gpu",
+    )
+
+    FBPrec = RecTools.FBP(
+        data2D,
+        data_axes_labels_order=["angles", "detX"],
+        recon_mask_radius=0.85,
+    )
+
+    assert np.min(FBPrec) <= -0.0001
+    assert np.max(FBPrec) >= 0.001
+    assert np.sum(FBPrec == 0) == 11963
+    assert FBPrec.dtype == np.float32
+    assert FBPrec.shape == (160, 160)
+
+
 def test_Fourier2d():
     N_size = 64  # set dimension of the phantom
     # create sinogram analytically
