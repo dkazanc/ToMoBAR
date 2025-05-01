@@ -82,6 +82,37 @@ def test_fbp2D(data, angles, processing_arch):
     assert FBPrec.shape == (160, 160)
 
 
+@pytest.mark.parametrize("filters_type", ["shepp-logan", "cosine", "hamming"])
+@pytest.mark.parametrize("filter_parameter", [None, 0.1, 1.0])
+@pytest.mark.parametrize("filter_d", [None, 0.1, 1.0])
+def test_fbp2D_astra_gpu(data, angles, filters_type, filter_parameter, filter_d):
+    detX = np.shape(data)[2]
+    data2D = data[:, 60, :]
+    N_size = detX
+
+    RecTools = RecToolsDIR(
+        DetectorsDimH=detX,
+        DetectorsDimV=None,
+        CenterRotOffset=0.0,
+        AnglesVec=angles,
+        ObjSize=N_size,
+        device_projector="gpu",
+    )
+
+    FBPrec = RecTools.FBP(
+        data2D,
+        data_axes_labels_order=["angles", "detX"],
+        filter_type=filters_type,
+        filter_parameter=filter_parameter,
+        filter_d=filter_d,
+    )
+
+    assert np.min(FBPrec) <= -0.0001
+    assert np.max(FBPrec) >= 0.001
+    assert FBPrec.dtype == np.float32
+    assert FBPrec.shape == (160, 160)
+
+
 def test_Fourier2d():
     N_size = 64  # set dimension of the phantom
     # create sinogram analytically

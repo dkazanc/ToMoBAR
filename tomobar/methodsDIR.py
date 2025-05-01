@@ -183,6 +183,9 @@ class RecToolsDIR:
         Keyword Args:
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
+            filter_type (str) : type of projection filter, see https://astra-toolbox.com/docs/algs/FBP_CUDA.html for all available options
+            filter_parameter (float) : Parameter value for the 'tukey', 'gaussian', 'blackman' and 'kaiser' filter types (see ASTRA's API).
+            filter_d (float) : "D" parameter value for 'shepp-logan', 'cosine', 'hamming' and 'hann' filter types (see ASTRA's API).
 
         Returns:
             np.ndarray: FBP reconstructed 2D or 3D object.
@@ -193,15 +196,27 @@ class RecToolsDIR:
                     data = _data_dims_swapper(data, value, ["angles", "detX"])
                 else:
                     data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+            if key == "filter_type":
+                self.Atools.fbp_filter_type = value
+            if key == "filter_parameter":
+                self.Atools.fbp_filter_parameter = value
+            if key == "filter_d":
+                self.Atools.fbp_filter_d = value
 
         if self.geom == "2D":
-            "dealing with FBP 2D not working for parallel_vec geometry and CPU"
             if self.Atools.processing_arch == "gpu":
-                return self.Atools._fbp(data)
+                return self.Atools._fbp(
+                    data
+                )  # 2D FBP reconstruction using ASTRA's API which includes options for a variety of filters
             else:
-                return self.Atools._backproj(_filtersinc2D(data))
+                "dealing with FBP 2D not working for parallel_vec geometry and CPU"
+                return self.Atools._backproj(
+                    _filtersinc2D(data)
+                )  # 2D FBP reconstruction using customised SINC filter
         else:
-            return self.Atools._backproj(_filtersinc3D(data))
+            return self.Atools._backproj(
+                _filtersinc3D(data)
+            )  # 3D FBP reconstruction using customised SINC filter
 
     def FOURIER(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """2D Reconstruction using Fourier slice theorem (scipy required)

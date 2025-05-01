@@ -64,6 +64,9 @@ class AstraBase:
         self.device_index = device_index
         self.ordsub_number = ordsub_number
         self.detectors_y = detectors_y
+        self.fbp_filter_type = "ram-lak"  # ASTRA 2D FBP specific parameter
+        self.fbp_filter_parameter = None  # ASTRA 2D FBP specific parameter
+        self.fbp_filter_d = None  # ASTRA 2D FBP specific parameter
 
     @property
     def detectors_x(self) -> int:
@@ -328,7 +331,11 @@ class AstraBase:
         cfg["ReconstructionDataId"] = rec_id
         cfg["ProjectionDataId"] = sinogram_id
         if method == "FBP" or method == "FBP_CUDA":
-            cfg["FilterType"] = "Ram-Lak"
+            cfg["FilterType"] = self.fbp_filter_type
+            if self.fbp_filter_parameter is not None:
+                cfg["FilterParameter"] = self.fbp_filter_parameter
+            if self.fbp_filter_d is not None:
+                cfg["FilterD"] = self.fbp_filter_d
 
         # Create the algorithm object from the configuration structure
         alg_id = astra.algorithm.create(cfg)

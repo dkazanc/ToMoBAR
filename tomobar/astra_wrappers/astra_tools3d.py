@@ -92,6 +92,15 @@ class AstraTools3D(AstraBase):
             proj_data, "BP3D_CUDA", 1, None
         )  # 3D backprojection
 
+    def _fbp(self, proj_data: np.ndarray) -> np.ndarray:
+        """
+        as 3D FBP using ASTRA is not implemented by the third-party, we return just a backprojection here, the
+        3D FBP implementation using SINC filter is in methodsDIR.
+        """
+        return super().runAstraBackproj3D(
+            proj_data, "BP3D_CUDA", 1, None
+        )  # NOTE: 3D FBP using ASTRA is not implemented by the third-part, we use the bespoke implementation here
+
     def _backprojOS(self, proj_data: np.ndarray, os_index: int) -> np.ndarray:
         return super().runAstraBackproj3D(
             proj_data, "BP3D_CUDA", 1, os_index
