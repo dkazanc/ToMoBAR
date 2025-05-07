@@ -38,7 +38,7 @@ def test_Fourier3D_inv_prune(
     detector_width = center_size * 2
 
     mu = -np.log(eps) / (2 * detector_width * detector_width)
-    oversampled_grid_size = int(
+    interpolation_filter_half_size = int(
         np.ceil(
             2
             * detector_width
@@ -84,7 +84,7 @@ def test_Fourier3D_inv_prune(
             args=(
                 angle_range_expected,
                 sorted_theta,
-                np.int32(oversampled_grid_size),
+                np.int32(interpolation_filter_half_size),
                 np.int32(center_size),
                 np.int32(center_size),
                 np.int32(center_size),
@@ -102,7 +102,7 @@ def test_Fourier3D_inv_prune(
             sorted_theta,
             detector_width,
             projection_count,
-            oversampled_grid_size,
+            interpolation_filter_half_size,
             center_size
         )
 
