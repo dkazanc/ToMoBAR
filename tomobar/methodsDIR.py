@@ -11,72 +11,7 @@ import scipy.fftpack
 from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
-
-
-def _filtersinc3D(projection3D: np.ndarray):
-    """Applies a 3D filter to 3D projection data for FBP
-
-    Args:
-        projection3D (np.ndarray): projection data
-
-    Returns:
-        np.ndarray: Filtered data
-    """
-    a = 1.1
-    [DetectorsLengthV, projectionsNum, DetectorsLengthH] = np.shape(projection3D)
-    w = np.linspace(
-        -np.pi,
-        np.pi - (2 * np.pi) / DetectorsLengthH,
-        DetectorsLengthH,
-        dtype="float32",
-    )
-
-    rn1 = np.abs(2.0 / a * np.sin(a * w / 2.0))
-    rn2 = np.sin(a * w / 2.0)
-    rd = (a * w) / 2.0
-    rd_c = np.zeros([1, DetectorsLengthH])
-    rd_c[0, :] = rd
-    r = rn1 * (np.dot(rn2, np.linalg.pinv(rd_c))) ** 2
-    multiplier = 1.0 / projectionsNum
-    f = scipy.fftpack.fftshift(r)
-    # making a 2d filter for projection
-    f_2d = np.zeros((DetectorsLengthV, DetectorsLengthH), dtype="float32")
-    f_2d[0::, :] = f
-    filtered = np.zeros(np.shape(projection3D), dtype="float32")
-
-    for i in range(0, projectionsNum):
-        IMG = scipy.fftpack.fft2(projection3D[:, i, :])
-        fimg = IMG * f_2d
-        filtered[:, i, :] = np.real(scipy.fftpack.ifft2(fimg))
-    return multiplier * filtered
-
-
-def _filtersinc2D(sinogram):
-    # applies filters to __2D projection data__ in order to achieve FBP
-    a = 1.1
-    [projectionsNum, DetectorsLengthH] = np.shape(sinogram)
-    w = np.linspace(
-        -np.pi,
-        np.pi - (2 * np.pi) / DetectorsLengthH,
-        DetectorsLengthH,
-        dtype="float32",
-    )
-
-    rn1 = np.abs(2.0 / a * np.sin(a * w / 2.0))
-    rn2 = np.sin(a * w / 2.0)
-    rd = (a * w) / 2.0
-    rd_c = np.zeros([1, DetectorsLengthH])
-    rd_c[0, :] = rd
-    r = rn1 * (np.dot(rn2, np.linalg.pinv(rd_c))) ** 2
-    multiplier = 1.0 / projectionsNum
-    f = scipy.fftpack.fftshift(r)
-    filtered = np.zeros(np.shape(sinogram))
-
-    for i in range(0, projectionsNum):
-        IMG = scipy.fftpack.fft(sinogram[i, :])
-        fimg = IMG * f
-        filtered[i, :] = multiplier * np.real(scipy.fftpack.ifft(fimg))
-    return np.float32(filtered)
+from tomobar.supp.suppTools import check_kwargs
 
 
 class RecToolsDIR:
@@ -183,6 +118,9 @@ class RecToolsDIR:
         Keyword Args:
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
+            filter_type (str) : type of projection filter, see https://astra-toolbox.com/docs/algs/FBP_CUDA.html for all available options
+            filter_parameter (float) : Parameter value for the 'tukey', 'gaussian', 'blackman' and 'kaiser' filter types (see ASTRA's API).
+            filter_d (float) : "D" parameter value for 'shepp-logan', 'cosine', 'hamming' and 'hann' filter types (see ASTRA's API).
 
         Returns:
             np.ndarray: FBP reconstructed 2D or 3D object.
@@ -193,15 +131,29 @@ class RecToolsDIR:
                     data = _data_dims_swapper(data, value, ["angles", "detX"])
                 else:
                     data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+            if key == "filter_type":
+                self.Atools.fbp_filter_type = value
+            if key == "filter_parameter":
+                self.Atools.fbp_filter_parameter = value
+            if key == "filter_d":
+                self.Atools.fbp_filter_d = value
+
+        kwargs.update({"cupyrun": False})  # needed for agnostic array cropping
 
         if self.geom == "2D":
-            "dealing with FBP 2D not working for parallel_vec geometry and CPU"
             if self.Atools.processing_arch == "gpu":
-                return self.Atools._fbp(data)
+                return check_kwargs(
+                    self.Atools._fbp(data), **kwargs
+                )  # 2D FBP reconstruction using ASTRA's API which includes options for a variety of filters
             else:
-                return self.Atools._backproj(_filtersinc2D(data))
+                "dealing with FBP 2D not working for parallel_vec geometry and CPU"
+                return check_kwargs(
+                    self.Atools._backproj(_filtersinc2D(data)), **kwargs
+                )  # 2D FBP reconstruction using customised SINC filter
         else:
-            return self.Atools._backproj(_filtersinc3D(data))
+            return check_kwargs(
+                self.Atools._backproj(_filtersinc3D(data)), **kwargs
+            )  # 3D FBP reconstruction using customised SINC filter
 
     def FOURIER(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """2D Reconstruction using Fourier slice theorem (scipy required)
@@ -281,3 +233,69 @@ class RecToolsDIR:
         unpad_from = det_x_up // 2 - ObjSize // 2
         unpad_to = det_x_up // 2 + ObjSize // 2
         return recon[unpad_from:unpad_to, unpad_from:unpad_to]
+
+
+def _filtersinc3D(projection3D: np.ndarray):
+    """Applies a 3D filter to 3D projection data for FBP
+
+    Args:
+        projection3D (np.ndarray): projection data
+
+    Returns:
+        np.ndarray: Filtered data
+    """
+    a = 1.1
+    [DetectorsLengthV, projectionsNum, DetectorsLengthH] = np.shape(projection3D)
+    w = np.linspace(
+        -np.pi,
+        np.pi - (2 * np.pi) / DetectorsLengthH,
+        DetectorsLengthH,
+        dtype="float32",
+    )
+
+    rn1 = np.abs(2.0 / a * np.sin(a * w / 2.0))
+    rn2 = np.sin(a * w / 2.0)
+    rd = (a * w) / 2.0
+    rd_c = np.zeros([1, DetectorsLengthH])
+    rd_c[0, :] = rd
+    r = rn1 * (np.dot(rn2, np.linalg.pinv(rd_c))) ** 2
+    multiplier = 1.0 / projectionsNum
+    f = scipy.fftpack.fftshift(r)
+    # making a 2d filter for projection
+    f_2d = np.zeros((DetectorsLengthV, DetectorsLengthH), dtype="float32")
+    f_2d[0::, :] = f
+    filtered = np.zeros(np.shape(projection3D), dtype="float32")
+
+    for i in range(0, projectionsNum):
+        IMG = scipy.fftpack.fft2(projection3D[:, i, :])
+        fimg = IMG * f_2d
+        filtered[:, i, :] = np.real(scipy.fftpack.ifft2(fimg))
+    return multiplier * filtered
+
+
+def _filtersinc2D(sinogram):
+    # applies filters to __2D projection data__ in order to achieve FBP
+    a = 1.1
+    [projectionsNum, DetectorsLengthH] = np.shape(sinogram)
+    w = np.linspace(
+        -np.pi,
+        np.pi - (2 * np.pi) / DetectorsLengthH,
+        DetectorsLengthH,
+        dtype="float32",
+    )
+
+    rn1 = np.abs(2.0 / a * np.sin(a * w / 2.0))
+    rn2 = np.sin(a * w / 2.0)
+    rd = (a * w) / 2.0
+    rd_c = np.zeros([1, DetectorsLengthH])
+    rd_c[0, :] = rd
+    r = rn1 * (np.dot(rn2, np.linalg.pinv(rd_c))) ** 2
+    multiplier = 1.0 / projectionsNum
+    f = scipy.fftpack.fftshift(r)
+    filtered = np.zeros(np.shape(sinogram))
+
+    for i in range(0, projectionsNum):
+        IMG = scipy.fftpack.fft(sinogram[i, :])
+        fimg = IMG * f
+        filtered[i, :] = multiplier * np.real(scipy.fftpack.ifft(fimg))
+    return np.float32(filtered)

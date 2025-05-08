@@ -25,7 +25,7 @@ except ImportError:
 
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 
-from tomobar.supp.suppTools import circ_mask
+from tomobar.supp.suppTools import apply_circular_mask
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
 
 from tomobar.regularisers import prox_regul
@@ -616,8 +616,8 @@ class RecToolsIR:
                 if _algorithm_upd_["nonnegativity"] == "ENABLE":
                     X[X < 0.0] = 0.0
                 if _algorithm_upd_["recon_mask_radius"] is not None:
-                    X = circ_mask(
-                        X, _algorithm_upd_["recon_mask_radius"]
+                    X = apply_circular_mask(
+                        X, _algorithm_upd_["recon_mask_radius"], False
                     )  # applying a circular mask
                 if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####

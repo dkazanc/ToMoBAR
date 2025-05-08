@@ -73,7 +73,9 @@ RectoolsDIR = RecToolsDIR(
 )
 
 
-FBPrec = RectoolsDIR.FBP(noisy_sino)  # perform FBP reconstruction
+FBPrec = RectoolsDIR.FBP(
+    noisy_sino, recon_mask_radius=1.5
+)  # perform FBP reconstruction
 
 plt.figure()
 plt.rcParams.update({"font.size": 20})

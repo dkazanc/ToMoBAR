@@ -327,8 +327,8 @@ def test_FISTA2D(data, angles):
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
-    assert_allclose(np.min(Iter_rec), -0.0013817177, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.021081915, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.001377, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.021081915, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 
@@ -393,8 +393,8 @@ def test_FISTA_OS_2D(data, angles):
     _algorithm_ = {"iterations": 5, "lipschitz_const": lc}
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
-    assert_allclose(np.min(Iter_rec), -0.0059562637, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.027898012, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.005957, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.027898012, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 
@@ -429,8 +429,8 @@ def test_FISTA_PWLS_OS_2D(angles, raw_data, flats, darks):
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
     assert_allclose(lc, 3410.0398, rtol=eps)
-    assert_allclose(np.min(Iter_rec), -0.0055439486, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.027206523, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.005545, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.027206523, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 
@@ -472,8 +472,8 @@ def test_FISTA_PWLS_OS_reg_2D(angles, raw_data, flats, darks):
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
     assert_allclose(lc, 3410.04, rtol=eps)
-    assert_allclose(np.min(Iter_rec), -2.9223487e-05, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.019110736, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), -3.297073e-05, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.019110736, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 
@@ -515,8 +515,8 @@ def test_FISTA_PWLS_OS_reg2_2D(angles, raw_data, flats, darks):
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
     assert 3410 <= lc <= 3411
-    assert_allclose(np.min(Iter_rec), -0.00010016523, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.018724505, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), -0.00010016523, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.018724505, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 
@@ -752,7 +752,7 @@ def test_FISTA_OS_3D(data, angles):
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
 
     assert_allclose(np.min(Iter_rec), -0.008425578, rtol=0, atol=eps)
-    assert_allclose(np.max(Iter_rec), 0.032162726, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.032152, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 

@@ -21,7 +21,7 @@ except ImportError:
     )
 
 
-from tomobar.supp.suppTools import _check_kwargs
+from tomobar.supp.suppTools import check_kwargs
 from tomobar.supp.funcs import _data_dims_swapper
 from tomobar.fourier import _filtersinc3D_cupy, calc_filter
 from tomobar.cuda_kernels import load_cuda_module
@@ -119,6 +119,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         Returns:
             xp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
+        kwargs.update({"cupyrun": True})  # needed for agnostic array cropping
         cutoff_freq = 0.35  # default value
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -134,7 +135,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         xp._default_memory_pool.free_all_blocks()  # free everything related to the filtering before starting Astra
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
         xp._default_memory_pool.free_all_blocks()
-        return _check_kwargs(reconstruction, **kwargs)
+        return check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input.
@@ -155,10 +156,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         Returns:
             xp.ndarray: The NUFFT reconstructed volume as a CuPy array.
         """
-
+        kwargs.update({"cupyrun": True})  # needed for agnostic array cropping
         cutoff_freq = 1.0  # default value
         filter_type = "shepp"  # default filter
-
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
@@ -327,7 +327,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         unpad_recon_m = n // 2 - recon_size // 2
         unpad_recon_p = n // 2 + recon_size // 2
-        return _check_kwargs(
+        return check_kwargs(
             recon_up[
                 0:unpad_z,
                 unpad_recon_m:unpad_recon_p,
