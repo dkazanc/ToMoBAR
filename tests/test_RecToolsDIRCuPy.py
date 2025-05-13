@@ -31,8 +31,8 @@ def test_Fourier3D_inv_prune(
 ):
     module = load_cuda_module("fft_us_kernels")
     gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
-    gather_kernel_center_prune_atan = module.get_function(
-        "gather_kernel_center_prune_atan"
+    gather_kernel_center_angle_based_prune = module.get_function(
+        "gather_kernel_center_angle_based_prune"
     )
 
     detector_width = center_size * 2
@@ -95,15 +95,17 @@ def test_Fourier3D_inv_prune(
 
     angle_range_actual = cp.empty([center_size, center_size, 3], dtype=cp.int32)
     with time_range("fourier_inv_prune_actual", color_id=1, sync=True):
-        RecToolsDIRCuPy._prune_center(
-            gather_kernel_center_prune_atan,
-            gather_kernel_center_prune,
-            angle_range_actual,
-            sorted_theta,
-            detector_width,
-            projection_count,
-            interpolation_filter_half_size,
-            center_size
+        gather_kernel_center_angle_based_prune(
+            (int(np.ceil(center_size / 256)), center_size, 1),
+            (256, 1, 1),
+            (
+                angle_range_actual,
+                sorted_theta,
+                np.int32(interpolation_filter_half_size),
+                np.int32(center_size),
+                np.int32(detector_width),
+                np.int32(projection_count),
+            ),
         )
 
     host_angle_range_expected = cp.asnumpy(angle_range_expected)

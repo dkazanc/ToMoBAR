@@ -96,44 +96,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         return projected
 
     @staticmethod
-    def _prune_center(
-        gather_kernel_center_prune_atan: xp.RawKernel,
-        gather_kernel_center_prune: xp.RawKernel,
-        angle_range: xp.ndarray,
-        theta: xp.ndarray,
-        detector_width: int,
-        projection_count: int,
-        interpolation_filter_half_size: int,
-        center_size: int,
-    ):
-        gather_kernel_center_prune_atan(
-            (int(np.ceil(center_size / 256)), center_size, 1),
-            (256, 1, 1),
-            (
-                angle_range,
-                theta,
-                np.int32(interpolation_filter_half_size),
-                np.int32(center_size),
-                np.int32(detector_width),
-                np.int32(projection_count),
-            ),
-        )
-
-        gather_kernel_center_prune(
-            grid=(1, _CENTER_SIZE_MIN / 8, _CENTER_SIZE_MIN),
-            block=(32, 8, 1),
-            args=(
-                angle_range,
-                theta,
-                np.int32(interpolation_filter_half_size),
-                np.int32(center_size),
-                np.int32(_CENTER_SIZE_MIN),
-                np.int32(_CENTER_SIZE_MIN),
-                np.int32(detector_width),
-                np.int32(projection_count),
-            ),
-        )
-
     def BACKPROJ(self, projdata: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
 
@@ -269,9 +231,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
         gather_kernel_partial = module.get_function("gather_kernel_partial")
-        gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
-        gather_kernel_center_prune_atan = module.get_function(
-            "gather_kernel_center_prune_atan"
+        gather_kernel_center_angle_based_prune = module.get_function(
+            "gather_kernel_center_angle_based_prune"
         )
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
@@ -423,15 +384,17 @@ class RecToolsDIRCuPy(RecToolsDIR):
             sorted_theta_indices = xp.argsort(theta)
             sorted_theta = theta[sorted_theta_indices]
 
-            RecToolsDIRCuPy._prune_center(
-                gather_kernel_center_prune_atan,
-                gather_kernel_center_prune,
-                angle_range,
-                sorted_theta,
-                n,
-                nproj,
-                m,
-                center_size,
+            gather_kernel_center_angle_based_prune(
+                (int(np.ceil(center_size / 256)), center_size, 1),
+                (256, 1, 1),
+                (
+                    angle_range,
+                    sorted_theta,
+                    np.int32(m),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(nproj),
+                ),
             )
 
             gather_kernel_center(
