@@ -224,7 +224,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     slice_count_per_chunk = value
 
         projection_angles = -self.Atools.angles_vec
-        if not (all(-np.pi <= x <= 0 for x in projection_angles) or all(0 <= x <= np.pi for x in projection_angles)):
+        projection_angle_epsilon = np.pi * 0.001
+        if not (all((-np.pi - projection_angle_epsilon) <= x <= (0 + projection_angle_epsilon) for x in projection_angles) or all((0 - projection_angle_epsilon) <= x <= (np.pi + projection_angle_epsilon) for x in projection_angles)):
             raise ValueError("Projection angles not in the [-PI, 0] or [0, PI] range")
 
         # extract kernels from CUDA modules

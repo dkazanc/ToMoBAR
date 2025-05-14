@@ -227,15 +227,15 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(int* angle_ran
     angle_range[1] = theta_max_index;
     angle_range[2] = 1;
   } else {
-    double radius     = sqrt(radius_2);
-    double length     = sqrt(length_2);
-    double acosangle  = acos((double)point.x/length);
-    double angle;
+    float radius     = sqrtf(radius_2);
+    float length     = sqrtf(length_2);
+    float acosangle  = acosf(point.x/length);
+    float angle;
     if (theta[theta_min_index] >= 0.0f)
       angle = point.y < 0.f ? (M_PI - acosangle) : acosangle;
     else
       angle = point.y > 0.f ? -(M_PI - acosangle) : -acosangle;
-    float angle_delta = ascending ? asin(radius/length) : -asin(radius/length);
+    float angle_delta = ascending ? asinf(radius/length) : -asinf(radius/length);
 
     float angle_start = angle - angle_delta;
     float angle_end   = angle + angle_delta;
