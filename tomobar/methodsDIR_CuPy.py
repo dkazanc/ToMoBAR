@@ -175,7 +175,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         center_size = 6144
         block_dim = [16, 16]
-        block_dim_prune = 512
         block_dim_center = [32, 4]
 
         chunk_count = 1
@@ -188,8 +187,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 center_size = value
             elif key == "block_dim" and value is not None:
                 block_dim = value
-            elif key == "block_dim_prune" and value is not None:
-                block_dim_prune = value
             elif key == "block_dim_center" and value is not None:
                 block_dim_center = value
             if key == "cutoff_freq" and value is not None:
