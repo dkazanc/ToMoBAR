@@ -1,7 +1,7 @@
 import math
 import cupy as cp
 import numpy as np
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 from cupy import float32
 import time
 
@@ -9,9 +9,126 @@ import time
 from cupyx.profiler import time_range
 import pytest
 
+from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 eps = 2e-06
+
+
+@pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
+@pytest.mark.parametrize("theta_range_endpoint", [-np.pi, np.pi])
+@pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
+@pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
+@pytest.mark.parametrize("center_size", [256, 512, 1024, 2048, 6144]) # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
+
+def test_Fourier3D_inv_prune(
+    projection_count,
+    theta_range_endpoint,
+    theta_shuffle_radius,
+    theta_shuffle_iteration_count,
+    center_size,
+    ensure_clean_memory,
+):
+    module = load_cuda_module("fft_us_kernels")
+    gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
+    gather_kernel_center_angle_based_prune = module.get_function(
+        "gather_kernel_center_angle_based_prune"
+    )
+
+    detector_width = center_size * 2
+
+    mu = -np.log(eps) / (2 * detector_width * detector_width)
+    interpolation_filter_half_size = int(
+        np.ceil(
+            2
+            * detector_width
+            * 1
+            / np.pi
+            * np.sqrt(
+                -mu * np.log(eps) + (mu * detector_width) * (mu * detector_width) / 4
+            )
+        )
+    )
+
+    angles = np.linspace(
+        0,
+        theta_range_endpoint,
+        projection_count,
+        dtype="float32",
+    )  # in degrees
+
+    shuffle_iteration_count = (
+        0 if theta_shuffle_radius == 0 else theta_shuffle_iteration_count
+    )
+    for i in range(shuffle_iteration_count):
+        shuffle_center = np.random.randint(0, len(angles))
+        shuffle_radius = (
+            len(angles) if theta_shuffle_radius == -1 else theta_shuffle_radius
+        )
+        start = max(0, shuffle_center - shuffle_radius)
+        end = min(len(angles), shuffle_center + shuffle_radius + 1)
+
+        shuffled_section = angles[start:end].copy()
+        np.random.shuffle(shuffled_section)
+        angles[start:end] = shuffled_section
+
+    theta = cp.array(angles, dtype=cp.float32)
+    sorted_theta_indices = cp.argsort(theta)
+    sorted_theta = theta[sorted_theta_indices]
+
+    angle_range_expected = cp.empty([center_size, center_size, 3], dtype=cp.int32)
+    with time_range("fourier_inv_prune_expected", color_id=0, sync=True):
+        gather_kernel_center_prune(
+            grid=(1, int(np.ceil(center_size / 8)), center_size),
+            block=(32, 8, 1),
+            args=(
+                angle_range_expected,
+                sorted_theta,
+                np.int32(interpolation_filter_half_size),
+                np.int32(center_size),
+                np.int32(center_size),
+                np.int32(center_size),
+                np.int32(detector_width),
+                np.int32(projection_count),
+            ),
+        )
+
+    angle_range_actual = cp.empty([center_size, center_size, 3], dtype=cp.int32)
+    with time_range("fourier_inv_prune_actual", color_id=1, sync=True):
+        gather_kernel_center_angle_based_prune(
+            (int(np.ceil(center_size / 256)), center_size, 1),
+            (256, 1, 1),
+            (
+                angle_range_actual,
+                sorted_theta,
+                np.int32(interpolation_filter_half_size),
+                np.int32(center_size),
+                np.int32(detector_width),
+                np.int32(projection_count),
+            ),
+        )
+
+    host_angle_range_expected = cp.asnumpy(angle_range_expected)
+    host_angle_range_actual = cp.asnumpy(angle_range_actual)
+
+    diff = host_angle_range_expected[:, :, 0] - host_angle_range_actual[:, :, 0]
+    allowed = (0 <= diff) & (diff <= 3)
+    assert np.all(allowed), (
+        "Angle min elements differ by more than 1 or are less than expected"
+    )
+
+    diff = host_angle_range_actual[:, :, 1] - host_angle_range_expected[:, :, 1]
+    allowed = (0 <= diff) & (diff <= 3)
+    assert np.all(allowed), (
+        "Angle max elements differ by more than 1 or are less than expected"
+    )
+
+    assert_array_equal(
+        host_angle_range_actual[:, :, 2], host_angle_range_expected[:, :, 2]
+    )
+
+    assert angle_range_actual.shape == (center_size, center_size, 3)
+    assert angle_range_actual.dtype == np.int32
 
 
 def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
@@ -32,8 +149,8 @@ def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
             data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
         )
     recon_data = Fourier_rec_cupy.get()
-    assert_allclose(np.min(recon_data), -0.037292, rtol=1e-05)
-    assert_allclose(np.max(recon_data), 0.103775, rtol=1e-05)
+    assert_allclose(np.min(recon_data), -0.03678237, rtol=1e-05)
+    assert_allclose(np.max(recon_data), 0.103207715, rtol=1e-05)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
