@@ -28,7 +28,6 @@ print("center_size, phantom size, angle number, slice number, time")
 
 for N_size in [512, 1024, 1536, 2048]:
     for angles_num in [128, 256, 512, 1024, 1536, 2048]:
-
         # print("Building 3D phantom using TomoPhantom software")
         tic = timeit.default_timer()
         model = 13  # select a model number from the library
@@ -57,7 +56,6 @@ for N_size in [512, 1024, 1536, 2048]:
         projData3D_analyt_cupy = cp.asarray(projData3D_analyt, order="C")
 
         for slice_number in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20]:
-
             RecToolsCP = RecToolsDIRCuPy(
                 DetectorsDimH=Horiz_det,  # Horizontal detector dimension
                 DetectorsDimV=slice_number,  # Vertical detector dimension (3D case)
@@ -82,7 +80,28 @@ for N_size in [512, 1024, 1536, 2048]:
             # Run_time = (toc - tic)/80
             # print("Phantom size: {}, angle number: {}, and slice number: {}, in time: {} seconds".format(N_size, angles_num, slice_number, Run_time))
 
-            for center_size in [0, 128, 256, 384, 448, 512, 640, 672, 704, 768, 800, 864, 928, 1024, 1280, 1536, 1792, 2048, 2560, 3072]:
+            for center_size in [
+                0,
+                128,
+                256,
+                384,
+                448,
+                512,
+                640,
+                672,
+                704,
+                768,
+                800,
+                864,
+                928,
+                1024,
+                1280,
+                1536,
+                1792,
+                2048,
+                2560,
+                3072,
+            ]:
                 tic = timeit.default_timer()
                 for x in range(80):
                     Fourier_cupy = RecToolsCP.FOURIER_INV(
@@ -92,5 +111,9 @@ for N_size in [512, 1024, 1536, 2048]:
                         data_axes_labels_order=input_data_labels,
                     )
                 toc = timeit.default_timer()
-                Run_time = (toc - tic)/80
-                print("{}, {}, {}, {}, {}".format(center_size, N_size, angles_num, slice_number, Run_time))
+                Run_time = (toc - tic) / 80
+                print(
+                    "{}, {}, {}, {}, {}".format(
+                        center_size, N_size, angles_num, slice_number, Run_time
+                    )
+                )

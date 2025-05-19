@@ -29,7 +29,8 @@ from tomobar.cuda_kernels import load_cuda_module
 
 from tomobar.methodsDIR import RecToolsDIR
 
-_CENTER_SIZE_MIN = 192   # must be divisible by 8
+_CENTER_SIZE_MIN = 192  # must be divisible by 8
+
 
 class RecToolsDIRCuPy(RecToolsDIR):
     """Reconstruction class using direct methods with CuPy API.
@@ -222,7 +223,20 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         projection_angles = -self.Atools.angles_vec
         projection_angle_epsilon = np.pi * 0.001
-        if not (all((-np.pi - projection_angle_epsilon) <= x <= (0 + projection_angle_epsilon) for x in projection_angles) or all((0 - projection_angle_epsilon) <= x <= (np.pi + projection_angle_epsilon) for x in projection_angles)):
+        if not (
+            all(
+                (-np.pi - projection_angle_epsilon)
+                <= x
+                <= (0 + projection_angle_epsilon)
+                for x in projection_angles
+            )
+            or all(
+                (0 - projection_angle_epsilon)
+                <= x
+                <= (np.pi + projection_angle_epsilon)
+                for x in projection_angles
+            )
+        ):
             raise ValueError("Projection angles not in the [-PI, 0] or [0, PI] range")
 
         # extract kernels from CUDA modules
