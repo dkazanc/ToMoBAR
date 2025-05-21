@@ -1,17 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-GPLv3 license (ASTRA toolbox)
+"""This functions finds the optimal parameters for FOURIER_INV method, namely center_size
 
-Script that demonstrates the reconstruction of CuPy arrays while keeping
-the data on the GPU (device-to-device)
-
-Dependencies:
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
-    * TomoPhantom, https://github.com/dkazanc/TomoPhantom
-    * CuPy package
-
-@author: Daniil Kazantsev
 """
 import timeit
 import os

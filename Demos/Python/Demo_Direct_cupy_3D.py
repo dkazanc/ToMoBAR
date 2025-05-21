@@ -7,7 +7,7 @@ Script that demonstrates the reconstruction of CuPy arrays while keeping
 the data on the GPU (device-to-device)
 
 Dependencies:
-    * astra-toolkit, install conda install -c astra-toolbox astra-toolbox
+    * astra-toolkit
     * TomoPhantom, https://github.com/dkazanc/TomoPhantom
     * CuPy package
 
@@ -22,7 +22,7 @@ import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.qualitymetrics import QualityTools
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+
 
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()
@@ -67,7 +67,7 @@ FBPrec_cupy = RecToolsCP.FBP(
     projData3D_analyt_cupy,
     recon_mask_radius=0.95,
     data_axes_labels_order=input_data_labels,
-    cutoff_freq=0.7,
+    cutoff_freq=0.3,
 )
 toc = timeit.default_timer()
 Run_time = toc - tic
