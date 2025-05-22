@@ -1,6 +1,7 @@
 """This functions finds the optimal parameters for FOURIER_INV method, namely center_size
 
 """
+
 import timeit
 import os
 import matplotlib.pyplot as plt
