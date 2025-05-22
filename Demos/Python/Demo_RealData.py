@@ -4,8 +4,8 @@
 A script to reconstruct tomographic X-ray data (dendritic growth process)
 obtained at Diamond Light Source (UK synchrotron), beamline I12
 
-D. Kazantsev et al. 2017. Model-based iterative reconstruction using 
-higher-order regularization of dynamic synchrotron data. 
+D. Kazantsev et al. 2017. Model-based iterative reconstruction using
+higher-order regularization of dynamic synchrotron data.
 Measurement Science and Technology, 28(9), p.094004.
 """
 import numpy as np
@@ -33,7 +33,9 @@ data_labels2D = ["detX", "angles"]  # set the input data labels
 
 N_size = 1000
 slice_to_recon = 19  # select which slice to reconstruct
-angles_rad = angles[:, 0] * (np.pi / 180.0)
+# angles_rad = angles[:, 0] * (np.pi / 180.0)
+angles_rad = np.linspace(0, np.pi, 360)
+
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
@@ -57,7 +59,39 @@ plt.imshow(FBPrec[100:900, 100:900], vmin=0, vmax=0.004, cmap="gray")
 plt.title("FBP reconstruction")
 # fig.savefig('dendr_FPP.png', dpi=200)
 # %%
-# Initialise the IR class once
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%Reconstructing with Log-Polar Fourier method %%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# Note. You will need CuPy dependency to run this
+import cupy as cp
+from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+
+RecToolsCP = RecToolsDIRCuPy(
+    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimV=None,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Centre of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    device_projector="gpu",
+)
+
+data_labels3D = ["detX", "angles", "detY"]
+
+FourierLP_cupy = RecToolsCP.FOURIER_INV(
+    cp.asarray(data_norm[:, :, 5:10]),
+    filter_freq_cutoff=0.35,
+    recon_mask_radius=0.95,
+    data_axes_labels_order=data_labels3D,
+)
+
+fig = plt.figure()
+plt.imshow(
+    cp.asnumpy(FourierLP_cupy[3, 100:900, 100:900]), vmin=0, vmax=0.008, cmap="gray"
+)
+plt.title("Log-Polar Fourier reconstruction")
+# fig.savefig('dendr_LogPolar.png', dpi=200)
+# %%
+# Initialise the IR class once here
 # Set scanning geometry parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension

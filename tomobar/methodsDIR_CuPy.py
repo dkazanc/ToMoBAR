@@ -6,6 +6,7 @@
 """
 
 import numpy as np
+import timeit
 
 try:
     import cupy as xp
@@ -27,6 +28,8 @@ from tomobar.fourier import _filtersinc3D_cupy, calc_filter
 from tomobar.cuda_kernels import load_cuda_module
 
 from tomobar.methodsDIR import RecToolsDIR
+
+_CENTER_SIZE_MIN = 192  # must be divisible by 8
 
 
 class RecToolsDIRCuPy(RecToolsDIR):
@@ -61,6 +64,16 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # if DetectorsDimV == 0 or DetectorsDimV is None:
         #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
+    @staticmethod
+    def _get_available_gpu_memory() -> int:
+        dev = xp.cuda.Device()
+        # first, let's make some space
+        xp.get_default_memory_pool().free_all_blocks()
+        cache = xp.fft.config.get_plan_cache()
+        cache.clear()
+        available_memory = dev.mem_info[0] + xp.get_default_memory_pool().free_bytes()
+        return int(available_memory * 0.9)  # 10% safety margin
+
     def FORWPROJ(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
 
@@ -83,6 +96,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         return projected
 
+    @staticmethod
     def BACKPROJ(self, projdata: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
 
@@ -159,9 +173,23 @@ class RecToolsDIRCuPy(RecToolsDIR):
         kwargs.update({"cupyrun": True})  # needed for agnostic array cropping
         cutoff_freq = 1.0  # default value
         filter_type = "shepp"  # default filter
+
+        center_size = 6144
+        block_dim = [16, 16]
+        block_dim_center = [32, 4]
+
+        chunk_count = 1
+        slice_count_per_chunk = None
+
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+            elif key == "center_size" and value is not None:
+                center_size = value
+            elif key == "block_dim" and value is not None:
+                block_dim = value
+            elif key == "block_dim_center" and value is not None:
+                block_dim_center = value
             if key == "cutoff_freq" and value is not None:
                 cutoff_freq = value
             if key == "filter_type" and value is not None:
@@ -178,11 +206,47 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     print(
                         "Unknown filter name, please use: none, ramp, shepp, cosine, cosine2, hamming, hann or parzen. Set to shepp filter"
                     )
-                cutoff_freq = value
+                else:
+                    filter_type = value
+            if key == "chunk_count" and value is not None:
+                if value is not int or value <= 0:
+                    print(f"Invalid chunk count: {value}. Set to 1")
+                else:
+                    chunk_count = value
+            if key == "slice_count_per_chunk" and value is not None:
+                if slice_count_per_chunk is not int or value <= 0:
+                    print(
+                        f"Invalid slice count: {value}. Set to slice count of input data"
+                    )
+                else:
+                    slice_count_per_chunk = value
+
+        projection_angles = -self.Atools.angles_vec
+        projection_angle_epsilon = np.pi * 0.001
+        if not (
+            all(
+                (-np.pi - projection_angle_epsilon)
+                <= x
+                <= (0 + projection_angle_epsilon)
+                for x in projection_angles
+            )
+            or all(
+                (0 - projection_angle_epsilon)
+                <= x
+                <= (np.pi + projection_angle_epsilon)
+                for x in projection_angles
+            )
+        ):
+            raise ValueError("Projection angles not in the [-PI, 0] or [0, PI] range")
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
+        gather_kernel_partial = module.get_function("gather_kernel_partial")
+        gather_kernel_center_angle_based_prune = module.get_function(
+            "gather_kernel_center_angle_based_prune"
+        )
+        gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
 
         # initialisation
@@ -211,10 +275,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
             odd_vert = True
             del data_p
 
+        if not slice_count_per_chunk:
+            slice_count_per_chunk = nz
+
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         if odd_horiz:
             rotation_axis -= 1
-        theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
+        theta = xp.array(projection_angles, dtype=xp.float32)
 
         # usfft parameters
         eps = 1e-4  # accuracy of usfft
@@ -225,6 +292,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
         )
         oversampling_level = 2  # at least 2 or larger required
+
+        # Limit the center size parameter
+        center_size = min(center_size, n * 2 + m * 2)
 
         # memory for recon
         if odd_horiz:
@@ -237,8 +307,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
         t = xp.linspace(-1 / 2, 1 / 2, n, endpoint=False, dtype=xp.float32)
         [dx, dy] = xp.meshgrid(t, t)
         phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
-        # padded fft, reusable by chunks
-        fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+
+        # Memory clean up of interpolation extra arrays
+        del t, dx, dy
+
+        if center_size > 0:
+            angle_range = xp.empty([center_size, center_size, 3], dtype=xp.int32)
+
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -258,38 +333,124 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP0: FBP filtering
         t = rfftfreq(ne).astype(xp.float32)
         w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (rotation_axis))
-        # I remember the bellow part may use a lot of memory due to "w*" operation,
-        # if so you can do it as a loop over slices/angles
-        tmp = xp.pad(data, ((0, 0), (0, 0), (padding_m, padding_m)), mode="edge")
-        tmp = irfft(w * rfft(tmp, axis=2), axis=2)
-        tmp_p = tmp[:, :, padding_m:padding_p]
-        del tmp
+
+        # FBP filtering output
+        tmp_p = xp.empty(data.shape, dtype=xp.float32)
+
+        # print(data.shape[2] + padding_m * 2)
+        # print(xp.float32().itemsize)
+        # print(chunk_count)
+
+        # Loop over the chunks
+        for chunk_index in range(0, chunk_count):
+            start_index = chunk_index * slice_count_per_chunk
+            end_index = min((chunk_index + 1) * slice_count_per_chunk, nz)
+            tmp = xp.pad(
+                data[start_index:end_index, :, :],
+                ((0, 0), (0, 0), (padding_m, padding_m)),
+                mode="edge",
+            )
+            tmp = irfft(w * rfft(tmp, axis=2), axis=2)
+            tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
+            del tmp
 
         # BACKPROJECTION
         # !work with complex numbers by setting a half of the array as real and another half as imag
         datac = tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
         # can be done without introducing array datac, saves memory, see tomocupy (TODO)
-        del tmp_p
+
+        # Memory clean up of interpolation extra arrays
+        del tmp_p, t, wfilter, w
+        xp._default_memory_pool.free_all_blocks()
+
+        # padded fft, reusable by chunks
+        fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
 
         # STEP1: fft 1d
         datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
 
         # STEP2: interpolation (gathering) in the frequency domain
-        # When profiling gather_kernel takes up to 50% of the time!
-        gather_kernel(
-            (int(xp.ceil(n / 32)), int(xp.ceil(nproj / 32)), nz // 2),
-            (32, 32, 1),
-            (
-                datac,
-                fde,
-                theta,
-                np.int32(m),
-                np.float32(mu),
-                np.int32(n),
-                np.int32(nproj),
-                np.int32(nz // 2),
-            ),
-        )
+        # Use original one kernel at low dimension.
+        if center_size >= _CENTER_SIZE_MIN:
+            if center_size != (n * 2 + m * 2):
+                gather_kernel_partial(
+                    (
+                        int(xp.ceil(n / block_dim[0])),
+                        int(xp.ceil(nproj / block_dim[1])),
+                        nz // 2,
+                    ),
+                    (block_dim[0], block_dim[1], 1),
+                    (
+                        datac,
+                        fde,
+                        theta,
+                        np.int32(m),
+                        np.float32(mu),
+                        np.int32(center_size),
+                        np.int32(n),
+                        np.int32(nproj),
+                        np.int32(nz // 2),
+                    ),
+                )
+
+            sorted_theta_indices = xp.argsort(theta)
+            sorted_theta = theta[sorted_theta_indices]
+
+            gather_kernel_center_angle_based_prune(
+                (int(np.ceil(center_size / 256)), center_size, 1),
+                (256, 1, 1),
+                (
+                    angle_range,
+                    sorted_theta,
+                    np.int32(m),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(nproj),
+                ),
+            )
+
+            gather_kernel_center(
+                (
+                    int(xp.ceil(center_size / block_dim_center[0])),
+                    int(xp.ceil(center_size / block_dim_center[1])),
+                    nz // 2,
+                ),
+                (block_dim_center[0], block_dim_center[1], 1),
+                (
+                    datac,
+                    fde,
+                    angle_range,
+                    theta,
+                    sorted_theta_indices,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(nproj),
+                    np.int32(nz // 2),
+                ),
+            )
+
+        else:
+            gather_kernel(
+                (
+                    int(xp.ceil(n / block_dim[0])),
+                    int(xp.ceil(nproj / block_dim[1])),
+                    nz // 2,
+                ),
+                (block_dim[0], block_dim[1], 1),
+                (
+                    datac,
+                    fde,
+                    theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(n),
+                    np.int32(nproj),
+                    np.int32(nz // 2),
+                ),
+            )
+
         wrap_kernel(
             (
                 int(np.ceil((2 * n + 2 * m) / 32)),
@@ -300,10 +461,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (fde, n, nz // 2, m),
         )
 
+        if center_size > 0:
+            del angle_range, c1dfftshift, datac
+        else:
+            del datac, c1dfftshift
+        xp._default_memory_pool.free_all_blocks()
+
         # STEP3: ifft 2d
-        fde2 = fde[
-            :, m:-m, m:-m
-        ]  # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
+        # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
+        fde2 = fde[:, m:-m, m:-m]
+
+        # Delete fde array
+        del fde
+
         fde2 = cupyx.scipy.fft.ifft2(
             fde2 * c2dfftshift, axes=(-2, -1), overwrite_x=True
         )
@@ -318,7 +488,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         else:
             recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
 
-        del fde, fde2, datac
+        del fde2, c2dfftshift
         xp._default_memory_pool.free_all_blocks()
         if odd_vert:
             unpad_z = nz - 1
