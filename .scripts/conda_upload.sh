@@ -16,7 +16,7 @@ export VERSION=$(date +%Y.%m)
 $CONDA/bin/conda build .
 
 # upload packages to conda
-find $CONDA_BLD_PATH/$OS -name *.tar.bz2 | while read file
+find $CONDA_BLD_PATH/$OS -name *.conda | while read file
 do
     echo $file
     $CONDA/bin/anaconda -v --show-traceback --token $CONDA_TOKEN upload $file --force
