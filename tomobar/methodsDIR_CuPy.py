@@ -96,7 +96,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         return projected
 
-    @staticmethod
     def BACKPROJ(self, projdata: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
 
