@@ -38,10 +38,6 @@ def test_Fourier3D_inv_prune(
 
     detector_width = center_size * 2
 
-    print(projection_count)
-    print(theta_range)
-    print(center_size)
-
     mu = -np.log(eps) / (2 * detector_width * detector_width)
     interpolation_filter_half_size = int(
         np.ceil(
@@ -84,10 +80,6 @@ def test_Fourier3D_inv_prune(
 
     theta_full_range = abs(sorted_theta_cpu[projection_count-1] - sorted_theta_cpu[0])
     angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
-
-    print(angle_range_pi_count)
-    print(sorted_theta_cpu[0])
-    print(sorted_theta_cpu[projection_count-1])
 
     angle_range_expected = cp.empty([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32)
     with time_range("fourier_inv_prune_expected", color_id=0, sync=True):

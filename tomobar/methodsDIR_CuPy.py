@@ -64,16 +64,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # if DetectorsDimV == 0 or DetectorsDimV is None:
         #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
-    @staticmethod
-    def _get_available_gpu_memory() -> int:
-        dev = xp.cuda.Device()
-        # first, let's make some space
-        xp.get_default_memory_pool().free_all_blocks()
-        cache = xp.fft.config.get_plan_cache()
-        cache.clear()
-        available_memory = dev.mem_info[0] + xp.get_default_memory_pool().free_bytes()
-        return int(available_memory * 0.9)  # 10% safety margin
-
     def FORWPROJ(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
 
