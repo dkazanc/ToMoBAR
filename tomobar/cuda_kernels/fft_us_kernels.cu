@@ -231,7 +231,8 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(int* angle_ran
     float length     = sqrtf(length_2);
     float acosangle  = acosf(point.x/length);
     float angle;
-    if (theta[theta_min_index] >= 0.0f)
+    float projection_angle_epsilon = M_PI * 0.001f;
+    if (theta[theta_min_index] >= -projection_angle_epsilon)
       angle = point.y < 0.f ? (M_PI - acosangle) : acosangle;
     else
       angle = point.y > 0.f ? -(M_PI - acosangle) : -acosangle;

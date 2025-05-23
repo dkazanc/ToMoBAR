@@ -16,7 +16,7 @@ eps = 2e-06
 
 
 @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
-@pytest.mark.parametrize("theta_range_endpoint", [-np.pi, np.pi])
+@pytest.mark.parametrize("theta_range", [(0, -np.pi), (0, np.pi), (-8.726646046852693e-05, 3.1416800022125244), (-3.1416800022125244, 8.726646046852693e-05)])
 @pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
 @pytest.mark.parametrize(
@@ -24,7 +24,7 @@ eps = 2e-06
 )  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
 def test_Fourier3D_inv_prune(
     projection_count,
-    theta_range_endpoint,
+    theta_range,
     theta_shuffle_radius,
     theta_shuffle_iteration_count,
     center_size,
@@ -52,8 +52,8 @@ def test_Fourier3D_inv_prune(
     )
 
     angles = np.linspace(
-        0,
-        theta_range_endpoint,
+        theta_range[0],
+        theta_range[1],
         projection_count,
         dtype="float32",
     )  # in degrees
