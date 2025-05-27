@@ -115,31 +115,31 @@ bool __device__ eq_in_between(float *theta, int nproj, int index, float value)
 template<>
 bool __device__ eq_in_between<true>(float *theta, int nproj, int index, float value)
 {
-  if (theta[index - 1] < value && value <= theta[index])
-    return true;
+  if(index - 1 < 0)
+    return value <= theta[index];
   else
-    return false;
+    return theta[index - 1] < value && value <= theta[index];
 }
 
 template<>
 bool __device__ eq_in_between<false>(float *theta, int nproj, int index, float value)
 {
-  if (theta[index] < value && value <= theta[index + 1])
-    return true;
+  if( (nproj - 2) < index)
+    return theta[index] < value;
   else
-    return false;
+    return theta[index] < value && value <= theta[index + 1];
 }
 
-template<bool ascending>
+template<bool previous>
 bool __device__ out_of_range(float *theta, int nproj, int index, float value)
 {}
 
 template<>
 bool __device__ out_of_range<true>(float *theta, int nproj, int index, float value)
 {
-  if (index == 0 && value < theta[0])
+  if (index <= 0 && value < theta[0])
     return true;
-  if (index == (nproj - 1) && value > theta[nproj - 1])
+  if (index >= (nproj - 1) && value > theta[nproj - 1])
     return true;
 
   return false;
@@ -148,37 +148,17 @@ bool __device__ out_of_range<true>(float *theta, int nproj, int index, float val
 template<>
 bool __device__ out_of_range<false>(float *theta, int nproj, int index, float value)
 {
-  if (index == 0 && value > theta[0])
+  if (index <= 0 && value < theta[0])
     return true;
-  if (index == (nproj - 1) && value < theta[nproj - 1])
+  if (index >= (nproj - 1) && value > theta[nproj - 1])
     return true;
 
   return false;
 }
 
-template<bool ascending, bool previous>
-int __device__ binary_search(float *theta, int nproj, float value) {
-  int low = 0, high = nproj - 1; 
-  while (low <= high) {
-    int middle = low + (high - low) / 2;
-
-    if (out_of_range<ascending>(theta, nproj, middle, value) ||
-        eq_in_between<previous>(theta, nproj, middle, value))
-          return middle;
-
-      if (theta[middle] > value)
-        if (ascending)
-          high = middle - 1;
-        else
-          low = middle + 1;
-      else
-        if (ascending)
-          low = middle + 1;
-        else
-          high = middle - 1;
-    }
-
-  return low;
+__device__ inline int clamp_array_index(int index, int length)
+{
+  return min(max(0, index), length - 1);
 }
 
 template<bool previous>
@@ -188,24 +168,25 @@ int __device__ binary_search_with_guess(float *theta, int nproj, float value, fl
   // Use the theta step value to guess the search range.
   int guess_index = (int)floorf((value - theta[0]) / theta_step);
   constexpr int tolerance = 4;
-  if ( theta[max(0        , guess_index - tolerance)] < value &&
-       theta[min(nproj - 1, guess_index + tolerance)] > value  ) {
-    low  = max(0        , guess_index - tolerance);
-    high = min(nproj - 1, guess_index + tolerance);
+  int guess_min = clamp_array_index(guess_index - tolerance, nproj);
+  int guess_max = clamp_array_index(guess_index + tolerance, nproj);
+  if ( theta[guess_min] < value && theta[guess_max] > value  ) {
+    low  = guess_min;
+    high = guess_max;
   }
 
   while (low <= high) {
     int middle = low + (high - low) / 2;
 
-    if (out_of_range<true>(theta, nproj, middle, value) ||
+    if (out_of_range<previous>(theta, nproj, middle, value) ||
         eq_in_between<previous>(theta, nproj, middle, value))
           return middle;
 
-      if (theta[middle] > value)
-        high = middle - 1;
-      else
-        low = middle + 1;
-    }
+    if (theta[middle] > value)
+      high = middle - 1;
+    else
+      low = middle + 1;
+  }
 
   return low;
 }
