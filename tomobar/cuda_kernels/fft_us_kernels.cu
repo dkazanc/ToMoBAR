@@ -186,13 +186,13 @@ int __device__ binary_search_with_guess(float *theta, int nproj, float value, fl
   int low = 0, high = nproj - 1;
 
   // Use the theta step value to guess the search range.
-  /*int guess_index = (int)floorf((value - theta[0]) / theta_step);
+  int guess_index = (int)floorf((value - theta[0]) / theta_step);
   constexpr int tolerance = 4;
   if ( theta[max(0        , guess_index - tolerance)] < value &&
        theta[min(nproj - 1, guess_index + tolerance)] > value  ) {
     low  = max(0        , guess_index - tolerance);
     high = min(nproj - 1, guess_index + tolerance);
-  }*/
+  }
 
   while (low <= high) {
     int middle = low + (high - low) / 2;

@@ -382,7 +382,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             theta_full_range = abs(sorted_theta_cpu[nproj-1] - sorted_theta_cpu[0])
             angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
-            angle_range = xp.empty([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32)
+            angle_range = xp.zeros([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32)
 
             gather_kernel_center_angle_based_prune(
                 (int(np.ceil(center_size / 256)), center_size, 1),
@@ -421,6 +421,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 ),
             )
 
+            del angle_range
+
         else:
             gather_kernel(
                 (
@@ -451,10 +453,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (fde, n, nz // 2, m),
         )
 
-        if center_size > 0:
-            del angle_range, c1dfftshift, datac
-        else:
-            del datac, c1dfftshift
+        del datac, c1dfftshift
         xp._default_memory_pool.free_all_blocks()
 
         # STEP3: ifft 2d

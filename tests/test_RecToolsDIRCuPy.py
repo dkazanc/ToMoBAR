@@ -81,7 +81,7 @@ def test_Fourier3D_inv_prune(
     theta_full_range = abs(sorted_theta_cpu[projection_count-1] - sorted_theta_cpu[0])
     angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
-    angle_range_expected = cp.empty([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32)
+    angle_range_expected = cp.zeros([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32)
     with time_range("fourier_inv_prune_expected", color_id=0, sync=True):
         gather_kernel_center_prune(
             grid=(int(cp.ceil(center_size / 32)), int(cp.ceil(center_size / 8)), 1),
@@ -99,7 +99,7 @@ def test_Fourier3D_inv_prune(
             ),
         )
 
-    angle_range_actual = cp.empty([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32)
+    angle_range_actual = cp.zeros([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32)
     with time_range("fourier_inv_prune_actual", color_id=1, sync=True):
         gather_kernel_center_angle_based_prune(
             (int(np.ceil(center_size / 256)), center_size, 1),
