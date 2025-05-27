@@ -7,6 +7,7 @@
 
 import numpy as np
 import timeit
+import math
 
 try:
     import cupy as xp
@@ -20,7 +21,6 @@ except ImportError:
     print(
         "Cupy library is a required dependency for this part of the code, please install"
     )
-
 
 from tomobar.supp.suppTools import check_kwargs
 from tomobar.supp.funcs import _data_dims_swapper
@@ -310,9 +310,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # Memory clean up of interpolation extra arrays
         del t, dx, dy
 
-        if center_size > 0:
-            angle_range = xp.empty([center_size, center_size, 3], dtype=xp.int32)
-
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -335,10 +332,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # FBP filtering output
         tmp_p = xp.empty(data.shape, dtype=xp.float32)
-
-        # print(data.shape[2] + padding_m * 2)
-        # print(xp.float32().itemsize)
-        # print(chunk_count)
 
         # Loop over the chunks
         for chunk_index in range(0, chunk_count):
@@ -394,12 +387,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
             sorted_theta_indices = xp.argsort(theta)
             sorted_theta = theta[sorted_theta_indices]
+            sorted_theta_cpu = sorted_theta.get()
+
+            theta_full_range = abs(sorted_theta_cpu[nproj-1] - sorted_theta_cpu[0])
+            angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
+
+            angle_range = xp.empty([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32)
 
             gather_kernel_center_angle_based_prune(
                 (int(np.ceil(center_size / 256)), center_size, 1),
                 (256, 1, 1),
                 (
                     angle_range,
+                    angle_range_pi_count * 2 + 1,
                     sorted_theta,
                     np.int32(m),
                     np.int32(center_size),
@@ -419,6 +419,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     datac,
                     fde,
                     angle_range,
+                    angle_range_pi_count * 2 + 1,
                     theta,
                     sorted_theta_indices,
                     np.int32(m),
