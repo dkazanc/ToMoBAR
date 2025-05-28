@@ -18,8 +18,8 @@ eps = 2e-06
 @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
 @pytest.mark.parametrize("theta_range", [(0, -np.pi), (0, np.pi), (np.pi/2, -np.pi/2), (-8.726646046852693e-05, 3.1416800022125244), (-3.1416800022125244, 8.726646046852693e-05), (0, -2*np.pi), (0, 2*np.pi), ])
 @pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
-@pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
-@pytest.mark.parametrize("center_size", [256, 512, 1024, 2048])  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
+@pytest.mark.parametrize("theta_shuffle_iteration_count", [2])
+@pytest.mark.parametrize("center_size", [256, 512, 1024])  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
 def test_Fourier3D_inv_prune(
     projection_count,
     theta_range,
@@ -35,8 +35,8 @@ def test_Fourier3D_inv_prune(
 @pytest.mark.parametrize("theta_range", [(0, -np.pi), (0, np.pi), (np.pi/2, -np.pi/2), (-8.726646046852693e-05, 3.1416800022125244), (-3.1416800022125244, 8.726646046852693e-05), (0, -2*np.pi), (0, 2*np.pi), ])
 @pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
-@pytest.mark.parametrize("center_size", [6144])  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
-def test_Fourier3D_inv_prune_slow(
+@pytest.mark.parametrize("center_size", [256, 512, 1024, 2048, 6144])  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
+def test_Fourier3D_inv_prune_full(
     projection_count,
     theta_range,
     theta_shuffle_radius,
