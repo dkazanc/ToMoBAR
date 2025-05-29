@@ -326,7 +326,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # init filter
         ne = oversampling_level * n
         padding_m = ne // 2 - n // 2
-        padding_p = ne // 2 + n // 2
+        padding_p = ne // 2 + (n + n % 2) // 2
         wfilter = calc_filter(ne, filter_type, cutoff_freq)
 
         # STEP0: FBP filtering
@@ -495,7 +495,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             unpad_z = nz
 
         unpad_recon_m = n // 2 - recon_size // 2
-        unpad_recon_p = n // 2 + recon_size // 2
+        unpad_recon_p = n // 2 + (recon_size + recon_size % 2) // 2
         return check_kwargs(
             recon_up[
                 0:unpad_z,
