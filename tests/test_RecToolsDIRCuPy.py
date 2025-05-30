@@ -28,7 +28,7 @@ def test_Fourier3D_inv_prune(
     center_size,
     ensure_clean_memory,
 ):
-    test_Fourier3D_inv_prune_common(projection_count, theta_range, theta_shuffle_radius, theta_shuffle_iteration_count, center_size, ensure_clean_memory)
+    __test_Fourier3D_inv_prune_common(projection_count, theta_range, theta_shuffle_radius, theta_shuffle_iteration_count, center_size, ensure_clean_memory)
 
 @pytest.mark.full
 @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
@@ -44,9 +44,9 @@ def test_Fourier3D_inv_prune_full(
     center_size,
     ensure_clean_memory,
 ):
-    test_Fourier3D_inv_prune_common(projection_count, theta_range, theta_shuffle_radius, theta_shuffle_iteration_count, center_size, ensure_clean_memory)
+    __test_Fourier3D_inv_prune_common(projection_count, theta_range, theta_shuffle_radius, theta_shuffle_iteration_count, center_size, ensure_clean_memory)
 
-def test_Fourier3D_inv_prune_common(
+def __test_Fourier3D_inv_prune_common(
     projection_count,
     theta_range,
     theta_shuffle_radius,

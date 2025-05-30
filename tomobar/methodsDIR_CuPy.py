@@ -210,24 +210,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 else:
                     slice_count_per_chunk = value
 
-        projection_angles = -self.Atools.angles_vec
-        projection_angle_epsilon = np.pi * 0.001
-        if not (
-            all(
-                (-np.pi - projection_angle_epsilon)
-                <= x
-                <= (0 + projection_angle_epsilon)
-                for x in projection_angles
-            )
-            or all(
-                (0 - projection_angle_epsilon)
-                <= x
-                <= (np.pi + projection_angle_epsilon)
-                for x in projection_angles
-            )
-        ):
-            raise ValueError("Projection angles not in the [-PI, 0] or [0, PI] range")
-
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
@@ -270,7 +252,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         if odd_horiz:
             rotation_axis -= 1
-        theta = xp.array(projection_angles, dtype=xp.float32)
+        theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
 
         # usfft parameters
         eps = 1e-4  # accuracy of usfft
