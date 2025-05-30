@@ -7,6 +7,7 @@
 
 import numpy as np
 import timeit
+import math
 
 try:
     import cupy as xp
@@ -20,7 +21,6 @@ except ImportError:
     print(
         "Cupy library is a required dependency for this part of the code, please install"
     )
-
 
 from tomobar.supp.suppTools import check_kwargs
 from tomobar.supp.funcs import _data_dims_swapper
@@ -63,16 +63,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
         # if DetectorsDimV == 0 or DetectorsDimV is None:
         #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
-
-    @staticmethod
-    def _get_available_gpu_memory() -> int:
-        dev = xp.cuda.Device()
-        # first, let's make some space
-        xp.get_default_memory_pool().free_all_blocks()
-        cache = xp.fft.config.get_plan_cache()
-        cache.clear()
-        available_memory = dev.mem_info[0] + xp.get_default_memory_pool().free_bytes()
-        return int(available_memory * 0.9)  # 10% safety margin
 
     def FORWPROJ(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
@@ -220,24 +210,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 else:
                     slice_count_per_chunk = value
 
-        projection_angles = -self.Atools.angles_vec
-        projection_angle_epsilon = np.pi * 0.001
-        if not (
-            all(
-                (-np.pi - projection_angle_epsilon)
-                <= x
-                <= (0 + projection_angle_epsilon)
-                for x in projection_angles
-            )
-            or all(
-                (0 - projection_angle_epsilon)
-                <= x
-                <= (np.pi + projection_angle_epsilon)
-                for x in projection_angles
-            )
-        ):
-            raise ValueError("Projection angles not in the [-PI, 0] or [0, PI] range")
-
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
@@ -280,7 +252,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         if odd_horiz:
             rotation_axis -= 1
-        theta = xp.array(projection_angles, dtype=xp.float32)
+        theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
 
         # usfft parameters
         eps = 1e-4  # accuracy of usfft
@@ -310,9 +282,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # Memory clean up of interpolation extra arrays
         del t, dx, dy
 
-        if center_size > 0:
-            angle_range = xp.empty([center_size, center_size, 3], dtype=xp.int32)
-
         # (+1,-1) arrays for fftshift
         c1dfftshift = xp.empty(n, dtype=xp.int8)
         c1dfftshift[::2] = -1
@@ -335,10 +304,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # FBP filtering output
         tmp_p = xp.empty(data.shape, dtype=xp.float32)
-
-        # print(data.shape[2] + padding_m * 2)
-        # print(xp.float32().itemsize)
-        # print(chunk_count)
 
         # Loop over the chunks
         for chunk_index in range(0, chunk_count):
@@ -394,12 +359,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
             sorted_theta_indices = xp.argsort(theta)
             sorted_theta = theta[sorted_theta_indices]
+            sorted_theta_cpu = sorted_theta.get()
+
+            theta_full_range = abs(sorted_theta_cpu[nproj-1] - sorted_theta_cpu[0])
+            angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
+
+            angle_range = xp.zeros([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32)
 
             gather_kernel_center_angle_based_prune(
                 (int(np.ceil(center_size / 256)), center_size, 1),
                 (256, 1, 1),
                 (
                     angle_range,
+                    angle_range_pi_count * 2 + 1,
                     sorted_theta,
                     np.int32(m),
                     np.int32(center_size),
@@ -419,6 +391,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     datac,
                     fde,
                     angle_range,
+                    angle_range_pi_count * 2 + 1,
                     theta,
                     sorted_theta_indices,
                     np.int32(m),
@@ -429,6 +402,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
+
+            del angle_range
 
         else:
             gather_kernel(
@@ -460,10 +435,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (fde, n, nz // 2, m),
         )
 
-        if center_size > 0:
-            del angle_range, c1dfftshift, datac
-        else:
-            del datac, c1dfftshift
+        del datac, c1dfftshift
         xp._default_memory_pool.free_all_blocks()
 
         # STEP3: ifft 2d
