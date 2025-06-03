@@ -286,6 +286,30 @@ def test_Fourier3D_Y_odd_to_odd(ensure_clean_memory):
     assert recon.shape == (3, N_size, N_size)
 
 
+@pytest.mark.parametrize("slices", [3, 5, 8, 11, 14, 17, 20])
+def test_Fourier3D_Y_odd_to_odd_keep_size(ensure_clean_memory, slices):
+    dev = cp.cuda.Device()
+    data_host = np.random.randint(
+        low=7515, high=37624, size=(750, slices, 1341), dtype=np.uint16
+    ).astype(np.float32)
+    data = cp.asarray(data_host)
+    detX = cp.shape(data)[2]
+    detY = cp.shape(data)[1]
+    angles = np.linspace(0, math.pi, data.shape[0])
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    recon = RecToolsCP.FOURIER_INV(
+        data, data_axes_labels_order=["angles", "detY", "detX"]
+    )
+    assert recon.dtype == np.float32
+    assert recon.shape == (slices, detX, detX)
+
 # @pytest.mark.perf
 # def test_Fourier_inv3D_performance(ensure_clean_memory):
 #     dev = cp.cuda.Device()
