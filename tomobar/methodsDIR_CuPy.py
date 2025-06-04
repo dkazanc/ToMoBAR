@@ -444,7 +444,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         odd_recon_size = bool(recon_size % 2)
         unpad_z = nz - odd_vert
         unpad_recon_m = (n - odd_horiz) // 2 - recon_size // 2
-        unpad_recon_p = (n - odd_horiz) // 2 + recon_size // 2 + odd_recon_size
+        unpad_recon_p = (n - odd_horiz) // 2 + (recon_size + odd_recon_size) // 2
 
         return check_kwargs(
             recon_up[
