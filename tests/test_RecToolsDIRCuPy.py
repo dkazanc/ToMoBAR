@@ -287,10 +287,11 @@ def test_Fourier3D_Y_odd_to_odd(ensure_clean_memory):
 
 
 @pytest.mark.parametrize("slices", [3, 5, 8, 11, 14, 17, 20])
-def test_Fourier3D_Y_odd_to_odd_keep_size(ensure_clean_memory, slices):
+@pytest.mark.parametrize("detectorX", [761, 762])
+def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
     dev = cp.cuda.Device()
     data_host = np.random.randint(
-        low=7515, high=37624, size=(750, slices, 1341), dtype=np.uint16
+        low=7515, high=37624, size=(750, slices, detectorX), dtype=np.uint16
     ).astype(np.float32)
     data = cp.asarray(data_host)
     detX = cp.shape(data)[2]
