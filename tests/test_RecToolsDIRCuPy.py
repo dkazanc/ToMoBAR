@@ -16,10 +16,23 @@ eps = 2e-06
 
 
 @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
-@pytest.mark.parametrize("theta_range", [(0, -np.pi), (0, np.pi), (np.pi/2, -np.pi/2), (-8.726646046852693e-05, 3.1416800022125244), (-3.1416800022125244, 8.726646046852693e-05), (0, -2*np.pi), (0, 2*np.pi), ])
+@pytest.mark.parametrize(
+    "theta_range",
+    [
+        (0, -np.pi),
+        (0, np.pi),
+        (np.pi / 2, -np.pi / 2),
+        (-8.726646046852693e-05, 3.1416800022125244),
+        (-3.1416800022125244, 8.726646046852693e-05),
+        (0, -2 * np.pi),
+        (0, 2 * np.pi),
+    ],
+)
 @pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2])
-@pytest.mark.parametrize("center_size", [256, 512, 1024])  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
+@pytest.mark.parametrize(
+    "center_size", [256, 512, 1024]
+)  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
 def test_Fourier3D_inv_prune(
     projection_count,
     theta_range,
@@ -28,14 +41,35 @@ def test_Fourier3D_inv_prune(
     center_size,
     ensure_clean_memory,
 ):
-    __test_Fourier3D_inv_prune_common(projection_count, theta_range, theta_shuffle_radius, theta_shuffle_iteration_count, center_size, ensure_clean_memory)
+    __test_Fourier3D_inv_prune_common(
+        projection_count,
+        theta_range,
+        theta_shuffle_radius,
+        theta_shuffle_iteration_count,
+        center_size,
+        ensure_clean_memory,
+    )
+
 
 @pytest.mark.full
 @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
-@pytest.mark.parametrize("theta_range", [(0, -np.pi), (0, np.pi), (np.pi/2, -np.pi/2), (-8.726646046852693e-05, 3.1416800022125244), (-3.1416800022125244, 8.726646046852693e-05), (0, -2*np.pi), (0, 2*np.pi), ])
+@pytest.mark.parametrize(
+    "theta_range",
+    [
+        (0, -np.pi),
+        (0, np.pi),
+        (np.pi / 2, -np.pi / 2),
+        (-8.726646046852693e-05, 3.1416800022125244),
+        (-3.1416800022125244, 8.726646046852693e-05),
+        (0, -2 * np.pi),
+        (0, 2 * np.pi),
+    ],
+)
 @pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
-@pytest.mark.parametrize("center_size", [256, 512, 1024, 2048, 6144])  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
+@pytest.mark.parametrize(
+    "center_size", [256, 512, 1024, 2048, 6144]
+)  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
 def test_Fourier3D_inv_prune_full(
     projection_count,
     theta_range,
@@ -44,7 +78,15 @@ def test_Fourier3D_inv_prune_full(
     center_size,
     ensure_clean_memory,
 ):
-    __test_Fourier3D_inv_prune_common(projection_count, theta_range, theta_shuffle_radius, theta_shuffle_iteration_count, center_size, ensure_clean_memory)
+    __test_Fourier3D_inv_prune_common(
+        projection_count,
+        theta_range,
+        theta_shuffle_radius,
+        theta_shuffle_iteration_count,
+        center_size,
+        ensure_clean_memory,
+    )
+
 
 def __test_Fourier3D_inv_prune_common(
     projection_count,
@@ -102,10 +144,12 @@ def __test_Fourier3D_inv_prune_common(
     sorted_theta = theta[sorted_theta_indices]
     sorted_theta_cpu = sorted_theta.get()
 
-    theta_full_range = abs(sorted_theta_cpu[projection_count-1] - sorted_theta_cpu[0])
+    theta_full_range = abs(sorted_theta_cpu[projection_count - 1] - sorted_theta_cpu[0])
     angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
-    angle_range_expected = cp.zeros([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32)
+    angle_range_expected = cp.zeros(
+        [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32
+    )
     with time_range("fourier_inv_prune_expected", color_id=0, sync=True):
         gather_kernel_center_prune(
             grid=(int(cp.ceil(center_size / 32)), int(cp.ceil(center_size / 8)), 1),
@@ -123,7 +167,9 @@ def __test_Fourier3D_inv_prune_common(
             ),
         )
 
-    angle_range_actual = cp.zeros([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32)
+    angle_range_actual = cp.zeros(
+        [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32
+    )
     with time_range("fourier_inv_prune_actual", color_id=1, sync=True):
         gather_kernel_center_angle_based_prune(
             (int(np.ceil(center_size / 256)), center_size, 1),
@@ -147,14 +193,19 @@ def __test_Fourier3D_inv_prune_common(
     )
 
     for angle_range_index in range(angle_range_pi_count):
-
-        diff = host_angle_range_expected[:, :, angle_range_index * 2 + 1] - host_angle_range_actual[:, :, angle_range_index * 2 + 1]
+        diff = (
+            host_angle_range_expected[:, :, angle_range_index * 2 + 1]
+            - host_angle_range_actual[:, :, angle_range_index * 2 + 1]
+        )
         allowed = (0 <= diff) & (diff <= 3)
         assert np.all(
             allowed
         ), "Angle min elements differ by more than 1 or are less than expected"
 
-        diff = host_angle_range_actual[:, :, angle_range_index * 2 + 2] - host_angle_range_expected[:, :, angle_range_index * 2 + 2]
+        diff = (
+            host_angle_range_actual[:, :, angle_range_index * 2 + 2]
+            - host_angle_range_expected[:, :, angle_range_index * 2 + 2]
+        )
         allowed = (0 <= diff) & (diff <= 3)
         assert np.all(
             allowed
@@ -310,6 +361,7 @@ def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
     )
     assert recon.dtype == np.float32
     assert recon.shape == (slices, detX, detX)
+
 
 # @pytest.mark.perf
 # def test_Fourier_inv3D_performance(ensure_clean_memory):
