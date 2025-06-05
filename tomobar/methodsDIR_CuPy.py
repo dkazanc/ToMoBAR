@@ -168,7 +168,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim_center = [32, 4]
 
         chunk_count = 1
-        slice_count_per_chunk = None
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -202,13 +201,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     print(f"Invalid chunk count: {value}. Set to 1")
                 else:
                     chunk_count = value
-            if key == "slice_count_per_chunk" and value is not None:
-                if slice_count_per_chunk is not int or value <= 0:
-                    print(
-                        f"Invalid slice count: {value}. Set to slice count of input data"
-                    )
-                else:
-                    slice_count_per_chunk = value
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
@@ -229,29 +221,21 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     recon_size, n
                 )
             )
-        odd_horiz = False
-        if (n % 2) != 0:
-            n = n - 1  # dealing with the odd horizontal detector size
-            odd_horiz = True
-        odd_vert = False
-        if (nz % 2) != 0:
-            # the vertical dimension must be also even, so we need to extend the array. Not efficient.
-            data_p = xp.empty((nz + 1, nproj, n), dtype=xp.float32)
-            if odd_horiz:
-                data_p[:nz, :, :] = data[:, :, :-1]
-            else:
-                data_p[:nz, :, :] = data
+
+        odd_horiz = bool(n % 2)
+        odd_vert = bool(nz % 2)
+
+        n += odd_horiz
+        nz += odd_vert
+
+        if odd_horiz or odd_vert:
+            data_p = xp.empty((nz, nproj, n), dtype=xp.float32)
+            data_p[: nz - odd_vert, :, : n - odd_horiz] = data
+            data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
             data = data_p
-            nz += 1
-            odd_vert = True
             del data_p
 
-        if not slice_count_per_chunk:
-            slice_count_per_chunk = nz
-
         rotation_axis = self.Atools.centre_of_rotation + 0.5
-        if odd_horiz:
-            rotation_axis -= 1
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
 
         # usfft parameters
@@ -268,10 +252,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         center_size = min(center_size, n * 2 + m * 2)
 
         # memory for recon
-        if odd_horiz:
-            recon_up = xp.empty([nz, n + 1, n + 1], dtype=xp.float32)
-        else:
-            recon_up = xp.empty([nz, n, n], dtype=xp.float32)
+        recon_up = xp.empty([nz, n, n], dtype=xp.float32)
 
         # extra arrays
         # interpolation kernel
@@ -295,7 +276,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # init filter
         ne = oversampling_level * n
         padding_m = ne // 2 - n // 2
-        padding_p = ne // 2 + (n + n % 2) // 2
+        padding_p = ne // 2 + n // 2
         wfilter = calc_filter(ne, filter_type, cutoff_freq)
 
         # STEP0: FBP filtering
@@ -305,6 +286,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # FBP filtering output
         tmp_p = xp.empty(data.shape, dtype=xp.float32)
 
+        slice_count_per_chunk = np.ceil(nz / chunk_count)
         # Loop over the chunks
         for chunk_index in range(0, chunk_count):
             start_index = chunk_index * slice_count_per_chunk
@@ -361,10 +343,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
             sorted_theta = theta[sorted_theta_indices]
             sorted_theta_cpu = sorted_theta.get()
 
-            theta_full_range = abs(sorted_theta_cpu[nproj-1] - sorted_theta_cpu[0])
+            theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
             angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
-            angle_range = xp.zeros([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32)
+            angle_range = xp.zeros(
+                [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32
+            )
 
             gather_kernel_center_angle_based_prune(
                 (int(np.ceil(center_size / 256)), center_size, 1),
@@ -454,20 +438,16 @@ class RecToolsDIRCuPy(RecToolsDIR):
         fde2 = fde2[:, n // 2 : 3 * n // 2, n // 2 : 3 * n // 2] * phi
 
         # restructure memory
-        if odd_horiz:
-            recon_up[:, :-1, :-1] = xp.concatenate((fde2.real, fde2.imag))
-        else:
-            recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
+        recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
 
         del fde2, c2dfftshift
         xp._default_memory_pool.free_all_blocks()
-        if odd_vert:
-            unpad_z = nz - 1
-        else:
-            unpad_z = nz
 
-        unpad_recon_m = n // 2 - recon_size // 2
-        unpad_recon_p = n // 2 + (recon_size + recon_size % 2) // 2
+        odd_recon_size = bool(recon_size % 2)
+        unpad_z = nz - odd_vert
+        unpad_recon_m = (n - odd_horiz) // 2 - recon_size // 2
+        unpad_recon_p = (n - odd_horiz) // 2 + (recon_size + odd_recon_size) // 2
+
         return check_kwargs(
             recon_up[
                 0:unpad_z,
