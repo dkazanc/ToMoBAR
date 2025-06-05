@@ -227,11 +227,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         n += odd_horiz
         nz += odd_vert
-        
+
         if odd_horiz or odd_vert:
             data_p = xp.empty((nz, nproj, n), dtype=xp.float32)
-            data_p[:nz - odd_vert, :, :n - odd_horiz] = data
-            data_p[:nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
+            data_p[: nz - odd_vert, :, : n - odd_horiz] = data
+            data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
             data = data_p
             del data_p
 
@@ -343,10 +343,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
             sorted_theta = theta[sorted_theta_indices]
             sorted_theta_cpu = sorted_theta.get()
 
-            theta_full_range = abs(sorted_theta_cpu[nproj-1] - sorted_theta_cpu[0])
+            theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
             angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
-            angle_range = xp.zeros([center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32)
+            angle_range = xp.zeros(
+                [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32
+            )
 
             gather_kernel_center_angle_based_prune(
                 (int(np.ceil(center_size / 256)), center_size, 1),
