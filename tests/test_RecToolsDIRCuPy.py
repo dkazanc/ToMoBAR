@@ -16,22 +16,88 @@ eps = 2e-06
 
 
 @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
-@pytest.mark.parametrize("theta_range_endpoint", [-np.pi, np.pi])
+@pytest.mark.parametrize(
+    "theta_range",
+    [
+        (0, -np.pi),
+        (0, np.pi),
+        (np.pi / 2, -np.pi / 2),
+        (-8.726646046852693e-05, 3.1416800022125244),
+        (-3.1416800022125244, 8.726646046852693e-05),
+        (0, -2 * np.pi),
+        (0, 2 * np.pi),
+    ],
+)
+@pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
+@pytest.mark.parametrize("theta_shuffle_iteration_count", [2])
+@pytest.mark.parametrize(
+    "center_size", [256, 512, 1024]
+)  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
+def test_Fourier3D_inv_prune(
+    projection_count,
+    theta_range,
+    theta_shuffle_radius,
+    theta_shuffle_iteration_count,
+    center_size,
+    ensure_clean_memory,
+):
+    __test_Fourier3D_inv_prune_common(
+        projection_count,
+        theta_range,
+        theta_shuffle_radius,
+        theta_shuffle_iteration_count,
+        center_size,
+        ensure_clean_memory,
+    )
+
+
+@pytest.mark.full
+@pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
+@pytest.mark.parametrize(
+    "theta_range",
+    [
+        (0, -np.pi),
+        (0, np.pi),
+        (np.pi / 2, -np.pi / 2),
+        (-8.726646046852693e-05, 3.1416800022125244),
+        (-3.1416800022125244, 8.726646046852693e-05),
+        (0, -2 * np.pi),
+        (0, 2 * np.pi),
+    ],
+)
 @pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
 @pytest.mark.parametrize(
     "center_size", [256, 512, 1024, 2048, 6144]
 )  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
-def test_Fourier3D_inv_prune(
+def test_Fourier3D_inv_prune_full(
     projection_count,
-    theta_range_endpoint,
+    theta_range,
+    theta_shuffle_radius,
+    theta_shuffle_iteration_count,
+    center_size,
+    ensure_clean_memory,
+):
+    __test_Fourier3D_inv_prune_common(
+        projection_count,
+        theta_range,
+        theta_shuffle_radius,
+        theta_shuffle_iteration_count,
+        center_size,
+        ensure_clean_memory,
+    )
+
+
+def __test_Fourier3D_inv_prune_common(
+    projection_count,
+    theta_range,
     theta_shuffle_radius,
     theta_shuffle_iteration_count,
     center_size,
     ensure_clean_memory,
 ):
     module = load_cuda_module("fft_us_kernels")
-    gather_kernel_center_prune = module.get_function("gather_kernel_center_prune")
+    gather_kernel_center_prune = module.get_function("gather_kernel_center_prune_naive")
     gather_kernel_center_angle_based_prune = module.get_function(
         "gather_kernel_center_angle_based_prune"
     )
@@ -52,8 +118,8 @@ def test_Fourier3D_inv_prune(
     )
 
     angles = np.linspace(
-        0,
-        theta_range_endpoint,
+        theta_range[0],
+        theta_range[1],
         projection_count,
         dtype="float32",
     )  # in degrees
@@ -76,31 +142,41 @@ def test_Fourier3D_inv_prune(
     theta = cp.array(angles, dtype=cp.float32)
     sorted_theta_indices = cp.argsort(theta)
     sorted_theta = theta[sorted_theta_indices]
+    sorted_theta_cpu = sorted_theta.get()
 
-    angle_range_expected = cp.empty([center_size, center_size, 3], dtype=cp.int32)
+    theta_full_range = abs(sorted_theta_cpu[projection_count - 1] - sorted_theta_cpu[0])
+    angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
+
+    angle_range_expected = cp.zeros(
+        [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32
+    )
     with time_range("fourier_inv_prune_expected", color_id=0, sync=True):
         gather_kernel_center_prune(
-            grid=(1, int(np.ceil(center_size / 8)), center_size),
+            grid=(int(cp.ceil(center_size / 32)), int(cp.ceil(center_size / 8)), 1),
             block=(32, 8, 1),
+            # (int(np.ceil(center_size / 256)), center_size, 1),
+            # (256, 1, 1),
             args=(
                 angle_range_expected,
+                angle_range_pi_count * 2 + 1,
                 sorted_theta,
                 np.int32(interpolation_filter_half_size),
-                np.int32(center_size),
-                np.int32(center_size),
                 np.int32(center_size),
                 np.int32(detector_width),
                 np.int32(projection_count),
             ),
         )
 
-    angle_range_actual = cp.empty([center_size, center_size, 3], dtype=cp.int32)
+    angle_range_actual = cp.zeros(
+        [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32
+    )
     with time_range("fourier_inv_prune_actual", color_id=1, sync=True):
         gather_kernel_center_angle_based_prune(
             (int(np.ceil(center_size / 256)), center_size, 1),
             (256, 1, 1),
             (
                 angle_range_actual,
+                angle_range_pi_count * 2 + 1,
                 sorted_theta,
                 np.int32(interpolation_filter_half_size),
                 np.int32(center_size),
@@ -112,24 +188,28 @@ def test_Fourier3D_inv_prune(
     host_angle_range_expected = cp.asnumpy(angle_range_expected)
     host_angle_range_actual = cp.asnumpy(angle_range_actual)
 
-    diff = host_angle_range_expected[:, :, 0] - host_angle_range_actual[:, :, 0]
-    allowed = (0 <= diff) & (diff <= 3)
-    assert np.all(
-        allowed
-    ), "Angle min elements differ by more than 1 or are less than expected"
-
-    diff = host_angle_range_actual[:, :, 1] - host_angle_range_expected[:, :, 1]
-    allowed = (0 <= diff) & (diff <= 3)
-    assert np.all(
-        allowed
-    ), "Angle max elements differ by more than 1 or are less than expected"
-
     assert_array_equal(
-        host_angle_range_actual[:, :, 2], host_angle_range_expected[:, :, 2]
+        host_angle_range_actual[:, :, 0], host_angle_range_expected[:, :, 0]
     )
 
-    assert angle_range_actual.shape == (center_size, center_size, 3)
-    assert angle_range_actual.dtype == np.int32
+    for angle_range_index in range(angle_range_pi_count):
+        diff = (
+            host_angle_range_expected[:, :, angle_range_index * 2 + 1]
+            - host_angle_range_actual[:, :, angle_range_index * 2 + 1]
+        )
+        allowed = (0 <= diff) & (diff <= 3)
+        assert np.all(
+            allowed
+        ), "Angle min elements differ by more than 1 or are less than expected"
+
+        diff = (
+            host_angle_range_actual[:, :, angle_range_index * 2 + 2]
+            - host_angle_range_expected[:, :, angle_range_index * 2 + 2]
+        )
+        allowed = (0 <= diff) & (diff <= 3)
+        assert np.all(
+            allowed
+        ), "Angle max elements differ by more than 1 or are less than expected"
 
 
 def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
@@ -255,6 +335,32 @@ def test_Fourier3D_Y_odd_to_odd(ensure_clean_memory):
     )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
+
+
+@pytest.mark.parametrize("slices", [3, 5, 8, 11, 14, 17, 20])
+@pytest.mark.parametrize("detectorX", [761, 762])
+def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
+    dev = cp.cuda.Device()
+    data_host = np.random.randint(
+        low=7515, high=37624, size=(750, slices, detectorX), dtype=np.uint16
+    ).astype(np.float32)
+    data = cp.asarray(data_host)
+    detX = cp.shape(data)[2]
+    detY = cp.shape(data)[1]
+    angles = np.linspace(0, math.pi, data.shape[0])
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    recon = RecToolsCP.FOURIER_INV(
+        data, data_axes_labels_order=["angles", "detY", "detX"]
+    )
+    assert recon.dtype == np.float32
+    assert recon.shape == (slices, detX, detX)
 
 
 # @pytest.mark.perf
