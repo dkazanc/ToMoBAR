@@ -167,7 +167,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim = [16, 16]
         block_dim_center = [32, 4]
 
-        chunk_count = 1
+        chunk_count = 2
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -263,16 +263,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # Memory clean up of interpolation extra arrays
         del t, dx, dy
 
-        # (+1,-1) arrays for fftshift
-        c1dfftshift = xp.empty(n, dtype=xp.int8)
-        c1dfftshift[::2] = -1
-        c1dfftshift[1::2] = 1
-        c2dfftshift = xp.empty((2 * n, 2 * n), dtype=xp.int8)
-        c2dfftshift[0::2, 1::2] = -1
-        c2dfftshift[1::2, 0::2] = -1
-        c2dfftshift[0::2, 0::2] = 1
-        c2dfftshift[1::2, 1::2] = 1
-
         # init filter
         ne = oversampling_level * n
         padding_m = ne // 2 - n // 2
@@ -296,8 +286,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 ((0, 0), (0, 0), (padding_m, padding_m)),
                 mode="edge",
             )
-            tmp = irfft(w * rfft(tmp, axis=2), axis=2)
+
+            tmp = w * rfft(tmp, axis=2)
+
+            cache = xp.fft.config.get_plan_cache()
+            cache.clear()  # flush FFT cache
+
+            tmp = irfft(tmp, axis=2)
             tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
+            
             del tmp
 
         # BACKPROJECTION
@@ -309,11 +306,17 @@ class RecToolsDIRCuPy(RecToolsDIR):
         del tmp_p, t, wfilter, w
         xp._default_memory_pool.free_all_blocks()
 
+        # (+1,-1) array for fftshift
+        c1dfftshift = xp.empty(n, dtype=xp.int8)
+        c1dfftshift[::2] = -1
+        c1dfftshift[1::2] = 1
+
         # padded fft, reusable by chunks
         fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
 
         # STEP1: fft 1d
         datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
+        del c1dfftshift
 
         # STEP2: interpolation (gathering) in the frequency domain
         # Use original one kernel at low dimension.
@@ -419,28 +422,41 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (fde, n, nz // 2, m),
         )
 
-        del datac, c1dfftshift
+        del datac
         xp._default_memory_pool.free_all_blocks()
 
         # STEP3: ifft 2d
         # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
-        fde2 = fde[:, m:-m, m:-m]
+        # fde2 = fde[:, m:-m, m:-m]
 
         # Delete fde array
-        del fde
+        # del fde
 
-        fde2 = cupyx.scipy.fft.ifft2(
-            fde2 * c2dfftshift, axes=(-2, -1), overwrite_x=True
+        # (+1,-1) array for fftshift
+        c2dfftshift = xp.empty((2 * n, 2 * n), dtype=xp.int8)
+        c2dfftshift[0::2, 1::2] = -1
+        c2dfftshift[1::2, 0::2] = -1
+        c2dfftshift[0::2, 0::2] = 1
+        c2dfftshift[1::2, 1::2] = 1
+        c2dfftshift = xp.pad(
+                c2dfftshift,
+                ((m, m), (m, m)),
+                mode="constant",
         )
-        fde2 *= c2dfftshift
+
+        fde *= c2dfftshift
+        fde = cupyx.scipy.fft.ifft2(
+            fde, axes=(-2, -1), overwrite_x=True
+        )
+        fde *= c2dfftshift
 
         # STEP4: unpadding, multiplication by phi
-        fde2 = fde2[:, n // 2 : 3 * n // 2, n // 2 : 3 * n // 2] * phi
+        fde = fde[:, m + n // 2 : m + 3 * n // 2, m + n // 2 : m + 3 * n // 2] * phi
 
         # restructure memory
-        recon_up[:] = xp.concatenate((fde2.real, fde2.imag))
+        recon_up[:] = xp.concatenate((fde.real, fde.imag))
 
-        del fde2, c2dfftshift
+        del fde, c2dfftshift
         xp._default_memory_pool.free_all_blocks()
 
         odd_recon_size = bool(recon_size % 2)
