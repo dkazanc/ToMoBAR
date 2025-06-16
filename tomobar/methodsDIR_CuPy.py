@@ -211,6 +211,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
+        c1dfftshift = module.get_function("c1dfftshift")
+        c2dfftshift = module.get_function("c2dfftshift")
+        unpadding_mul_phi = module.get_function("unpadding_mul_phi")
 
         # initialisation
         [nz, nproj, n] = data.shape
@@ -251,18 +254,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # Limit the center size parameter
         center_size = min(center_size, n * 2 + m * 2)
 
-        # memory for recon
-        recon_up = xp.empty([nz, n, n], dtype=xp.float32)
-
-        # extra arrays
-        # interpolation kernel
-        t = xp.linspace(-1 / 2, 1 / 2, n, endpoint=False, dtype=xp.float32)
-        [dx, dy] = xp.meshgrid(t, t)
-        phi = xp.exp(mu * (n * n) * (dx * dx + dy * dy)) * ((1 - n % 4) / nproj)
-
-        # Memory clean up of interpolation extra arrays
-        del t, dx, dy
-
         # init filter
         ne = oversampling_level * n
         padding_m = ne // 2 - n // 2
@@ -288,10 +279,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
 
             tmp = w * rfft(tmp, axis=2)
-
-            cache = xp.fft.config.get_plan_cache()
-            cache.clear()  # flush FFT cache
-
             tmp = irfft(tmp, axis=2)
             tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
             
@@ -306,17 +293,31 @@ class RecToolsDIRCuPy(RecToolsDIR):
         del tmp_p, t, wfilter, w
         xp._default_memory_pool.free_all_blocks()
 
-        # (+1,-1) array for fftshift
-        c1dfftshift = xp.empty(n, dtype=xp.int8)
-        c1dfftshift[::2] = -1
-        c1dfftshift[1::2] = 1
-
         # padded fft, reusable by chunks
         fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
 
         # STEP1: fft 1d
-        datac = fft(c1dfftshift * datac) * c1dfftshift * (4 / n)
-        del c1dfftshift
+        c1dfftshift(
+            (
+                int(np.ceil(n / 32)),
+                int(np.ceil(nproj / 32)),
+                np.int32(nz // 2),
+            ),
+            (32, 32, 1),
+            (datac, np.float32(1), n, nproj, nz),
+        )
+
+        datac = fft(datac) 
+
+        c1dfftshift(
+            (
+                int(np.ceil(n / 32)),
+                int(np.ceil(nproj / 32)),
+                np.int32(nz // 2),
+            ),
+            (32, 32, 1),
+            (datac, np.float32(4 / n), n, nproj, nz),
+        )
 
         # STEP2: interpolation (gathering) in the frequency domain
         # Use original one kernel at low dimension.
@@ -425,50 +426,59 @@ class RecToolsDIRCuPy(RecToolsDIR):
         del datac
         xp._default_memory_pool.free_all_blocks()
 
-        # STEP3: ifft 2d
-        # can be done without introducing array fde2, saves memory, see tomocupy (TODO)
-        # fde2 = fde[:, m:-m, m:-m]
-
-        # Delete fde array
-        # del fde
-
-        # (+1,-1) array for fftshift
-        c2dfftshift = xp.empty((2 * n, 2 * n), dtype=xp.int8)
-        c2dfftshift[0::2, 1::2] = -1
-        c2dfftshift[1::2, 0::2] = -1
-        c2dfftshift[0::2, 0::2] = 1
-        c2dfftshift[1::2, 1::2] = 1
-        c2dfftshift = xp.pad(
-                c2dfftshift,
-                ((m, m), (m, m)),
-                mode="constant",
-        )
-
-        fde *= c2dfftshift
-        fde = cupyx.scipy.fft.ifft2(
-            fde, axes=(-2, -1), overwrite_x=True
-        )
-        fde *= c2dfftshift
-
-        # STEP4: unpadding, multiplication by phi
-        fde = fde[:, m + n // 2 : m + 3 * n // 2, m + n // 2 : m + 3 * n // 2] * phi
-
-        # restructure memory
-        recon_up[:] = xp.concatenate((fde.real, fde.imag))
-
-        del fde, c2dfftshift
-        xp._default_memory_pool.free_all_blocks()
-
+        # Unpadded recon output size
         odd_recon_size = bool(recon_size % 2)
         unpad_z = nz - odd_vert
         unpad_recon_m = (n - odd_horiz) // 2 - recon_size // 2
         unpad_recon_p = (n - odd_horiz) // 2 + (recon_size + odd_recon_size) // 2
+        unpad_recon_size = unpad_recon_p - unpad_recon_m
+
+        # memory for recon
+        recon_up = xp.empty([unpad_z, unpad_recon_size, unpad_recon_size], dtype=xp.float32)
+
+        # STEP3: ifft 2d
+        c2dfftshift(
+            (
+                int(np.ceil((2 * n + 2 * m) / 32)),
+                int(np.ceil((2 * n + 2 * m) / 8)),
+                np.int32(nz // 2),
+            ),
+            (32, 8, 1),
+            (fde, n, nz // 2, m),
+        )
+
+        fde = cupyx.scipy.fft.ifft2(
+            fde, axes=(-2, -1), overwrite_x=True
+        )
+
+        c2dfftshift(
+            (
+                int(np.ceil((2 * n + 2 * m) / 32)),
+                int(np.ceil((2 * n + 2 * m) / 8)),
+                np.int32(nz // 2),
+            ),
+            (32, 8, 1),
+            (fde, n, nz // 2, m),
+        )
+
+
+        # STEP4: unpadding, multiplication by phi and restructure memory
+        unpadding_mul_phi(
+            (
+                int(np.ceil(unpad_recon_size / 32)),
+                int(np.ceil(unpad_recon_size / 32)),
+                np.int32(nz // 2),
+            ),
+            (32, 32, 1),
+            (recon_up, fde, np.float32(mu), 
+            nproj, unpad_recon_p, unpad_z, unpad_recon_m,
+            n, nz // 2, m),
+        )
+
+        del fde
+        xp._default_memory_pool.free_all_blocks()
 
         return check_kwargs(
-            recon_up[
-                0:unpad_z,
-                unpad_recon_m:unpad_recon_p,
-                unpad_recon_m:unpad_recon_p,
-            ],
+            recon_up,
             **kwargs,
         )
