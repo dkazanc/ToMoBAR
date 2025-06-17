@@ -238,12 +238,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
-        sorted_theta_indices = xp.argsort(theta)
-        sorted_theta = theta[sorted_theta_indices]
-        sorted_theta_cpu = sorted_theta.get()
-
-        theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
-        angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
         # usfft parameters
         eps = 1e-4  # accuracy of usfft
@@ -348,7 +342,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     ),
                 )
 
-            angle_range = xp.empty(
+            sorted_theta_indices = xp.argsort(theta)
+            sorted_theta = theta[sorted_theta_indices]
+            sorted_theta_cpu = sorted_theta.get()
+
+            theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
+            angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
+            angle_range = xp.zeros(
                 [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32
             )
 
