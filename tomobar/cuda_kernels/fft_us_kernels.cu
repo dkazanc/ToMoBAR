@@ -505,6 +505,36 @@ extern "C" __global__ void wrap_kernel(float2 *f,
   }
 }
 
+extern "C" __global__ void r2c_c1dfftshift(
+  float *input, float2 *data,
+  int n, int nproj, int nz) {
+
+  int tx = blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = blockDim.y * blockIdx.y + threadIdx.y;
+  int tz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  if (tx >= n || ty >= nproj || tz >= nz)
+    return;
+
+  int data_stride_x = n;
+  int data_stride_y = data_stride_x * nproj;
+
+  // offset data by tz
+  data  += (unsigned long long)tz * data_stride_y;
+  input += (unsigned long long)tz * data_stride_y;
+
+  // recon restructure pointer
+  float* input_imag = input + (unsigned long long)data_stride_y * nz;
+
+  int data_ind = tx + ty * data_stride_x;
+
+  int value = (tx % 2) ? -1 : 1;
+
+  // Move to complex and fftshift
+  data[data_ind].x = input[data_ind]      * value;
+  data[data_ind].y = input_imag[data_ind] * value;
+}
+
 extern "C" __global__ void c1dfftshift(float2 *data, float constant, int n, int nproj, int nz)
 {
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -526,8 +556,8 @@ extern "C" __global__ void c1dfftshift(float2 *data, float constant, int n, int 
 
   // Multiply with constant and shift
   if( constant == 1.f ) {
-    data[data_ind] .x = data[data_ind].x * value;
-    data[data_ind] .y = data[data_ind].y * value;
+    data[data_ind].x = data[data_ind].x * value;
+    data[data_ind].y = data[data_ind].y * value;
   } else {
     data[data_ind].x = data[data_ind].x * constant * value;
     data[data_ind].y = data[data_ind].y * constant * value;

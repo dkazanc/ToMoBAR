@@ -6,15 +6,12 @@
 """
 
 import numpy as np
-import timeit
 import math
 
 try:
     import cupy as xp
 
-    from cupyx.scipy.fft import fftshift, ifftshift, fft, ifft2, rfftfreq, rfft, irfft
-    from cupyx.scipy.interpolate import interpn, RegularGridInterpolator
-    import cupyx
+    from cupyx.scipy.fft import fft, ifft2, rfftfreq, rfft, irfft
 except ImportError:
     import numpy as xp
 
@@ -211,6 +208,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
         gather_kernel_center = module.get_function("gather_kernel_center")
         wrap_kernel = module.get_function("wrap_kernel")
+        r2c_c1dfftshift = module.get_function("r2c_c1dfftshift")
         c1dfftshift = module.get_function("c1dfftshift")
         c2dfftshift = module.get_function("c2dfftshift")
         unpadding_mul_phi = module.get_function("unpadding_mul_phi")
@@ -287,32 +285,34 @@ class RecToolsDIRCuPy(RecToolsDIR):
             tmp = w * rfft(tmp, axis=2)
             tmp = irfft(tmp, axis=2)
             tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
-            
+
             del tmp
 
-        # BACKPROJECTION
-        # !work with complex numbers by setting a half of the array as real and another half as imag
-        datac = tmp_p[: nz // 2] + 1j * tmp_p[nz // 2 :]
-        # can be done without introducing array datac, saves memory, see tomocupy (TODO)
+        # Memory clean up of filter and input data
+        del data, t, wfilter, w
 
-        # Memory clean up of interpolation extra arrays
-        del tmp_p, t, wfilter, w
+        # BACKPROJECTION
+        # input data
+        datac = xp.empty((nz // 2, nproj, n), dtype=xp.complex64)
 
         # padded fft, reusable by chunks
         fde = xp.empty([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
 
         # STEP1: fft 1d
-        c1dfftshift(
+        r2c_c1dfftshift(
             (
                 int(np.ceil(n / 32)),
                 int(np.ceil(nproj / 32)),
                 np.int32(nz // 2),
             ),
             (32, 32, 1),
-            (datac, np.float32(1), n, nproj, nz),
+            (tmp_p, datac, n, nproj, nz // 2),
         )
 
-        datac = fft(datac) 
+        # Memory clean up of interpolation extra arrays
+        del tmp_p
+
+        datac = fft(datac)
 
         c1dfftshift(
             (
@@ -321,7 +321,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(nz // 2),
             ),
             (32, 32, 1),
-            (datac, np.float32(4 / n), n, nproj, nz),
+            (datac, np.float32(4 / n), n, nproj, nz // 2),
         )
 
         # STEP2: interpolation (gathering) in the frequency domain
@@ -431,7 +431,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_recon_size = unpad_recon_p - unpad_recon_m
 
         # memory for recon
-        recon_up = xp.empty([unpad_z, unpad_recon_size, unpad_recon_size], dtype=xp.float32)
+        recon_up = xp.empty(
+            [unpad_z, unpad_recon_size, unpad_recon_size], dtype=xp.float32
+        )
 
         # STEP3: ifft 2d
         c2dfftshift(
@@ -444,9 +446,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (fde, n, nz // 2, m),
         )
 
-        fde = cupyx.scipy.fft.ifft2(
-            fde, axes=(-2, -1), overwrite_x=True
-        )
+        fde = ifft2(fde, axes=(-2, -1), overwrite_x=True)
 
         c2dfftshift(
             (
@@ -458,7 +458,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (fde, n, nz // 2, m),
         )
 
-
         # STEP4: unpadding, multiplication by phi and restructure memory
         unpadding_mul_phi(
             (
@@ -467,9 +466,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 np.int32(nz // 2),
             ),
             (32, 32, 1),
-            (recon_up, fde, np.float32(mu), 
-            nproj, unpad_recon_p, unpad_z, unpad_recon_m,
-            n, nz // 2, m),
+            (
+                recon_up,
+                fde,
+                np.float32(mu),
+                nproj,
+                unpad_recon_p,
+                unpad_z,
+                unpad_recon_m,
+                n,
+                nz // 2,
+                m,
+            ),
         )
 
         del fde
