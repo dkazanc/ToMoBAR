@@ -240,6 +240,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
+        sorted_theta_indices = xp.argsort(theta)
+        sorted_theta = theta[sorted_theta_indices]
+        sorted_theta_cpu = sorted_theta.get()
+
+        theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
+        angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
         # usfft parameters
         eps = 1e-4  # accuracy of usfft
@@ -291,10 +297,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # Memory clean up of interpolation extra arrays
         del tmp_p, t, wfilter, w
-        xp._default_memory_pool.free_all_blocks()
 
         # padded fft, reusable by chunks
-        fde = xp.zeros([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+        fde = xp.empty([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
 
         # STEP1: fft 1d
         c1dfftshift(
@@ -325,8 +330,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
             if center_size != (n * 2 + m * 2):
                 gather_kernel_partial(
                     (
-                        int(xp.ceil(n / block_dim[0])),
-                        int(xp.ceil(nproj / block_dim[1])),
+                        int(np.ceil(n / block_dim[0])),
+                        int(np.ceil(nproj / block_dim[1])),
                         nz // 2,
                     ),
                     (block_dim[0], block_dim[1], 1),
@@ -343,14 +348,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     ),
                 )
 
-            sorted_theta_indices = xp.argsort(theta)
-            sorted_theta = theta[sorted_theta_indices]
-            sorted_theta_cpu = sorted_theta.get()
-
-            theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
-            angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
-
-            angle_range = xp.zeros(
+            angle_range = xp.empty(
                 [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32
             )
 
@@ -370,8 +368,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
             gather_kernel_center(
                 (
-                    int(xp.ceil(center_size / block_dim_center[0])),
-                    int(xp.ceil(center_size / block_dim_center[1])),
+                    int(np.ceil(center_size / block_dim_center[0])),
+                    int(np.ceil(center_size / block_dim_center[1])),
                     nz // 2,
                 ),
                 (block_dim_center[0], block_dim_center[1], 1),
@@ -396,8 +394,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         else:
             gather_kernel(
                 (
-                    int(xp.ceil(n / block_dim[0])),
-                    int(xp.ceil(nproj / block_dim[1])),
+                    int(np.ceil(n / block_dim[0])),
+                    int(np.ceil(nproj / block_dim[1])),
                     nz // 2,
                 ),
                 (block_dim[0], block_dim[1], 1),
@@ -424,7 +422,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
 
         del datac
-        xp._default_memory_pool.free_all_blocks()
 
         # Unpadded recon output size
         odd_recon_size = bool(recon_size % 2)
@@ -476,7 +473,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
 
         del fde
-        xp._default_memory_pool.free_all_blocks()
 
         return check_kwargs(
             recon_up,
