@@ -238,6 +238,17 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
+        if center_size >= _CENTER_SIZE_MIN:
+            sorted_theta_indices = xp.argsort(theta)
+            sorted_theta = theta[sorted_theta_indices]
+            sorted_theta_cpu = sorted_theta.get()
+
+            theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
+            angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
+            angle_range = xp.zeros(
+                [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.uint16
+            )
+
 
         # usfft parameters
         eps = 1e-4  # accuracy of usfft
@@ -341,16 +352,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                         np.int32(nz // 2),
                     ),
                 )
-
-            sorted_theta_indices = xp.argsort(theta)
-            sorted_theta = theta[sorted_theta_indices]
-            sorted_theta_cpu = sorted_theta.get()
-
-            theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
-            angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
-            angle_range = xp.zeros(
-                [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.uint16
-            )
 
             gather_kernel_center_angle_based_prune(
                 (int(np.ceil(center_size / 256)), center_size, 1),
