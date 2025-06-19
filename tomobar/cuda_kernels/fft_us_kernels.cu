@@ -191,7 +191,7 @@ int __device__ binary_search_with_guess(float *theta, int nproj, float value, fl
   return low;
 }
 
-extern "C" __global__ void gather_kernel_center_angle_based_prune(int* angle_range, 
+extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short* angle_range, 
                                                                   int angle_range_dim_x,
                                                                   float *theta,
                                                                   int m, int center_size,
@@ -262,7 +262,7 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(int* angle_ran
   }
 }
 
-extern "C" __global__ void gather_kernel_center_prune_naive(int* angle_range, 
+extern "C" __global__ void gather_kernel_center_prune_naive(unsigned short* angle_range, 
                                                             int angle_range_dim_x, 
                                                             float *theta,
                                                             int m, int center_size, 
@@ -424,7 +424,7 @@ gather_kernel_center_common(float2 *g, float *theta,
 }
 
 extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, 
-                                                int* angle_range, int angle_range_dim_x,
+                                                unsigned short* angle_range, int angle_range_dim_x,
                                                 float *theta,
                                                 long long* sorted_theta_indices,
                                                 int m, float mu,  

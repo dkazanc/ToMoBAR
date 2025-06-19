@@ -349,7 +349,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
             angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
             angle_range = xp.zeros(
-                [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.int32
+                [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.uint16
             )
 
             gather_kernel_center_angle_based_prune(
@@ -388,9 +388,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
-
-            del angle_range
-
         else:
             gather_kernel(
                 (
