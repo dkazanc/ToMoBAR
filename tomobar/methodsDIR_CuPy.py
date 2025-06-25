@@ -164,7 +164,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim = [16, 16]
         block_dim_center = [32, 4]
 
-        chunk_count = 2
+        chunk_count = 4
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -279,8 +279,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
         slice_count_per_chunk = np.ceil(nz / chunk_count)
         # Loop over the chunks
         for chunk_index in range(0, chunk_count):
-            start_index = chunk_index * slice_count_per_chunk
+            start_index = min(chunk_index * slice_count_per_chunk, nz)
             end_index = min((chunk_index + 1) * slice_count_per_chunk, nz)
+            if start_index >= end_index:
+                break
+
             tmp = xp.pad(
                 data[start_index:end_index, :, :],
                 ((0, 0), (0, 0), (padding_m, padding_m)),
@@ -428,11 +431,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_recon_p = (n - odd_horiz) // 2 + (recon_size + odd_recon_size) // 2
         unpad_recon_size = unpad_recon_p - unpad_recon_m
 
-        # memory for recon
-        recon_up = xp.empty(
-            [unpad_z, unpad_recon_size, unpad_recon_size], dtype=xp.float32
-        )
-
         # STEP3: ifft 2d
         c2dfftshift(
             (
@@ -444,8 +442,20 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (fde, n, nz // 2, m),
         )
 
-        fde = ifft2(fde, axes=(-2, -1), overwrite_x=True)
+        slice_count_per_chunk = np.ceil(nz // 2 / chunk_count)
+        # Loop over the chunks
+        for chunk_index in range(0, chunk_count):
+            start_index = min(chunk_index * slice_count_per_chunk, nz // 2)
+            end_index = min((chunk_index + 1) * slice_count_per_chunk, nz // 2)
+            if start_index >= end_index:
+                break
 
+            tmp = fde[start_index:end_index, :, :]
+            tmp = ifft2(tmp, axes=(-2, -1), overwrite_x=True)
+            fde[start_index:end_index, :, :] = tmp
+
+            del tmp
+        
         c2dfftshift(
             (
                 int(np.ceil((2 * n + 2 * m) / 32)),
@@ -454,6 +464,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
             ),
             (32, 8, 1),
             (fde, n, nz // 2, m),
+        )
+
+        # memory for recon
+        recon_up = xp.empty(
+            [unpad_z, unpad_recon_size, unpad_recon_size], dtype=xp.float32
         )
 
         # STEP4: unpadding, multiplication by phi and restructure memory
