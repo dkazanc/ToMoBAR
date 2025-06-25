@@ -194,7 +194,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 else:
                     filter_type = value
             if key == "chunk_count" and value is not None:
-                if value is not int or value <= 0:
+                if not isinstance(value, int) or value <= 0:
                     print(f"Invalid chunk count: {value}. Set to 1")
                 else:
                     chunk_count = value
