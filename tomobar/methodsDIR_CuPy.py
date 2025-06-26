@@ -424,13 +424,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         del datac
 
-        # Unpadded recon output size
-        odd_recon_size = bool(recon_size % 2)
-        unpad_z = nz - odd_vert
-        unpad_recon_m = (n - odd_horiz) // 2 - recon_size // 2
-        unpad_recon_p = (n - odd_horiz) // 2 + (recon_size + odd_recon_size) // 2
-        unpad_recon_size = unpad_recon_p - unpad_recon_m
-
         # STEP3: ifft 2d
         c2dfftshift(
             (
@@ -465,6 +458,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (32, 8, 1),
             (fde, n, nz // 2, m),
         )
+
+        # Unpadded recon output size
+        odd_recon_size = bool(recon_size % 2)
+        unpad_z = nz - odd_vert
+        unpad_recon_m = (n - odd_horiz) // 2 - recon_size // 2
+        unpad_recon_p = (n - odd_horiz) // 2 + (recon_size + odd_recon_size) // 2
+        unpad_recon_size = unpad_recon_p - unpad_recon_m
 
         # memory for recon
         recon_up = xp.empty(
