@@ -246,9 +246,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
             theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
             angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
             angle_range = xp.zeros(
-                [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=xp.uint16
+                [center_size, center_size, 1 + angle_range_pi_count * 2],
+                dtype=xp.uint16,
             )
-
 
         # usfft parameters
         eps = 1e-4  # accuracy of usfft
@@ -448,7 +448,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             fde[start_index:end_index, :, :] = tmp
 
             del tmp
-        
+
         c2dfftshift(
             (
                 int(np.ceil((2 * n + 2 * m) / 32)),
