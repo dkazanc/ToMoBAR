@@ -191,7 +191,7 @@ int __device__ binary_search_with_guess(float *theta, int nproj, float value, fl
   return low;
 }
 
-extern "C" __global__ void gather_kernel_center_angle_based_prune(int* angle_range, 
+extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short* angle_range, 
                                                                   int angle_range_dim_x,
                                                                   float *theta,
                                                                   int m, int center_size,
@@ -262,7 +262,7 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(int* angle_ran
   }
 }
 
-extern "C" __global__ void gather_kernel_center_prune_naive(int* angle_range, 
+extern "C" __global__ void gather_kernel_center_prune_naive(unsigned short* angle_range, 
                                                             int angle_range_dim_x, 
                                                             float *theta,
                                                             int m, int center_size, 
@@ -424,7 +424,7 @@ gather_kernel_center_common(float2 *g, float *theta,
 }
 
 extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f, 
-                                                int* angle_range, int angle_range_dim_x,
+                                                unsigned short* angle_range, int angle_range_dim_x,
                                                 float *theta,
                                                 long long* sorted_theta_indices,
                                                 int m, float mu,  
@@ -504,3 +504,138 @@ extern "C" __global__ void wrap_kernel(float2 *f,
     atomicAdd(&f[id2].y, f[id1].y);
   }
 }
+
+extern "C" __global__ void r2c_c1dfftshift(
+  float *input, float2 *data,
+  int n, int nproj, int nz) {
+
+  int tx = blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = blockDim.y * blockIdx.y + threadIdx.y;
+  int tz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  if (tx >= n || ty >= nproj || tz >= nz)
+    return;
+
+  int data_stride_x = n;
+  int data_stride_y = data_stride_x * nproj;
+
+  // offset data by tz
+  data  += (unsigned long long)tz * data_stride_y;
+  input += (unsigned long long)tz * data_stride_y;
+
+  // recon restructure pointer
+  float* input_imag = input + (unsigned long long)data_stride_y * nz;
+
+  int data_ind = tx + ty * data_stride_x;
+
+  int value = (tx % 2) ? -1 : 1;
+
+  // Move to complex and fftshift
+  data[data_ind].x = input[data_ind]      * value;
+  data[data_ind].y = input_imag[data_ind] * value;
+}
+
+extern "C" __global__ void c1dfftshift(float2 *data, float constant, int n, int nproj, int nz)
+{
+  int tx = blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = blockDim.y * blockIdx.y + threadIdx.y;
+  int tz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  if (tx >= n || ty >= nproj || tz >= nz)
+    return;
+
+  int data_stride_x = n;
+  int data_stride_y = data_stride_x * nproj;
+
+  // offset data by tz
+  data += (unsigned long long)tz * data_stride_y;
+
+  int data_ind = tx + ty * data_stride_x;
+
+  int value = (tx % 2) ? -1 : 1;
+
+  // Multiply with constant and shift
+  if( constant == 1.f ) {
+    data[data_ind].x = data[data_ind].x * value;
+    data[data_ind].y = data[data_ind].y * value;
+  } else {
+    data[data_ind].x = data[data_ind].x * constant * value;
+    data[data_ind].y = data[data_ind].y * constant * value;
+  }
+}
+
+extern "C" __global__ void c2dfftshift(float2 *f, int n, int nz, int m)
+{
+  int tx = blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = blockDim.y * blockIdx.y + threadIdx.y;
+  int tz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
+    return;
+
+  int f_stride = 2*n + 2*m;
+  int f_stride_2 = f_stride * f_stride;
+
+  // offset f by tz
+  f += (unsigned long long)tz * f_stride_2;
+
+  int f_ind = tx + ty * f_stride;
+
+  float value = !(tx % 2) != !(ty % 2) ? -1.f : 1.f;
+
+  // Padding
+  if( tx < m || ty < m || tx >= 2 * n + m || ty >= 2 * n + m )
+    value = 0.f;
+
+  f[f_ind].x *= value;
+  f[f_ind].y *= value;
+}
+
+extern "C" __global__ void unpadding_mul_phi(
+  float* recon_up, float2 *f, const float mu,
+  int nproj, 
+  int unpad_recon_p, int unpad_z, int unpad_recon_m,
+  int n, int nz, int m) {
+
+  int rx_unpad = blockDim.x * blockIdx.x + threadIdx.x;
+  int ry_unpad = blockDim.y * blockIdx.y + threadIdx.y;
+
+  int rx = unpad_recon_m + rx_unpad;
+  int ry = unpad_recon_m + ry_unpad;
+  int rz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  int tx = m + n / 2 + rx;
+  int ty = m + n / 2 + ry;
+  int tz =             rz;
+
+  if (rx >= unpad_recon_p || ry >= unpad_recon_p || rz >= nz)
+    return;
+
+  int f_stride = 2*n + 2*m;
+  int f_stride_2 = f_stride * f_stride;
+
+  int r_stride   = unpad_recon_p - unpad_recon_m;
+  int r_stride_2 = r_stride * r_stride;
+
+  // offset f by tz
+  f += (unsigned long long)tz * f_stride_2;
+  recon_up += (unsigned long long)rz * r_stride_2;
+
+  // recon restructure pointer
+  float* recon_up_imag = recon_up + (unsigned long long)r_stride_2 * nz;
+
+  int f_ind = tx       + ty       * f_stride;
+  int r_ind = rx_unpad + ry_unpad * r_stride;
+
+  float2 f_value = f[f_ind];
+
+  float dx = -0.5f + rx * 1.f / n;
+  float dy = -0.5f + ry * 1.f / n;
+
+  float phi = expf(mu * (n * n) * (dx * dx + dy * dy)) * (float(1 - n % 4) / nproj);
+
+  recon_up[r_ind]      = f_value.x * phi;
+  if( rz + nz < unpad_z )
+    recon_up_imag[r_ind] = f_value.y * phi;
+}
+

@@ -148,7 +148,7 @@ def __test_Fourier3D_inv_prune_common(
     angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
     angle_range_expected = cp.zeros(
-        [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32
+        [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.uint16
     )
     with time_range("fourier_inv_prune_expected", color_id=0, sync=True):
         gather_kernel_center_prune(
@@ -168,7 +168,7 @@ def __test_Fourier3D_inv_prune_common(
         )
 
     angle_range_actual = cp.zeros(
-        [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.int32
+        [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.uint16
     )
     with time_range("fourier_inv_prune_actual", color_id=1, sync=True):
         gather_kernel_center_angle_based_prune(
@@ -231,8 +231,8 @@ def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
         )
     recon_data = Fourier_rec_cupy.get()
 
-    assert_allclose(np.min(recon_data), -0.03678, atol=1e-5)
-    assert_allclose(np.max(recon_data), 0.1032, atol=1e-4)
+    assert_allclose(np.min(recon_data), -0.041244, atol=1e-5)
+    assert_allclose(np.max(recon_data), 0.092022, atol=1e-4)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
