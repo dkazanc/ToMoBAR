@@ -354,7 +354,6 @@ class RecToolsIRCuPy:
         _data_: dict,
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
-        _benchmark_: Union[dict, None] = None,
     ) -> Union[cp.ndarray, tuple[cp.ndarray, int]]:
         """A Fast Iterative Shrinkage-Thresholding Algorithm [BT2009]_ with various types of regularisation from
         the regularisation toolkit [KAZ2019]_.
@@ -398,8 +397,6 @@ class RecToolsIRCuPy:
 
         t = cp.float32(1.0)
         X_t = cp.copy(X)
-        if _benchmark_ and _benchmark_["measurement_target"] == "regularisation":
-            regularisation_runtime_s = 0
 
         # FISTA iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
@@ -444,32 +441,9 @@ class RecToolsIRCuPy:
 
                 if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####
-                    if (
-                        _benchmark_
-                        and _benchmark_["measurement_target"] == "regularisation"
-                    ):
-                        import timeit
-                        start_gpu = cp.cuda.Event()
-                        end_gpu = cp.cuda.Event()
-                        start_gpu.record()
-
-                        start_time = timeit.default_timer()
-                        X = prox_regul(self, X, _regularisation_upd_)
-                        end_time = timeit.default_timer()
-                        end_gpu.record()
-                        end_gpu.synchronize()
-
-                        runtime_cpu_s = end_time - start_time
-                        runtime_gpu_s = cp.cuda.get_elapsed_time(start_gpu, end_gpu) / 1000
-                        # regularisation_runtime_s += runtime_cpu_s
-                        regularisation_runtime_s += runtime_gpu_s
-                    else:
-                        X = prox_regul(self, X, _regularisation_upd_)
+                    X = prox_regul(self, X, _regularisation_upd_)
 
                 t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
                 X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
-
-        if _benchmark_ and _benchmark_["measurement_target"] == "regularisation":
-            return (X, regularisation_runtime_s)
 
         return X

@@ -97,45 +97,18 @@ def main(args: argparse.Namespace):
         "device_regulariser": 0,
     }
 
-    _benchmark_ = {
-        "measurement_target": args.measurement_target,
-    }
-
-    RecFISTA = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_, _benchmark_)
+    _ = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_)
 
     start_time = timeit.default_timer()
-
     measurement_iteration_count = 10
-    if _benchmark_ and _benchmark_["measurement_target"] == "end_to_end":
-        for x in range(measurement_iteration_count):
-            RecFISTA = RecToolsCP.FISTA(
-                _data_, _algorithm_, _regularisation_, _benchmark_
-            )
-    elif _benchmark_ and _benchmark_["measurement_target"] == "regularisation":
-        cumulative_regularisation_runtime_s = 0
-        for x in range(measurement_iteration_count):
-            RecFISTA, regularisation_runtime_s = RecToolsCP.FISTA(
-                _data_, _algorithm_, _regularisation_, _benchmark_
-            )
-            cumulative_regularisation_runtime_s += regularisation_runtime_s
-
-        regularisation_runtime_s = (
-            cumulative_regularisation_runtime_s / measurement_iteration_count
-        )
-
+    for _ in range(measurement_iteration_count):
+        _ = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_)
     end_time = timeit.default_timer()
     end_to_end_runtime_s = (end_time - start_time) / measurement_iteration_count
-
-    runtime_s = 0
-    if _benchmark_ and _benchmark_["measurement_target"] == "end_to_end":
-        runtime_s = end_to_end_runtime_s
-    elif _benchmark_ and _benchmark_["measurement_target"] == "regularisation":
-        runtime_s = regularisation_runtime_s
 
     print(
         {
             "end_to_end_runtime_ms": end_to_end_runtime_s * 1000,
-            "target_runtime_ms": runtime_s * 1000,
             "measurement_iteration_count": measurement_iteration_count,
         }
     )
@@ -246,12 +219,6 @@ if __name__ == "__main__":
         "--regulariser",
         required=True,
         choices=["PD_TV", "PD_TV_fused", "PD_TV_separate_p_fused"],
-    )
-    parser.add_argument(
-        "-m",
-        "--measurement_target",
-        required=True,
-        choices=["end_to_end", "regularisation"],
     )
     args = parser.parse_args()
 

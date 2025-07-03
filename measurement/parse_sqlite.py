@@ -38,12 +38,6 @@ if __name__ == "__main__":
         help="Total runtime in milliseconds.",
     )
     parser.add_argument(
-        "--target_runtime_ms",
-        type=float,
-        required=True,
-        help="Total runtime of measurement target in milliseconds.",
-    )
-    parser.add_argument(
         "--measurement_iteration_count",
         type=int,
         required=True,
@@ -54,23 +48,29 @@ if __name__ == "__main__":
     kernel_duration_averages = {}
     kernel_duration_percentages = {}
     cumulative_kernel_duration_percentages = {}
+    warmup_iteration_count = 1
+
     for target_kernel in args.target_kernels:
         events_for_kernel = get_cuda_events_for_kernel(args.db_file, target_kernel)
         event_count = len(events_for_kernel)
         if event_count > 0:
             kernel_duration_averages[target_kernel] = 0
 
-        quotient = event_count // args.measurement_iteration_count
-        actual_iteration_count = args.measurement_iteration_count * quotient
+        event_count_per_iteration = event_count // (
+            args.measurement_iteration_count + warmup_iteration_count
+        )
+        measured_event_count = (
+            event_count_per_iteration * args.measurement_iteration_count
+        )
 
-        for event in events_for_kernel[-actual_iteration_count:]:
+        for event in events_for_kernel[-measured_event_count:]:
             kernel_duration_averages[target_kernel] += event["duration_ms"]
 
         if target_kernel in kernel_duration_averages:
             kernel_duration_percentages[target_kernel] = (
                 kernel_duration_averages[target_kernel]
                 / args.measurement_iteration_count
-                / args.target_runtime_ms
+                / args.end_to_end_runtime_ms
                 * 100
             )
 
@@ -82,8 +82,9 @@ if __name__ == "__main__":
     }
 
     print(args.db_file)
-    print(f"{args.end_to_end_runtime_ms} ms")
-    print(f"{args.target_runtime_ms} ms")
-    print(f"{args.target_runtime_ms / args.end_to_end_runtime_ms * 100} %")
+    print(args.end_to_end_runtime_ms)
     print(kernel_duration_percentages)
     print(cumulative_kernel_duration_percentages)
+    print(f"e2e runtime: {args.end_to_end_runtime_ms} ms")
+    print(f"kernel_runtime %: {kernel_duration_percentages}")
+    print(f"cumulative kernel runtime %: {cumulative_kernel_duration_percentages}")

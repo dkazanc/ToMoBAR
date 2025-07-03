@@ -3,8 +3,8 @@ measurement_report_directory="./measurement_reports"
 mkdir -p $measurement_report_directory
 
 # regulariser="PD_TV"
-# regulariser="PD_TV_fused"
-regulariser="PD_TV_separate_p_fused"
+regulariser="PD_TV_fused"
+# regulariser="PD_TV_separate_p_fused"
 if [ "$regulariser" = "PD_TV" ]; then
   kernels_to_measure=('dualPD3D_kernel' 'Proj_funcPD3D_iso_kernel' 'Proj_funcPD3D_aniso_kernel' 'DivProj3D_kernel' 'PDnonneg3D_kernel' 'getU3D_kernel')
 elif [ "$regulariser" = "PD_TV_fused" ]; then
@@ -22,13 +22,12 @@ fi
       --cuda-memory-usage=true \
       --force-overwrite=true \
       --output $report_filename \
-      python measurement_target.py --regulariser $regulariser --measurement_target "regularisation")
+      python measurement_target.py --regulariser $regulariser)
 
     dict_line=$(echo "$output" | sed -n "/{.*runtime_ms.*}/p")
     cleaned_dict_line=$(echo "$dict_line" | sed "s/[{}']//g")
 
     end_to_end_runtime_ms=$(echo "$cleaned_dict_line" | sed -n "s/.*end_to_end_runtime_ms: \([0-9.]*\).*/\1/p")
-    target_runtime_ms=$(echo "$cleaned_dict_line" | sed -n "s/.*target_runtime_ms: \([0-9.]*\).*/\1/p")
     measurement_iteration_count=$(echo "$cleaned_dict_line" | sed -n "s/.*measurement_iteration_count: \([0-9]*\).*/\1/p")
 
     sqlite_filename=${report_filename/.nsys-rep/.sqlite}
@@ -38,7 +37,6 @@ fi
       --db_file "$sqlite_filename" \
       --target_kernels "${kernels_to_measure[@]}" \
       --end_to_end_runtime_ms "$end_to_end_runtime_ms" \
-      --target_runtime_ms "$target_runtime_ms" \
       --measurement_iteration_count "$measurement_iteration_count"
 #   done
 # done

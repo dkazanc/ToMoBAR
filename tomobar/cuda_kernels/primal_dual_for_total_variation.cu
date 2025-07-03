@@ -1,25 +1,23 @@
 /************************************************/
 /*****************3D modules*********************/
 /************************************************/
-__device__ float3 Proj_funcPD3D_iso(float P1, float P2, float P3)
+__device__ void Proj_funcPD3D_iso(float *P1, float *P2, float *P3)
 {
-  float denom = P1 * P1 + P2 * P2 + P3 * P3;
+  float denom = *P1 * *P1 + *P2 * *P2 + *P3 * *P3;
   if (denom > 1.0f)
   {
     float sq_denom = 1.0f / sqrtf(denom);
-    P1 *= sq_denom;
-    P2 *= sq_denom;
-    P3 *= sq_denom;
+    *P1 *= sq_denom;
+    *P2 *= sq_denom;
+    *P3 *= sq_denom;
   }
-
-  return make_float3(P1, P2, P3);
 }
 
-__device__ float3 Proj_funcPD3D_aniso(float P1, float P2, float P3)
+__device__ void Proj_funcPD3D_aniso(float *P1, float *P2, float *P3)
 {
-  float val1 = abs(P1);
-  float val2 = abs(P2);
-  float val3 = abs(P3);
+  float val1 = abs(*P1);
+  float val2 = abs(*P2);
+  float val3 = abs(*P3);
 
   if (val1 < 1.0f)
   {
@@ -36,101 +34,34 @@ __device__ float3 Proj_funcPD3D_aniso(float P1, float P2, float P3)
     val3 = 1.0f;
   }
 
-  P1 /= val1;
-  P2 /= val2;
-  P3 /= val3;
-
-  return make_float3(P1, P2, P3);
+  *P1 /= val1;
+  *P2 /= val2;
+  *P3 /= val3;
 }
 
-__device__ float3 dualPD3D(float *U, float *P1, float *P2, float *P3, float sigma, int dimX, int dimY, int dimZ, long i, long j, long k, long long index, int methodTV)
+__device__ void dualPD3D(float *U, float *P1, float *P2, float *P3, float sigma, int methodTV)
 {
-  float P1_local = P1[index];
-  float P2_local = P2[index];
-  float P3_local = P3[index];
-
-  if (i == dimX - 1)
-  {
-    long long index1 = static_cast<long long>(i - 1) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k);
-    P1_local += sigma * (U[index1] - U[index]);
-  }
-  else
-  {
-    long long index2 = static_cast<long long>(i + 1) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k);
-    P1_local += sigma * (U[index2] - U[index]);
-  }
-
-  if (j == dimY - 1)
-  {
-    long long index3 = static_cast<long long>(i) + dimX * static_cast<long long>(j - 1) + dimX * dimY * static_cast<long long>(k);
-    P2_local += sigma * (U[index3] - U[index]);
-  }
-  else
-  {
-    long long index4 = static_cast<long long>(i) + dimX * static_cast<long long>(j + 1) + dimX * dimY * static_cast<long long>(k);
-    P2_local += sigma * (U[index4] - U[index]);
-  }
-
-  if (k == dimZ - 1)
-  {
-    long long index5 = static_cast<long long>(i) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k - 1);
-    P3_local += sigma * (U[index5] - U[index]);
-  }
-  else
-  {
-    long long index6 = static_cast<long long>(i) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k + 1);
-    P3_local += sigma * (U[index6] - U[index]);
-  }
+  *P1 += sigma * (U[1] - U[0]);
+  *P2 += sigma * (U[2] - U[0]);
+  *P3 += sigma * (U[3] - U[0]);
 
   if (methodTV == 0)
   {
-    return Proj_funcPD3D_iso(P1_local, P2_local, P3_local);
+    Proj_funcPD3D_iso(P1, P2, P3);
   }
   else
   {
-    return Proj_funcPD3D_aniso(P1_local, P2_local, P3_local);
+    Proj_funcPD3D_aniso(P1, P2, P3);
   }
 }
 
-__device__ float DivProj3D(float *Input, float U_in, float3 P1_P2_P3, float3 shifted_P1_P2_P3, float tau, float lt, int dimX, int dimY, long i, long j, long k, long long index)
+__device__ float DivProj3D(float *Input, float U_in, float P1, float P2, float P3, float P1_prev_x, float P2_prev_y, float P3_prev_z, float tau, float lt, long long index)
 {
-  float P_v1, P_v2, P_v3;
-
-  if (i == 0)
-  {
-    P_v1 = -P1_P2_P3.x;
-  }
-  else
-  {
-    P_v1 = -(P1_P2_P3.x - shifted_P1_P2_P3.x);
-  }
-
-  if (j == 0)
-  {
-    P_v2 = -P1_P2_P3.y;
-  }
-  else
-  {
-    P_v2 = -(P1_P2_P3.y - shifted_P1_P2_P3.y);
-  }
-
-  if (k == 0)
-  {
-    P_v3 = -P1_P2_P3.z;
-  }
-  else
-  {
-    P_v3 = -(P1_P2_P3.z - shifted_P1_P2_P3.z);
-  }
-
+  float P_v1 = -(P1 - P1_prev_x);
+  float P_v2 = -(P2 - P2_prev_y);
+  float P_v3 = -(P3 - P3_prev_z);
   float div_var = P_v1 + P_v2 + P_v3;
-
   return (U_in - tau * div_var + lt * Input[index]) / (1.0f + lt);
-}
-
-__device__ long long calculate_index(long i, long j, long k, int dimX, int dimY)
-{
-  return static_cast<long long>(i) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k);
 }
 
 extern "C" __global__ void primal_dual_for_total_variation_3D(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ, int nonneg, int methodTV)
@@ -145,26 +76,106 @@ extern "C" __global__ void primal_dual_for_total_variation_3D(float *Input, floa
     return;
   }
 
-  long long index = calculate_index(xIndex, yIndex, zIndex, dimX, dimY);
+  long long xStride = 1;
+  long long yStride = dimX;
+  long long zStride = dimX * dimY;
 
-  float3 P1_P2_P3 = dualPD3D(U_in, P1_in, P2_in, P3_in, sigma, dimX, dimY, dimZ, xIndex, yIndex, zIndex, index, methodTV);
-  float3 shifted_P1_P2_P3 = make_float3(
-      dualPD3D(U_in, P1_in, P2_in, P3_in, sigma, dimX, dimY, dimZ, xIndex - 1, yIndex, zIndex, calculate_index(xIndex - 1, yIndex, zIndex, dimX, dimY), methodTV).x,
-      dualPD3D(U_in, P1_in, P2_in, P3_in, sigma, dimX, dimY, dimZ, xIndex, yIndex - 1, zIndex, calculate_index(xIndex, yIndex - 1, zIndex, dimX, dimY), methodTV).y,
-      dualPD3D(U_in, P1_in, P2_in, P3_in, sigma, dimX, dimY, dimZ, xIndex, yIndex, zIndex - 1, calculate_index(xIndex, yIndex, zIndex - 1, dimX, dimY), methodTV).z);
+  long long index = static_cast<long long>(xIndex) + yStride * static_cast<long long>(yIndex) + zStride * static_cast<long long>(zIndex);
+  long long index_prev_x = index - xStride;
+  long long index_prev_y = index - yStride;
+  long long index_prev_z = index - zStride;
+  long long index_prev_x_prev_y = index - xStride - yStride;
+  long long index_prev_x_prev_z = index - xStride - zStride;
+  long long index_prev_y_prev_z = index - yStride - zStride;
 
-  float old_U = U_in[index];
-  if (nonneg != 0 && old_U < 0.0f)
+  float P1 = P1_in[index];
+  float P2 = P2_in[index];
+  float P3 = P3_in[index];
+  float U = U_in[index];
+
+  float P1_prev_x = (xIndex > 0) ? P1_in[index_prev_x] : 0.0f;
+  float P2_prev_x = (xIndex > 0) ? P2_in[index_prev_x] : 0.0f;
+  float P3_prev_x = (xIndex > 0) ? P3_in[index_prev_x] : 0.0f;
+  float U_prev_x = (xIndex > 0) ? U_in[index_prev_x] : 0.0f;
+
+  float P1_prev_y = (yIndex > 0) ? P1_in[index_prev_y] : 0.0f;
+  float P2_prev_y = (yIndex > 0) ? P2_in[index_prev_y] : 0.0f;
+  float P3_prev_y = (yIndex > 0) ? P3_in[index_prev_y] : 0.0f;
+  float U_prev_y = (yIndex > 0) ? U_in[index_prev_y] : 0.0f;
+
+  float P1_prev_z = (zIndex > 0) ? P1_in[index_prev_z] : 0.0f;
+  float P2_prev_z = (zIndex > 0) ? P2_in[index_prev_z] : 0.0f;
+  float P3_prev_z = (zIndex > 0) ? P3_in[index_prev_z] : 0.0f;
+  float U_prev_z = (zIndex > 0) ? U_in[index_prev_z] : 0.0f;
+
+  bool last_x = xIndex == dimX - 1;
+  bool last_y = yIndex == dimY - 1;
+  bool last_z = zIndex == dimZ - 1;
+
+  float U_prev_x_prev_y = 0.0;
+  if (((xIndex > 0) && last_y) || ((yIndex > 0) && last_x))
   {
-    old_U = 0.0f;
+    U_prev_x_prev_y = U_in[index_prev_x_prev_y];
   }
 
-  float new_U = DivProj3D(Input, old_U, P1_P2_P3, shifted_P1_P2_P3, tau, lt, dimX, dimY, xIndex, yIndex, zIndex, index);
-  U_out[index] = new_U + theta * (new_U - old_U);
+  float U_prev_x_prev_z = 0.0f;
+  if (((xIndex > 0) && last_z) || ((zIndex > 0) && last_x))
+  {
+    U_prev_x_prev_z = U_in[index_prev_x_prev_z];
+  }
 
-  P1_out[index] = P1_P2_P3.x;
-  P2_out[index] = P1_P2_P3.y;
-  P3_out[index] = P1_P2_P3.z;
+  float U_prev_y_prev_z = 0.0f;
+  if (((yIndex > 0) && last_z) || ((zIndex > 0) && last_y))
+  {
+    U_prev_y_prev_z = U_in[index_prev_y_prev_z];
+  }
+
+  float U_values[4] = {
+      U,
+      last_x ? U_prev_x : U_in[index + xStride],
+      last_y ? U_prev_y : U_in[index + yStride],
+      last_z ? U_prev_z : U_in[index + zStride]};
+  dualPD3D(U_values, &P1, &P2, &P3, sigma, methodTV);
+
+  if (xIndex > 0)
+  {
+    U_values[0] = U_prev_x;
+    U_values[1] = U;
+    U_values[2] = last_y ? U_prev_x_prev_y : U_in[index - xStride + yStride];
+    U_values[3] = last_z ? U_prev_x_prev_z : U_in[index - xStride + zStride];
+    dualPD3D(U_values, &P1_prev_x, &P2_prev_x, &P3_prev_x, sigma, methodTV);
+  }
+
+  if (yIndex > 0)
+  {
+    U_values[0] = U_prev_y;
+    U_values[1] = last_x ? U_prev_x_prev_y : U_in[index + xStride - yStride];
+    // U_values[2] = U;
+    U_values[2] = ((yIndex - 1) == (dimY - 1)) ? U_in[index - yStride - yStride] : U;
+    U_values[3] = last_z ? U_prev_y_prev_z : U_in[index - yStride + zStride];
+    dualPD3D(U_values, &P1_prev_y, &P2_prev_y, &P3_prev_y, sigma, methodTV);
+  }
+
+  if (zIndex > 0)
+  {
+    U_values[0] = U_prev_z;
+    U_values[1] = last_x ? U_prev_x_prev_z : U_in[index + xStride - zStride];
+    U_values[2] = last_y ? U_prev_y_prev_z : U_in[index + yStride - zStride];
+    U_values[3] = U;
+    dualPD3D(U_values, &P1_prev_z, &P2_prev_z, &P3_prev_z, sigma, methodTV);
+  }
+
+  if (nonneg != 0 && U < 0.0f)
+  {
+    U = 0.0f;
+  }
+
+  float new_U = DivProj3D(Input, U, P1, P2, P3, P1_prev_x, P2_prev_y, P3_prev_z, tau, lt, index);
+  U_out[index] = new_U + theta * (new_U - U);
+
+  P1_out[index] = P1;
+  P2_out[index] = P2;
+  P3_out[index] = P3;
 }
 
 /************************************************/
