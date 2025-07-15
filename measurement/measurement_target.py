@@ -218,7 +218,7 @@ if __name__ == "__main__":
         "-r",
         "--regulariser",
         required=True,
-        choices=["PD_TV", "PD_TV_fused", "PD_TV_separate_p_fused"],
+        choices=["PD_TV", "PD_TV_fused"],
     )
     args = parser.parse_args()
 

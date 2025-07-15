@@ -4,13 +4,10 @@ mkdir -p $measurement_report_directory
 
 # regulariser="PD_TV"
 regulariser="PD_TV_fused"
-# regulariser="PD_TV_separate_p_fused"
 if [ "$regulariser" = "PD_TV" ]; then
   kernels_to_measure=('dualPD3D_kernel' 'Proj_funcPD3D_iso_kernel' 'Proj_funcPD3D_aniso_kernel' 'DivProj3D_kernel' 'PDnonneg3D_kernel' 'getU3D_kernel')
 elif [ "$regulariser" = "PD_TV_fused" ]; then
   kernels_to_measure=('primal_dual_for_total_variation_3D')
-elif [ "$regulariser" = "PD_TV_separate_p_fused" ]; then
-  kernels_to_measure=('primal_dual_for_total_variation_3D' 'dualPD3D_kernel')
 fi
 
 # for i in {1024,2048,4096,5120,6144}; do
