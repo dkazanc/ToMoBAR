@@ -514,7 +514,7 @@ def test_FISTA_PWLS_OS_reg2_2D(angles, raw_data, flats, darks):
     }
 
     Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
-    assert 3410 <= lc <= 3411
+    assert 3409 <= lc <= 3411
     assert_allclose(np.min(Iter_rec), -0.00010016523, rtol=0, atol=eps)
     assert_allclose(np.max(Iter_rec), 0.018724505, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32

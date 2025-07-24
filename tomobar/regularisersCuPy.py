@@ -7,10 +7,7 @@ from typing import Optional
 from tomobar.cuda_kernels import load_cuda_module
 
 try:
-    from ccpi.filters.regularisersCuPy import (
-        ROF_TV as ROF_TV_cupy,
-        PD_TV as PD_TV_cupy_original,
-    )
+    from ccpi.filters.regularisersCuPy import ROF_TV as ROF_TV_cupy
 except ImportError:
     print(
         "____! CCPi-regularisation package (CuPy part needed only) is missing, please install !____"
@@ -38,17 +35,8 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             _regularisation_["time_marching_step"],
             self.Atools.device_index,
         )
-    elif "PD_TV" == _regularisation_["method"]:
-        X_prox = PD_TV_cupy_original(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["methodTV"],
-            self.nonneg_regul,
-            _regularisation_["PD_LipschitzConstant"],
-            self.Atools.device_index,
-        )
-    elif "PD_TV_fused" == _regularisation_["method"]:
+
+    if "PD_TV" in _regularisation_["method"]:
         X_prox = PD_TV_cupy(
             X,
             _regularisation_["regul_param"],
@@ -112,62 +100,88 @@ def PD_TV_cupy(
     P2_arrays = [cp.zeros(data.shape, dtype=cp.float16, order="C") for _ in range(2)]
 
     # loading and compiling CUDA kernels:
-    module = load_cuda_module("primal_dual_for_total_variation")
-    if data.ndim == 3:
-        data3d = True
+    name_expressions_2D = [
+        "primal_dual_for_total_variation_2D<false, false>",
+        "primal_dual_for_total_variation_2D<false, true>",
+        "primal_dual_for_total_variation_2D<true, false>",
+        "primal_dual_for_total_variation_2D<true, true>",
+    ]
+    name_expressions_3D = [
+        "primal_dual_for_total_variation_3D<false, false>",
+        "primal_dual_for_total_variation_3D<false, true>",
+        "primal_dual_for_total_variation_3D<true, false>",
+        "primal_dual_for_total_variation_3D<true, true>",
+    ]
+    module = load_cuda_module(
+        "primal_dual_for_total_variation", name_expressions_2D + name_expressions_3D
+    )
+
+    (dz, dy, dx) = data.shape + (0,) * (3 - data.ndim)
+    block_x = 128
+    block_dims = (block_x, 1, 1)
+    grid_x = (dx + block_x - 1) // block_x
+    grid_y = dy
+    grid_dims = (grid_x, grid_y)
+    data_dims = (dx, dy)
+    name_expression_index = nonneg << 1 | methodTV
+
+    if data.ndim == 2:
+        primal_dual_for_total_variation = module.get_function(
+            name_expressions_2D[name_expression_index]
+        )
+    elif data.ndim == 3:
         P3_arrays = [
             cp.zeros(data.shape, dtype=cp.float16, order="C") for _ in range(2)
         ]
-        dz, dy, dx = data.shape
-        # setting grid/block parameters
-        block_x = 128
-        block_dims = (block_x, 1, 1)
-        grid_x = (dx + block_x - 1) // block_x
-        grid_y = dy
         grid_z = dz
-        grid_dims = (grid_x, grid_y, grid_z)
+        grid_dims = grid_dims + (grid_z,)
+        data_dims = data_dims + (dz,)
+
         primal_dual_for_total_variation = module.get_function(
-            "primal_dual_for_total_variation_3D"
-        )
-    else:
-        data3d = False
-        dy, dx = data.shape
-        # setting grid/block parameters
-        block_x = 128
-        block_dims = (block_x, 1)
-        grid_x = (dx + block_x - 1) // block_x
-        grid_y = dy
-        grid_dims = (grid_x, grid_y)
-        primal_dual_for_total_variation = module.get_function(
-            "primal_dual_for_total_variation_2D"
+            name_expressions_3D[name_expression_index]
         )
 
     # perform algorithm iterations
-    for iter in range(iterations):
-        if data3d:
+    input_index = 0
+    output_index = 1
+
+    for _ in range(iterations):
+        if data.ndim == 2:
             params = (
                 data,
-                U_arrays[iter % 2],
-                U_arrays[(iter + 1) % 2],
-                P1_arrays[iter % 2],
-                P2_arrays[iter % 2],
-                P3_arrays[iter % 2],
-                P1_arrays[(iter + 1) % 2],
-                P2_arrays[(iter + 1) % 2],
-                P3_arrays[(iter + 1) % 2],
+                U_arrays[input_index],
+                U_arrays[output_index],
+                P1_arrays[input_index],
+                P2_arrays[input_index],
+                P1_arrays[output_index],
+                P2_arrays[output_index],
                 sigma,
                 tau,
                 lt,
                 theta,
-                dx,
-                dy,
-                dz,
-                nonneg,
-                methodTV,
+                *data_dims,
             )
-        else:
-            params = ()
+        elif data.ndim == 3:
+            params = (
+                data,
+                U_arrays[input_index],
+                U_arrays[output_index],
+                P1_arrays[input_index],
+                P2_arrays[input_index],
+                P3_arrays[input_index],
+                P1_arrays[output_index],
+                P2_arrays[output_index],
+                P3_arrays[output_index],
+                sigma,
+                tau,
+                lt,
+                theta,
+                *data_dims,
+            )
 
         primal_dual_for_total_variation(grid_dims, block_dims, params)
+
+        input_index = 1 - input_index
+        output_index = 1 - output_index
 
     return U_arrays[iterations % 2]

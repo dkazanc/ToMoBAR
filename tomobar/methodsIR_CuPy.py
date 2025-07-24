@@ -354,7 +354,7 @@ class RecToolsIRCuPy:
         _data_: dict,
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
-    ) -> Union[cp.ndarray, tuple[cp.ndarray, int]]:
+    ) -> cp.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm [BT2009]_ with various types of regularisation from
         the regularisation toolkit [KAZ2019]_.
 
@@ -445,5 +445,4 @@ class RecToolsIRCuPy:
 
                 t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
                 X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
-
         return X
