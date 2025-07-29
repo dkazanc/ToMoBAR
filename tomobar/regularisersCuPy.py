@@ -8,6 +8,7 @@ from tomobar.cuda_kernels import load_cuda_module
 
 try:
     from ccpi.filters.regularisersCuPy import ROF_TV as ROF_TV_cupy
+    from ccpi.filters.regularisersCuPy import PD_TV as CCPi_PD_TV_cupy
 except ImportError:
     print(
         "____! CCPi-regularisation package (CuPy part needed only) is missing, please install !____"
@@ -36,7 +37,17 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             self.Atools.device_index,
         )
 
-    if "PD_TV" in _regularisation_["method"]:
+    if "CCPi_PD_TV" in _regularisation_["method"]:
+        X_prox = CCPi_PD_TV_cupy(
+            X,
+            _regularisation_["regul_param"],
+            _regularisation_["iterations"],
+            _regularisation_["methodTV"],
+            self.nonneg_regul,
+            _regularisation_["PD_LipschitzConstant"],
+            self.Atools.device_index,
+        )
+    elif "PD_TV" in _regularisation_["method"]:
         X_prox = PD_TV_cupy(
             X,
             _regularisation_["regul_param"],
