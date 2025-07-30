@@ -1,4 +1,56 @@
 #include <cuda_fp16.h>
+
+template <bool nonneg>
+__device__ float clamp_to_zero(float value)
+{
+}
+
+template <>
+__device__ float clamp_to_zero<false>(float value)
+{
+  return value;
+}
+
+template <>
+__device__ float clamp_to_zero<true>(float value)
+{
+  return value < 0.0f ? 0.0f : value;
+}
+
+template <typename T>
+__device__ float read_as_float(T *P, long long index)
+{
+}
+
+template <>
+__device__ float read_as_float<float>(float *P, long long index)
+{
+  return P[index];
+}
+
+template <>
+__device__ float read_as_float<__half>(__half *P, long long index)
+{
+  return __half2float(P[index]);
+}
+
+template <typename T>
+__device__ void write_float(T *P, long long index, float value)
+{
+}
+
+template <>
+__device__ void write_float<float>(float *P, long long index, float value)
+{
+  P[index] = value;
+}
+
+template <>
+__device__ void write_float<__half>(__half *P, long long index, float value)
+{
+  P[index] = __float2half(value);
+}
+
 /************************************************/
 /*****************3D modules*********************/
 /************************************************/
@@ -66,25 +118,8 @@ __device__ float DivProj3D(float Input, float U_in, float P1, float P2, float P3
   return (U_in - tau * div_var + lt * Input) / (1.0f + lt);
 }
 
-template <bool nonneg>
-__device__ float clamp_to_zero(float value)
-{
-}
-
-template <>
-__device__ float clamp_to_zero<false>(float value)
-{
-  return value;
-}
-
-template <>
-__device__ float clamp_to_zero<true>(float value)
-{
-  return value < 0.0f ? 0.0f : value;
-}
-
-template <bool nonneg, bool methodTV>
-__global__ void primal_dual_for_total_variation_3D(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+template <typename T, bool nonneg, bool methodTV>
+__global__ void primal_dual_for_total_variation_3D(float *Input, float *U_in, float *U_out, T *P1_in, T *P2_in, T *P3_in, T *P1_out, T *P2_out, T *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
   // calculate each thread global index
   const long xIndex = blockIdx.x * blockDim.x + threadIdx.x;
@@ -124,33 +159,33 @@ __global__ void primal_dual_for_total_variation_3D(float *Input, float *U_in, fl
   float U_prev_x_prev_z = 0.0f;
   float U_prev_y_prev_z = 0.0f;
 
-  float P1 = __half2float(P1_in[index]);
-  float P2 = __half2float(P2_in[index]);
-  float P3 = __half2float(P3_in[index]);
+  float P1 = read_as_float<T>(P1_in, index);
+  float P2 = read_as_float<T>(P2_in, index);
+  float P3 = read_as_float<T>(P3_in, index);
   float U = U_in[index];
   float Input_value = Input[index];
 
   if (xIndex > 0)
   {
-    P1_prev_x = __half2float(P1_in[index_prev_x]);
-    P2_prev_x = __half2float(P2_in[index_prev_x]);
-    P3_prev_x = __half2float(P3_in[index_prev_x]);
+    P1_prev_x = read_as_float<T>(P1_in, index_prev_x);
+    P2_prev_x = read_as_float<T>(P2_in, index_prev_x);
+    P3_prev_x = read_as_float<T>(P3_in, index_prev_x);
     U_prev_x = U_in[index_prev_x];
   }
 
   if (yIndex > 0)
   {
-    P1_prev_y = __half2float(P1_in[index_prev_y]);
-    P2_prev_y = __half2float(P2_in[index_prev_y]);
-    P3_prev_y = __half2float(P3_in[index_prev_y]);
+    P1_prev_y = read_as_float<T>(P1_in, index_prev_y);
+    P2_prev_y = read_as_float<T>(P2_in, index_prev_y);
+    P3_prev_y = read_as_float<T>(P3_in, index_prev_y);
     U_prev_y = U_in[index_prev_y];
   }
 
   if (zIndex > 0)
   {
-    P1_prev_z = __half2float(P1_in[index_prev_z]);
-    P2_prev_z = __half2float(P2_in[index_prev_z]);
-    P3_prev_z = __half2float(P3_in[index_prev_z]);
+    P1_prev_z = read_as_float<T>(P1_in, index_prev_z);
+    P2_prev_z = read_as_float<T>(P2_in, index_prev_z);
+    P3_prev_z = read_as_float<T>(P3_in, index_prev_z);
     U_prev_z = U_in[index_prev_z];
   }
 
@@ -216,9 +251,9 @@ __global__ void primal_dual_for_total_variation_3D(float *Input, float *U_in, fl
   float new_U = DivProj3D(Input_value, U, P1, P2, P3, P1_prev_x, P2_prev_y, P3_prev_z, tau, lt);
   U_out[index] = new_U + theta * (new_U - U);
 
-  P1_out[index] = __float2half(P1);
-  P2_out[index] = __float2half(P2);
-  P3_out[index] = __float2half(P3);
+  write_float<T>(P1_out, index, P1);
+  write_float<T>(P2_out, index, P2);
+  write_float<T>(P3_out, index, P3);
 }
 
 /************************************************/
@@ -278,8 +313,8 @@ __device__ float DivProj2D(float Input, float U_in, float P1, float P2, float P1
   return (U_in - tau * div_var + lt * Input) / (1.0f + lt);
 }
 
-template <bool nonneg, bool methodTV>
-__global__ void primal_dual_for_total_variation_2D(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+template <typename T, bool nonneg, bool methodTV>
+__global__ void primal_dual_for_total_variation_2D(float *Input, float *U_in, float *U_out, T *P1_in, T *P2_in, T *P1_out, T *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
   // calculate each thread global index
   const long xIndex = blockIdx.x * blockDim.x + threadIdx.x;
@@ -307,22 +342,22 @@ __global__ void primal_dual_for_total_variation_2D(float *Input, float *U_in, fl
 
   float U_prev_x_prev_y = 0.0;
 
-  float P1 = __half2float(P1_in[index]);
-  float P2 = __half2float(P2_in[index]);
+  float P1 = read_as_float<T>(P1_in, index);
+  float P2 = read_as_float<T>(P2_in, index);
   float U = U_in[index];
   float Input_value = Input[index];
 
   if (xIndex > 0)
   {
-    P1_prev_x = __half2float(P1_in[index_prev_x]);
-    P2_prev_x = __half2float(P2_in[index_prev_x]);
+    P1_prev_x = read_as_float<T>(P1_in, index_prev_x);
+    P2_prev_x = read_as_float<T>(P2_in, index_prev_x);
     U_prev_x = U_in[index_prev_x];
   }
 
   if (yIndex > 0)
   {
-    P1_prev_y = __half2float(P1_in[index_prev_y]);
-    P2_prev_y = __half2float(P2_in[index_prev_y]);
+    P1_prev_y = read_as_float<T>(P1_in, index_prev_y);
+    P2_prev_y = read_as_float<T>(P2_in, index_prev_y);
     U_prev_y = U_in[index_prev_y];
   }
 
@@ -368,6 +403,6 @@ __global__ void primal_dual_for_total_variation_2D(float *Input, float *U_in, fl
   float new_U = DivProj2D(Input_value, U, P1, P2, P1_prev_x, P2_prev_y, tau, lt);
   U_out[index] = new_U + theta * (new_U - U);
 
-  P1_out[index] = __float2half(P1);
-  P2_out[index] = __float2half(P2);
+  write_float<T>(P1_out, index, P1);
+  write_float<T>(P2_out, index, P2);
 }

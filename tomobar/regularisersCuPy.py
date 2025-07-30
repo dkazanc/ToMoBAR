@@ -56,6 +56,7 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             self.nonneg_regul,
             _regularisation_["PD_LipschitzConstant"],
             self.Atools.device_index,
+            _regularisation_.get("half_precision", False),
         )
 
     return X_prox
@@ -69,6 +70,7 @@ def PD_TV_cupy(
     nonneg: Optional[int] = 0,
     lipschitz_const: Optional[float] = 8.0,
     gpu_id: Optional[int] = 0,
+    half_precision: bool = False,
 ) -> cp.ndarray:
     """Primal Dual algorithm for non-smooth convex Total Variation functional.
        Ref: Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
@@ -99,6 +101,8 @@ def PD_TV_cupy(
     if input_type != "float32":
         raise ValueError("The input data should be float32 data type")
 
+    dtype_of_P = cp.float16 if half_precision else cp.float32
+
     # prepare some parameters:
     tau = cp.float32(regularisation_parameter * 0.1)
     sigma = cp.float32(1.0 / (lipschitz_const * tau))
@@ -107,25 +111,18 @@ def PD_TV_cupy(
 
     # initialise CuPy arrays here:
     U_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
-    P1_arrays = [cp.zeros(data.shape, dtype=cp.float16, order="C") for _ in range(2)]
-    P2_arrays = [cp.zeros(data.shape, dtype=cp.float16, order="C") for _ in range(2)]
+    P1_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
+    P2_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
 
     # loading and compiling CUDA kernels:
-    name_expressions_2D = [
-        "primal_dual_for_total_variation_2D<false, false>",
-        "primal_dual_for_total_variation_2D<false, true>",
-        "primal_dual_for_total_variation_2D<true, false>",
-        "primal_dual_for_total_variation_2D<true, true>",
+    type_of_P = "__half" if half_precision else "float"
+    nonneg_kernel_param = "true" if bool(nonneg) else "false"
+    methodTV_kernel_param = "true" if bool(methodTV) else "false"
+    name_expressions = [
+        f"primal_dual_for_total_variation_2D<{type_of_P}, {nonneg_kernel_param}, {methodTV_kernel_param}>",
+        f"primal_dual_for_total_variation_3D<{type_of_P}, {nonneg_kernel_param}, {methodTV_kernel_param}>",
     ]
-    name_expressions_3D = [
-        "primal_dual_for_total_variation_3D<false, false>",
-        "primal_dual_for_total_variation_3D<false, true>",
-        "primal_dual_for_total_variation_3D<true, false>",
-        "primal_dual_for_total_variation_3D<true, true>",
-    ]
-    module = load_cuda_module(
-        "primal_dual_for_total_variation", name_expressions_2D + name_expressions_3D
-    )
+    module = load_cuda_module("primal_dual_for_total_variation", name_expressions)
 
     (dz, dy, dx) = data.shape + (0,) * (3 - data.ndim)
     block_x = 128
@@ -134,23 +131,18 @@ def PD_TV_cupy(
     grid_y = dy
     grid_dims = (grid_x, grid_y)
     data_dims = (dx, dy)
-    name_expression_index = nonneg << 1 | methodTV
 
     if data.ndim == 2:
-        primal_dual_for_total_variation = module.get_function(
-            name_expressions_2D[name_expression_index]
-        )
+        primal_dual_for_total_variation = module.get_function(name_expressions[0])
     elif data.ndim == 3:
         P3_arrays = [
-            cp.zeros(data.shape, dtype=cp.float16, order="C") for _ in range(2)
+            cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)
         ]
         grid_z = dz
         grid_dims = grid_dims + (grid_z,)
         data_dims = data_dims + (dz,)
 
-        primal_dual_for_total_variation = module.get_function(
-            name_expressions_3D[name_expression_index]
-        )
+        primal_dual_for_total_variation = module.get_function(name_expressions[1])
 
     # perform algorithm iterations
     input_index = 0
@@ -195,4 +187,4 @@ def PD_TV_cupy(
         input_index = 1 - input_index
         output_index = 1 - output_index
 
-    return U_arrays[iterations % 2]
+    return U_arrays[input_index]

@@ -397,7 +397,6 @@ class RecToolsIRCuPy:
 
         t = cp.float32(1.0)
         X_t = cp.copy(X)
-
         # FISTA iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
             # loop over subsets (OS)
