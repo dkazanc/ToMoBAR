@@ -396,6 +396,10 @@ def apply_circular_mask(data, recon_mask_radius, cupyrun=False):
     return data
 
 
+def _apply_horiz_detector_padding(data, detector_width_pad):
+    return data
+
+
 def check_kwargs(reconstruction, **kwargs):
     # Iterating over optional parameters:
     for key, value in kwargs.items():

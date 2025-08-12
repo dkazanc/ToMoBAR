@@ -19,7 +19,7 @@ except ImportError:
         "Cupy library is a required dependency for this part of the code, please install"
     )
 
-from tomobar.supp.suppTools import check_kwargs
+from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 from tomobar.supp.funcs import _data_dims_swapper
 from tomobar.fourier import _filtersinc3D_cupy, calc_filter
 from tomobar.cuda_kernels import load_cuda_module
@@ -114,19 +114,28 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
                  When "None" we assume  ["angles", "detX"] for 2D and ["angles", "detY", "detX"] for 3D.
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
-            cutoff_freq (float): Cutoff frequency parameter for the sinc filter.
+            cutoff_freq (float): Cutoff frequency parameter for the sinc filter. Defaults to 0.35.
+            detector_width_pad (int): Pad the horizontal detector (detX) on both sides symmetrically using the provided amount of pixels.
+                The padding  is performed  using the "edge" setting by default. Defaults to None.
 
         Returns:
             xp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
         kwargs.update({"cupyrun": True})  # needed for agnostic array cropping
-        cutoff_freq = 0.35  # default value
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
             if key == "cutoff_freq" and value is not None:
                 cutoff_freq = value
+            else:
+                cutoff_freq = 0.35  # default value
+            if key == "detector_width_pad" and value is not None:
+                detector_width_pad = value
+            else:
+                detector_width_pad = None  # default value
 
+        if detector_width_pad is not None and detector_width_pad > 0:
+            _apply_horiz_detector_padding(data, detector_width_pad)
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(data, cutoff=cutoff_freq)
         data = xp.ascontiguousarray(xp.swapaxes(data, 0, 1))
@@ -134,7 +143,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         cache.clear()  # flush FFT cache here before backprojection
         xp._default_memory_pool.free_all_blocks()  # free everything related to the filtering before starting Astra
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
-        xp._default_memory_pool.free_all_blocks()
         return check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
