@@ -424,7 +424,7 @@ def test_FISTA_compare_pd_tv_regularisations(
     Iter_rec_original = Iter_rec_original.get()
 
     assert 4000 <= lc <= 5000, "original"
-    assert_allclose(np.max(Iter_rec_original), 0.0212302, rtol=1e-03), "original"
+    assert_allclose(np.max(Iter_rec_original), 0.0212302, rtol=1e-03)
     assert Iter_rec_original.dtype == np.float32, "original"
     assert Iter_rec_original.shape == (128, 160, 160), "original"
 
@@ -434,9 +434,9 @@ def test_FISTA_compare_pd_tv_regularisations(
     Iter_rec = Iter_rec.get()
 
     assert 4000 <= lc <= 5000, "fused"
-    assert_allclose(np.max(Iter_rec), 0.0212302, rtol=1e-03), "fused"
+    assert_allclose(np.max(Iter_rec), 0.0212302, rtol=1e-03)
     assert Iter_rec.dtype == np.float32, "fused"
     assert Iter_rec.shape == (128, 160, 160), "fused"
 
     diff = Iter_rec - Iter_rec_original
-    assert_allclose(diff, 0.0, atol=1e-04 if half_precision else 1e-05), "difference between solutions is not zero"
+    assert_allclose(diff, 0.0, atol=1e-04 if half_precision else 1e-05)

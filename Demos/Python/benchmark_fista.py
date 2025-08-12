@@ -37,7 +37,7 @@ def main(args: argparse.Namespace):
         cp._default_memory_pool.free_all_blocks()
 
         data_labels3D = ["angles", "detY", "detX"]  # set the input data labels
-        angles_number, detectorVec, detectorHoriz = np.shape(data_normalised)
+        _, detectorVec, detectorHoriz = np.shape(data_normalised)
         detectorVec -= 10
         print(np.shape(data_normalised))
         angles_rad = angles[:] * (np.pi / 180.0)
