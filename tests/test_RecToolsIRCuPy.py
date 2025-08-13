@@ -208,7 +208,7 @@ def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
-def test_FISTA_regul_cp_3D(data_cupy, angles, ensure_clean_memory):
+def test_FISTA_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
@@ -243,6 +243,46 @@ def test_FISTA_regul_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.0003926696, rtol=1e-04)
     assert_allclose(np.max(Iter_rec), 0.022365307, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_FISTA_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    _algorithm_ = {"iterations": 50, "lipschitz_const": lc.get()}
+
+    # adding regularisation using the CCPi regularisation toolkit
+    _regularisation_ = {
+        "method": "ROF_TV",
+        "regul_param": 0.0005,
+        "iterations": 50,
+        "time_marching_step": 0.001,
+        "device_regulariser": 0,
+    }
+
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), -0.0022028014, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.023243528, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -282,7 +322,7 @@ def test_FISTA_OS_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
-def test_FISTA_OS_reg_cp_3D(data_cupy, angles, ensure_clean_memory):
+def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
@@ -326,7 +366,52 @@ def test_FISTA_OS_reg_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
-def test_FISTA_OS_PWLS_reg_cp_3D(angles, raw_data, flats, darks):
+def test_FISTA_OS_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+    # data dictionary
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "OS_number": 5,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    lc = lc.get()
+
+    _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
+
+    # adding regularisation using the CCPi regularisation toolkit
+    _regularisation_ = {
+        "method": "ROF_TV",
+        "regul_param": 0.0005,
+        "iterations": 20,
+        "time_marching_step": 0.001,
+        "device_regulariser": 0,
+    }
+
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+
+    Iter_rec = Iter_rec.get()
+
+    assert_allclose(lc, 5510.867, rtol=1e-05)
+    assert_allclose(np.min(Iter_rec), -0.006529817, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.03582852, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     normalised = normaliser(raw_data, flats, darks)
     raw_data_norm = np.float32(np.divide(raw_data, np.max(raw_data).astype(float)))
     normalised_cp = cp.asarray(normalised)
@@ -371,5 +456,55 @@ def test_FISTA_OS_PWLS_reg_cp_3D(angles, raw_data, flats, darks):
 
     assert 4000 <= lc <= 5000
     assert_allclose(np.max(Iter_rec), 0.0212302, rtol=1e-03)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
+    normalised = normaliser(raw_data, flats, darks)
+    raw_data_norm = np.float32(np.divide(raw_data, np.max(raw_data).astype(float)))
+    normalised_cp = cp.asarray(normalised)
+    raw_data_norm_cp = cp.asarray(raw_data_norm)
+
+    detX = cp.shape(normalised_cp)[2]
+    detY = cp.shape(normalised_cp)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="PWLS",
+        device_projector=0,  # define the device
+    )
+    # data dictionary
+    _data_ = {
+        "projection_norm_data": normalised_cp,
+        "projection_raw_data": raw_data_norm_cp,
+        "OS_number": 5,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    lc = lc.get()
+
+    _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
+
+    # adding regularisation using the CCPi regularisation toolkit
+    _regularisation_ = {
+        "method": "ROF_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "time_marching_step": 0.001,
+        "device_regulariser": 0,
+    }
+
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+
+    Iter_rec = Iter_rec.get()
+
+    assert 4000 <= lc <= 5000
+    assert_allclose(np.max(Iter_rec), 0.027676212, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
