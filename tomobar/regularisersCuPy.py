@@ -3,11 +3,12 @@ instantiate a proximal operator for iterative methods.
 """
 
 import cupy as cp
+import numpy as np
 from typing import Optional
 from tomobar.cuda_kernels import load_cuda_module
 
 try:
-    from ccpi.filters.regularisersCuPy import ROF_TV as ROF_TV_cupy
+    from ccpi.filters.regularisersCuPy import ROF_TV as CCPi_ROF_TV_cupy
     from ccpi.filters.regularisersCuPy import PD_TV as CCPi_PD_TV_cupy
 except ImportError:
     print(
@@ -27,7 +28,16 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
     """
     info_vec = (_regularisation_["iterations"], 0)
     # The proximal operator of the chosen regulariser
-    if "ROF_TV" in _regularisation_["method"]:
+    if "CCPi_ROF_TV" in _regularisation_["method"]:
+        # Rudin - Osher - Fatemi Total variation method
+        X_prox = CCPi_ROF_TV_cupy(
+            X,
+            _regularisation_["regul_param"],
+            _regularisation_["iterations"],
+            _regularisation_["time_marching_step"],
+            self.Atools.device_index,
+        )
+    elif "ROF_TV" in _regularisation_["method"]:
         # Rudin - Osher - Fatemi Total variation method
         X_prox = ROF_TV_cupy(
             X,
@@ -60,6 +70,102 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
         )
 
     return X_prox
+
+
+def ROF_TV_cupy(
+    data: cp.ndarray,
+    regularisation_parameter: Optional[float] = 1e-05,
+    iterations: Optional[int] = 3000,
+    time_marching_parameter: Optional[float] = 0.001,
+    gpu_id: Optional[int] = 0,
+) -> cp.ndarray:
+    """Total Variation using Rudin-Osher-Fatemi (ROF) explicit iteration scheme to perform edge-preserving image denoising.
+       This is a gradient-based algorithm for a smoothed TV term which requires a small time marching parameter and a significant number of iterations.
+       Ref: Rudin, Osher, Fatemi, "Nonlinear Total Variation based noise removal algorithms", 1992.
+
+    Args:
+        data (cp.ndarray): A 2d or 3d CuPy array.
+        regularisation_parameter (Optional[float], optional): Regularisation parameter to control the level of smoothing. Defaults to 1e-05.
+        iterations (Optional[int], optional): The number of iterations. Defaults to 3000.
+        time_marching_parameter (Optional[float], optional): Time marching parameter, needs to be small to ensure convergance. Defaults to 0.001.
+        gpu_id (Optional[int], optional): A GPU device index to perform operation on. Defaults to 0.
+
+    Returns:
+        cp.ndarray: ROF-TV filtered CuPy array.
+    """
+    if gpu_id >= 0:
+        cp.cuda.Device(gpu_id).use()
+    else:
+        raise ValueError("The gpu_device must be a positive integer or zero")
+    cp.get_default_memory_pool().free_all_blocks()
+
+    input_type = data.dtype
+
+    if input_type != "float32":
+        raise ValueError("The input data should be float32 data type")
+
+    # initialise CuPy arrays here
+    out_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
+
+    # loading and compiling CUDA kernels:
+    if data.ndim == 3:
+        data3d = True
+        dz, dy, dx = data.shape
+        # setting grid/block parameters
+        block_x = 128
+        block_y = 1
+        block_z = 1
+        block_dims = (block_x, block_y, block_z)
+        grid_x = (dx + block_x - 1) // block_x
+        grid_y = (dy + block_y - 1) // block_y
+        grid_z = (dz + block_z - 1) // block_z
+        grid_dims = (grid_x, grid_y, grid_z)
+
+        padding = 4
+        padded_block_size = np.prod(tuple(x + padding for x in block_dims))
+        name_expressions = [f"TV_kernel3D<{padding}>"]
+        module = load_cuda_module(
+            "rudin_osher_fatemi_total_variation", name_expressions
+        )
+        TV_kernel = module.get_function(name_expressions[0])
+        shared_mem_bytes = padded_block_size * cp.float32().itemsize
+    else:
+        data3d = False
+        dy, dx = data.shape
+        # setting grid/block parameters
+        block_x = 128
+        block_dims = (block_x, 1)
+        grid_x = (dx + block_x - 1) // block_x
+        grid_y = dy
+        grid_dims = (grid_x, grid_y)
+        module = load_cuda_module("rudin_osher_fatemi_total_variation")
+        TV_kernel = module.get_function("TV_kernel2D")
+        shared_mem_bytes = 0
+
+    # perform algorithm iterations
+    input_index = 0
+    output_index = 1
+
+    for _ in range(iterations):
+        if data3d:
+            params3 = (
+                out_arrays[input_index],
+                out_arrays[output_index],
+                data,
+                cp.float32(regularisation_parameter),
+                cp.float32(time_marching_parameter),
+                dx,
+                dy,
+                dz,
+            )
+        else:
+            params3 = ()
+        TV_kernel(grid_dims, block_dims, params3, shared_mem=shared_mem_bytes)
+
+        input_index = 1 - input_index
+        output_index = 1 - output_index
+
+    return out_arrays[input_index]
 
 
 def PD_TV_cupy(
