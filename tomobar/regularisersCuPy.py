@@ -104,15 +104,12 @@ def ROF_TV_cupy(
         raise ValueError("The input data should be float32 data type")
 
     # initialise CuPy arrays here
-    out = data.copy()
-    d_D1 = cp.empty(data.shape, dtype=cp.float32, order="C")
-    d_D2 = cp.empty(data.shape, dtype=cp.float32, order="C")
+    out_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
 
     # loading and compiling CUDA kernels:
     module = load_cuda_module("rudin_osher_fatemi_total_variation")
     if data.ndim == 3:
         data3d = True
-        d_D3 = cp.empty(data.shape, dtype=cp.float32, order="C")
         dz, dy, dx = data.shape
         # setting grid/block parameters
         block_x = 128
@@ -121,9 +118,6 @@ def ROF_TV_cupy(
         grid_y = dy
         grid_z = dz
         grid_dims = (grid_x, grid_y, grid_z)
-        D1_func = module.get_function("D1_func3D")
-        D2_func = module.get_function("D2_func3D")
-        D3_func = module.get_function("D3_func3D")
         TV_kernel = module.get_function("TV_kernel3D")
     else:
         data3d = False
@@ -134,36 +128,17 @@ def ROF_TV_cupy(
         grid_x = (dx + block_x - 1) // block_x
         grid_y = dy
         grid_dims = (grid_x, grid_y)
-        D1_func = module.get_function("D1_func2D")
-        D2_func = module.get_function("D2_func2D")
         TV_kernel = module.get_function("TV_kernel2D")
 
     # perform algorithm iterations
-    for iter in range(iterations):
-        # calculate differences
-        if data3d:
-            params1 = (out, d_D1, dx, dy, dz)
-        else:
-            params1 = (out, d_D1, dx, dy)
-        D1_func(grid_dims, block_dims, params1)
-        cp.cuda.runtime.deviceSynchronize()
-        if data3d:
-            params2 = (out, d_D2, dx, dy, dz)
-        else:
-            params2 = (out, d_D2, dx, dy)
-        D2_func(grid_dims, block_dims, params2)
-        cp.cuda.runtime.deviceSynchronize()
-        if data3d:
-            params21 = (out, d_D3, dx, dy, dz)
-            D3_func(grid_dims, block_dims, params21)
-            cp.cuda.runtime.deviceSynchronize()
-        # calculating the divergence and the gradient term
+    input_index = 0
+    output_index = 1
+
+    for _ in range(iterations):
         if data3d:
             params3 = (
-                d_D1,
-                d_D2,
-                d_D3,
-                out,
+                out_arrays[input_index],
+                out_arrays[output_index],
                 data,
                 cp.float32(regularisation_parameter),
                 cp.float32(time_marching_parameter),
@@ -172,19 +147,13 @@ def ROF_TV_cupy(
                 dz,
             )
         else:
-            params3 = (
-                d_D1,
-                d_D2,
-                out,
-                data,
-                cp.float32(regularisation_parameter),
-                cp.float32(time_marching_parameter),
-                dx,
-                dy,
-            )
+            params3 = ()
         TV_kernel(grid_dims, block_dims, params3)
-        cp.cuda.runtime.deviceSynchronize()
-    return out
+        
+        input_index = 1 - input_index
+        output_index = 1 - output_index
+
+    return out_arrays[input_index]
 
 
 def PD_TV_cupy(
