@@ -16,9 +16,9 @@
 |--------|-------------------|
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
-### NEW in ToMoBAR since v.2024.12:
-- Fixes to overcome some incompatibility issues in the new release of [CCPi-Regularisation-Toolkit](https://github.com/TomographicImaging/CCPi-Regularisation-Toolkit).
-- [DOCUMENTATION](https://dkazanc.github.io/ToMoBAR/) is updated, [API](https://dkazanc.github.io/ToMoBAR/reference/api.html) references improved.
+### NEW in ToMoBAR v.2025.08:
+- $\sf\color{red}Important, breaking changes!$ API has changed for initialising geometry for direct and iterative methods (the `RecTools` class). A new parameter is added to manage the edge-padding of the horizontal dimension of the detector. This usually can help to remove some of the artifacts, e.g., saturated circles or arcs in the reconstruction. See updated [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
+- Log-Polar method (`FOURIER_INV` in `RecToolsDIRCuPy`) has been further accelerated and it is significantly faster FBP.
 
 ## ToMoBAR highlights:
 Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do). Please also see [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).

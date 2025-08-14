@@ -218,6 +218,7 @@ def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -249,6 +250,7 @@ def test_Fourier3D_Y_odd_to_even(ensure_clean_memory):
     N_size = 1300
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -274,6 +276,7 @@ def test_Fourier3D_Y_even_to_odd(ensure_clean_memory):
     N_size = 1333
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -299,6 +302,7 @@ def test_Fourier3D_Y_even_to_even(ensure_clean_memory):
     N_size = 1340
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -324,6 +328,7 @@ def test_Fourier3D_Y_odd_to_odd(ensure_clean_memory):
     N_size = 1331
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -350,6 +355,7 @@ def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
     angles = np.linspace(0, math.pi, data.shape[0])
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -441,6 +447,7 @@ def test_FBP3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -490,6 +497,7 @@ def test_FBP3D_mask(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -517,6 +525,7 @@ def test_forwproj3D(data_cupy, angles, ensure_clean_memory):
 
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,
         CenterRotOffset=0.0,
         AnglesVec=angles,
@@ -540,6 +549,7 @@ def test_backproj3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecToolsCP = RecToolsDIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -547,7 +557,7 @@ def test_backproj3D(data_cupy, angles, ensure_clean_memory):
         device_projector="gpu",
     )
     rec_cupy = RecToolsCP.BACKPROJ(
-        projdata=data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
+        data=data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
     )
     recon_data = rec_cupy.get()
     assert_allclose(np.min(recon_data), -2.309583, rtol=eps)

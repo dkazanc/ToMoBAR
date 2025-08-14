@@ -3,7 +3,7 @@
 """
 GPLv3 license (ASTRA toolbox)
 
-Script to generate 2D analytical phantoms and their sinograms with added noise 
+Script to generate 2D analytical phantoms and their sinograms with added noise
 and then reconstruct using the regularised ADMM algorithm.
 
 """

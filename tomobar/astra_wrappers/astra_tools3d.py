@@ -18,12 +18,13 @@ class AstraTools3D(AstraBase):
     """3D parallel beam projection/backprojection child class.
 
     Args:
-        AstraBase (class): the inhereted base class.
+        AstraBase (class): the inherited base class.
     """
 
     def __init__(
         self,
         detectors_x,
+        detectors_x_pad,
         detectors_y,
         angles_vec,
         centre_of_rotation,
@@ -35,6 +36,7 @@ class AstraTools3D(AstraBase):
     ):
         super().__init__(
             detectors_x,
+            detectors_x_pad,
             angles_vec,
             centre_of_rotation,
             recon_size,

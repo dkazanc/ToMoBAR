@@ -36,6 +36,7 @@ class AstraBase:
 
     Args:
         detectors_x (int): Horizontal detector dimension in pixel units.
+        detectors_x_pad (int): Padded size of horizontal detector with edge values
         angles_vec (np.ndarray): A vector of projection angles in radians.
         centre_of_rotation (float, np.ndarray): The Centre of Rotation (CoR) scalar or a vector of CoRs for each angle.
         recon_size (int): Reconstructed object size (a slice).
@@ -48,6 +49,7 @@ class AstraBase:
     def __init__(
         self,
         detectors_x,
+        detectors_x_pad,
         angles_vec,
         centre_of_rotation,
         recon_size,
@@ -57,6 +59,7 @@ class AstraBase:
         detectors_y,
     ):
         self.detectors_x = detectors_x
+        self.detectors_x_pad = detectors_x_pad
         self.angles_vec = angles_vec
         self.centre_of_rotation = centre_of_rotation
         self.recon_size = recon_size
@@ -79,6 +82,18 @@ class AstraBase:
                 "The size of the horizontal detector cannot be negative or zero"
             )
         self._detectors_x = detectors_x_val
+
+    @property
+    def detectors_x_pad(self) -> int:
+        return self._detectors_x_pad
+
+    @detectors_x_pad.setter
+    def detectors_x_pad(self, detectors_x_pad_val):
+        if detectors_x_pad_val < 0:
+            raise ValueError(
+                "The padding size of the horizontal detector cannot be negative"
+            )
+        self._detectors_x_pad = detectors_x_pad_val
 
     @property
     def angles_vec(self) -> np.ndarray:
@@ -209,7 +224,10 @@ class AstraBase:
     def _set_cpu_projection2d_parallel_geometry(self):
         """the classical 2D projection geometry (cpu)"""
         self.proj_geom = astra.create_proj_geom(
-            "parallel", 1.0, self.detectors_x, self.angles_vec
+            "parallel",
+            1.0,
+            self.detectors_x + 2 * self.detectors_x_pad,
+            self.angles_vec,
         )
         self.proj_id = astra.create_projector("line", self.proj_geom, self.vol_geom)
         # optomo operator is used for ADMM algorithm only
@@ -219,7 +237,7 @@ class AstraBase:
         """the classical projection geometry (gpu)"""
         vectors = _vec_geom_init2D(self.angles_vec, self.centre_of_rotation)
         self.proj_geom = astra.create_proj_geom(
-            "parallel_vec", self.detectors_x, vectors
+            "parallel_vec", self.detectors_x + 2 * self.detectors_x_pad, vectors
         )
         self.proj_id = astra.create_projector(
             "cuda", self.proj_geom, self.vol_geom
@@ -228,10 +246,13 @@ class AstraBase:
         self.A_optomo = astra.OpTomo(self.proj_id)
 
     def _set_gpu_projection3d_parallel_geometry(self):
-        """the classical 3D projection geometry"""
+        """the classical 3D parallel-beam projection geometry"""
         vectors = _vec_geom_init3D(self.angles_vec, 1.0, 1.0, self.centre_of_rotation)
         self.proj_geom = astra.create_proj_geom(
-            "parallel3d_vec", self.detectors_y, self.detectors_x, vectors
+            "parallel3d_vec",
+            self.detectors_y,
+            self.detectors_x + 2 * self.detectors_x_pad,
+            vectors,
         )
         # optomo operator is used for ADMM algorithm only
         self.proj_id = astra.create_projector(

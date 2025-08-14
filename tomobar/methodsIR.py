@@ -41,6 +41,7 @@ class RecToolsIR:
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
+        DetectorsDimH_pad (int): Padding size of horizontal detector
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
         CenterRotOffset (float): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
@@ -53,6 +54,7 @@ class RecToolsIR:
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
+        DetectorsDimH_pad,  # Padding size of horizontal detector
         DetectorsDimV,  # Vertical detector dimension (3D case), 0 or None for 2D case
         CenterRotOffset,  # The Centre of Rotation scalar or a vector
         AnglesVec,  # Array of projection angles in radians
@@ -70,6 +72,7 @@ class RecToolsIR:
             self.geom = "2D"
             self.Atools = AstraTools2D(
                 DetectorsDimH,
+                DetectorsDimH_pad,
                 AnglesVec,
                 CenterRotOffset,
                 ObjSize,
@@ -80,6 +83,7 @@ class RecToolsIR:
             self.geom = "3D"
             self.Atools = AstraTools3D(
                 DetectorsDimH,
+                DetectorsDimH_pad,
                 DetectorsDimV,
                 AnglesVec,
                 CenterRotOffset,

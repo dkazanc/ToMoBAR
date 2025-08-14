@@ -7,7 +7,7 @@ obtained at Diamond Light Source (UK synchrotron), beamline I13
 
 <<<
 IF THE SHARED DATA IS USED FOR PUBLICATIONS/PRESENTATIONS etc., PLEASE CITE:
-E. Guo et al. 2018. Revealing the microstructural stability of a 
+E. Guo et al. 2018. Revealing the microstructural stability of a
 three-phase soft solid (ice cream) by 4D synchrotron X-ray tomography.
 Journal of Food Engineering, vol.237
 >>>

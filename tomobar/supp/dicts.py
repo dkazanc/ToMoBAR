@@ -274,6 +274,7 @@ def _reinitialise_atools_OS(self, _data_: dict):
     if self.geom == "2D":
         self.Atools = AstraTools2D(
             self.Atools.detectors_x,
+            self.Atools.detectors_x_pad,
             self.Atools.angles_vec,
             self.Atools.centre_of_rotation,
             self.Atools.recon_size,
@@ -284,6 +285,7 @@ def _reinitialise_atools_OS(self, _data_: dict):
     else:
         self.Atools = AstraTools3D(
             self.Atools.detectors_x,
+            self.Atools.detectors_x_pad,
             self.Atools.detectors_y,
             self.Atools.angles_vec,
             self.Atools.centre_of_rotation,

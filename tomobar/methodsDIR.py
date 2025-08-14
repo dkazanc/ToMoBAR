@@ -11,7 +11,7 @@ import scipy.fftpack
 from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
-from tomobar.supp.suppTools import check_kwargs
+from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 
 
 class RecToolsDIR:
@@ -19,6 +19,7 @@ class RecToolsDIR:
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
+        DetectorsDimH_pad (int): Padding size of horizontal detector
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
         CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
@@ -30,6 +31,7 @@ class RecToolsDIR:
     def __init__(
         self,
         DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
+        DetectorsDimH_pad,  # Padding size of horizontal detector
         DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
         CenterRotOffset,  # Centre of Rotation (CoR) scalar or a vector
         AnglesVec,  # Array of angles in radians
@@ -42,6 +44,7 @@ class RecToolsDIR:
             self.geom = "2D"
             self.Atools = AstraTools2D(
                 DetectorsDimH,
+                DetectorsDimH_pad,
                 AnglesVec,
                 CenterRotOffset,
                 ObjSize,
@@ -52,6 +55,7 @@ class RecToolsDIR:
             self.geom = "3D"
             self.Atools = AstraTools3D(
                 DetectorsDimH,
+                DetectorsDimH_pad,
                 DetectorsDimV,
                 AnglesVec,
                 CenterRotOffset,
@@ -85,11 +89,11 @@ class RecToolsDIR:
 
         return projected
 
-    def BACKPROJ(self, projdata: np.ndarray, **kwargs) -> np.ndarray:
+    def BACKPROJ(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """Module to perform back-projection of 2d/3d data numpy array
 
         Args:
-            projdata (np.ndarray): 2D/3D projection data
+            data (np.ndarray): 2D/3D projection data
 
         Keyword Args:
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
@@ -101,13 +105,14 @@ class RecToolsDIR:
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 if self.geom == "2D":
-                    projdata = _data_dims_swapper(projdata, value, ["angles", "detX"])
+                    data = _data_dims_swapper(data, value, ["angles", "detX"])
                 else:
-                    projdata = _data_dims_swapper(
-                        projdata, value, ["detY", "angles", "detX"]
-                    )
+                    data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
 
-        return self.Atools._backproj(projdata)
+        data = _apply_horiz_detector_padding(
+            data, self.Atools.detectors_x_pad, cupyrun=False
+        )
+        return self.Atools._backproj(data)
 
     def FBP(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """Filtered backprojection reconstruction module for 2D or 3D data.
@@ -138,19 +143,29 @@ class RecToolsDIR:
             if key == "filter_d":
                 self.Atools.fbp_filter_d = value
 
-        kwargs.update({"cupyrun": False})  # needed for agnostic array cropping
+        cupyrun = False
+        kwargs.update({"cupyrun": cupyrun})  # needed for agnostic array cropping
 
         if self.geom == "2D":
             if self.Atools.processing_arch == "gpu":
+                data = _apply_horiz_detector_padding(
+                    data, self.Atools.detectors_x_pad, cupyrun
+                )
                 return check_kwargs(
                     self.Atools._fbp(data), **kwargs
                 )  # 2D FBP reconstruction using ASTRA's API which includes options for a variety of filters
             else:
                 "dealing with FBP 2D not working for parallel_vec geometry and CPU"
+                data = _apply_horiz_detector_padding(
+                    data, self.Atools.detectors_x_pad, cupyrun
+                )
                 return check_kwargs(
                     self.Atools._backproj(_filtersinc2D(data)), **kwargs
-                )  # 2D FBP reconstruction using customised SINC filter
+                )  # 2D FBP reconstruction using the customised SINC filter
         else:
+            data = _apply_horiz_detector_padding(
+                data, self.Atools.detectors_x_pad, cupyrun
+            )
             return check_kwargs(
                 self.Atools._backproj(_filtersinc3D(data)), **kwargs
             )  # 3D FBP reconstruction using customised SINC filter

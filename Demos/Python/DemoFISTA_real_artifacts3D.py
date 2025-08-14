@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Script to generate 3D analytical phantoms and their projection data using TomoPhantom
-Synthetic flat fields are also genererated and noise incorporated into data 
-together with normalisation errors. This simulates more challeneging data for 
+Synthetic flat fields are also genererated and noise incorporated into data
+together with normalisation errors. This simulates more challeneging data for
 the reconstruction.
 """
 import timeit
