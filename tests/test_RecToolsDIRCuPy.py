@@ -460,6 +460,7 @@ def test_FBP3D(data_cupy, angles, ensure_clean_memory):
         cutoff_freq=1.1,
     )
     recon_data = FBPrec_cupy.get()
+    recon2d = recon_data[64, :, :]
     assert_allclose(np.min(recon_data), -0.014693323, rtol=eps)
     assert_allclose(np.max(recon_data), 0.0340156, rtol=eps)
     assert recon_data.dtype == np.float32
