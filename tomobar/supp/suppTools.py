@@ -185,9 +185,9 @@ def _DFFC(data, flats, darks, downsample, nrPArepetions):
 
 
 def normaliser(
-    data: np.array,
-    flats: np.array,
-    darks: np.array,
+    data: np.ndarray,
+    flats: np.ndarray,
+    darks: np.ndarray,
     log: bool = True,
     method: str = "mean",
     axis: int = 0,
@@ -196,9 +196,9 @@ def normaliser(
     """Data normalisation module
 
     Args:
-        data (np.array): 3d numpy array of raw data.
-        flats (np.array): 2d numpy array for flat field.
-        darks (np.array): 2d numpy array for dark field.
+        data (np.ndarray): 3d numpy array of raw data.
+        flats (np.ndarray): 2d numpy array for flat field.
+        darks (np.ndarray): 2d numpy array for dark field.
         log (bool, optional): Take negative log. Defaults to True.
         method (str, optional): Normalisation method, choose "mean", "median" or "dynamic". Defaults to "mean".
         axis (int, optional): Define the ANGLES axis.
@@ -394,6 +394,43 @@ def apply_circular_mask(data, recon_mask_radius, cupyrun=False):
         )
     data *= mask
     return data
+
+
+def _apply_horiz_detector_padding(data, detector_width_pad, cupyrun):
+    """extending the size of the horizontal detector, here
+    assuming the order of the 3D data as: ["detY", "angles", "detX"] and
+    2D data: ["angles", "detX"]"""
+    if detector_width_pad > 0:
+        if len(data.shape) == 2:
+            # there are no cupy implementions for 2D geometry
+            return np.pad(
+                data,
+                pad_width=((0, 0), (detector_width_pad, detector_width_pad)),
+                mode="edge",
+            )
+        else:
+            if cupyrun:
+                return xp.pad(
+                    data,
+                    pad_width=(
+                        (0, 0),
+                        (0, 0),
+                        (detector_width_pad, detector_width_pad),
+                    ),
+                    mode="edge",
+                )
+            else:
+                return np.pad(
+                    data,
+                    pad_width=(
+                        (0, 0),
+                        (0, 0),
+                        (detector_width_pad, detector_width_pad),
+                    ),
+                    mode="edge",
+                )
+    else:
+        return data
 
 
 def check_kwargs(reconstruction, **kwargs):

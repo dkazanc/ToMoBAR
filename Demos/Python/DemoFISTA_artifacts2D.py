@@ -98,6 +98,7 @@ from tomobar.methodsDIR import RecToolsDIR
 
 Rectools = RecToolsDIR(
     DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -137,6 +138,7 @@ from tomobar.methodsDIR import RecToolsDIR
 
 Rectools = RecToolsDIR(
     DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=-shifts,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -157,6 +159,7 @@ from tomobar.methodsIR import RecToolsIR
 
 RectoolsIR = RecToolsIR(
     DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -221,6 +224,7 @@ from tomobar.methodsIR import RecToolsIR
 
 RectoolsIR = RecToolsIR(
     DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -286,6 +290,7 @@ from tomobar.methodsIR import RecToolsIR
 
 RectoolsIR = RecToolsIR(
     DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -327,6 +332,7 @@ from tomobar.methodsIR import RecToolsIR
 
 RectoolsIR = RecToolsIR(
     DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
