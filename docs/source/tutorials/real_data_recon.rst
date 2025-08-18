@@ -29,10 +29,10 @@ demo.
     FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
 
 .. figure::  ../_static/tutorial/real/dendr_FBPnopad.jpg
-    :scale: 75 %
+    :scale: 50 %
     :alt: FBP recon without padding
 
-* In order to remove the circular artifact in the FBP reconstruction, one can edge-pad the horizontal detector.
+* In order to remove the circular artifact on the edges of the FBP reconstruction, one can edge-pad the horizontal detector.
 
 .. code-block:: python
 
@@ -51,7 +51,7 @@ demo.
     FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
 
 .. figure::  ../_static/tutorial/real/dendr_FBPpad.jpg
-    :scale: 75 %
+    :scale: 50 %
     :alt: FBP recon with padding
 
 * Next we reconstruct using ordered-subsets FISTA with Total Variation regularisation.
