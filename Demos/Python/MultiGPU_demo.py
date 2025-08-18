@@ -54,6 +54,7 @@ def data_generator():
     data_dict["model"] = model
     data_dict["N_size"] = N_size
     data_dict["Horiz_det"] = Horiz_det
+    data_dict["Horiz_det_pad"] = 0
     data_dict["Vert_det"] = Vert_det
     data_dict["angles_num"] = angles_num
     data_dict["angles_rad"] = angles_rad
@@ -73,6 +74,7 @@ def reconstructorSIRT(data_proj, iterations_alg, DEVICE_no):
     # set parameters and initiate a class object
     Rectools = RecToolsIR(
         DetectorsDimH=data_dict["Horiz_det"],  # Horizontal detector dimension
+        DetectorsDimH_pad=data_dict["Horiz_det_pad"],
         DetectorsDimV=data_dict["Vert_det"],  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=data_dict["angles_rad"],  # A vector of projection angles in radians
@@ -101,6 +103,7 @@ def reconstructorFISTA(data_proj, iterations_alg, DEVICE_no):
     # set parameters and initiate a class object
     Rectools = RecToolsIR(
         DetectorsDimH=data_dict["Horiz_det"],  # Horizontal detector dimension
+        DetectorsDimH_pad=data_dict["Horiz_det_pad"],
         DetectorsDimV=data_dict["Vert_det"],  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=data_dict["angles_rad"],  # A vector of projection angles in radians

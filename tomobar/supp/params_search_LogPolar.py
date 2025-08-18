@@ -1,6 +1,4 @@
-"""This functions finds the optimal parameters for FOURIER_INV method, namely center_size
-
-"""
+"""This functions finds the optimal parameters for FOURIER_INV method, namely center_size"""
 
 import timeit
 import os

@@ -15,6 +15,7 @@ def test_SIRT2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -41,6 +42,7 @@ def test_SIRT3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -70,6 +72,7 @@ def test_CGLS2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -96,6 +99,7 @@ def test_CGLS3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -125,6 +129,7 @@ def test_SIRT_CGLS2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -155,6 +160,7 @@ def test_SIRT_CGLS3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -187,6 +193,7 @@ def test_power2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -211,6 +218,7 @@ def test_power_swap2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -234,6 +242,7 @@ def test_powerOS_2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -259,6 +268,7 @@ def test_power_PWLS_2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -284,6 +294,7 @@ def test_powerOS_PWLS_2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -310,6 +321,7 @@ def test_FISTA2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -342,6 +354,7 @@ def test_FISTA_PWLS_2D(angles, raw_data, flats, darks):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -375,6 +388,7 @@ def test_FISTA_OS_2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -408,6 +422,7 @@ def test_FISTA_PWLS_OS_2D(angles, raw_data, flats, darks):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -444,6 +459,7 @@ def test_FISTA_PWLS_OS_reg_2D(angles, raw_data, flats, darks):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -487,6 +503,7 @@ def test_FISTA_PWLS_OS_reg2_2D(angles, raw_data, flats, darks):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -528,6 +545,7 @@ def test_ADMM2D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -555,6 +573,7 @@ def test_ADMM3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -584,6 +603,7 @@ def test_ADMM3D_reg(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -619,6 +639,7 @@ def test_power3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -642,6 +663,7 @@ def test_powerOS3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -666,6 +688,7 @@ def test_FISTA3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -699,6 +722,7 @@ def test_FISTA_PWLS_3D(angles, raw_data, flats, darks, datafidelitys):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -732,6 +756,7 @@ def test_FISTA_OS_3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -763,6 +788,7 @@ def test_FISTA_OS_regul_3D(data, angles):
     N_size = detX
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians

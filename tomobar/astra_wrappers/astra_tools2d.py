@@ -14,6 +14,7 @@ class AstraTools2D(AstraBase):
     def __init__(
         self,
         detectors_x,
+        detectors_x_pad,
         angles_vec,
         centre_of_rotation,
         recon_size,
@@ -24,6 +25,7 @@ class AstraTools2D(AstraBase):
     ):
         super().__init__(
             detectors_x,
+            detectors_x_pad,
             angles_vec,
             centre_of_rotation,
             recon_size,
