@@ -126,13 +126,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         cupyrun = True
         kwargs.update({"cupyrun": cupyrun})  # needed for agnostic array cropping
+        cutoff_freq = 0.35  # default value
+
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
             if key == "cutoff_freq" and value is not None:
                 cutoff_freq = value
-            else:
-                cutoff_freq = 0.35  # default value
 
         # Edge-Pad the horizontal detector (detX) on both sides symmetrically using the provided amount of pixels.
         data = _apply_horiz_detector_padding(data, self.Atools.detectors_x_pad, cupyrun)

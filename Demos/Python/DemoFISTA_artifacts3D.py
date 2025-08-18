@@ -121,6 +121,7 @@ plt.show()
 # initialise tomobar DIRECT reconstruction class ONCE
 RectoolsDIR = RecToolsDIR(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -160,6 +161,7 @@ from tomobar.methodsDIR import RecToolsDIR
 
 RectoolsDIR = RecToolsDIR(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=-shifts2D,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -193,6 +195,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # initialise tomobar ITERATIVE reconstruction class ONCE
 Rectools = RecToolsIR(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -279,6 +282,7 @@ print("Reconstructing with FISTA-OS-SWLS-TV using tomobar")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 Rectools = RecToolsIR(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians

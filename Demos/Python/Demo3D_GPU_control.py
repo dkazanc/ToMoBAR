@@ -86,6 +86,7 @@ GPU_device_no = (
 
 RectoolsDIR = RecToolsDIR(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -117,6 +118,7 @@ GPU_device_no = 0
 # set parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -154,6 +156,7 @@ GPU_device_no = 1  # ! you will need to have the second GPU device
 # set parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians

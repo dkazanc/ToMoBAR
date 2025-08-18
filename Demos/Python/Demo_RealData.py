@@ -43,6 +43,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
 RectoolsDIR = RecToolsDIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -50,13 +51,33 @@ RectoolsDIR = RecToolsDIR(
     device_projector="gpu",
 )
 
-FBPrec = RectoolsDIR.FBP(
+FBPrec_nopad = RectoolsDIR.FBP(
     data_norm[:, :, slice_to_recon], data_axes_labels_order=["detX", "angles"]
 )
 
+
+RectoolsDIR = RecToolsDIR(
+    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=100,  # Padding size of horizontal detector
+    DetectorsDimV=None,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    device_projector="gpu",
+)
+
+FBPrec_pad = RectoolsDIR.FBP(
+    data_norm[:, :, slice_to_recon], data_axes_labels_order=["detX", "angles"]
+)
+
+
 fig = plt.figure()
-plt.imshow(FBPrec[100:900, 100:900], vmin=0, vmax=0.004, cmap="gray")
-plt.title("FBP reconstruction")
+plt.subplot(121)
+plt.imshow(FBPrec_nopad, vmin=0, vmax=0.004, cmap="gray")
+plt.title("FBP reconstruction (no padding)")
+plt.subplot(122)
+plt.imshow(FBPrec_pad, vmin=0, vmax=0.004, cmap="gray")
+plt.title("FBP reconstruction (padding)")
 # fig.savefig('dendr_FPP.png', dpi=200)
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -68,6 +89,7 @@ from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 RecToolsCP = RecToolsDIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -80,14 +102,12 @@ data_labels3D = ["detX", "angles", "detY"]
 FourierLP_cupy = RecToolsCP.FOURIER_INV(
     cp.asarray(data_norm[:, :, 5:10]),
     filter_freq_cutoff=0.35,
-    recon_mask_radius=0.95,
+    recon_mask_radius=2.0,
     data_axes_labels_order=data_labels3D,
 )
 
 fig = plt.figure()
-plt.imshow(
-    cp.asnumpy(FourierLP_cupy[3, 100:900, 100:900]), vmin=0, vmax=0.008, cmap="gray"
-)
+plt.imshow(cp.asnumpy(FourierLP_cupy[3, :, :]), vmin=0, vmax=0.008, cmap="gray")
 plt.title("Log-Polar Fourier reconstruction")
 # fig.savefig('dendr_LogPolar.png', dpi=200)
 # %%
@@ -95,6 +115,7 @@ plt.title("Log-Polar Fourier reconstruction")
 # Set scanning geometry parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -209,6 +230,7 @@ print("%%%%%%Reconstructing with ADMM LS-TV method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -252,6 +274,7 @@ from tomobar.methodsIR import RecToolsIR
 # set parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -296,6 +319,7 @@ from tomobar.methodsIR import RecToolsIR
 # Set scanning geometry parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians

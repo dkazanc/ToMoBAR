@@ -14,6 +14,7 @@ def test_Landweber_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -43,6 +44,7 @@ def test_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -72,6 +74,7 @@ def test_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -101,6 +104,7 @@ def test_SIRT_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -135,6 +139,7 @@ def test_power_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -159,6 +164,7 @@ def test_power_cp_OS_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -184,6 +190,7 @@ def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -214,6 +221,7 @@ def test_FISTA_regul_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -253,6 +261,7 @@ def test_FISTA_OS_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -288,6 +297,7 @@ def test_FISTA_OS_reg_cp_3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -337,6 +347,7 @@ def test_FISTA_OS_PWLS_reg_cp_3D(angles, raw_data, flats, darks):
     N_size = detX
     RecTools = RecToolsIRCuPy(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians

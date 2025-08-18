@@ -39,6 +39,7 @@ from tomobar.methodsDIR import RecToolsDIR
 
 RectoolsDIR = RecToolsDIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=92,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -46,12 +47,28 @@ RectoolsDIR = RecToolsDIR(
     device_projector="gpu",
 )
 
-FBPrec = RectoolsDIR.FBP(data_norm, data_axes_labels_order=data_labels2D)
+FBPrec_nopad = RectoolsDIR.FBP(data_norm, data_axes_labels_order=data_labels2D)
 
-plt.figure()
-plt.imshow(FBPrec[500:1500, 500:1500], vmin=0, vmax=1, cmap="gray")
-# plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
-plt.title("FBP reconstruction")
+RectoolsDIR = RecToolsDIR(
+    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=250,  # Padding size of horizontal detector
+    DetectorsDimV=None,  # Vertical detector dimension (3D case)
+    CenterRotOffset=92,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    device_projector="gpu",
+)
+
+FBPrec_pad = RectoolsDIR.FBP(data_norm, data_axes_labels_order=data_labels2D)
+
+fig = plt.figure()
+plt.subplot(121)
+plt.imshow(FBPrec_nopad, vmin=0, vmax=1, cmap="gray")
+plt.title("FBP reconstruction (no padding)")
+plt.subplot(122)
+plt.imshow(FBPrec_pad, vmin=0, vmax=1, cmap="gray")
+plt.title("FBP reconstruction (padding)")
+# fig.savefig('dendr_FPP.png', dpi=200)
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA PWLS-OS-TV method % %%%%%%%%%%%%%%")
@@ -60,6 +77,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # set parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=92,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -128,6 +146,7 @@ print("Reconstructing with FISTA PWLS-OS-NLTV method %%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=92,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -174,6 +193,7 @@ print("%%%%%%Reconstructing with ADMM LS-NLTV method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=92,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians

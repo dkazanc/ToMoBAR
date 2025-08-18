@@ -137,6 +137,7 @@ print("%%%%%%%%%Reconstructing with 3D Fourier-CuPy method %%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecToolsCP = RecToolsDIRCuPy(
     DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
