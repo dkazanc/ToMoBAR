@@ -94,7 +94,25 @@ demo.
     :scale: 25 %
     :alt: FISTA recon
 
+* Then we will add the Group-Huber data fidelity model [PM2015]_ to minimise the ring artefacts.
+  We need to add new parameters to the `_data_` dictionary.
 
+.. code-block:: python
+
+    _data_ = {
+        "projection_norm_data": sinogram,  # Normalised projection data
+        "projection_raw_data": sinogram_raw,  # Raw projection data
+        "OS_number": 6,  # The number of subsets
+        "data_axes_labels_order": ["detX", "angles"],
+        "ringGH_lambda": 0.000015,
+        "ringGH_accelerate": 6,
+    }
+
+    RecFISTA = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+
+.. figure::  ../_static/tutorial/real/FISTA_GH_TV_dendr.jpg
+    :scale: 25 %
+    :alt: FISTA recon
 
 * We also can try the Stripe-Weighted Least Squares (SWLS) data model [HOA2017]_. As we change the data fidelity, we need to re-initialise the geometry
   object.
