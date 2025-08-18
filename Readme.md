@@ -17,7 +17,7 @@
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
 ### NEW in ToMoBAR v.2025.08:
-- $\sf\color{red}Important, breaking changes!$ API has changed for initialising geometry for direct and iterative methods (the `RecTools` class). A new parameter `DetectorsDimH_pad` is added to manage the edge-padding of the horizontal dimension of the detector. This usually can help to remove some of the artifacts, e.g., saturated circles or arcs in the reconstruction. See updated [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
+- $\sf\color{red}Breaking  changes!$ The API for initializing geometry in both direct and iterative methods (the `RecTools` class) has been updated. A new parameter, `DetectorsDimH_pad`, has been introduced to control edge padding along the detector's horizontal dimension. This parameter can help reduce artifacts in reconstructions, such as saturated circles or arcs. See updated [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
 - Log-Polar method (`FOURIER_INV` in `RecToolsDIRCuPy`) has been further accelerated and it is significantly faster FBP.
 
 ## ToMoBAR highlights:
