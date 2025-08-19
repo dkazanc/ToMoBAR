@@ -263,10 +263,6 @@ extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, floa
     Divergence divergence_i2 = calculate_divergence(i2, j, k, dimX, dimY, dimZ, Update_values_i2);
     Divergence divergence_k2 = calculate_divergence(i, j, k2, dimX, dimY, dimZ, Update_values_k2);
 
-    // float D1_2 = D1_func3D(Update_in, i, j2, k, dimX, dimY, dimZ);
-    // float D2_2 = D2_func3D(Update_in, i2, j, k, dimX, dimY, dimZ);
-    // float D3_2 = D3_func3D(Update_in, i, j, k2, dimX, dimY, dimZ);
-
     /*divergence components */
     float D1 = normalize_difference(divergence.nominators[0], divergence.squared_nominators[0], divergence.denominators[1], divergence.denominators[2]);
     float D2 = normalize_difference(divergence.nominators[1], divergence.denominators[0], divergence.squared_nominators[1], divergence.denominators[2]);
