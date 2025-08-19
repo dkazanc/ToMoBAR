@@ -155,7 +155,7 @@ __device__ long long calculate_local_index(int i, int j, int k)
     return (i + 1) + 3 * (j + 1) + 3 * 3 * (k + 1);
 }
 
-__device__ void read_update_values(long i, long j, long k, int dimX, int dimY, int dimZ, float *Update_in, float *result)
+__device__ void read_update_values(long i, long j, long k, int dimX, int dimY, int dimZ, float *Update_in, float *result, long central_i, long central_j, long central_k, float *central_update_values)
 {
     for (int dk = -1; dk <= 1; dk++)
     {
@@ -163,26 +163,44 @@ __device__ void read_update_values(long i, long j, long k, int dimX, int dimY, i
         {
             for (int di = -1; di <= 1; di++)
             {
-                long current_i = i + di;
-                long current_j = j + dj;
-                long current_k = k + dk;
+                int corrected_di = di;
+                int corrected_dj = dj;
+                int corrected_dk = dk;
+
+                long current_i = i + corrected_di;
+                long current_j = j + corrected_dj;
+                long current_k = k + corrected_dk;
 
                 if (current_i < 0 || dimX - 1 < current_i)
                 {
-                    current_i = i - di;
+                    corrected_di = -di;
+                    current_i = i + corrected_di;
                 }
 
                 if (current_j < 0 || dimY - 1 < current_j)
                 {
-                    current_j = j - dj;
+                    corrected_dj = -dj;
+                    current_j = j + corrected_dj;
                 }
 
                 if (current_k < 0 || dimZ - 1 < current_k)
                 {
-                    current_k = k - dk;
+                    corrected_dk = -dk;
+                    current_k = k + corrected_dk;
                 }
 
-                result[calculate_local_index(di, dj, dk)] = Update_in[calculate_index(current_i, current_j, current_k, dimX, dimY, dimZ)];
+                long transformed_di = corrected_di + i - central_i;
+                long transformed_dj = corrected_dj + j - central_j;
+                long transformed_dk = corrected_dk + k - central_k;
+
+                if (central_update_values && -1 <= transformed_di && transformed_di <= 1 && -1 <= transformed_dj && transformed_dj <= 1 && -1 <= transformed_dk && transformed_dk <= 1)
+                {
+                    result[calculate_local_index(di, dj, dk)] = central_update_values[calculate_local_index(transformed_di, transformed_dj, transformed_dk)];
+                }
+                else
+                {
+                    result[calculate_local_index(di, dj, dk)] = Update_in[calculate_index(current_i, current_j, current_k, dimX, dimY, dimZ)];
+                }
             }
         }
     }
@@ -195,23 +213,15 @@ struct Divergence
     float denominators[3];
 };
 
-__device__ Divergence calculate_divergence(long i, long j, long k, int dimX, int dimY, int dimZ, float *Update_values)
+__device__ Divergence calculate_divergence(float *Update_values)
 {
-    /* symmetric boundary conditions (Neuman) */
-    int di1 = i < (dimX - 1) ? 1 : -1;
-    int dj1 = j < (dimY - 1) ? 1 : -1;
-    int dk1 = k < (dimZ - 1) ? 1 : -1;
-    int di2 = i > 0 ? -1 : 1;
-    int dj2 = j > 0 ? -1 : 1;
-    int dk2 = k > 0 ? -1 : 1;
-
+    float U_in_i2 = Update_values[calculate_local_index(-1, 0, 0)];
     float U_in = Update_values[calculate_local_index(0, 0, 0)];
-    float U_in_i1 = Update_values[calculate_local_index(di1, 0, 0)];
-    float U_in_i2 = Update_values[calculate_local_index(di2, 0, 0)];
-    float U_in_j1 = Update_values[calculate_local_index(0, dj1, 0)];
-    float U_in_j2 = Update_values[calculate_local_index(0, dj2, 0)];
-    float U_in_k1 = Update_values[calculate_local_index(0, 0, dk1)];
-    float U_in_k2 = Update_values[calculate_local_index(0, 0, dk2)];
+    float U_in_i1 = Update_values[calculate_local_index(1, 0, 0)];
+    float U_in_j2 = Update_values[calculate_local_index(0, -1, 0)];
+    float U_in_j1 = Update_values[calculate_local_index(0, 1, 0)];
+    float U_in_k2 = Update_values[calculate_local_index(0, 0, -1)];
+    float U_in_k1 = Update_values[calculate_local_index(0, 0, 1)];
 
     float NOMx_1 = U_in_j1 - U_in; /* x+ */
     float NOMy_1 = U_in_i1 - U_in; /* y+ */
@@ -248,18 +258,18 @@ extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, floa
     long k2 = k > 0 ? k - 1 : k + 1;
 
     float Update_values[3 * 3 * 3];
-    read_update_values(i, j, k, dimX, dimY, dimZ, Update_in, Update_values);
+    read_update_values(i, j, k, dimX, dimY, dimZ, Update_in, Update_values, i, j, k, nullptr);
     float Update_values_j2[3 * 3 * 3];
-    read_update_values(i, j2, k, dimX, dimY, dimZ, Update_in, Update_values_j2);
+    read_update_values(i, j2, k, dimX, dimY, dimZ, Update_in, Update_values_j2, i, j, k, Update_values);
     float Update_values_i2[3 * 3 * 3];
-    read_update_values(i2, j, k, dimX, dimY, dimZ, Update_in, Update_values_i2);
+    read_update_values(i2, j, k, dimX, dimY, dimZ, Update_in, Update_values_i2, i, j, k, Update_values);
     float Update_values_k2[3 * 3 * 3];
-    read_update_values(i, j, k2, dimX, dimY, dimZ, Update_in, Update_values_k2);
+    read_update_values(i, j, k2, dimX, dimY, dimZ, Update_in, Update_values_k2, i, j, k, Update_values);
 
-    Divergence divergence = calculate_divergence(i, j, k, dimX, dimY, dimZ, Update_values);
-    Divergence divergence_j2 = calculate_divergence(i, j2, k, dimX, dimY, dimZ, Update_values_j2);
-    Divergence divergence_i2 = calculate_divergence(i2, j, k, dimX, dimY, dimZ, Update_values_i2);
-    Divergence divergence_k2 = calculate_divergence(i, j, k2, dimX, dimY, dimZ, Update_values_k2);
+    Divergence divergence = calculate_divergence(Update_values);
+    Divergence divergence_j2 = calculate_divergence(Update_values_j2);
+    Divergence divergence_i2 = calculate_divergence(Update_values_i2);
+    Divergence divergence_k2 = calculate_divergence(Update_values_k2);
 
     /*divergence components */
     float D1 = normalize_difference(divergence.nominators[0], divergence.squared_nominators[0], divergence.denominators[1], divergence.denominators[2]);
