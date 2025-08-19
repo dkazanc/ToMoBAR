@@ -157,11 +157,11 @@ __device__ long long calculate_local_index(int i, int j, int k)
 
 __device__ void read_update_values(long i, long j, long k, int dimX, int dimY, int dimZ, float *Update_in, float *result)
 {
-    for (int di = -1; di <= 1; di++)
+    for (int dk = -1; dk <= 1; dk++)
     {
         for (int dj = -1; dj <= 1; dj++)
         {
-            for (int dk = -1; dk <= 1; dk++)
+            for (int di = -1; di <= 1; di++)
             {
                 long current_i = i + di;
                 long current_j = j + dj;
@@ -207,10 +207,10 @@ __device__ Divergence calculate_divergence(long i, long j, long k, int dimX, int
 
     float U_in = Update_values[calculate_local_index(0, 0, 0)];
     float U_in_i1 = Update_values[calculate_local_index(di1, 0, 0)];
-    float U_in_j1 = Update_values[calculate_local_index(0, dj1, 0)];
-    float U_in_k1 = Update_values[calculate_local_index(0, 0, dk1)];
     float U_in_i2 = Update_values[calculate_local_index(di2, 0, 0)];
+    float U_in_j1 = Update_values[calculate_local_index(0, dj1, 0)];
     float U_in_j2 = Update_values[calculate_local_index(0, dj2, 0)];
+    float U_in_k1 = Update_values[calculate_local_index(0, 0, dk1)];
     float U_in_k2 = Update_values[calculate_local_index(0, 0, dk2)];
 
     float NOMx_1 = U_in_j1 - U_in; /* x+ */
@@ -228,12 +228,10 @@ __device__ Divergence calculate_divergence(long i, long j, long k, int dimX, int
     float denom_y = calculate_denominator(NOMy_0, NOMy_1);
     float denom_z = calculate_denominator(NOMz_0, NOMz_1);
 
-    return Divergence
-    {
+    return Divergence{
         {NOMx_1, NOMy_1, NOMz_1},
         {NOMx_1_squared, NOMy_1_squared, NOMz_1_squared},
-        {denom_x, denom_y, denom_z}
-    };
+        {denom_x, denom_y, denom_z}};
 }
 
 extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
