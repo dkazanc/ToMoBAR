@@ -3,6 +3,7 @@ instantiate a proximal operator for iterative methods.
 """
 
 import cupy as cp
+import numpy as np
 from typing import Optional
 from tomobar.cuda_kernels import load_cuda_module
 
@@ -112,13 +113,16 @@ def ROF_TV_cupy(
         data3d = True
         dz, dy, dx = data.shape
         # setting grid/block parameters
-        block_x = 128
-        block_dims = (block_x, 1, 1)
+        block_x = 8
+        block_y = 8
+        block_z = 8
+        block_dims = (block_x, block_y, block_z)
         grid_x = (dx + block_x - 1) // block_x
-        grid_y = dy
-        grid_z = dz
+        grid_y = (dy + block_y - 1) // block_y
+        grid_z = (dz + block_z - 1) // block_z
         grid_dims = (grid_x, grid_y, grid_z)
         TV_kernel = module.get_function("TV_kernel3D")
+        shared_mem_bytes = np.prod(tuple(x + 4 for x in block_dims)) * cp.float32().itemsize
     else:
         data3d = False
         dy, dx = data.shape
@@ -129,6 +133,7 @@ def ROF_TV_cupy(
         grid_y = dy
         grid_dims = (grid_x, grid_y)
         TV_kernel = module.get_function("TV_kernel2D")
+        shared_mem_bytes = 0
 
     # perform algorithm iterations
     input_index = 0
@@ -148,8 +153,8 @@ def ROF_TV_cupy(
             )
         else:
             params3 = ()
-        TV_kernel(grid_dims, block_dims, params3)
-        
+        TV_kernel(grid_dims, block_dims, params3, shared_mem=shared_mem_bytes)
+
         input_index = 1 - input_index
         output_index = 1 - output_index
 
