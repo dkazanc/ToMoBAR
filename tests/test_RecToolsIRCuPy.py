@@ -637,4 +637,4 @@ def test_FISTA_compare_rof_tv_regularisations(angles, raw_data, flats, darks):
     assert Iter_rec.shape == (128, 160, 160), "fused"
 
     diff = Iter_rec - Iter_rec_original
-    assert_allclose(diff, 0.0, atol=1e-07)
+    assert_allclose(diff, 0.0, atol=1e-06)

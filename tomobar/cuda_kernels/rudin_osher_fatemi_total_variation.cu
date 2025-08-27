@@ -1,3 +1,5 @@
+#include <cuda_fp16.h>
+
 /*
 This work is part of the Core Imaging Library developed by
 Visual Analytics and Imaging System Group of the Science Technology
@@ -135,13 +137,13 @@ extern "C" __global__ void TV_kernel2D(float *D1, float *D2, float *Update, floa
 /*********************3D case****************************/
 __device__ __forceinline__ float calculate_denominator(float NOM_0, float NOM_1)
 {
-    float denom = 0.5 * (sign(NOM_1) + sign(NOM_0)) * (MIN(abs(NOM_1), abs(NOM_0)));
+    float denom = 0.5 * (sign(NOM_1) + sign(NOM_0)) * (MIN(fabs(NOM_1), fabs(NOM_0)));
     return denom * denom;
 }
 
 __device__ __forceinline__ float normalize_difference(float nominator, float denominator_1, float denominator_2, float denominator_3)
 {
-    float denominator_sqrt = sqrt(denominator_1 + denominator_2 + denominator_3 + EPS);
+    float denominator_sqrt = __fsqrt_rn(denominator_1 + denominator_2 + denominator_3 + EPS);
     return nominator / denominator_sqrt;
 }
 
@@ -150,7 +152,7 @@ __device__ __forceinline__ long long calculate_index(long i, long j, long k, int
     return static_cast<long long>(i) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k);
 }
 
-extern "C" __global__ void divergence_kernel(float *Update_in, float *D1, float *D2, float *D3, int dimX, int dimY, int dimZ)
+extern "C" __global__ void divergence_kernel(float *Update_in, __half *D1, __half *D2, __half *D3, int dimX, int dimY, int dimZ)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -203,12 +205,12 @@ extern "C" __global__ void divergence_kernel(float *Update_in, float *D1, float 
     float denom_y = calculate_denominator(NOMy_0, NOMy_1);
     float denom_z = calculate_denominator(NOMz_0, NOMz_1);
 
-    D1[index] = normalize_difference(NOMx_1, NOMx_1_squared, denom_y, denom_z);
-    D2[index] = normalize_difference(NOMy_1, denom_x, NOMy_1_squared, denom_z);
-    D3[index] = normalize_difference(NOMz_1, denom_x, denom_y, NOMz_1_squared);
+    D1[index] = __float2half(normalize_difference(NOMx_1, NOMx_1_squared, denom_y, denom_z));
+    D2[index] = __float2half(normalize_difference(NOMy_1, denom_x, NOMy_1_squared, denom_z));
+    D3[index] = __float2half(normalize_difference(NOMz_1, denom_x, denom_y, NOMz_1_squared));
 }
 
-extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, float *D1, float *D2, float *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
+extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, __half *D1, __half *D2, __half *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -233,9 +235,9 @@ extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, floa
         k2 = k + 1;
 
     /*divergence components */
-    float dv1 = D1[index] - D1[calculate_index(i, j2, k, dimX, dimY, dimZ)];
-    float dv2 = D2[index] - D2[calculate_index(i2, j, k, dimX, dimY, dimZ)];
-    float dv3 = D3[index] - D3[calculate_index(i, j, k2, dimX, dimY, dimZ)];
+    float dv1 = __half2float(D1[index]) - __half2float(D1[calculate_index(i, j2, k, dimX, dimY, dimZ)]);
+    float dv2 = __half2float(D2[index]) - __half2float(D2[calculate_index(i2, j, k, dimX, dimY, dimZ)]);
+    float dv3 = __half2float(D3[index]) - __half2float(D3[calculate_index(i, j, k2, dimX, dimY, dimZ)]);
 
     float U_out = U_in + tau * (lambdaPar * (dv1 + dv2 + dv3) - (U_in - I));
     Update_out[index] = U_out;

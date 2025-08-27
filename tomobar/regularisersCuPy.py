@@ -106,8 +106,8 @@ def ROF_TV_cupy(
 
     # initialise CuPy arrays here
     out_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
-    d_D1 = cp.empty(data.shape, dtype=cp.float32, order="C")
-    d_D2 = cp.empty(data.shape, dtype=cp.float32, order="C")
+    d_D1 = cp.empty(data.shape, dtype=cp.float16, order="C")
+    d_D2 = cp.empty(data.shape, dtype=cp.float16, order="C")
     module = load_cuda_module("rudin_osher_fatemi_total_variation")
 
     # loading and compiling CUDA kernels:
@@ -124,7 +124,7 @@ def ROF_TV_cupy(
         grid_z = (dz + block_z - 1) // block_z
         grid_dims = (grid_x, grid_y, grid_z)
 
-        d_D3 = cp.empty(data.shape, dtype=cp.float32, order="C")
+        d_D3 = cp.empty(data.shape, dtype=cp.float16, order="C")
         divergence_kernel = module.get_function("divergence_kernel")
         TV_kernel = module.get_function("TV_kernel3D")
     else:
