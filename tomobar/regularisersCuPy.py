@@ -45,6 +45,7 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             _regularisation_["iterations"],
             _regularisation_["time_marching_step"],
             self.Atools.device_index,
+            _regularisation_.get("half_precision", False),
         )
 
     if "CCPi_PD_TV" in _regularisation_["method"]:
@@ -78,6 +79,7 @@ def ROF_TV_cupy(
     iterations: Optional[int] = 3000,
     time_marching_parameter: Optional[float] = 0.001,
     gpu_id: Optional[int] = 0,
+    half_precision: bool = False,
 ) -> cp.ndarray:
     """Total Variation using Rudin-Osher-Fatemi (ROF) explicit iteration scheme to perform edge-preserving image denoising.
        This is a gradient-based algorithm for a smoothed TV term which requires a small time marching parameter and a significant number of iterations.
@@ -104,8 +106,26 @@ def ROF_TV_cupy(
     if input_type != "float32":
         raise ValueError("The input data should be float32 data type")
 
+    dtype_of_D = cp.float16 if half_precision else cp.float32
+
     # initialise CuPy arrays here
     out_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
+    d_D1 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
+    d_D2 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
+
+    type_of_P = "__half" if half_precision else "float"
+    # name_expressions = [
+    #     f"divergence_kernel_2D<{type_of_P}>",
+    #     f"divergence_kernel_3D<{type_of_P}>",
+    #     f"TV_kernel2D<{type_of_P}>",
+    #     f"TV_kernel3D<{type_of_P}>",
+    # ]
+    name_expressions = [
+        f"divergence_kernel_3D<{type_of_P}>",
+        "TV_kernel2D",
+        f"TV_kernel3D<{type_of_P}>",
+    ]
+    module = load_cuda_module("rudin_osher_fatemi_total_variation", name_expressions)
 
     # loading and compiling CUDA kernels:
     if data.ndim == 3:
@@ -121,14 +141,11 @@ def ROF_TV_cupy(
         grid_z = (dz + block_z - 1) // block_z
         grid_dims = (grid_x, grid_y, grid_z)
 
-        padding = 4
-        padded_block_size = np.prod(tuple(x + padding for x in block_dims))
-        name_expressions = [f"TV_kernel3D<{padding}>"]
-        module = load_cuda_module(
-            "rudin_osher_fatemi_total_variation", name_expressions
-        )
-        TV_kernel = module.get_function(name_expressions[0])
-        shared_mem_bytes = padded_block_size * cp.float32().itemsize
+        d_D3 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
+        # divergence_kernel = module.get_function(name_expressions[2])
+        # TV_kernel = module.get_function(name_expressions[3])
+        divergence_kernel = module.get_function(name_expressions[0])
+        TV_kernel = module.get_function(name_expressions[2])
     else:
         data3d = False
         dy, dx = data.shape
@@ -138,9 +155,9 @@ def ROF_TV_cupy(
         grid_x = (dx + block_x - 1) // block_x
         grid_y = dy
         grid_dims = (grid_x, grid_y)
-        module = load_cuda_module("rudin_osher_fatemi_total_variation")
-        TV_kernel = module.get_function("TV_kernel2D")
-        shared_mem_bytes = 0
+        # divergence_kernel = module.get_function(name_expressions[0])
+        # TV_kernel = module.get_function(name_expressions[1])
+        TV_kernel = module.get_function(name_expressions[1])
 
     # perform algorithm iterations
     input_index = 0
@@ -150,8 +167,25 @@ def ROF_TV_cupy(
         if data3d:
             params3 = (
                 out_arrays[input_index],
+                d_D1,
+                d_D2,
+                d_D3,
+                dx,
+                dy,
+                dz,
+            )
+        else:
+            params3 = ()
+        divergence_kernel(grid_dims, block_dims, params3)
+
+        if data3d:
+            params3 = (
+                out_arrays[input_index],
                 out_arrays[output_index],
                 data,
+                d_D1,
+                d_D2,
+                d_D3,
                 cp.float32(regularisation_parameter),
                 cp.float32(time_marching_parameter),
                 dx,
@@ -160,7 +194,7 @@ def ROF_TV_cupy(
             )
         else:
             params3 = ()
-        TV_kernel(grid_dims, block_dims, params3, shared_mem=shared_mem_bytes)
+        TV_kernel(grid_dims, block_dims, params3)
 
         input_index = 1 - input_index
         output_index = 1 - output_index

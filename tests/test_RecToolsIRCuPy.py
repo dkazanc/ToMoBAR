@@ -508,7 +508,7 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
     assert 4000 <= lc <= 5000
     assert_allclose(np.max(Iter_rec), 0.027676212, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
-    assert Iter_rec.shape == (128, 160, 160)  
+    assert Iter_rec.shape == (128, 160, 160)
 
 
 @pytest.mark.parametrize("half_precision", [True, False])
@@ -577,10 +577,8 @@ def test_FISTA_compare_pd_tv_regularisations(
     assert_allclose(diff, 0.0, atol=1e-04 if half_precision else 1e-05)
 
 
-# @pytest.mark.parametrize("half_precision", [True, False])
-def test_FISTA_compare_rof_tv_regularisations(
-    angles, raw_data, flats, darks#, half_precision
-):
+@pytest.mark.parametrize("half_precision", [True, False])
+def test_FISTA_compare_rof_tv_regularisations(angles, raw_data, flats, darks, half_precision):
     normalised = normaliser(raw_data, flats, darks)
     raw_data_norm = np.float32(np.divide(raw_data, np.max(raw_data).astype(float)))
     normalised_cp = cp.asarray(normalised)
@@ -618,7 +616,7 @@ def test_FISTA_compare_rof_tv_regularisations(
         "iterations": 10,
         "time_marching_step": 0.001,
         "device_regulariser": 0,
-        # "half_precision": half_precision,
+        "half_precision": half_precision,
     }
 
     Iter_rec_original = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
@@ -641,5 +639,4 @@ def test_FISTA_compare_rof_tv_regularisations(
     assert Iter_rec.shape == (128, 160, 160), "fused"
 
     diff = Iter_rec - Iter_rec_original
-    # assert_allclose(diff, 0.0, atol=1e-04 if half_precision else 1e-07)
-    assert_allclose(diff, 0.0, atol=1e-07)
+    assert_allclose(diff, 0.0, atol=1e-06 if half_precision else 1e-07)
