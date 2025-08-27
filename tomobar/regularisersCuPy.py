@@ -108,21 +108,27 @@ def ROF_TV_cupy(
     out_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
 
     # loading and compiling CUDA kernels:
-    module = load_cuda_module("rudin_osher_fatemi_total_variation")
     if data.ndim == 3:
         data3d = True
         dz, dy, dx = data.shape
         # setting grid/block parameters
-        block_x = 8
-        block_y = 8
-        block_z = 8
+        block_x = 128
+        block_y = 1
+        block_z = 1
         block_dims = (block_x, block_y, block_z)
         grid_x = (dx + block_x - 1) // block_x
         grid_y = (dy + block_y - 1) // block_y
         grid_z = (dz + block_z - 1) // block_z
         grid_dims = (grid_x, grid_y, grid_z)
-        TV_kernel = module.get_function("TV_kernel3D")
-        shared_mem_bytes = np.prod(tuple(x + 4 for x in block_dims)) * cp.float32().itemsize
+
+        padding = 4
+        padded_block_size = np.prod(tuple(x + padding for x in block_dims))
+        name_expressions = [f"TV_kernel3D<{padding}>"]
+        module = load_cuda_module(
+            "rudin_osher_fatemi_total_variation", name_expressions
+        )
+        TV_kernel = module.get_function(name_expressions[0])
+        shared_mem_bytes = padded_block_size * cp.float32().itemsize
     else:
         data3d = False
         dy, dx = data.shape
@@ -132,6 +138,7 @@ def ROF_TV_cupy(
         grid_x = (dx + block_x - 1) // block_x
         grid_y = dy
         grid_dims = (grid_x, grid_y)
+        module = load_cuda_module("rudin_osher_fatemi_total_variation")
         TV_kernel = module.get_function("TV_kernel2D")
         shared_mem_bytes = 0
 

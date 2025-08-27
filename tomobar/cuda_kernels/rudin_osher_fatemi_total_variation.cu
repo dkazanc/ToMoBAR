@@ -145,144 +145,63 @@ __device__ __forceinline__ float normalize_difference(float nominator, float den
     return nominator / denominator_sqrt;
 }
 
+__device__ __forceinline__ long mirror_axis_overflow(long i, int dimI)
+{
+    if (i < 0)
+    {
+        return abs(i);
+    }
+
+    if (dimI <= i)
+    {
+        return (dimI - 1) * 2 - i;
+    }
+
+    return i;
+}
+
 __device__ __forceinline__ long long calculate_index(long i, long j, long k, int dimX, int dimY, int dimZ)
 {
     return static_cast<long long>(i) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k);
 }
 
+template <int padding>
 __device__ __forceinline__ long long calculate_block_local_index(long i, long j, long k)
 {
-    return (i + 2) + (blockDim.x + 4) * (j + 2) + (blockDim.x + 4) * (blockDim.y + 4) * (k + 2);
+    int half_padding = padding / 2;
+    uint3 sharedDim = make_uint3(blockDim.x + padding, blockDim.y + padding, blockDim.z + padding);
+    return static_cast<long long>(i + half_padding) + sharedDim.x * static_cast<long long>(j + half_padding) + sharedDim.x * sharedDim.y * static_cast<long long>(k + half_padding);
 }
 
 extern __shared__ float shared_update_values[];
-__device__ void read_shared_update_values(long i, long j, long k, int dimX, int dimY, int dimZ, float *Update_in)
+template <int padding>
+__device__ void read_shared_update_values(int dimX, int dimY, int dimZ, float *Update_in)
 {
-    shared_update_values[calculate_block_local_index(threadIdx.x, threadIdx.y, threadIdx.z)] = Update_in[calculate_index(i, j, k, dimX, dimY, dimZ)];
+    int half_padding = padding / 2;
+    uint3 sharedDim = make_uint3(blockDim.x + padding, blockDim.y + padding, blockDim.z + padding);
+    long long shared_memory_size = sharedDim.x * sharedDim.y * sharedDim.z;
 
-    for (int z = 0; z <= 1; z++)
+    long i_start = blockDim.x * blockIdx.x;
+    long j_start = blockDim.y * blockIdx.y;
+    long k_start = blockDim.z * blockIdx.z;
+
+    for (
+        long long linear_index = threadIdx.x + blockDim.x * threadIdx.y + blockDim.x * blockDim.y * threadIdx.z;
+        linear_index < shared_memory_size;
+        linear_index += blockDim.x * blockDim.y * blockDim.z)
     {
-        for (int y = 0; y <= 1; y++)
-        {
-            for (int x = 0; x <= 1; x++)
-            {
-                long x_limit = x * (blockDim.x - 1);
-                long y_limit = y * (blockDim.y - 1);
-                long z_limit = z * (blockDim.z - 1);
-                if (threadIdx.x != x_limit && threadIdx.y != y_limit && threadIdx.z != z_limit)
-                {
-                    continue;
-                }
+        long long tmp = linear_index;
+        long shared_x = tmp % sharedDim.x;
+        tmp /= sharedDim.x;
+        long shared_y = tmp % sharedDim.y;
+        tmp /= sharedDim.y;
+        long shared_z = tmp;
 
-                for (int d_scale = 1; d_scale <= 2; d_scale++)
-                {
-                    int dx = d_scale * (x_limit ? 1 : -1);
-                    int dy = d_scale * (y_limit ? 1 : -1);
-                    int dz = d_scale * (z_limit ? 1 : -1);
+        long i = mirror_axis_overflow(i_start - half_padding + shared_x, dimX);
+        long j = mirror_axis_overflow(j_start - half_padding + shared_y, dimY);
+        long k = mirror_axis_overflow(k_start - half_padding + shared_z, dimZ);
 
-                    if (threadIdx.x == x_limit && threadIdx.y != y_limit && threadIdx.z != z_limit)
-                    {
-                        long current_i = i + dx;
-                        if (current_i < 0 || dimX <= current_i)
-                        {
-                            current_i = i - dx;
-                        }
-
-                        shared_update_values[calculate_block_local_index(threadIdx.x + dx, threadIdx.y, threadIdx.z)] = Update_in[calculate_index(current_i, j, k, dimX, dimY, dimZ)];
-                    }
-                    else if (threadIdx.x != x_limit && threadIdx.y == y_limit && threadIdx.z != z_limit)
-                    {
-                        long current_j = j + dy;
-                        if (current_j < 0 || dimY <= current_j)
-                        {
-                            current_j = j - dy;
-                        }
-
-                        shared_update_values[calculate_block_local_index(threadIdx.x, threadIdx.y + dy, threadIdx.z)] = Update_in[calculate_index(i, current_j, k, dimX, dimY, dimZ)];
-                    }
-                    else if (threadIdx.x != x_limit && threadIdx.y != y_limit && threadIdx.z == z_limit)
-                    {
-                        long current_k = k + dz;
-                        if (current_k < 0 || dimZ <= current_k)
-                        {
-                            current_k = k - dz;
-                        }
-
-                        shared_update_values[calculate_block_local_index(threadIdx.x, threadIdx.y, threadIdx.z + dz)] = Update_in[calculate_index(i, j, current_k, dimX, dimY, dimZ)];
-                    }
-                    else if (threadIdx.x == x_limit && threadIdx.y == y_limit && threadIdx.z != z_limit)
-                    {
-                        long current_i = i + dx;
-                        if (current_i < 0 || dimX <= current_i)
-                        {
-                            current_i = i - dx;
-                        }
-
-                        long current_j = j + dy;
-                        if (current_j < 0 || dimY <= current_j)
-                        {
-                            current_j = j - dy;
-                        }
-
-                        shared_update_values[calculate_block_local_index(threadIdx.x + dx, threadIdx.y + dy, threadIdx.z)] = Update_in[calculate_index(current_i, current_j, k, dimX, dimY, dimZ)];
-                    }
-                    else if (threadIdx.x == x_limit && threadIdx.y != y_limit && threadIdx.z == z_limit)
-                    {
-                        long current_i = i + dx;
-                        if (current_i < 0 || dimX <= current_i)
-                        {
-                            current_i = i - dx;
-                        }
-
-                        long current_k = k + dz;
-                        if (current_k < 0 || dimZ <= current_k)
-                        {
-                            current_k = k - dz;
-                        }
-
-                        shared_update_values[calculate_block_local_index(threadIdx.x + dx, threadIdx.y, threadIdx.z + dz)] = Update_in[calculate_index(current_i, j, current_k, dimX, dimY, dimZ)];
-                    }
-                    else if (threadIdx.x != x_limit && threadIdx.y == y_limit && threadIdx.z == z_limit)
-                    {
-                        long current_j = j + dy;
-                        if (current_j < 0 || dimY <= current_j)
-                        {
-                            current_j = j - dy;
-                        }
-
-                        long current_k = k + dz;
-                        if (current_k < 0 || dimZ <= current_k)
-                        {
-                            current_k = k - dz;
-                        }
-
-                        shared_update_values[calculate_block_local_index(threadIdx.x, threadIdx.y + dy, threadIdx.z + dz)] = Update_in[calculate_index(i, current_j, current_k, dimX, dimY, dimZ)];
-                    }
-                    else if (threadIdx.x == x_limit && threadIdx.y == y_limit && threadIdx.z == z_limit)
-                    {
-                        long current_i = i + dx;
-                        if (current_i < 0 || dimX <= current_i)
-                        {
-                            current_i = i - dx;
-                        }
-
-                        long current_j = j + dy;
-                        if (current_j < 0 || dimY <= current_j)
-                        {
-                            current_j = j - dy;
-                        }
-
-                        long current_k = k + dz;
-                        if (current_k < 0 || dimZ <= current_k)
-                        {
-                            current_k = k - dz;
-                        }
-
-                        shared_update_values[calculate_block_local_index(threadIdx.x + dx, threadIdx.y + dy, threadIdx.z + dz)] = Update_in[calculate_index(current_i, current_j, current_k, dimX, dimY, dimZ)];
-                    }
-                }
-            }
-        }
+        shared_update_values[linear_index] = Update_in[calculate_index(i, j, k, dimX, dimY, dimZ)];
     }
 }
 
@@ -293,15 +212,16 @@ struct Divergence
     float denominators[3];
 };
 
+template <int padding>
 __device__ Divergence calculate_divergence(long i, long j, long k, float *Update_values)
 {
-    float U_in_i2 = Update_values[calculate_block_local_index(i - 1, j, k)];
-    float U_in = Update_values[calculate_block_local_index(i, j, k)];
-    float U_in_i1 = Update_values[calculate_block_local_index(i + 1, j, k)];
-    float U_in_j2 = Update_values[calculate_block_local_index(i, j - 1, k)];
-    float U_in_j1 = Update_values[calculate_block_local_index(i, j + 1, k)];
-    float U_in_k2 = Update_values[calculate_block_local_index(i, j, k - 1)];
-    float U_in_k1 = Update_values[calculate_block_local_index(i, j, k + 1)];
+    float U_in_i2 = Update_values[calculate_block_local_index<padding>(i - 1, j, k)];
+    float U_in = Update_values[calculate_block_local_index<padding>(i, j, k)];
+    float U_in_i1 = Update_values[calculate_block_local_index<padding>(i + 1, j, k)];
+    float U_in_j2 = Update_values[calculate_block_local_index<padding>(i, j - 1, k)];
+    float U_in_j1 = Update_values[calculate_block_local_index<padding>(i, j + 1, k)];
+    float U_in_k2 = Update_values[calculate_block_local_index<padding>(i, j, k - 1)];
+    float U_in_k1 = Update_values[calculate_block_local_index<padding>(i, j, k + 1)];
 
     float NOMx_1 = U_in_j1 - U_in; /* x+ */
     float NOMy_1 = U_in_i1 - U_in; /* y+ */
@@ -324,7 +244,8 @@ __device__ Divergence calculate_divergence(long i, long j, long k, float *Update
         {denom_x, denom_y, denom_z}};
 }
 
-extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
+template <int padding>
+__global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -333,22 +254,26 @@ extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, floa
     if (i >= dimX || j >= dimY || k >= dimZ)
         return;
 
+    const long thread_x = threadIdx.x;
+    const long thread_y = threadIdx.y;
+    const long thread_z = threadIdx.z;
+
     long long index = calculate_index(i, j, k, dimX, dimY, dimZ);
     float I = Input[index];
 
-    read_shared_update_values(i, j, k, dimX, dimY, dimZ, Update_in);
+    read_shared_update_values<padding>(dimX, dimY, dimZ, Update_in);
     __syncthreads();
 
-    float U_in = shared_update_values[calculate_block_local_index(threadIdx.x, threadIdx.y, threadIdx.z)];
+    float U_in = shared_update_values[calculate_block_local_index<padding>(thread_x, thread_y, thread_z)];
 
-    long di = i > 0 ? -1 : 1;
-    long dj = j > 0 ? -1 : 1;
-    long dk = k > 0 ? -1 : 1;
+    int di = i > 0 ? -1 : 1;
+    int dj = j > 0 ? -1 : 1;
+    int dk = k > 0 ? -1 : 1;
 
-    Divergence divergence = calculate_divergence(threadIdx.x, threadIdx.y, threadIdx.z, shared_update_values);
-    Divergence divergence_j2 = calculate_divergence(threadIdx.x, threadIdx.y + dj, threadIdx.z, shared_update_values);
-    Divergence divergence_i2 = calculate_divergence(threadIdx.x + di, threadIdx.y, threadIdx.z, shared_update_values);
-    Divergence divergence_k2 = calculate_divergence(threadIdx.x, threadIdx.y, threadIdx.z + dk, shared_update_values);
+    Divergence divergence = calculate_divergence<padding>(thread_x, thread_y, thread_z, shared_update_values);
+    Divergence divergence_j2 = calculate_divergence<padding>(thread_x, thread_y + dj, thread_z, shared_update_values);
+    Divergence divergence_i2 = calculate_divergence<padding>(thread_x + di, thread_y, thread_z, shared_update_values);
+    Divergence divergence_k2 = calculate_divergence<padding>(thread_x, thread_y, thread_z + dk, shared_update_values);
 
     /*divergence components */
     float D1 = normalize_difference(divergence.nominators[0], divergence.squared_nominators[0], divergence.denominators[1], divergence.denominators[2]);
@@ -365,4 +290,5 @@ extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, floa
 
     float U_out = U_in + tau * (lambdaPar * (dv1 + dv2 + dv3) - (U_in - I));
     Update_out[index] = U_out;
+    // Update_out[index] = i;
 }
