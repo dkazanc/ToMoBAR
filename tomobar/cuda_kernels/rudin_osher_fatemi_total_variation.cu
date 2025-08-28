@@ -255,12 +255,10 @@ __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, f
     const long thread_y = threadIdx.y;
     const long thread_z = threadIdx.z;
 
-    const bool out_of_bounds = i >= dimX || j >= dimY || k >= dimZ;
-
     read_shared_update_values<padding>(dimX, dimY, dimZ, Update_in);
     __syncthreads();
 
-    if (out_of_bounds)
+    if (i >= dimX || j >= dimY || k >= dimZ)
     {
         return;
     }
