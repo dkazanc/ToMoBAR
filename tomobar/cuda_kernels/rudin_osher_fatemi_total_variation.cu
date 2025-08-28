@@ -185,10 +185,10 @@ __device__ void read_shared_update_values(int dimX, int dimY, int dimZ, float *U
     long j_start = blockDim.y * blockIdx.y;
     long k_start = blockDim.z * blockIdx.z;
 
-    for (
-        long long linear_index = threadIdx.x + blockDim.x * threadIdx.y + blockDim.x * blockDim.y * threadIdx.z;
-        linear_index < shared_memory_size;
-        linear_index += blockDim.x * blockDim.y * blockDim.z)
+    long long linear_thread_index = calculate_index(threadIdx.x, threadIdx.y, threadIdx.z, blockDim.x, blockDim.y, blockDim.z);
+    long long threads_in_block = blockDim.x * blockDim.y * blockDim.z;
+
+    for (long long linear_index = linear_thread_index; linear_index < shared_memory_size; linear_index += threads_in_block)
     {
         long long tmp = linear_index;
         long shared_x = tmp % sharedDim.x;
@@ -251,18 +251,22 @@ __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, f
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
     const long k = blockDim.z * blockIdx.z + threadIdx.z;
 
-    if (i >= dimX || j >= dimY || k >= dimZ)
-        return;
-
     const long thread_x = threadIdx.x;
     const long thread_y = threadIdx.y;
     const long thread_z = threadIdx.z;
 
-    long long index = calculate_index(i, j, k, dimX, dimY, dimZ);
-    float I = Input[index];
+    const bool out_of_bounds = i >= dimX || j >= dimY || k >= dimZ;
 
     read_shared_update_values<padding>(dimX, dimY, dimZ, Update_in);
     __syncthreads();
+
+    if (out_of_bounds)
+    {
+        return;
+    }
+
+    long long index = calculate_index(i, j, k, dimX, dimY, dimZ);
+    float I = Input[index];
 
     float U_in = shared_update_values[calculate_block_local_index<padding>(thread_x, thread_y, thread_z)];
 
@@ -290,5 +294,4 @@ __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, f
 
     float U_out = U_in + tau * (lambdaPar * (dv1 + dv2 + dv3) - (U_in - I));
     Update_out[index] = U_out;
-    // Update_out[index] = i;
 }

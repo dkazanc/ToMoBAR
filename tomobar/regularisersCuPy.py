@@ -123,12 +123,13 @@ def ROF_TV_cupy(
 
         padding = 4
         padded_block_size = np.prod(tuple(x + padding for x in block_dims))
+        shared_mem_bytes = padded_block_size * cp.float32().itemsize
+
         name_expressions = [f"TV_kernel3D<{padding}>"]
         module = load_cuda_module(
             "rudin_osher_fatemi_total_variation", name_expressions
         )
         TV_kernel = module.get_function(name_expressions[0])
-        shared_mem_bytes = padded_block_size * cp.float32().itemsize
     else:
         data3d = False
         dy, dx = data.shape
