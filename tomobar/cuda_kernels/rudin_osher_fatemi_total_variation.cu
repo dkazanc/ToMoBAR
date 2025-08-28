@@ -33,6 +33,40 @@ __host__ __device__ int sign(float x)
     return (x > 0) - (x < 0);
 }
 
+template <typename T>
+__device__ float read_as_float(T *array, long long index)
+{
+}
+
+template <>
+__device__ float read_as_float<float>(float *array, long long index)
+{
+  return array[index];
+}
+
+template <>
+__device__ float read_as_float<__half>(__half *array, long long index)
+{
+  return __half2float(array[index]);
+}
+
+template <typename T>
+__device__ void write_float(T *array, long long index, float value)
+{
+}
+
+template <>
+__device__ void write_float<float>(float *array, long long index, float value)
+{
+  array[index] = value;
+}
+
+template <>
+__device__ void write_float<__half>(__half *array, long long index, float value)
+{
+  array[index] = __float2half(value);
+}
+
 /*********************2D case****************************/
 /* differences 1 */
 extern "C" __global__ void D1_func2D(float *Input, float *D1, int N, int M)
@@ -152,7 +186,8 @@ __device__ __forceinline__ long long calculate_index(long i, long j, long k, int
     return static_cast<long long>(i) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k);
 }
 
-extern "C" __global__ void divergence_kernel(float *Update_in, __half *D1, __half *D2, __half *D3, int dimX, int dimY, int dimZ)
+template <typename T>
+__global__ void divergence_kernel_3D(float *Update_in, T *D1, T *D2, T *D3, int dimX, int dimY, int dimZ)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -205,12 +240,13 @@ extern "C" __global__ void divergence_kernel(float *Update_in, __half *D1, __hal
     float denom_y = calculate_denominator(NOMy_0, NOMy_1);
     float denom_z = calculate_denominator(NOMz_0, NOMz_1);
 
-    D1[index] = __float2half(normalize_difference(NOMx_1, NOMx_1_squared, denom_y, denom_z));
-    D2[index] = __float2half(normalize_difference(NOMy_1, denom_x, NOMy_1_squared, denom_z));
-    D3[index] = __float2half(normalize_difference(NOMz_1, denom_x, denom_y, NOMz_1_squared));
+    write_float<T>(D1, index, normalize_difference(NOMx_1, NOMx_1_squared, denom_y, denom_z));
+    write_float<T>(D2, index, normalize_difference(NOMy_1, denom_x, NOMy_1_squared, denom_z));
+    write_float<T>(D3, index, normalize_difference(NOMz_1, denom_x, denom_y, NOMz_1_squared));
 }
 
-extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, __half *D1, __half *D2, __half *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
+template <typename T>
+__global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, T *D1, T *D2, T *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -235,9 +271,9 @@ extern "C" __global__ void TV_kernel3D(float *Update_in, float *Update_out, floa
         k2 = k + 1;
 
     /*divergence components */
-    float dv1 = __half2float(D1[index]) - __half2float(D1[calculate_index(i, j2, k, dimX, dimY, dimZ)]);
-    float dv2 = __half2float(D2[index]) - __half2float(D2[calculate_index(i2, j, k, dimX, dimY, dimZ)]);
-    float dv3 = __half2float(D3[index]) - __half2float(D3[calculate_index(i, j, k2, dimX, dimY, dimZ)]);
+    float dv1 = read_as_float<T>(D1, index) - read_as_float<T>(D1, calculate_index(i, j2, k, dimX, dimY, dimZ));
+    float dv2 = read_as_float<T>(D2, index) - read_as_float<T>(D2, calculate_index(i2, j, k, dimX, dimY, dimZ));
+    float dv3 = read_as_float<T>(D3, index) - read_as_float<T>(D3, calculate_index(i, j, k2, dimX, dimY, dimZ));
 
     float U_out = U_in + tau * (lambdaPar * (dv1 + dv2 + dv3) - (U_in - I));
     Update_out[index] = U_out;
