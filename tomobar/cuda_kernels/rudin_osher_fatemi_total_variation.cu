@@ -135,13 +135,13 @@ extern "C" __global__ void TV_kernel2D(float *D1, float *D2, float *Update, floa
 /*********************3D case****************************/
 __device__ __forceinline__ float calculate_denominator(float NOM_0, float NOM_1)
 {
-    float denom = 0.5 * (sign(NOM_1) + sign(NOM_0)) * (MIN(abs(NOM_1), abs(NOM_0)));
+    float denom = 0.5 * (sign(NOM_1) + sign(NOM_0)) * (MIN(fabs(NOM_1), fabs(NOM_0)));
     return denom * denom;
 }
 
 __device__ __forceinline__ float normalize_difference(float nominator, float denominator_1, float denominator_2, float denominator_3)
 {
-    float denominator_sqrt = sqrt(denominator_1 + denominator_2 + denominator_3 + EPS);
+    float denominator_sqrt = __fsqrt_rn(denominator_1 + denominator_2 + denominator_3 + EPS);
     return nominator / denominator_sqrt;
 }
 
