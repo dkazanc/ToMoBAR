@@ -241,9 +241,9 @@ __global__ void divergence_kernel_3D(float *Update_in, T *D1, T *D2, T *D3, int 
         thread_items_U_in_k1[item] = Update_in[calculate_index(current_i, j, k1, dimX, dimY, dimZ)];
     }
 
-    float D1_normalization_input[items_per_thread * 4];
-    float D2_normalization_input[items_per_thread * 4];
-    float D3_normalization_input[items_per_thread * 4];
+    float thread_items_D1[items_per_thread];
+    float thread_items_D2[items_per_thread];
+    float thread_items_D3[items_per_thread];
 
 #pragma unroll
     for (int item = 0; item < items_per_thread; item++)
@@ -271,32 +271,9 @@ __global__ void divergence_kernel_3D(float *Update_in, T *D1, T *D2, T *D3, int 
         float denom_y = calculate_denominator(NOMy_0, NOMy_1);
         float denom_z = calculate_denominator(NOMz_0, NOMz_1);
 
-        D1_normalization_input[item * 4 + 0] = NOMx_1;
-        D1_normalization_input[item * 4 + 1] = NOMx_1_squared;
-        D1_normalization_input[item * 4 + 2] = denom_y;
-        D1_normalization_input[item * 4 + 3] = denom_z;
-
-        D2_normalization_input[item * 4 + 0] = NOMy_1;
-        D2_normalization_input[item * 4 + 1] = denom_x;
-        D2_normalization_input[item * 4 + 2] = NOMy_1_squared;
-        D2_normalization_input[item * 4 + 3] = denom_z;
-
-        D3_normalization_input[item * 4 + 0] = NOMz_1;
-        D3_normalization_input[item * 4 + 1] = denom_x;
-        D3_normalization_input[item * 4 + 2] = denom_y;
-        D3_normalization_input[item * 4 + 3] = NOMz_1_squared;
-    }
-
-    float thread_items_D1[items_per_thread];
-    float thread_items_D2[items_per_thread];
-    float thread_items_D3[items_per_thread];
-
-#pragma unroll
-    for (int item = 0; item < items_per_thread; item++)
-    {
-        thread_items_D1[item] = normalize_difference(D1_normalization_input[item * 4 + 0], D1_normalization_input[item * 4 + 1], D1_normalization_input[item * 4 + 2], D1_normalization_input[item * 4 + 3]);
-        thread_items_D2[item] = normalize_difference(D2_normalization_input[item * 4 + 0], D2_normalization_input[item * 4 + 1], D2_normalization_input[item * 4 + 2], D2_normalization_input[item * 4 + 3]);
-        thread_items_D3[item] = normalize_difference(D3_normalization_input[item * 4 + 0], D3_normalization_input[item * 4 + 1], D3_normalization_input[item * 4 + 2], D3_normalization_input[item * 4 + 3]);
+        thread_items_D1[item] = normalize_difference(NOMx_1, NOMx_1_squared, denom_y, denom_z);
+        thread_items_D2[item] = normalize_difference(NOMy_1, denom_x, NOMy_1_squared, denom_z);
+        thread_items_D3[item] = normalize_difference(NOMz_1, denom_x, denom_y, NOMz_1_squared);
     }
 
 #pragma unroll
