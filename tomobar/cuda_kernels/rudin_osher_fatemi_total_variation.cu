@@ -41,13 +41,13 @@ __device__ float read_as_float(T *array, long long index)
 template <>
 __device__ float read_as_float<float>(float *array, long long index)
 {
-  return array[index];
+    return array[index];
 }
 
 template <>
 __device__ float read_as_float<__half>(__half *array, long long index)
 {
-  return __half2float(array[index]);
+    return __half2float(array[index]);
 }
 
 template <typename T>
@@ -58,13 +58,13 @@ __device__ void write_float(T *array, long long index, float value)
 template <>
 __device__ void write_float<float>(float *array, long long index, float value)
 {
-  array[index] = value;
+    array[index] = value;
 }
 
 template <>
 __device__ void write_float<__half>(__half *array, long long index, float value)
 {
-  array[index] = __float2half(value);
+    array[index] = __float2half(value);
 }
 
 /*********************2D case****************************/
@@ -186,7 +186,7 @@ __device__ __forceinline__ long long calculate_index(long i, long j, long k, int
     return static_cast<long long>(i) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k);
 }
 
-template <typename T>
+template <typename T, int items_per_thread>
 __global__ void divergence_kernel_3D(float *Update_in, T *D1, T *D2, T *D3, int dimX, int dimY, int dimZ)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -196,53 +196,96 @@ __global__ void divergence_kernel_3D(float *Update_in, T *D1, T *D2, T *D3, int 
     if (i >= dimX || j >= dimY || k >= dimZ)
         return;
 
-    long long i1 = i + 1;
-    if (i1 >= dimX)
-        i1 = i - 1;
-    long long i2 = i - 1;
-    if (i2 < 0)
-        i2 = i + 1;
-    long long j1 = j + 1;
-    if (j1 >= dimY)
-        j1 = j - 1;
-    long long j2 = j - 1;
-    if (j2 < 0)
-        j2 = j + 1;
-    long long k1 = k + 1;
-    if (k1 >= dimZ)
-        k1 = k - 1;
-    long long k2 = k - 1;
-    if (k2 < 0)
-        k2 = k + 1;
+    float thread_items_U_in[items_per_thread];
+    float thread_items_U_in_i2[items_per_thread];
+    float thread_items_U_in_i1[items_per_thread];
+    float thread_items_U_in_j2[items_per_thread];
+    float thread_items_U_in_j1[items_per_thread];
+    float thread_items_U_in_k2[items_per_thread];
+    float thread_items_U_in_k1[items_per_thread];
 
-    long long index = calculate_index(i, j, k, dimX, dimY, dimZ);
+    for (int item = 0; item < items_per_thread; item++)
+    {
+        long current_i = i * items_per_thread + item;
+        if (current_i >= dimX)
+            continue;
 
-    float U_in = Update_in[index];
-    float U_in_i2 = Update_in[calculate_index(i2, j, k, dimX, dimY, dimZ)];
-    float U_in_i1 = Update_in[calculate_index(i1, j, k, dimX, dimY, dimZ)];
-    float U_in_j2 = Update_in[calculate_index(i, j2, k, dimX, dimY, dimZ)];
-    float U_in_j1 = Update_in[calculate_index(i, j1, k, dimX, dimY, dimZ)];
-    float U_in_k2 = Update_in[calculate_index(i, j, k2, dimX, dimY, dimZ)];
-    float U_in_k1 = Update_in[calculate_index(i, j, k1, dimX, dimY, dimZ)];
+        long long index = calculate_index(current_i, j, k, dimX, dimY, dimZ);
 
-    float NOMx_1 = U_in_j1 - U_in; /* x+ */
-    float NOMy_1 = U_in_i1 - U_in; /* y+ */
-    float NOMz_1 = U_in_k1 - U_in; /* z+ */
-    float NOMx_0 = U_in - U_in_j2; /* x- */
-    float NOMy_0 = U_in - U_in_i2; /* y- */
-    float NOMz_0 = U_in - U_in_k2; /* z- */
+        long long i1 = current_i + 1;
+        if (i1 >= dimX)
+            i1 = current_i - 1;
+        long long i2 = current_i - 1;
+        if (i2 < 0)
+            i2 = current_i + 1;
+        long long j1 = j + 1;
+        if (j1 >= dimY)
+            j1 = j - 1;
+        long long j2 = j - 1;
+        if (j2 < 0)
+            j2 = j + 1;
+        long long k1 = k + 1;
+        if (k1 >= dimZ)
+            k1 = k - 1;
+        long long k2 = k - 1;
+        if (k2 < 0)
+            k2 = k + 1;
 
-    float NOMx_1_squared = NOMx_1 * NOMx_1;
-    float NOMy_1_squared = NOMy_1 * NOMy_1;
-    float NOMz_1_squared = NOMz_1 * NOMz_1;
+        thread_items_U_in[item] = Update_in[index];
+        thread_items_U_in_i2[item] = Update_in[calculate_index(i2, j, k, dimX, dimY, dimZ)];
+        thread_items_U_in_i1[item] = Update_in[calculate_index(i1, j, k, dimX, dimY, dimZ)];
+        thread_items_U_in_j2[item] = Update_in[calculate_index(current_i, j2, k, dimX, dimY, dimZ)];
+        thread_items_U_in_j1[item] = Update_in[calculate_index(current_i, j1, k, dimX, dimY, dimZ)];
+        thread_items_U_in_k2[item] = Update_in[calculate_index(current_i, j, k2, dimX, dimY, dimZ)];
+        thread_items_U_in_k1[item] = Update_in[calculate_index(current_i, j, k1, dimX, dimY, dimZ)];
+    }
 
-    float denom_x = calculate_denominator(NOMx_0, NOMx_1);
-    float denom_y = calculate_denominator(NOMy_0, NOMy_1);
-    float denom_z = calculate_denominator(NOMz_0, NOMz_1);
+    float thread_items_D1[items_per_thread];
+    float thread_items_D2[items_per_thread];
+    float thread_items_D3[items_per_thread];
 
-    write_float<T>(D1, index, normalize_difference(NOMx_1, NOMx_1_squared, denom_y, denom_z));
-    write_float<T>(D2, index, normalize_difference(NOMy_1, denom_x, NOMy_1_squared, denom_z));
-    write_float<T>(D3, index, normalize_difference(NOMz_1, denom_x, denom_y, NOMz_1_squared));
+    for (int item = 0; item < items_per_thread; item++)
+    {
+        float U_in = thread_items_U_in[item];
+        float U_in_i2 = thread_items_U_in_i2[item];
+        float U_in_i1 = thread_items_U_in_i1[item];
+        float U_in_j2 = thread_items_U_in_j2[item];
+        float U_in_j1 = thread_items_U_in_j1[item];
+        float U_in_k2 = thread_items_U_in_k2[item];
+        float U_in_k1 = thread_items_U_in_k1[item];
+
+        float NOMx_1 = U_in_j1 - U_in; /* x+ */
+        float NOMy_1 = U_in_i1 - U_in; /* y+ */
+        float NOMz_1 = U_in_k1 - U_in; /* z+ */
+        float NOMx_0 = U_in - U_in_j2; /* x- */
+        float NOMy_0 = U_in - U_in_i2; /* y- */
+        float NOMz_0 = U_in - U_in_k2; /* z- */
+
+        float NOMx_1_squared = NOMx_1 * NOMx_1;
+        float NOMy_1_squared = NOMy_1 * NOMy_1;
+        float NOMz_1_squared = NOMz_1 * NOMz_1;
+
+        float denom_x = calculate_denominator(NOMx_0, NOMx_1);
+        float denom_y = calculate_denominator(NOMy_0, NOMy_1);
+        float denom_z = calculate_denominator(NOMz_0, NOMz_1);
+
+        thread_items_D1[item] = normalize_difference(NOMx_1, NOMx_1_squared, denom_y, denom_z);
+        thread_items_D2[item] = normalize_difference(NOMy_1, denom_x, NOMy_1_squared, denom_z);
+        thread_items_D3[item] = normalize_difference(NOMz_1, denom_x, denom_y, NOMz_1_squared);
+    }
+
+    for (int item = 0; item < items_per_thread; item++)
+    {
+        long current_i = i * items_per_thread + item;
+        if (current_i >= dimX)
+            continue;
+
+        long long index = calculate_index(current_i, j, k, dimX, dimY, dimZ);
+
+        write_float<T>(D1, index, thread_items_D1[item]);
+        write_float<T>(D2, index, thread_items_D2[item]);
+        write_float<T>(D3, index, thread_items_D3[item]);
+    }
 }
 
 template <typename T>

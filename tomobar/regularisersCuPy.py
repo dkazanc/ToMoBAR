@@ -107,6 +107,7 @@ def ROF_TV_cupy(
         raise ValueError("The input data should be float32 data type")
 
     dtype_of_D = cp.float16 if half_precision else cp.float32
+    items_per_thread = 4
 
     # initialise CuPy arrays here
     out_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
@@ -121,7 +122,7 @@ def ROF_TV_cupy(
     #     f"TV_kernel3D<{type_of_P}>",
     # ]
     name_expressions = [
-        f"divergence_kernel_3D<{type_of_P}>",
+        f"divergence_kernel_3D<{type_of_P}, {items_per_thread}>",
         "TV_kernel2D",
         f"TV_kernel3D<{type_of_P}>",
     ]
@@ -173,6 +174,7 @@ def ROF_TV_cupy(
                 dx,
                 dy,
                 dz,
+                items_per_thread,
             )
         else:
             params3 = ()
