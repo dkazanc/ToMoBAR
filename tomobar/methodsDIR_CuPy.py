@@ -213,6 +213,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
+        gather_kernel2 = module.get_function("gather_kernel2")
         gather_kernel_partial = module.get_function("gather_kernel_partial")
         gather_kernel_center_angle_based_prune = module.get_function(
             "gather_kernel_center_angle_based_prune"
@@ -269,13 +270,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 2 * n * 1 / np.pi * np.sqrt(-mu * np.log(eps) + (mu * n) * (mu * n) / 4)
             )
         )
-        oversampling_level = 2  # at least 2 or larger required
+        oversampling_level = 3  # at least 3 or larger required
 
         # Limit the center size parameter
         center_size = min(center_size, n * 2 + m * 2)
 
         # init filter
-        ne = oversampling_level * n
+        ne = int(oversampling_level * n)
         padding_m = ne // 2 - n // 2
         padding_p = ne // 2 + n // 2
         wfilter = calc_filter(ne, filter_type, cutoff_freq)
@@ -294,16 +295,23 @@ class RecToolsDIRCuPy(RecToolsDIR):
             end_index = min((chunk_index + 1) * slice_count_per_chunk, nz)
             if start_index >= end_index:
                 break
+            
+            # processing by chunks over the second dimension 
+            # to avoid increased data sizes due to oversampling
+            nchunk = int(np.ceil(oversampling_level))
+            chunk = int(np.ceil(data.shape[1]/nchunk))
+            for j in range(nchunk):
+                st = j*chunk
+                end = min((j+1)*chunk,data.shape[1])
+                tmp = xp.pad(
+                    data[start_index:end_index, st:end, :],
+                    ((0, 0), (0, 0), (padding_m, padding_m)),
+                    mode="edge",
+                )
 
-            tmp = xp.pad(
-                data[start_index:end_index, :, :],
-                ((0, 0), (0, 0), (padding_m, padding_m)),
-                mode="edge",
-            )
-
-            tmp = w * rfft(tmp, axis=2)
-            tmp = irfft(tmp, axis=2)
-            tmp_p[start_index:end_index, :, :] = tmp[:, :, padding_m:padding_p]
+                tmp = w * rfft(tmp, axis=2)
+                tmp = irfft(tmp, axis=2)
+                tmp_p[start_index:end_index, st:end, :] = tmp[:, :, padding_m:padding_p]
 
             del tmp
 
@@ -345,7 +353,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # STEP2: interpolation (gathering) in the frequency domain
         # Use original one kernel at low dimension.
-        if center_size >= _CENTER_SIZE_MIN:
+
+        # VN: USE ORIGINGAL ONE FOR NOW
+        if 0:#center_size >= _CENTER_SIZE_MIN:
             if center_size != (n * 2 + m * 2):
                 gather_kernel_partial(
                     (
@@ -403,7 +413,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
-        else:
+        else:            
+            # VN: it has to be initiated with 0 since we do AtomicAdd to elements!
+            fde = xp.empty([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
             gather_kernel(
                 (
                     int(np.ceil(n / block_dim[0])),
@@ -422,7 +434,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
-
+            
         wrap_kernel(
             (
                 int(np.ceil((2 * n + 2 * m) / 32)),
@@ -432,7 +444,37 @@ class RecToolsDIRCuPy(RecToolsDIR):
             (32, 32, 1),
             (fde, n, nz // 2, m),
         )
+        
+        # VN: cropping by m should be here, before ifft2!!!
+        fde = xp.ascontiguousarray(fde[:,m:-m,m:-m])        
 
+        # # VN: ALTERNATIVE IMPLEMENTATION WITHOUT WRAP
+        # # it has to be initiated with 0 since we do AtomicAdd to elements!
+        # fde2 = xp.zeros([nz // 2, 2 * n, 2 * n], dtype=xp.complex64)
+        # gather_kernel2(
+        #     (
+        #         int(np.ceil(n / block_dim[0])),
+        #         int(np.ceil(nproj / block_dim[1])),
+        #         nz // 2,
+        #     ),
+        #     (block_dim[0], block_dim[1], 1),
+        #     (
+        #         datac,
+        #         fde2,
+        #         theta,
+        #         np.int32(m),
+        #         np.float32(mu),
+        #         np.int32(n),
+        #         np.int32(nproj),
+        #         np.int32(nz // 2),
+        #     ),
+        # )
+        # print(xp.linalg.norm(fde-fde2)/xp.linalg.norm(fde))
+        # fde=fde2
+        
+        
+        m = 0 # m is not needed after this, the code below can be adjusted        
+        
         del datac
 
         # STEP3: ifft 2d

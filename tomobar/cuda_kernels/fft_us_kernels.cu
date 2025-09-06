@@ -42,6 +42,45 @@ __device__ void update_f_value<true>(float2 *f, float2 g0, float x0, float y0,
 }
 
 template<bool use_center_filter>
+__device__ void update_f_value2(float2 *f, float2 g0t, float x0, float y0,
+                               float coeff0, float coeff1,
+                               int center_half_size, int ell0, int ell1,
+                               int stride, int n);
+
+template<>
+__device__ void update_f_value2<false>(float2 *f, float2 g0, float x0, float y0,
+                                      float coeff0, float coeff1,
+                                      int center_half_size, int ell0, int ell1,
+                                      int stride, int n)
+{
+  float w0 = ell0 / (float)(2 * n) - x0;
+  float w1 = ell1 / (float)(2 * n) - y0;
+  float w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
+  float2 g0t = make_float2(w*g0.x, w*g0.y);
+  int f_ind = (ell0+n+2*n)%(2*n)-n + stride * ((ell1+n+2*n)%(2*n)-n);
+  atomicAdd(&(f[f_ind].x), g0t.x);
+  atomicAdd(&(f[f_ind].y), g0t.y);
+}
+
+template<>
+__device__ void update_f_value2<true>(float2 *f, float2 g0, float x0, float y0,
+                                     float coeff0, float coeff1,
+                                     int center_half_size, int ell0, int ell1,
+                                     int stride, int n)
+{ 
+  if( ell0 < -center_half_size || ell0 >= center_half_size ||
+      ell1 < -center_half_size || ell1 >= center_half_size ) {      
+    float w0 = ell0 / (float)(2 * n) - x0;
+    float w1 = ell1 / (float)(2 * n) - y0;
+    float w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
+    float2 g0t = make_float2(w*g0.x, w*g0.y);
+    int f_ind = (ell0+n+2*n)%(2*n)-n + stride * ((ell1+n+2*n)%(2*n)-n);
+    atomicAdd(&(f[f_ind].x), g0t.x);
+    atomicAdd(&(f[f_ind].y), g0t.y);
+  }
+}
+
+template<bool use_center_filter>
 __device__ void gather_kernel_common(float2 *g, float2 *f, float *theta, 
                                      int m, float mu, 
                                      int center_size, int n, int nproj, int nz)    
@@ -95,6 +134,60 @@ __device__ void gather_kernel_common(float2 *g, float2 *f, float *theta,
   }
 }
 
+template<bool use_center_filter>
+__device__ void gather_kernel_common2(float2 *g, float2 *f, float *theta, 
+                                     int m, float mu, 
+                                     int center_size, int n, int nproj, int nz)    
+{
+  int tx = blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = blockDim.y * blockIdx.y + threadIdx.y;
+  int tz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  const int center_half_size = center_size/2;
+
+  if (tx >= n || ty >= nproj || tz >= nz)
+    return;
+  float2 g0, g0t;
+  float coeff0, coeff1;
+  float x0, y0;
+  int ell0, ell1, g_ind, f_ind;
+
+  g_ind = tx + ty * n + tz * n * nproj;
+  coeff0 = M_PI / mu;
+  coeff1 = -M_PI * M_PI / mu;
+  float sintheta, costheta;
+  __sincosf(theta[ty], &sintheta, &costheta);
+  x0 = (tx - n / 2) / (float)n * costheta;
+  y0 = -(tx - n / 2) / (float)n * sintheta;
+  if (x0 >= 0.5f)
+    x0 = 0.5f - 1e-5;
+  if (y0 >= 0.5f)
+    y0 = 0.5f - 1e-5;
+
+  int stride1 = 2*n;
+  int stride2 = stride1 * stride1;
+
+  g0.x = g[g_ind].x;
+  g0.y = g[g_ind].y;
+
+  // offset f by [tz, n+m, n+m]
+  f += n + n * stride1 + tz * stride2;
+  
+  #pragma unroll
+  for (int i1 = 0; i1 < 2 * m + 1; i1++)
+  {
+    ell1 = floorf(2 * n * y0) - m + i1;
+    #pragma unroll
+    for (int i0 = 0; i0 < 2 * m + 1; i0++)
+    {
+      ell0 = floorf(2 * n * x0) - m + i0;
+      update_f_value2<use_center_filter>(f, g0, x0, y0, coeff0, coeff1, 
+                                        center_half_size, 
+                                        ell0, ell1, stride1, n);
+    }
+  }
+}
+
 extern "C" __global__ void gather_kernel_partial(float2 *g, float2 *f, float *theta, 
                                                  int m, float mu, 
                                                  int center_size, int n, int nproj, int nz)    
@@ -106,6 +199,12 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta,
                                          int m, float mu, int n, int nproj, int nz)    
 {
   gather_kernel_common<false>(g, f, theta, m, mu, 0, n, nproj, nz);
+}
+
+extern "C" __global__ void gather_kernel2(float2 *g, float2 *f, float *theta, 
+                                         int m, float mu, int n, int nproj, int nz)    
+{
+  gather_kernel_common2<false>(g, f, theta, m, mu, 0, n, nproj, nz);
 }
 
 template<bool previous>
