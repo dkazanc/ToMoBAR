@@ -213,7 +213,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
-        gather_kernel2 = module.get_function("gather_kernel2")
         gather_kernel_partial = module.get_function("gather_kernel_partial")
         gather_kernel_center_angle_based_prune = module.get_function(
             "gather_kernel_center_angle_based_prune"
@@ -273,7 +272,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         oversampling_level = 3  # at least 3 or larger required
 
         # Limit the center size parameter
-        center_size = min(center_size, n * 2 + m * 2)
+        center_size = min(center_size, n * 2)
 
         # init filter
         ne = int(oversampling_level * n)
@@ -322,8 +321,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # input data
         datac = xp.empty((nz // 2, nproj, n), dtype=xp.complex64)
 
-        # padded fft, reusable by chunks
-        fde = xp.empty([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+        # fft, reusable by chunks
+        if center_size >= _CENTER_SIZE_MIN:
+            fde = xp.empty([nz // 2, 2 * n, 2 * n], dtype=xp.complex64)
+        else:
+            fde = xp.zeros([nz // 2, 2 * n, 2 * n], dtype=xp.complex64)
 
         # STEP1: fft 1d
         r2c_c1dfftshift(
@@ -354,9 +356,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP2: interpolation (gathering) in the frequency domain
         # Use original one kernel at low dimension.
 
-        # VN: USE ORIGINGAL ONE FOR NOW
-        if 0:#center_size >= _CENTER_SIZE_MIN:
-            if center_size != (n * 2 + m * 2):
+        if center_size >= _CENTER_SIZE_MIN:
+            if center_size != (n * 2):
                 gather_kernel_partial(
                     (
                         int(np.ceil(n / block_dim[0])),
@@ -413,9 +414,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
-        else:            
-            # VN: it has to be initiated with 0 since we do AtomicAdd to elements!
-            fde = xp.empty([nz // 2, 2 * m + 2 * n, 2 * m + 2 * n], dtype=xp.complex64)
+        else:
             gather_kernel(
                 (
                     int(np.ceil(n / block_dim[0])),
@@ -434,58 +433,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
-            
-        wrap_kernel(
-            (
-                int(np.ceil((2 * n + 2 * m) / 32)),
-                int(np.ceil((2 * n + 2 * m) / 32)),
-                np.int32(nz // 2),
-            ),
-            (32, 32, 1),
-            (fde, n, nz // 2, m),
-        )
-        
-        # VN: cropping by m should be here, before ifft2!!!
-        fde = xp.ascontiguousarray(fde[:,m:-m,m:-m])        
-
-        # # VN: ALTERNATIVE IMPLEMENTATION WITHOUT WRAP
-        # # it has to be initiated with 0 since we do AtomicAdd to elements!
-        # fde2 = xp.zeros([nz // 2, 2 * n, 2 * n], dtype=xp.complex64)
-        # gather_kernel2(
-        #     (
-        #         int(np.ceil(n / block_dim[0])),
-        #         int(np.ceil(nproj / block_dim[1])),
-        #         nz // 2,
-        #     ),
-        #     (block_dim[0], block_dim[1], 1),
-        #     (
-        #         datac,
-        #         fde2,
-        #         theta,
-        #         np.int32(m),
-        #         np.float32(mu),
-        #         np.int32(n),
-        #         np.int32(nproj),
-        #         np.int32(nz // 2),
-        #     ),
-        # )
-        # print(xp.linalg.norm(fde-fde2)/xp.linalg.norm(fde))
-        # fde=fde2
-        
-        
-        m = 0 # m is not needed after this, the code below can be adjusted        
         
         del datac
 
         # STEP3: ifft 2d
         c2dfftshift(
             (
-                int(np.ceil((2 * n + 2 * m) / 32)),
-                int(np.ceil((2 * n + 2 * m) / 8)),
+                int(np.ceil((2 * n) / 32)),
+                int(np.ceil((2 * n) / 8)),
                 np.int32(nz // 2),
             ),
             (32, 8, 1),
-            (fde, n, nz // 2, m),
+            (fde, n, nz // 2),
         )
 
         slice_count_per_chunk = np.ceil(nz // 2 / chunk_count)
@@ -504,12 +463,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         c2dfftshift(
             (
-                int(np.ceil((2 * n + 2 * m) / 32)),
-                int(np.ceil((2 * n + 2 * m) / 8)),
+                int(np.ceil((2 * n) / 32)),
+                int(np.ceil((2 * n) / 8)),
                 np.int32(nz // 2),
             ),
             (32, 8, 1),
-            (fde, n, nz // 2, m),
+            (fde, n, nz // 2),
         )
 
         # Unpadded recon output size
@@ -542,7 +501,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 unpad_recon_m,
                 n,
                 nz // 2,
-                m,
             ),
         )
 

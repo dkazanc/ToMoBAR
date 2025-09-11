@@ -18,52 +18,13 @@ __device__ void update_f_value<false>(float2 *f, float2 g0, float x0, float y0,
   float w1 = ell1 / (float)(2 * n) - y0;
   float w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
   float2 g0t = make_float2(w*g0.x, w*g0.y);
-  int f_ind = ell0 + stride * ell1;
-  atomicAdd(&(f[f_ind].x), g0t.x);
-  atomicAdd(&(f[f_ind].y), g0t.y);
-}
-
-template<>
-__device__ void update_f_value<true>(float2 *f, float2 g0, float x0, float y0,
-                                     float coeff0, float coeff1,
-                                     int center_half_size, int ell0, int ell1,
-                                     int stride, int n)
-{ 
-  if( ell0 < -center_half_size || ell0 >= center_half_size ||
-      ell1 < -center_half_size || ell1 >= center_half_size ) {      
-    float w0 = ell0 / (float)(2 * n) - x0;
-    float w1 = ell1 / (float)(2 * n) - y0;
-    float w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
-    float2 g0t = make_float2(w*g0.x, w*g0.y);
-    int f_ind = ell0 + stride * ell1;
-    atomicAdd(&(f[f_ind].x), g0t.x);
-    atomicAdd(&(f[f_ind].y), g0t.y);
-  }
-}
-
-template<bool use_center_filter>
-__device__ void update_f_value2(float2 *f, float2 g0t, float x0, float y0,
-                               float coeff0, float coeff1,
-                               int center_half_size, int ell0, int ell1,
-                               int stride, int n);
-
-template<>
-__device__ void update_f_value2<false>(float2 *f, float2 g0, float x0, float y0,
-                                      float coeff0, float coeff1,
-                                      int center_half_size, int ell0, int ell1,
-                                      int stride, int n)
-{
-  float w0 = ell0 / (float)(2 * n) - x0;
-  float w1 = ell1 / (float)(2 * n) - y0;
-  float w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
-  float2 g0t = make_float2(w*g0.x, w*g0.y);
   int f_ind = (ell0+n+2*n)%(2*n)-n + stride * ((ell1+n+2*n)%(2*n)-n);
   atomicAdd(&(f[f_ind].x), g0t.x);
   atomicAdd(&(f[f_ind].y), g0t.y);
 }
 
 template<>
-__device__ void update_f_value2<true>(float2 *f, float2 g0, float x0, float y0,
+__device__ void update_f_value<true>(float2 *f, float2 g0, float x0, float y0,
                                      float coeff0, float coeff1,
                                      int center_half_size, int ell0, int ell1,
                                      int stride, int n)
@@ -110,67 +71,13 @@ __device__ void gather_kernel_common(float2 *g, float2 *f, float *theta,
   if (y0 >= 0.5f)
     y0 = 0.5f - 1e-5;
 
-  int stride1 = 2*n + 2*m;
-  int stride2 = stride1 * stride1;
-
-  g0.x = g[g_ind].x;
-  g0.y = g[g_ind].y;
-
-  // offset f by [tz, n+m, n+m]
-  f += n+m + (n+m) * stride1 + tz * stride2;
-  
-  #pragma unroll
-  for (int i1 = 0; i1 < 2 * m + 1; i1++)
-  {
-    ell1 = floorf(2 * n * y0) - m + i1;
-    #pragma unroll
-    for (int i0 = 0; i0 < 2 * m + 1; i0++)
-    {
-      ell0 = floorf(2 * n * x0) - m + i0;
-      update_f_value<use_center_filter>(f, g0, x0, y0, coeff0, coeff1, 
-                                        center_half_size, 
-                                        ell0, ell1, stride1, n);
-    }
-  }
-}
-
-template<bool use_center_filter>
-__device__ void gather_kernel_common2(float2 *g, float2 *f, float *theta, 
-                                     int m, float mu, 
-                                     int center_size, int n, int nproj, int nz)    
-{
-  int tx = blockDim.x * blockIdx.x + threadIdx.x;
-  int ty = blockDim.y * blockIdx.y + threadIdx.y;
-  int tz = blockDim.z * blockIdx.z + threadIdx.z;
-
-  const int center_half_size = center_size/2;
-
-  if (tx >= n || ty >= nproj || tz >= nz)
-    return;
-  float2 g0, g0t;
-  float coeff0, coeff1;
-  float x0, y0;
-  int ell0, ell1, g_ind, f_ind;
-
-  g_ind = tx + ty * n + tz * n * nproj;
-  coeff0 = M_PI / mu;
-  coeff1 = -M_PI * M_PI / mu;
-  float sintheta, costheta;
-  __sincosf(theta[ty], &sintheta, &costheta);
-  x0 = (tx - n / 2) / (float)n * costheta;
-  y0 = -(tx - n / 2) / (float)n * sintheta;
-  if (x0 >= 0.5f)
-    x0 = 0.5f - 1e-5;
-  if (y0 >= 0.5f)
-    y0 = 0.5f - 1e-5;
-
   int stride1 = 2*n;
   int stride2 = stride1 * stride1;
 
   g0.x = g[g_ind].x;
   g0.y = g[g_ind].y;
 
-  // offset f by [tz, n+m, n+m]
+  // offset f by [tz, n, n]
   f += n + n * stride1 + tz * stride2;
   
   #pragma unroll
@@ -181,7 +88,7 @@ __device__ void gather_kernel_common2(float2 *g, float2 *f, float *theta,
     for (int i0 = 0; i0 < 2 * m + 1; i0++)
     {
       ell0 = floorf(2 * n * x0) - m + i0;
-      update_f_value2<use_center_filter>(f, g0, x0, y0, coeff0, coeff1, 
+      update_f_value<use_center_filter>(f, g0, x0, y0, coeff0, coeff1, 
                                         center_half_size, 
                                         ell0, ell1, stride1, n);
     }
@@ -199,12 +106,6 @@ extern "C" __global__ void gather_kernel(float2 *g, float2 *f, float *theta,
                                          int m, float mu, int n, int nproj, int nz)    
 {
   gather_kernel_common<false>(g, f, theta, m, mu, 0, n, nproj, nz);
-}
-
-extern "C" __global__ void gather_kernel2(float2 *g, float2 *f, float *theta, 
-                                         int m, float mu, int n, int nproj, int nz)    
-{
-  gather_kernel_common2<false>(g, f, theta, m, mu, 0, n, nproj, nz);
 }
 
 template<bool previous>
@@ -302,13 +203,13 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
   int thread_x = blockDim.x * blockIdx.x + threadIdx.x;
   int thread_y = blockDim.y * blockIdx.y + threadIdx.y;
 
-  int tx = max(0, n + m - center_half_size) + thread_x;
-  int ty = max(0, n + m - center_half_size) + thread_y; 
+  int tx = max(0, n - center_half_size) + thread_x;
+  int ty = max(0, n - center_half_size) + thread_y; 
 
   if (thread_x >= center_size || thread_y >= center_size)
     return;
 
-  int f_stride = 2*n + 2*m;
+  int f_stride = 2*n;
   int f_stride_2 = f_stride * f_stride;
 
   const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
@@ -317,7 +218,7 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
   angle_range += (unsigned long long)angle_range_dim_x * (thread_x + thread_y * center_size);
 
   // Point coordinates
-  float2 point   = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
+  float2 point   = make_float2(float(tx - n) / float(2 * n), float(n - ty) / float(2 * n));
   float length_2 = point.x * point.x + point.y * point.y;
 
   // Theta parameters
@@ -372,14 +273,14 @@ extern "C" __global__ void gather_kernel_center_prune_naive(unsigned short* angl
   int thread_x = blockDim.x * blockIdx.x + threadIdx.x;
   int thread_y = blockDim.y * blockIdx.y + threadIdx.y;
 
-  int tx = max(0, n + m - center_half_size) + thread_x;
-  int ty = max(0, n + m - center_half_size) + thread_y; 
+  int tx = max(0, n - center_half_size) + thread_x;
+  int ty = max(0, n - center_half_size) + thread_y; 
 
 
   if (thread_x >= center_size || thread_y >= center_size)
     return;
 
-  int f_stride = 2*n + 2*m;
+  int f_stride = 2*n;
   int f_stride_2 = f_stride * f_stride;
 
   // Radius 2
@@ -389,7 +290,7 @@ extern "C" __global__ void gather_kernel_center_prune_naive(unsigned short* angl
   angle_range += (unsigned long long)angle_range_dim_x * (thread_x + thread_y * center_size);
 
   // Point coordinates
-  float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
+  float2 point = make_float2(float(tx - n) / float(2 * n), float(n - ty) / float(2 * n));
   
   bool in_angle_range = false;
   int angle_range_index = 0;
@@ -537,8 +438,8 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f,
   int thread_y = blockDim.y * blockIdx.y + threadIdx.y;
   int thread_z = blockDim.z * blockIdx.z + threadIdx.z;
 
-  int tx = max(0, n + m - center_half_size) + thread_x;
-  int ty = max(0, n + m - center_half_size) + thread_y; 
+  int tx = max(0, n - center_half_size) + thread_x;
+  int ty = max(0, n - center_half_size) + thread_y; 
   int tz = thread_z;
 
   if (thread_x >= center_size || thread_y >= center_size || tz >= nz)
@@ -547,7 +448,7 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f,
   const float coeff0 = M_PI / mu;
   const float coeff1 = -M_PI * M_PI / mu;
 
-  int f_stride = 2*n + 2*m;
+  int f_stride = 2*n;
   int f_stride_2 = f_stride * f_stride;
 
   // offset f by tz
@@ -560,7 +461,7 @@ extern "C" __global__ void gather_kernel_center(float2 *g, float2 *f,
   // Result value
   float2 f_value = make_float2(0.f, 0.f);
   // Point coordinates
-  float2 point = make_float2(float(tx - (n+m)) / float(2 * n), float((n+m) - ty) / float(2 * n));
+  float2 point = make_float2(float(tx - n) / float(2 * n), float(n - ty) / float(2 * n));
   
   for (int angle_range_index = 0; angle_range_index < angle_range[0]; angle_range_index++) {
     for (int proj_index = angle_range[angle_range_index * 2 + 1]; 
@@ -663,16 +564,16 @@ extern "C" __global__ void c1dfftshift(float2 *data, float constant, int n, int 
   }
 }
 
-extern "C" __global__ void c2dfftshift(float2 *f, int n, int nz, int m)
+extern "C" __global__ void c2dfftshift(float2 *f, int n, int nz)
 {
   int tx = blockDim.x * blockIdx.x + threadIdx.x;
   int ty = blockDim.y * blockIdx.y + threadIdx.y;
   int tz = blockDim.z * blockIdx.z + threadIdx.z;
 
-  if (tx >= 2 * n + 2 * m || ty >= 2 * n + 2 * m || tz >= nz)
+  if (tx >= 2 * n || ty >= 2 * n || tz >= nz)
     return;
 
-  int f_stride = 2*n + 2*m;
+  int f_stride = 2*n;
   int f_stride_2 = f_stride * f_stride;
 
   // offset f by tz
@@ -682,10 +583,6 @@ extern "C" __global__ void c2dfftshift(float2 *f, int n, int nz, int m)
 
   float value = !(tx % 2) != !(ty % 2) ? -1.f : 1.f;
 
-  // Padding
-  if( tx < m || ty < m || tx >= 2 * n + m || ty >= 2 * n + m )
-    value = 0.f;
-
   f[f_ind].x *= value;
   f[f_ind].y *= value;
 }
@@ -694,7 +591,7 @@ extern "C" __global__ void unpadding_mul_phi(
   float* recon_up, float2 *f, const float mu,
   int nproj, 
   int unpad_recon_p, int unpad_z, int unpad_recon_m,
-  int n, int nz, int m) {
+  int n, int nz) {
 
   int rx_unpad = blockDim.x * blockIdx.x + threadIdx.x;
   int ry_unpad = blockDim.y * blockIdx.y + threadIdx.y;
@@ -703,14 +600,14 @@ extern "C" __global__ void unpadding_mul_phi(
   int ry = unpad_recon_m + ry_unpad;
   int rz = blockDim.z * blockIdx.z + threadIdx.z;
 
-  int tx = m + n / 2 + rx;
-  int ty = m + n / 2 + ry;
+  int tx = n / 2 + rx;
+  int ty = n / 2 + ry;
   int tz =             rz;
 
   if (rx >= unpad_recon_p || ry >= unpad_recon_p || rz >= nz)
     return;
 
-  int f_stride = 2*n + 2*m;
+  int f_stride = 2*n;
   int f_stride_2 = f_stride * f_stride;
 
   int r_stride   = unpad_recon_p - unpad_recon_m;
