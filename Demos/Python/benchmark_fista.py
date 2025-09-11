@@ -70,6 +70,7 @@ def main(args: argparse.Namespace):
 
     RecToolsCP = RecToolsIRCuPy(
         DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detectorVec,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Centre of Rotation scalar
         AnglesVec=angles_rad,  # A vector of projection angles in radians
