@@ -114,58 +114,50 @@ def ROF_TV_cupy(
     d_D2 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
 
     type_of_P = "__half" if half_precision else "float"
-    # name_expressions = [
-    #     f"divergence_kernel_2D<{type_of_P}>",
-    #     f"divergence_kernel_3D<{type_of_P}>",
-    #     f"TV_kernel2D<{type_of_P}>",
-    #     f"TV_kernel3D<{type_of_P}>",
-    # ]
     name_expressions = [
+        f"divergence_kernel_2D<{type_of_P}>",
+        f"TV_kernel2D<{type_of_P}>",
         f"divergence_kernel_3D<{type_of_P}>",
-        "TV_kernel2D",
         f"TV_kernel3D<{type_of_P}>",
     ]
     module = load_cuda_module("rudin_osher_fatemi_total_variation", name_expressions)
 
-    # loading and compiling CUDA kernels:
-    if data.ndim == 3:
-        data3d = True
-        dz, dy, dx = data.shape
-        # setting grid/block parameters
-        block_x = 128
-        block_y = 1
-        block_z = 1
-        block_dims = (block_x, block_y, block_z)
-        grid_x = (dx + block_x - 1) // block_x
-        grid_y = (dy + block_y - 1) // block_y
-        grid_z = (dz + block_z - 1) // block_z
-        grid_dims = (grid_x, grid_y, grid_z)
+    (dz, dy, dx) = data.shape + (0,) * (3 - data.ndim)
+    block_x = 128
+    block_dims = (block_x, 1)
+    grid_x = (dx + block_x - 1) // block_x
+    grid_y = dy
+    grid_dims = (grid_x, grid_y)
+    data_dims = (dx, dy)
 
-        d_D3 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
-        # divergence_kernel = module.get_function(name_expressions[2])
-        # TV_kernel = module.get_function(name_expressions[3])
+    if data.ndim == 2:
         divergence_kernel = module.get_function(name_expressions[0])
-        TV_kernel = module.get_function(name_expressions[2])
-    else:
-        data3d = False
-        dy, dx = data.shape
-        # setting grid/block parameters
-        block_x = 128
-        block_dims = (block_x, 1)
-        grid_x = (dx + block_x - 1) // block_x
-        grid_y = dy
-        grid_dims = (grid_x, grid_y)
-        # divergence_kernel = module.get_function(name_expressions[0])
-        # TV_kernel = module.get_function(name_expressions[1])
         TV_kernel = module.get_function(name_expressions[1])
+    elif data.ndim == 3:
+        d_D3 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
+
+        block_dims = block_dims + (1,)
+        grid_dims = grid_dims + (dz,)
+        data_dims = data_dims + (dz,)
+
+        divergence_kernel = module.get_function(name_expressions[2])
+        TV_kernel = module.get_function(name_expressions[3])
 
     # perform algorithm iterations
     input_index = 0
     output_index = 1
 
     for _ in range(iterations):
-        if data3d:
-            params3 = (
+        if data.ndim == 2:
+            params = (
+                out_arrays[input_index],
+                d_D1,
+                d_D2,
+                dx,
+                dy,
+            )
+        elif data.ndim == 3:
+            params = (
                 out_arrays[input_index],
                 d_D1,
                 d_D2,
@@ -174,12 +166,22 @@ def ROF_TV_cupy(
                 dy,
                 dz,
             )
-        else:
-            params3 = ()
-        divergence_kernel(grid_dims, block_dims, params3)
+        divergence_kernel(grid_dims, block_dims, params)
 
-        if data3d:
-            params3 = (
+        if data.ndim == 2:
+            params = (
+                out_arrays[input_index],
+                out_arrays[output_index],
+                data,
+                d_D1,
+                d_D2,
+                cp.float32(regularisation_parameter),
+                cp.float32(time_marching_parameter),
+                dx,
+                dy,
+            )
+        elif data.ndim == 3:
+            params = (
                 out_arrays[input_index],
                 out_arrays[output_index],
                 data,
@@ -192,9 +194,7 @@ def ROF_TV_cupy(
                 dy,
                 dz,
             )
-        else:
-            params3 = ()
-        TV_kernel(grid_dims, block_dims, params3)
+        TV_kernel(grid_dims, block_dims, params)
 
         input_index = 1 - input_index
         output_index = 1 - output_index
@@ -266,7 +266,7 @@ def PD_TV_cupy(
 
     (dz, dy, dx) = data.shape + (0,) * (3 - data.ndim)
     block_x = 128
-    block_dims = (block_x, 1, 1)
+    block_dims = (block_x, 1)
     grid_x = (dx + block_x - 1) // block_x
     grid_y = dy
     grid_dims = (grid_x, grid_y)
@@ -278,8 +278,8 @@ def PD_TV_cupy(
         P3_arrays = [
             cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)
         ]
-        grid_z = dz
-        grid_dims = grid_dims + (grid_z,)
+        block_dims = block_dims + (1,)
+        grid_dims = grid_dims + (dz,)
         data_dims = data_dims + (dz,)
 
         primal_dual_for_total_variation = module.get_function(name_expressions[1])

@@ -17,6 +17,7 @@ def test_backproj2D(data, angles, processing_arch):
 
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=None,
         CenterRotOffset=0.0,
         AnglesVec=angles,
@@ -41,6 +42,7 @@ def test_forwproj2D(data, angles, processing_arch):
 
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=None,
         CenterRotOffset=0.0,
         AnglesVec=angles,
@@ -67,6 +69,31 @@ def test_fbp2D(data, angles, processing_arch):
 
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=None,
+        CenterRotOffset=0.0,
+        AnglesVec=angles,
+        ObjSize=N_size,
+        device_projector=processing_arch,
+    )
+
+    FBPrec = RecTools.FBP(data2D, data_axes_labels_order=["angles", "detX"])
+
+    assert np.min(FBPrec) <= -0.0001
+    assert np.max(FBPrec) >= 0.001
+    assert FBPrec.dtype == np.float32
+    assert FBPrec.shape == (160, 160)
+
+
+@pytest.mark.parametrize("processing_arch", ["cpu", "gpu"])
+def test_fbp2D_pad(data, angles, processing_arch):
+    detX = np.shape(data)[2]
+    data2D = data[:, 60, :]
+    N_size = detX
+
+    RecTools = RecToolsDIR(
+        DetectorsDimH=detX,
+        DetectorsDimH_pad=20,  # Padded size of horizontal detector with edge values
         DetectorsDimV=None,
         CenterRotOffset=0.0,
         AnglesVec=angles,
@@ -92,6 +119,7 @@ def test_fbp2D_astra_gpu(data, angles, filters_type, filter_parameter, filter_d)
 
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=None,
         CenterRotOffset=0.0,
         AnglesVec=angles,
@@ -120,6 +148,7 @@ def test_fbp2D_recon_circ_mask(data, angles):
 
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=None,
         CenterRotOffset=0.0,
         AnglesVec=angles,
@@ -152,6 +181,7 @@ def test_Fourier2d():
 
     RectoolsDirect = RecToolsDIR(
         DetectorsDimH=P,  # DetectorsDimH # detector dimension (horizontal)
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=None,  # DetectorsDimV # detector dimension (vertical) for 3D case only
         CenterRotOffset=0.0,  # Center of Rotation (CoR) scalar
         AnglesVec=angles_rad,  # array of angles in radians
@@ -174,6 +204,7 @@ def test_FBP2D_normalise(angles, raw_data, flats, darks):
     N_size = detX
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -193,6 +224,29 @@ def test_backproj3D(data, angles):
     N_size = detX
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",  # define the device
+    )
+    backproj = RecTools.BACKPROJ(
+        data, data_axes_labels_order=["angles", "detY", "detX"]
+    )
+    assert_allclose(np.min(backproj), -3.8901403, rtol=eps)
+    assert_allclose(np.max(backproj), 350.38193, rtol=eps)
+    assert backproj.dtype == np.float32
+    assert backproj.shape == (128, 160, 160)
+
+
+def test_backproj3D_pad(data, angles):
+    detX = np.shape(data)[2]
+    detY = np.shape(data)[1]
+    N_size = detX
+    RecTools = RecToolsDIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=20,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -214,6 +268,7 @@ def test_FBP3D_1(data, angles):
     N_size = detX
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -227,6 +282,26 @@ def test_FBP3D_1(data, angles):
     assert FBPrec.shape == (128, 160, 160)
 
 
+def test_FBP3D_1_pad(data, angles):
+    detX = np.shape(data)[2]
+    detY = np.shape(data)[1]
+    N_size = detX
+    RecTools = RecToolsDIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=20,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",  # define the device
+    )
+    FBPrec = RecTools.FBP(data, data_axes_labels_order=["angles", "detY", "detX"])
+    assert_allclose(np.min(FBPrec), -0.013320876, rtol=eps)
+    assert_allclose(np.max(FBPrec), 0.03534868, rtol=eps)
+    assert FBPrec.dtype == np.float32
+    assert FBPrec.shape == (128, 160, 160)
+
+
 def test_FBP3D_normalisation(angles, raw_data, flats, darks):
     normalised = normaliser(raw_data, flats, darks)
     detX = np.shape(normalised)[2]
@@ -234,6 +309,7 @@ def test_FBP3D_normalisation(angles, raw_data, flats, darks):
     N_size = detX
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
@@ -255,6 +331,7 @@ def test_forwproj3D(data, angles):
 
     RecTools = RecToolsDIR(
         DetectorsDimH=detX,
+        DetectorsDimH_pad=0,
         DetectorsDimV=detY,
         CenterRotOffset=0.0,
         AnglesVec=angles,

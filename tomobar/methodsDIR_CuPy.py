@@ -19,7 +19,7 @@ except ImportError:
         "Cupy library is a required dependency for this part of the code, please install"
     )
 
-from tomobar.supp.suppTools import check_kwargs
+from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 from tomobar.supp.funcs import _data_dims_swapper
 from tomobar.fourier import _filtersinc3D_cupy, calc_filter
 from tomobar.cuda_kernels import load_cuda_module
@@ -34,6 +34,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
+        DetectorsDimH_pad (int): Padding size of horizontal detector
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
         CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
@@ -44,6 +45,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
     def __init__(
         self,
         DetectorsDimH,  # Horizontal detector dimension
+        DetectorsDimH_pad,  # Padding size of horizontal detector
         DetectorsDimV,  # Vertical detector dimension (3D case)
         CenterRotOffset,  # The Centre of Rotation scalar or a vector
         AnglesVec,  # Array of projection angles in radians
@@ -52,6 +54,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
     ):
         super().__init__(
             DetectorsDimH,
+            DetectorsDimH_pad,
             DetectorsDimV,
             CenterRotOffset,
             AnglesVec,
@@ -83,11 +86,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         return projected
 
-    def BACKPROJ(self, projdata: xp.ndarray, **kwargs) -> xp.ndarray:
+    def BACKPROJ(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
 
         Args:
-            projdata (xp.ndarray): 2D/3D projection data as a cupy array
+            data (xp.ndarray): 2D/3D projection data as a cupy array
 
         Keyword Args:
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
@@ -98,11 +101,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
         """
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
-                projdata = _data_dims_swapper(
-                    projdata, value, ["detY", "angles", "detX"]
-                )
+                data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
 
-        return self.Atools._backprojCuPy(projdata)
+        data = _apply_horiz_detector_padding(
+            data, self.Atools.detectors_x_pad, cupyrun=True
+        )
+        return self.Atools._backprojCuPy(data)
 
     def FBP(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
         """Filtered backprojection reconstruction on a CuPy array using a custom built SINC filter.
@@ -114,19 +118,24 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
                  When "None" we assume  ["angles", "detX"] for 2D and ["angles", "detY", "detX"] for 3D.
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
-            cutoff_freq (float): Cutoff frequency parameter for the sinc filter.
+            cutoff_freq (float): Cutoff frequency parameter for the sinc filter. Defaults to 0.35.
 
         Returns:
             xp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
-        kwargs.update({"cupyrun": True})  # needed for agnostic array cropping
+
+        cupyrun = True
+        kwargs.update({"cupyrun": cupyrun})  # needed for agnostic array cropping
         cutoff_freq = 0.35  # default value
+
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
             if key == "cutoff_freq" and value is not None:
                 cutoff_freq = value
 
+        # Edge-Pad the horizontal detector (detX) on both sides symmetrically using the provided amount of pixels.
+        data = _apply_horiz_detector_padding(data, self.Atools.detectors_x_pad, cupyrun)
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(data, cutoff=cutoff_freq)
         data = xp.ascontiguousarray(xp.swapaxes(data, 0, 1))
@@ -134,7 +143,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         cache.clear()  # flush FFT cache here before backprojection
         xp._default_memory_pool.free_all_blocks()  # free everything related to the filtering before starting Astra
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
-        xp._default_memory_pool.free_all_blocks()
         return check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
@@ -156,7 +164,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         Returns:
             xp.ndarray: The NUFFT reconstructed volume as a CuPy array.
         """
-        kwargs.update({"cupyrun": True})  # needed for agnostic array cropping
+        cupyrun = True
+        kwargs.update({"cupyrun": cupyrun})  # needed for agnostic array cropping
         cutoff_freq = 1.0  # default value
         filter_type = "shepp"  # default filter
 
@@ -198,6 +207,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     print(f"Invalid chunk count: {value}. Set to 1")
                 else:
                     chunk_count = value
+        # Edge-Pad the horizontal detector (detX) on both sides symmetrically using the provided amount of pixels.
+        data = _apply_horiz_detector_padding(data, self.Atools.detectors_x_pad, cupyrun)
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")

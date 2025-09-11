@@ -27,6 +27,7 @@ from tomobar.methodsDIR import RecToolsDIR
 
 RectoolsDIR = RecToolsDIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension (3D case)
     CenterRotOffset=13.0,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -49,6 +50,7 @@ from tomobar.methodsIR import RecToolsIR
 # Set scanning geometry parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=None,  # Vertical detector dimension
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
