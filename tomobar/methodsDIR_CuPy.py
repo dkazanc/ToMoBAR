@@ -285,7 +285,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (rotation_axis))
 
         # FBP filtering output
-        tmp_p = xp.empty(data.shape, dtype=xp.float32)
+        tmp_p = xp.empty((nz, nproj, n), dtype=xp.float32)
 
         slice_count_per_chunk = np.ceil(nz / chunk_count)
         # Loop over the chunks
@@ -294,14 +294,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
             end_index = min((chunk_index + 1) * slice_count_per_chunk, nz)
             if start_index >= end_index:
                 break
-            
-            # processing by chunks over the second dimension 
+
+            # processing by chunks over the second dimension
             # to avoid increased data sizes due to oversampling
             nchunk = int(np.ceil(oversampling_level))
-            chunk = int(np.ceil(data.shape[1]/nchunk))
+            chunk = int(np.ceil(nproj / nchunk))
             for j in range(nchunk):
-                st = j*chunk
-                end = min((j+1)*chunk,data.shape[1])
+                st = j * chunk
+                end = min((j + 1) * chunk, nproj)
                 tmp = xp.pad(
                     data[start_index:end_index, st:end, :],
                     ((0, 0), (0, 0), (padding_m, padding_m)),
@@ -433,7 +433,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.int32(nz // 2),
                 ),
             )
-        
+
         del datac
 
         # STEP3: ifft 2d
