@@ -92,7 +92,9 @@ def main(args: argparse.Namespace):
         "method": args.regulariser,
         "regul_param": 0.0005,
         "iterations": 35,
+        "time_marching_step": 0.001,
         "device_regulariser": 0,
+        "half_precision": args.half_precision,
     }
 
     _ = RecToolsCP.FISTA(_data_, _algorithm_, _regularisation_)
@@ -211,7 +213,12 @@ if __name__ == "__main__":
         "-r",
         "--regulariser",
         required=True,
-        choices=["PD_TV", "CCPi_PD_TV"],
+        choices=["PD_TV", "CCPi_PD_TV", "ROF_TV", "CCPi_ROF_TV"],
+    )
+    parser.add_argument(
+        "-p",
+        "--half_precision",
+        action="store_true",
     )
     args = parser.parse_args()
 

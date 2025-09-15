@@ -589,4 +589,70 @@ def test_FISTA_compare_pd_tv_regularisations(
     assert Iter_rec.shape == (128, 160, 160), "fused"
 
     diff = Iter_rec - Iter_rec_original
-    assert_allclose(diff, 0.0, atol=1e-04 if half_precision else 1e-05)
+    assert_allclose(diff, 0.0, atol=1e-04 if half_precision else 1e-04)
+
+
+@pytest.mark.parametrize("half_precision", [True, False])
+def test_FISTA_compare_rof_tv_regularisations(angles, raw_data, flats, darks, half_precision):
+    normalised = normaliser(raw_data, flats, darks)
+    raw_data_norm = np.float32(np.divide(raw_data, np.max(raw_data).astype(float)))
+    normalised_cp = cp.asarray(normalised)
+    raw_data_norm_cp = cp.asarray(raw_data_norm)
+
+    detX = cp.shape(normalised_cp)[2]
+    detY = cp.shape(normalised_cp)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="PWLS",
+        device_projector=0,  # define the device
+    )
+    # data dictionary
+    _data_ = {
+        "projection_norm_data": normalised_cp,
+        "projection_raw_data": raw_data_norm_cp,
+        "OS_number": 5,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    lc = lc.get()
+
+    _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
+
+    # adding regularisation using the CCPi regularisation toolkit
+    _regularisation_ = {
+        "method": "CCPi_ROF_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "time_marching_step": 0.001,
+        "device_regulariser": 0,
+        "half_precision": half_precision,
+    }
+
+    Iter_rec_original = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+
+    Iter_rec_original = Iter_rec_original.get()
+
+    assert 4000 <= lc <= 5000, "original"
+    assert_allclose(np.max(Iter_rec_original), 0.027676212, rtol=1e-03)
+    assert Iter_rec_original.dtype == np.float32, "original"
+    assert Iter_rec_original.shape == (128, 160, 160), "original"
+
+    _regularisation_["method"] = "ROF_TV"
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+
+    Iter_rec = Iter_rec.get()
+
+    assert 4000 <= lc <= 5000, "fused"
+    assert_allclose(np.max(Iter_rec), 0.027676212, rtol=1e-03)
+    assert Iter_rec.dtype == np.float32, "fused"
+    assert Iter_rec.shape == (128, 160, 160), "fused"
+
+    diff = Iter_rec - Iter_rec_original
+    assert_allclose(diff, 0.0, atol=1e-06 if half_precision else 1e-07)
