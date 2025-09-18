@@ -521,10 +521,10 @@ extern "C" __global__ void r2c_c1dfftshift(
 
   // offset data by tz
   data  += (unsigned long long)tz * data_stride_y;
-  input += (unsigned long long)tz * data_stride_y;
+  input += (unsigned long long)tz * 2 * data_stride_y;
 
   // recon restructure pointer
-  float* input_imag = input + (unsigned long long)data_stride_y * nz;
+  float* input_imag = input + (unsigned long long)data_stride_y;
 
   int data_ind = tx + ty * data_stride_x;
 
@@ -615,10 +615,10 @@ extern "C" __global__ void unpadding_mul_phi(
 
   // offset f by tz
   f += (unsigned long long)tz * f_stride_2;
-  recon_up += (unsigned long long)rz * r_stride_2;
+  recon_up += (unsigned long long)rz * 2 * r_stride_2;
 
   // recon restructure pointer
-  float* recon_up_imag = recon_up + (unsigned long long)r_stride_2 * nz;
+  float* recon_up_imag = recon_up + (unsigned long long)r_stride_2;
 
   int f_ind = tx       + ty       * f_stride;
   int r_ind = rx_unpad + ry_unpad * r_stride;
