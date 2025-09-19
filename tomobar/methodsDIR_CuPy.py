@@ -295,9 +295,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_p = ne // 2 + n // 2
 
         wfilter = calc_filter(ne, filter_type, cutoff_freq)
-        print(f"extended N for oversampling: {ne}")
-        print(f"padded N: {n}")
-        print(f"original N of data: {data_n}")
 
         # STEP0: FBP filtering
         t = rfftfreq(ne).astype(xp.float32)
