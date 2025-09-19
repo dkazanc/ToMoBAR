@@ -174,6 +174,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim_center = [32, 4]
 
         chunk_count = 4
+        fake_padding = False
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -184,9 +185,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 block_dim = value
             elif key == "block_dim_center" and value is not None:
                 block_dim_center = value
-            if key == "cutoff_freq" and value is not None:
+            elif key == "cutoff_freq" and value is not None:
                 cutoff_freq = value
-            if key == "filter_type" and value is not None:
+            elif key == "filter_type" and value is not None:
                 if value not in [
                     "none",
                     "ramp",
@@ -202,13 +203,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     )
                 else:
                     filter_type = value
-            if key == "chunk_count" and value is not None:
+            elif key == "chunk_count" and value is not None:
                 if not isinstance(value, int) or value <= 0:
                     print(f"Invalid chunk count: {value}. Set to 1")
                 else:
                     chunk_count = value
+            elif key == "fake_padding" and value is not None:
+                fake_padding = value
         # Edge-Pad the horizontal detector (detX) on both sides symmetrically using the provided amount of pixels.
-        data = _apply_horiz_detector_padding(data, self.Atools.detectors_x_pad, cupyrun)
+        if not fake_padding:
+            data = _apply_horiz_detector_padding(
+                data, self.Atools.detectors_x_pad, cupyrun
+            )
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
@@ -225,27 +231,32 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpadding_mul_phi = module.get_function("unpadding_mul_phi")
 
         # initialisation
-        [nz, nproj, n] = data.shape
+        [nz, nproj, data_n] = data.shape
         recon_size = self.Atools.recon_size
-        if recon_size > n:
+        if recon_size > data_n:
             raise ValueError(
                 "The reconstruction size {} should not be larger than the size of the horizontal detector {}".format(
-                    recon_size, n
+                    recon_size, data_n
                 )
             )
 
-        odd_horiz = bool(n % 2)
+        odd_horiz = bool(data_n % 2)
         odd_vert = bool(nz % 2)
 
-        n += odd_horiz
+        data_n += odd_horiz
         nz += odd_vert
 
         if odd_horiz or odd_vert:
-            data_p = xp.empty((nz, nproj, n), dtype=xp.float32)
-            data_p[: nz - odd_vert, :, : n - odd_horiz] = data
+            data_p = xp.empty((nz, nproj, data_n), dtype=xp.float32)
+            data_p[: nz - odd_vert, :, : data_n - odd_horiz] = data
             data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
             data = data_p
             del data_p
+
+        if fake_padding:
+            n = data_n + self.Atools.detectors_x_pad * 2
+        else:
+            n = data_n
 
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
@@ -269,16 +280,24 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 2 * n * 1 / np.pi * np.sqrt(-mu * np.log(eps) + (mu * n) * (mu * n) / 4)
             )
         )
-        oversampling_level = 3  # at least 3 or larger required
+        oversampling_level = 4  # at least 3 or larger required
 
         # Limit the center size parameter
         center_size = min(center_size, n * 2)
 
         # init filter
-        ne = int(oversampling_level * n)
-        padding_m = ne // 2 - n // 2
-        padding_p = ne // 2 + n // 2
+        ne = int(oversampling_level * data_n)
+        ne = max(ne, n)
+
+        padding_m = ne // 2 - data_n // 2
+        # padding_p = ne // 2 + data_n // 2
+        unpad_m = ne // 2 - n // 2
+        unpad_p = ne // 2 + n // 2
+
         wfilter = calc_filter(ne, filter_type, cutoff_freq)
+        print(f"extended N for oversampling: {ne}")
+        print(f"padded N: {n}")
+        print(f"original N of data: {data_n}")
 
         # STEP0: FBP filtering
         t = rfftfreq(ne).astype(xp.float32)
@@ -310,7 +329,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
                 tmp = w * rfft(tmp, axis=2)
                 tmp = irfft(tmp, axis=2)
-                tmp_p[start_index:end_index, st:end, :] = tmp[:, :, padding_m:padding_p]
+                tmp_p[start_index:end_index, st:end, :] = tmp[:, :, unpad_m:unpad_p]
 
             del tmp
 
