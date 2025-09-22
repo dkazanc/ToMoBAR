@@ -1,6 +1,6 @@
 """Reconstruction class for regularised iterative methods using CuPy library.
 
-* :func:`RecToolsIRCuPy.FISTA` iterative regularised algorithm [BT2009]_, [Xu2016]_. Implemented using ASTRA's DirectLink and CuPy, Regularisation Toolkit-CuPy.
+* :func:`RecToolsIRCuPy.FISTA` iterative regularised algorithm [BT2009]_, [Xu2016]_. Implemented with the help of ASTRA's DirectLink experimental feature.
 * :func:`RecToolsIRCuPy.Landweber` algorithm.
 * :func:`RecToolsIRCuPy.SIRT` algorithm.
 * :func:`RecToolsIRCuPy.CGLS` algorithm.
@@ -28,15 +28,13 @@ from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 
 
 class RecToolsIRCuPy:
-    """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox, CCPi-RGL toolkit.
+    """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox for forward/back projection.
     Parameters for reconstruction algorithms should be provided in three dictionaries:
     :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`
     function of ToMoBAR's :ref:`ref_api` for all parameters explained.
 
-    If FISTA is used it will require CuPy-enabled routines of the CCPi-regularisation toolkit.
-    This implementation is typically more than times faster than the one in RecToolsIR, however,
-    please note that the functionality of FISTA is limited compared to the version of
-    FISTA in RecToolsIR. The work is in progress and the current FISTA version is experimental.
+    This implementation is typically several times faster than the one in :func:`RecToolsIR.FISTA` of
+    :mod:`tomobar.methodsIR`, but not all functionality is supported yet.
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
@@ -360,7 +358,7 @@ class RecToolsIRCuPy:
         _regularisation_: Union[dict, None] = None,
     ) -> cp.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm [BT2009]_ with various types of regularisation from
-        the regularisation toolkit [KAZ2019]_.
+        the regularisation toolkit [KAZ2019]_ (currently accepts ROF_TV and PD_TV only).
 
         All parameters for the algorithm should be provided in three dictionaries:
         :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`
@@ -371,12 +369,13 @@ class RecToolsIRCuPy:
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
-            _regularisation_ (dict, optional): Regularisation dictionary.
+            _regularisation_ (dict, optional): Regularisation dictionary, currently accepts ROF_TV and PD_TV only.
 
         Returns:
             cp.ndarray: FISTA-reconstructed 3D CuPy array
         """
         cp._default_memory_pool.free_all_blocks()
+
         if self.geom == "2D":
             # 2D reconstruction
             raise ValueError("2D CuPy reconstruction is not yet supported")

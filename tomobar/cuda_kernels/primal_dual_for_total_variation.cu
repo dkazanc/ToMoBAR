@@ -1,5 +1,9 @@
 #include <cuda_fp16.h>
 
+/*
+Raw CUDA Kernels for Primal-Dual Total Variation regularisation model
+*/
+
 template <bool nonneg>
 __device__ float clamp_to_zero(float value)
 {

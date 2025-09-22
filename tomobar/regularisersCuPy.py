@@ -1,23 +1,9 @@
-"""Adding CuPy-enabled regularisers from the CCPi-regularisation toolkit and
-instantiate a proximal operator for iterative methods.
-"""
-
 import cupy as cp
-import numpy as np
-from typing import Optional
 from tomobar.cuda_kernels import load_cuda_module
-
-try:
-    from ccpi.filters.regularisersCuPy import ROF_TV as CCPi_ROF_TV_cupy
-    from ccpi.filters.regularisersCuPy import PD_TV as CCPi_PD_TV_cupy
-except ImportError:
-    print(
-        "____! CCPi-regularisation package (CuPy part needed only) is missing, please install !____"
-    )
 
 
 def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
-    """Enabling proximal operators step in iterative reconstruction.
+    """Enabling proximal operators (regularisers) in iterative reconstruction.
 
     Args:
         X (cp.ndarray): 2D or 3D CuPy array.
@@ -26,18 +12,8 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
     Returns:
         cp.ndarray: Filtered 2D or 3D CuPy array.
     """
-    info_vec = (_regularisation_["iterations"], 0)
     # The proximal operator of the chosen regulariser
-    if "CCPi_ROF_TV" in _regularisation_["method"]:
-        # Rudin - Osher - Fatemi Total variation method
-        X_prox = CCPi_ROF_TV_cupy(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["time_marching_step"],
-            self.Atools.device_index,
-        )
-    elif "ROF_TV" in _regularisation_["method"]:
+    if "ROF_TV" in _regularisation_["method"]:
         # Rudin - Osher - Fatemi Total variation method
         X_prox = ROF_TV_cupy(
             X,
@@ -46,17 +22,6 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             _regularisation_["time_marching_step"],
             self.Atools.device_index,
             _regularisation_.get("half_precision", False),
-        )
-
-    if "CCPi_PD_TV" in _regularisation_["method"]:
-        X_prox = CCPi_PD_TV_cupy(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["methodTV"],
-            self.nonneg_regul,
-            _regularisation_["PD_LipschitzConstant"],
-            self.Atools.device_index,
         )
     elif "PD_TV" in _regularisation_["method"]:
         X_prox = PD_TV_cupy(
@@ -69,16 +34,15 @@ def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
             self.Atools.device_index,
             _regularisation_.get("half_precision", False),
         )
-
     return X_prox
 
 
 def ROF_TV_cupy(
     data: cp.ndarray,
-    regularisation_parameter: Optional[float] = 1e-05,
-    iterations: Optional[int] = 3000,
-    time_marching_parameter: Optional[float] = 0.001,
-    gpu_id: Optional[int] = 0,
+    regularisation_parameter: float = 1e-05,
+    iterations: int = 3000,
+    time_marching_parameter: float = 0.001,
+    gpu_id: int = 0,
     half_precision: bool = False,
 ) -> cp.ndarray:
     """Total Variation using Rudin-Osher-Fatemi (ROF) explicit iteration scheme to perform edge-preserving image denoising.
@@ -87,10 +51,11 @@ def ROF_TV_cupy(
 
     Args:
         data (cp.ndarray): A 2d or 3d CuPy array.
-        regularisation_parameter (Optional[float], optional): Regularisation parameter to control the level of smoothing. Defaults to 1e-05.
-        iterations (Optional[int], optional): The number of iterations. Defaults to 3000.
-        time_marching_parameter (Optional[float], optional): Time marching parameter, needs to be small to ensure convergance. Defaults to 0.001.
-        gpu_id (Optional[int], optional): A GPU device index to perform operation on. Defaults to 0.
+        regularisation_parameter (float): Regularisation parameter to control the level of smoothing. Defaults to 1e-05.
+        iterations (int): The number of iterations. Defaults to 3000.
+        time_marching_parameter (float): Time marching parameter, needs to be small to ensure convergance. Defaults to 0.001.
+        gpu_id (int): A GPU device index to perform operation on. Defaults to 0.
+        half_precision (bool): Perform some computations in half-precision, potentially leads to better performance. Defaults to False.
 
     Returns:
         cp.ndarray: ROF-TV filtered CuPy array.
@@ -204,12 +169,12 @@ def ROF_TV_cupy(
 
 def PD_TV_cupy(
     data: cp.ndarray,
-    regularisation_parameter: Optional[float] = 1e-05,
-    iterations: Optional[int] = 1000,
-    methodTV: Optional[int] = 0,
-    nonneg: Optional[int] = 0,
-    lipschitz_const: Optional[float] = 8.0,
-    gpu_id: Optional[int] = 0,
+    regularisation_parameter: float = 1e-05,
+    iterations: int = 1000,
+    methodTV: int = 0,
+    nonneg: int = 0,
+    lipschitz_const: float = 8.0,
+    gpu_id: int = 0,
     half_precision: bool = False,
 ) -> cp.ndarray:
     """Primal Dual algorithm for non-smooth convex Total Variation functional.
@@ -218,12 +183,14 @@ def PD_TV_cupy(
 
     Args:
         data (cp.ndarray): A 2d or 3d CuPy array.
-        regularisation_parameter (Optional[float], optional): Regularisation parameter to control the level of smoothing. Defaults to 1e-05.
-        iterations (Optional[int], optional): The number of iterations. Defaults to 1000.
-        methodTV (Optional[int], optional): Choose between isotropic (0) or anisotropic (1) case for TV norm.
-        nonneg (Optional[int], optional): Enable non-negativity in updates by selecting 1. Defaults to 0.
-        lipschitz_const (Optional[float], optional): Lipschitz constant to control convergence.
-        gpu_id (Optional[int], optional): A GPU device index to perform operation on. Defaults to 0.
+        regularisation_parameter (float): Regularisation parameter to control the level of smoothing. Defaults to 1e-05.
+        iterations (int): The number of iterations. Defaults to 1000.
+        methodTV (int): Choose between isotropic (0) or anisotropic (1) case for TV norm.
+        nonneg (int): Enable non-negativity in updates by selecting 1. Defaults to 0.
+        lipschitz_const (float): Lipschitz constant to control convergence.
+        gpu_id (int): A GPU device index to perform operation on. Defaults to 0.
+        half_precision (bool): Perform some computations in half-precision, potentially leads to better performance. Defaults to False.
+
 
     Returns:
         cp.ndarray: PD-TV filtered CuPy array.
