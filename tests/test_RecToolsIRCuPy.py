@@ -1,7 +1,6 @@
 import cupy as cp
 import numpy as np
 from numpy.testing import assert_allclose
-import pytest
 
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.supp.suppTools import normaliser
