@@ -528,7 +528,7 @@ extern "C" __global__ void r2c_c1dfftshift(
 
   int data_ind = tx + ty * data_stride_x;
 
-  int value = (tx % 2) ? -1 : 1;
+  int value = (tx % 2) ? 1 : -1;
 
   // Move to complex and fftshift
   data[data_ind].x = input[data_ind]      * value;
@@ -552,7 +552,7 @@ extern "C" __global__ void c1dfftshift(float2 *data, float constant, int n, int 
 
   int data_ind = tx + ty * data_stride_x;
 
-  int value = (tx % 2) ? -1 : 1;
+  int value = (tx % 2) ? 1 : -1;
 
   // Multiply with constant and shift
   if( constant == 1.f ) {
