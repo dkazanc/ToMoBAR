@@ -3,20 +3,17 @@
 Installation Guide
 ------------------
 ToMoBAR is a Python package with several :ref:`ref_dependencies`. To ensure its full functionality it is recommended to install them.
-It mostly relies on the GPU-enabled computations and therefore we suggest using a decent NVIDIA graphics card to support it. ToMoBAR
-can run with `CuPy <https://cupy.dev/>`_ or using normal routines using pre-built CUDA modules of the Regularisation Toolkit.
-
-.. note:: CuPy-enabled ToMoBAR is the development in progress. Methods like FISTA can normally run several times faster, however, not every method variation is supported.
+It mostly relies on the GPU-enabled computations and therefore we suggest using a decent NVIDIA graphics card to support it.
 
 .. _ref_python:
 
 Python
 ======
 
-Install ToMoBAR as a pre-built conda Python package:
-++++++++++++++++++++++++++++++++++++++++++++++++++++
+Install ToMoBAR as a pre-built Python package:
+++++++++++++++++++++++++++++++++++++++++++++++
 
-Minimal installation that skips most of :ref:`ref_dependencies`:
+Minimal installation as a conda pre-built package:
 
 .. code-block:: console
 
@@ -28,30 +25,12 @@ or install with the dependencies into a new environment (tested on Linux and Win
 
    $ conda install -c httomo -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser
 
-In addition you can install CuPy :code:`conda install conda-forge::cupy` if you need CuPy-enabled modules and :code:`pip install pypwt` if you are planning to use
-wavelet regularisation.
+In addition you can install :code:`pip install pypwt` if you are planning to use wavelet regularisation.
 
-If the installation above does not work, one can also try:
+Conda environment + pip install:
+++++++++++++++++++++++++++++++++
 
-.. code-block:: console
-
-   $ conda install -c httomo -c ccpi -c conda-forge tomophantom tomobar astra-toolbox ccpi-regulariser
-
-.. warning:: Note that packages installed from the CCPi channel might be of different versions and incompatible with the demos. Please create an `issue <https://github.com/dkazanc/ToMoBAR/issues>`_ on GitHub if there is a problem with an installation from the httomo channel.
-
-Install ToMoBAR from PyPi:
-++++++++++++++++++++++++++
-
-One can install ToMoBAR from PyPi, however, not all dependencies might be at PyPi yet.
-
-.. code-block:: console
-
-   $ pip install tomobar
-   $ pip install ccpi-regularisation-cupy
-
-Using conda environment:
-+++++++++++++++++++++++++
-One can also create a new conda environment by using the provided environment yaml file,
+One can also create a new conda environment by using provided environment YAML file,
 and then **pip** install ToMoBAR into the environment.
 
 .. code-block:: console
@@ -60,6 +39,22 @@ and then **pip** install ToMoBAR into the environment.
    $ conda env create --name tomobar --file conda-recipe/environment/environment.yml
    $ conda activate tomobar
    $ pip install .
+
+Install ToMoBAR from PyPi:
+++++++++++++++++++++++++++
+
+One can install ToMoBAR from PyPi into `venv` or `conda`` environments. It is the quickest way, however, this approach suits best
+if `CuPy <https://cupy.dev/>`_-enabled part of ToMoBAR (modules :mod:`tomobar.methodsDIR_CuPy` and :mod:`tomobar.methodsIR_CuPy`)
+is mainly used.
+
+.. code-block:: console
+
+   $ python -m venv tomobar
+   $ source tomobar/bin/activate
+   $ pip install tomobar # one can also install into conda environment
+
+.. note:: `CuPy <https://cupy.dev/>`_-enabled ToMoBAR is currently actively developed. With CuPy support and device-to-device transfer features, iterative nethods like FISTA can normally run several times faster.
+
 
 Developers environment
 +++++++++++++++++++++++
@@ -72,10 +67,10 @@ This sets the development environment to work in-place on the code.
    $ conda activate tomobar
    $ pip install -e .[dev] # the editable environment
    $ pytest tests/test_RecToolsDIR.py tests/test_RecToolsIR.py
-   $ pytest tests/ # you'll need CuPy to run all tests
+   $ pytest tests/ # you'll need CuPy to run those tests
 
-Conda builds
-+++++++++++++
+Conda build
++++++++++++
 If one needs to conda-build the package, please follow the steps bellow:
 
 .. code-block:: console

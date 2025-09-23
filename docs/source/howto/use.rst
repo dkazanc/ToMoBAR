@@ -14,4 +14,4 @@ The general recipe to perform reconstruction in Python with ToMoBAR is the follo
   :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts` for the list of parameters accepted.
 
 
-.. note:: As the main aim for ToMoBAR is to reconstruct the data from the synchrotron X-ray or neutron imaging instruments, with the beam being approximately parallel. So far, we do not provide API for the divergent beam geometries, however as ASTRA supports it, the wrappers at :mod:`tomobar.astra_wrappers` can be extended. The contributions are welcome!
+.. note:: As the main aim for ToMoBAR is to reconstruct the data from the synchrotron X-ray or neutron imaging instruments, with the beam being approximately parallel. So far, we do not provide API for the divergent beam geometries, however as ASTRA supports it, the wrappers at :mod:`tomobar.astra_wrappers` can be extended. Contributions are welcome!

@@ -3,7 +3,6 @@ import cupy as cp
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal
 from cupy import float32
-import time
 
 # from cupy.cuda.nvtx import RangePush, RangePop
 from cupyx.profiler import time_range
