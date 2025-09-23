@@ -182,10 +182,11 @@ def _check_valid_input(data, flats, darks) -> None:
 data_directory = "/home/ferenc-rad/work/zenodo_data/"
 data_paths = [
     # "geant4_dataset1.npz",
-    "i12_dataset1.npz",
+    # "i12_dataset1.npz",
     # "i12_dataset2.npz",
     # "i12_dataset3.npz",
     # "i12_dataset4.npz",
+    "i12_dataset6.npz",
     # "k11_dataset1.npz",
     # "k11_dataset_300slices.npz",
     # "i13_dataset1.npz",
@@ -241,9 +242,7 @@ for data_file in data_paths:
 
     from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
-    slice_number = 20
-    if data_file == "i12_dataset1.npz" and slice_number > 18:
-        slice_number = 18
+    slice_number = detectorVec // 4
 
     results = {}
 
@@ -270,12 +269,12 @@ for data_file in data_paths:
             cutoff_freq=0.35,
             recon_mask_radius=2.0,
             data_axes_labels_order=data_labels3D,
-            fake_padding=fake_padding
+            fake_padding=fake_padding,
         )
 
         RecToolsCP = RecToolsDIRCuPy(
             DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-            DetectorsDimH_pad=200,  # Padding size of horizontal detector
+            DetectorsDimH_pad=1200,  # Padding size of horizontal detector
             DetectorsDimV=slice_number,  # Vertical detector dimension (3D case)
             CenterRotOffset=None,  # Centre of Rotation scalar
             AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -288,11 +287,16 @@ for data_file in data_paths:
             cutoff_freq=0.35,
             recon_mask_radius=2.0,
             data_axes_labels_order=data_labels3D,
-            fake_padding=fake_padding
+            fake_padding=fake_padding,
         )
 
     import matplotlib.pyplot as plt
-    fake_padding_False_diff = results["fake_padding_False_nopad"][3, :, :] - results["fake_padding_False_pad"][3, :, :]
+    slice_to_plot = slice_number // 2
+
+    fake_padding_False_diff = (
+        results["fake_padding_False_nopad"][slice_to_plot, :, :]
+        - results["fake_padding_False_pad"][slice_to_plot, :, :]
+    )
     plt.figure()
     plt.subplot(331)
     plt.imshow(results["fake_padding_False_nopad"][3, :, :].get())
@@ -307,7 +311,10 @@ for data_file in data_paths:
     plt.colorbar()
     plt.title("diff")
 
-    fake_padding_True_diff = results["fake_padding_True_nopad"][3, :, :] - results["fake_padding_True_pad"][3, :, :]
+    fake_padding_True_diff = (
+        results["fake_padding_True_nopad"][slice_to_plot, :, :]
+        - results["fake_padding_True_pad"][slice_to_plot, :, :]
+    )
     plt.subplot(334)
     plt.imshow(results["fake_padding_True_nopad"][3, :, :].get())
     plt.colorbar()
@@ -321,8 +328,14 @@ for data_file in data_paths:
     plt.colorbar()
     plt.title("fake padding diff")
 
-    no_pad_diff = results["fake_padding_False_nopad"][3, :, :] - results["fake_padding_True_nopad"][3, :, :]
-    pad_diff = results["fake_padding_False_pad"][3, :, :] - results["fake_padding_True_pad"][3, :, :]
+    no_pad_diff = (
+        results["fake_padding_False_nopad"][slice_to_plot, :, :]
+        - results["fake_padding_True_nopad"][slice_to_plot, :, :]
+    )
+    pad_diff = (
+        results["fake_padding_False_pad"][slice_to_plot, :, :]
+        - results["fake_padding_True_pad"][slice_to_plot, :, :]
+    )
     diff_diff = fake_padding_False_diff - fake_padding_True_diff
     plt.subplot(337)
     plt.imshow(no_pad_diff.get())
