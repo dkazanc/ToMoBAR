@@ -267,6 +267,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # init filter
         ne = int(oversampling_level * data_n)
+        ne = 2 ** math.ceil(math.log2(ne))
+        if ne / n >= 4:
+            ne /= 2
+
         ne = max(ne, n)
 
         padding_m = ne // 2 - data_n // 2
