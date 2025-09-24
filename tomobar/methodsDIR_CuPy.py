@@ -238,7 +238,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         nz += odd_vert
 
         if odd_horiz or odd_vert:
-            data_p = cp.empty((nz, nproj, data_n), dtype=cp.float32)
+            data_p = cp.zeros((nz, nproj, data_n), dtype=cp.float32)
             data_p[: nz - odd_vert, :, : data_n - odd_horiz] = data
             data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
             data = data_p
