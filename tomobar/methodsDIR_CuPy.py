@@ -266,8 +266,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         center_size = min(center_size, n * 2)
 
         # init filter
-        ne = int(oversampling_level * data_n)
-        ne = 2 ** math.ceil(math.log2(ne))
+        ne = 2 ** math.ceil(math.log2(data_n))
         if ne / n >= 4:
             ne /= 2
 
