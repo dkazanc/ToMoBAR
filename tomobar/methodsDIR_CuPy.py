@@ -267,10 +267,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # init filter
         ne = 2 ** math.ceil(math.log2(data_n))
-        if ne / n >= 4:
-            ne /= 2
+        while (ne / data_n) < 3:
+            ne *= 2
 
-        ne = max(ne, n)
+        if (ne / data_n) >= 4:
+            ne = ne // 2
 
         padding_m = ne // 2 - data_n // 2
         unpad_m = ne // 2 - n // 2
