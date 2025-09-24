@@ -166,7 +166,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim_center = [32, 4]
 
         chunk_count = 4
-        fake_padding = False
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -200,13 +199,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     print(f"Invalid chunk count: {value}. Set to 1")
                 else:
                     chunk_count = value
-            elif key == "fake_padding" and value is not None:
-                fake_padding = value
-        # Edge-Pad the horizontal detector (detX) on both sides symmetrically using the provided amount of pixels.
-        if not fake_padding:
-            data = _apply_horiz_detector_padding(
-                data, self.Atools.detectors_x_pad, cupyrun
-            )
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
@@ -244,10 +236,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data = data_p
             del data_p
 
-        if fake_padding:
-            n = data_n + self.Atools.detectors_x_pad * 2
-        else:
-            n = data_n
+        n = data_n + self.Atools.detectors_x_pad * 2
 
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         theta = cp.array(-self.Atools.angles_vec, dtype=cp.float32)
@@ -281,7 +270,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         ne = max(ne, n)
 
         padding_m = ne // 2 - data_n // 2
-        # padding_p = ne // 2 + data_n // 2
         unpad_m = ne // 2 - n // 2
         unpad_p = ne // 2 + n // 2
 
