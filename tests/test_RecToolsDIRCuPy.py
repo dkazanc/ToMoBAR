@@ -276,6 +276,55 @@ def test_Fourier3D_inv_vert_blocks(data_cupy, angles, blocks):
     assert recon_data.shape == (128, 160, 160)
 
 
+def test_Fourier3D_inv_vert_blocks_last_odd(data_cupy, angles):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+
+    recon_vol_block_size = cp.empty((detY, detX, detX), dtype=cp.float32)
+
+    odd_block_size_last = 3
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY
+        - odd_block_size_last,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    lprec_block_recon1 = RecToolsCP.FOURIER_INV(
+        data_cupy[:, 0 : detY - odd_block_size_last, :],
+        recon_mask_radius=2.0,
+        data_axes_labels_order=["angles", "detY", "detX"],
+    )
+
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=odd_block_size_last,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    lprec_block_recon2 = RecToolsCP.FOURIER_INV(
+        data_cupy[:, detY - odd_block_size_last : :, :],
+        recon_mask_radius=2.0,
+        data_axes_labels_order=["angles", "detY", "detX"],
+    )
+
+    recon_vol_block_size[0 : detY - odd_block_size_last, :, :] = lprec_block_recon1
+    recon_vol_block_size[detY - odd_block_size_last : :, :, :] = lprec_block_recon2
+
+    recon_data = cp.asnumpy(recon_vol_block_size)
+
+    assert_allclose(np.min(recon_data), -0.0372409, atol=1e-5)
+    assert_allclose(np.max(recon_data), 0.1035610, atol=1e-4)
+    assert recon_data.dtype == np.float32
+    assert recon_data.shape == (128, 160, 160)
+
+
 def test_Fourier3D_Y_odd_to_even(ensure_clean_memory):
     dev = cp.cuda.Device()
     data_host = np.random.randint(
