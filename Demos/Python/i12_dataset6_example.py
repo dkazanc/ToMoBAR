@@ -26,7 +26,9 @@ flats = cp.asarray(data["flats"])
 darks = cp.asarray(data["darks"])
 del data
 # %%
-data_normalised = normalize(projdata[:,20:30,:], flats[:,20:30,:], darks[:,20:30,:], minus_log=False)
+data_normalised = normalize(
+    projdata[:, 20:30, :], flats[:, 20:30, :], darks[:, 20:30, :], minus_log=False
+)
 
 del flats, darks, projdata
 cp._default_memory_pool.free_all_blocks()
@@ -42,12 +44,19 @@ mid_slice = data_normalised.shape[1] // 2
 # plt.title("Sinogram")
 # plt.show()
 # %% Finding the centre of rotation
-cor = find_center_vo(data_normalised[:, mid_slice-5:mid_slice+5, :],smin=-150,smax=150,average_radius=10)
+cor = find_center_vo(
+    data_normalised[:, mid_slice - 5 : mid_slice + 5, :],
+    smin=-150,
+    smax=150,
+    average_radius=10,
+)
 # %%
 data_proc = remove_all_stripe(data_normalised)
 del data_normalised
-#%%
-data_proc = paganin_filter_tomopy(data_proc, pixel_size=0.00324, dist=320.0, energy=53.0, alpha=0.005)
+# %%
+data_proc = paganin_filter_tomopy(
+    data_proc, pixel_size=0.00324, dist=320.0, energy=53.0, alpha=0.005
+)
 
 mid_slice = data_proc.shape[1] // 2
 # plt.figure(1)
@@ -62,7 +71,7 @@ mid_slice = data_proc.shape[1] // 2
 
 results = {}
 for fake_padding in [False, True]:
-    #%%
+    # %%
     # reconstructing using found cor (NO padding)
     # recon_data = FBP3d_tomobar(
     results[f"fake_padding_{fake_padding}_nopad"] = LPRec3d_tomobar(

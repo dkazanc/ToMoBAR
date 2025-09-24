@@ -6,18 +6,10 @@
 """
 
 import numpy as np
+from numpy import float32
 import math
-
-try:
-    import cupy as xp
-
-    from cupyx.scipy.fft import fft, ifft2, rfftfreq, rfft, irfft
-except ImportError:
-    import numpy as xp
-
-    print(
-        "Cupy library is a required dependency for this part of the code, please install"
-    )
+import cupy as cp
+from cupyx.scipy.fft import fft, ifft2, rfftfreq, rfft, irfft
 
 from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 from tomobar.supp.funcs import _data_dims_swapper
@@ -64,18 +56,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # if DetectorsDimV == 0 or DetectorsDimV is None:
         #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
-    def FORWPROJ(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
+    def FORWPROJ(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
 
         Args:
-            data (xp.ndarray): 2D or 3D object as a cupy array
+            data (cp.ndarray): 2D or 3D object as a cupy array
 
         Keyword Args:
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the OUTPUT data.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
 
         Returns:
-            xp.ndarray: Forward projected cupy array (projection data)
+            cp.ndarray: Forward projected cupy array (projection data)
         """
         projected = self.Atools._forwprojCuPy(data)
         for key, value in kwargs.items():
@@ -86,18 +78,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         return projected
 
-    def BACKPROJ(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
+    def BACKPROJ(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
 
         Args:
-            data (xp.ndarray): 2D/3D projection data as a cupy array
+            data (cp.ndarray): 2D/3D projection data as a cupy array
 
         Keyword Args:
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
 
         Returns:
-            xp.ndarray: Backprojected 2D/3D object
+            cp.ndarray: Backprojected 2D/3D object
         """
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -108,11 +100,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
         return self.Atools._backprojCuPy(data)
 
-    def FBP(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
+    def FBP(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Filtered backprojection reconstruction on a CuPy array using a custom built SINC filter.
 
         Args:
-            data (xp.ndarray): projection data as a CuPy array
+            data (cp.ndarray): projection data as a CuPy array
 
         Keyword Args:
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
@@ -121,7 +113,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             cutoff_freq (float): Cutoff frequency parameter for the sinc filter. Defaults to 0.35.
 
         Returns:
-            xp.ndarray: The FBP reconstructed volume as a CuPy array.
+            cp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
 
         cupyrun = True
@@ -138,21 +130,21 @@ class RecToolsDIRCuPy(RecToolsDIR):
         data = _apply_horiz_detector_padding(data, self.Atools.detectors_x_pad, cupyrun)
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(data, cutoff=cutoff_freq)
-        data = xp.ascontiguousarray(xp.swapaxes(data, 0, 1))
-        cache = xp.fft.config.get_plan_cache()
+        data = cp.ascontiguousarray(cp.swapaxes(data, 0, 1))
+        cache = cp.fft.config.get_plan_cache()
         cache.clear()  # flush FFT cache here before backprojection
-        xp._default_memory_pool.free_all_blocks()  # free everything related to the filtering before starting Astra
+        cp._default_memory_pool.free_all_blocks()  # free everything related to the filtering before starting Astra
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
         return check_kwargs(reconstruction, **kwargs)
 
-    def FOURIER_INV(self, data: xp.ndarray, **kwargs) -> xp.ndarray:
+    def FOURIER_INV(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input.
         This implementation follows V. Nikitin's CUDA-C implementation:
         https://github.com/nikitinvv/radonusfft and TomoCuPy package.
 
 
         Args:
-            data (xp.ndarray): projection data as a CuPy array
+            data (cp.ndarray): projection data as a CuPy array
 
         Keyword Args:
             data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
@@ -162,7 +154,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             cutoff_freq (float): Cutoff frequency parameter for different filter. The higher values increase resolution and noise.
 
         Returns:
-            xp.ndarray: The NUFFT reconstructed volume as a CuPy array.
+            cp.ndarray: The NUFFT reconstructed volume as a CuPy array.
         """
         cupyrun = True
         kwargs.update({"cupyrun": cupyrun})  # needed for agnostic array cropping
@@ -224,7 +216,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             "gather_kernel_center_angle_based_prune"
         )
         gather_kernel_center = module.get_function("gather_kernel_center")
-        wrap_kernel = module.get_function("wrap_kernel")
         r2c_c1dfftshift = module.get_function("r2c_c1dfftshift")
         c1dfftshift = module.get_function("c1dfftshift")
         c2dfftshift = module.get_function("c2dfftshift")
@@ -247,7 +238,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         nz += odd_vert
 
         if odd_horiz or odd_vert:
-            data_p = xp.empty((nz, nproj, data_n), dtype=xp.float32)
+            data_p = cp.empty((nz, nproj, data_n), dtype=cp.float32)
             data_p[: nz - odd_vert, :, : data_n - odd_horiz] = data
             data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
             data = data_p
@@ -259,17 +250,17 @@ class RecToolsDIRCuPy(RecToolsDIR):
             n = data_n
 
         rotation_axis = self.Atools.centre_of_rotation + 0.5
-        theta = xp.array(-self.Atools.angles_vec, dtype=xp.float32)
+        theta = cp.array(-self.Atools.angles_vec, dtype=cp.float32)
         if center_size >= _CENTER_SIZE_MIN:
-            sorted_theta_indices = xp.argsort(theta)
+            sorted_theta_indices = cp.argsort(theta)
             sorted_theta = theta[sorted_theta_indices]
             sorted_theta_cpu = sorted_theta.get()
 
             theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
             angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
-            angle_range = xp.zeros(
+            angle_range = cp.zeros(
                 [center_size, center_size, 1 + angle_range_pi_count * 2],
-                dtype=xp.uint16,
+                dtype=cp.uint16,
             )
 
         # usfft parameters
@@ -297,11 +288,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
         wfilter = calc_filter(ne, filter_type, cutoff_freq)
 
         # STEP0: FBP filtering
-        t = rfftfreq(ne).astype(xp.float32)
-        w = wfilter * xp.exp(-2 * xp.pi * 1j * t * (rotation_axis))
+        t = rfftfreq(ne).astype(cp.float32)
+        w = wfilter * cp.exp(-2 * cp.pi * 1j * t * (rotation_axis))
 
         # FBP filtering output
-        tmp_p = xp.empty((nz, nproj, n), dtype=xp.float32)
+        tmp_p = cp.empty((nz, nproj, n), dtype=cp.float32)
 
         slice_count_per_chunk = np.ceil(nz / chunk_count)
         # Loop over the chunks
@@ -318,7 +309,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             for j in range(nchunk):
                 st = j * chunk
                 end = min((j + 1) * chunk, nproj)
-                tmp = xp.pad(
+                tmp = cp.pad(
                     data[start_index:end_index, st:end, :],
                     ((0, 0), (0, 0), (padding_m, padding_m)),
                     mode="edge",
@@ -335,13 +326,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # BACKPROJECTION
         # input data
-        datac = xp.empty((nz // 2, nproj, n), dtype=xp.complex64)
+        datac = cp.empty((nz // 2, nproj, n), dtype=cp.complex64)
 
         # fft, reusable by chunks
         if center_size >= _CENTER_SIZE_MIN:
-            fde = xp.empty([nz // 2, 2 * n, 2 * n], dtype=xp.complex64)
+            fde = cp.empty([nz // 2, 2 * n, 2 * n], dtype=cp.complex64)
         else:
-            fde = xp.zeros([nz // 2, 2 * n, 2 * n], dtype=xp.complex64)
+            fde = cp.zeros([nz // 2, 2 * n, 2 * n], dtype=cp.complex64)
 
         # STEP1: fft 1d
         r2c_c1dfftshift(
@@ -495,8 +486,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_recon_size = unpad_recon_p - unpad_recon_m
 
         # memory for recon
-        recon_up = xp.empty(
-            [unpad_z, unpad_recon_size, unpad_recon_size], dtype=xp.float32
+        recon_up = cp.empty(
+            [unpad_z, unpad_recon_size, unpad_recon_size], dtype=cp.float32
         )
 
         # STEP4: unpadding, multiplication by phi and restructure memory

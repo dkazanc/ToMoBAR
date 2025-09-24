@@ -83,7 +83,7 @@ def main(args: argparse.Namespace):
         cutoff_freq=0.35,
         recon_mask_radius=2.0,
         data_axes_labels_order=data_labels3D,
-        fake_padding=args.skip_padding
+        fake_padding=args.skip_padding,
     )
 
     start_time = timeit.default_timer()
@@ -94,7 +94,7 @@ def main(args: argparse.Namespace):
             cutoff_freq=0.35,
             recon_mask_radius=2.0,
             data_axes_labels_order=data_labels3D,
-            fake_padding=args.skip_padding
+            fake_padding=args.skip_padding,
         )
     end_time = timeit.default_timer()
     end_to_end_runtime_s = (end_time - start_time) / measurement_iteration_count
