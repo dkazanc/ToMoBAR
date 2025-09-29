@@ -396,6 +396,25 @@ def apply_circular_mask(data, recon_mask_radius, cupyrun=False):
     return data
 
 
+def perform_recon_crop(data, croped_size):
+    """Perform croipping of the larger 3D data array (reconstruction) to a smaller one defined by croped_size
+
+    Args:
+        data (cp.ndarray): 3D CuPy array [vertical, reconX, reconY] to crop
+        croped_size (int): the size of the array after cropping
+
+    Returns:
+        cp.ndarry: cropped CuPy 3D array [vertical, reconX_new_size, reconY_new_size]
+    """
+
+    axis = 2  # or 1
+    original_recon_size = data.shape[axis]
+    crop_limit_start = (original_recon_size - croped_size) // 2
+    crop_limit_stop = croped_size + crop_limit_start
+
+    return data[:, crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop]
+
+
 def _apply_horiz_detector_padding(data, detector_width_pad, cupyrun):
     """extending the size of the horizontal detector, here
     assuming the order of the 3D data as: ["detY", "angles", "detX"] and

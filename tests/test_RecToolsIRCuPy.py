@@ -62,8 +62,8 @@ def test_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = RecTools.SIRT(_data_, _algorithm_)
 
     Iter_rec = Iter_rec.get()
-    assert_allclose(np.min(Iter_rec), -0.0011388692, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.020178853, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.0011388711, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.020178854, rtol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -88,17 +88,50 @@ def test_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
 
-    _algorithm_ = {"iterations": 3}
+    _algorithm_ = {"iterations": 15}
     Iter_rec = RecTools.CGLS(_data_, _algorithm_)
 
     Iter_rec = Iter_rec.get()
-    assert_allclose(np.min(Iter_rec), -0.0042607156, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.025812835, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), -0.0039929836, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.024821747, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
 
-def test_SIRT_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
+def test_CGLS_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=50,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+
+    _algorithm_ = {
+        "iterations": 15,
+        "recon_mask_radius": 2.0,
+    }
+    Iter_rec = RecTools.CGLS(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), -0.011976417, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.0382089, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_CGLS_after_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
@@ -125,9 +158,9 @@ def test_SIRT_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
 
     Iter_rec = Iter_rec.get()
     Iter_recS = Iter_recSIRT.get()
-    assert_allclose(np.min(Iter_rec), -0.0042607156, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.025812835, rtol=1e-04)
-    assert_allclose(np.min(Iter_recS), -0.00028072015, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), -0.0030896277, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.022553273, rtol=1e-04)
+    assert_allclose(np.min(Iter_recS), -0.0002806916, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
     assert Iter_recS.shape == (128, 160, 160)
@@ -215,6 +248,41 @@ def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
+def test_FISTA_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=60,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }  # data dictionary
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    _algorithm_ = {
+        "iterations": 20,
+        "lipschitz_const": lc.get(),
+        "recon_mask_radius": 2.0,
+    }
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), -0.004563322, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.026597505, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
 def test_FISTA_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
@@ -290,8 +358,9 @@ def test_FISTA_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
 
     Iter_rec = Iter_rec.get()
-    assert_allclose(np.min(Iter_rec), -0.0022028014, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.023243528, rtol=1e-04)
+    Iter_rec_slice = Iter_rec[64, :, :]
+    assert_allclose(np.min(Iter_rec), -0.0006241638, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.023243543, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -332,6 +401,41 @@ def test_FISTA_OS_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
+def test_FISTA_OS_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=60,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+    # data dictionary
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "OS_number": 5,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    lc = lc.get()
+
+    _algorithm_ = {"iterations": 10, "lipschitz_const": lc, "recon_mask_radius": 2.0}
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(lc, 9644.283, rtol=1e-05)
+    assert_allclose(np.min(Iter_rec), -0.011405378, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.03799749, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
 def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
@@ -358,7 +462,6 @@ def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
 
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
 
-    # adding regularisation using the CCPi regularisation toolkit
     _regularisation_ = {
         "method": "PD_TV",
         "regul_param": 0.0005,
@@ -371,8 +474,8 @@ def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = Iter_rec.get()
 
     assert_allclose(lc, 5510.867, rtol=1e-05)
-    assert_allclose(np.min(Iter_rec), -0.00024970365, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.021896763, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), -0.00024514267, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.02189674, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 

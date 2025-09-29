@@ -39,7 +39,7 @@ class AstraBase:
         detectors_x_pad (int): Padded size of horizontal detector with edge values
         angles_vec (np.ndarray): A vector of projection angles in radians.
         centre_of_rotation (float, np.ndarray): The Centre of Rotation (CoR) scalar or a vector of CoRs for each angle.
-        recon_size (int): Reconstructed object size (a slice).
+        recon_size (int): The size of the reconstructed object (a slice) defined as [recon_size, recon_size].
         processing_arch (str): 'cpu' or 'gpu' - based processing.
         device_index (int, optional): An integer for the GPU device, -1 for CPU computing and >0 for the GPU device.
         ordsub_number (int): The number of ordered-subsets for iterative reconstruction.
@@ -131,7 +131,7 @@ class AstraBase:
     def recon_size(self, recon_size_val):
         if isinstance(recon_size_val, tuple):
             raise ValueError(
-                "Reconstruction is currently available for square or cubic objects only, please provide a scalar"
+                "Reconstruction is currently available for squared or cubic objects only, please provide a scalar"
             )
         if recon_size_val <= 0:
             raise ValueError("The size of the reconstruction object cannot be zero")
@@ -279,7 +279,7 @@ class AstraBase:
                     anglesOS, self.centre_of_rotation[self.indVec]
                 )
             self.proj_geom_OS[sub_ind] = astra.create_proj_geom(
-                "parallel_vec", self.detectors_x, vectorsOS
+                "parallel_vec", self.detectors_x + 2 * self.detectors_x_pad, vectorsOS
             )
             if self.processing_arch == "cpu":
                 self.proj_id_OS[sub_ind] = astra.create_projector(
@@ -306,7 +306,10 @@ class AstraBase:
                     anglesOS, 1.0, 1.0, self.centre_of_rotation[self.indVec]
                 )
             self.proj_geom_OS[sub_ind] = astra.create_proj_geom(
-                "parallel3d_vec", self.detectors_y, self.detectors_x, vectors
+                "parallel3d_vec",
+                self.detectors_y,
+                self.detectors_x + 2 * self.detectors_x_pad,
+                vectors,
             )
         return self.proj_geom_OS
 
@@ -531,6 +534,7 @@ class AstraBase:
         Returns:
             xp.ndarray: A CuPy array containing back-projected volume.
         """
+
         # set ASTRA configuration for 3D reconstructor using CuPy arrays
         proj_link = GPULink(
             proj_data.data.ptr, *proj_data.shape[::-1], 4 * proj_data.shape[2]
