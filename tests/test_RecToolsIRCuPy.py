@@ -358,7 +358,6 @@ def test_FISTA_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
 
     Iter_rec = Iter_rec.get()
-    Iter_rec_slice = Iter_rec[64, :, :]
     assert_allclose(np.min(Iter_rec), -0.0006241638, rtol=1e-04)
     assert_allclose(np.max(Iter_rec), 0.023243543, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
