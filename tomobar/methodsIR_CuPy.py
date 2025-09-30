@@ -497,8 +497,12 @@ class RecToolsIRCuPy:
                         - _data_upd_["projection_norm_data"]
                     )
                     grad_fidelity = self.Atools._backprojCuPy(res)
+                
+                del res
 
                 X = X_t - L_const_inv * grad_fidelity
+
+                del X_t, grad_fidelity
 
                 if _algorithm_upd_["nonnegativity"]:
                     X[X < 0.0] = 0.0
