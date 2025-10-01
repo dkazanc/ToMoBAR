@@ -168,7 +168,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         chunk_count = 4
         projection_chunk_count = 4
         oversampling_level = 4  # at least 3 or larger required
-        power_of_2_oversampling = False
+        power_of_2_oversampling = True
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
