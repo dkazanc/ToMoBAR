@@ -112,7 +112,7 @@ class RecToolsIRCuPy:
         self, _data_: dict, _algorithm_: Union[dict, None] = None
     ) -> cp.ndarray:
         """Using Landweber iterative technique to reconstruct projection data given as a CuPy array.
-        We perform the following iterations: :math:`x^{k+1} = x^{k} + \tau * \mathbf{A}^{\intercal}(\mathbf{A}x^{k} - b)`.
+        We perform the following iterations: :math:`x^{k+1} = x^{k} + \\tau * \mathbf{A}^{\intercal}(\mathbf{A}x^{k} - b)`.
 
 
         Args:
