@@ -211,7 +211,7 @@ def __test_Fourier3D_inv_prune_common(
         ), "Angle max elements differ by more than 1 or are less than expected"
 
 
-def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
+def test_Fourier3D_inv(data_cupy, angles):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
@@ -225,14 +225,102 @@ def test_Fourier3D_inv(data_cupy, angles, ensure_clean_memory):
         device_projector="gpu",
     )
 
-    with time_range("fourier_inv", color_id=0, sync=True):
-        Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
-            data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
-        )
-    recon_data = Fourier_rec_cupy.get()
+    Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
+        data_cupy,
+        data_axes_labels_order=["angles", "detY", "detX"],
+        recon_mask_radius=2.0,
+    )
+    recon_data = cp.asnumpy(Fourier_rec_cupy)
 
-    assert_allclose(np.min(recon_data), -0.041244, atol=1e-5)
-    assert_allclose(np.max(recon_data), 0.092022, atol=1e-4)
+    assert_allclose(np.min(recon_data), -0.0372409, atol=1e-5)
+    assert_allclose(np.max(recon_data), 0.1035610, atol=1e-4)
+    assert recon_data.dtype == np.float32
+    assert recon_data.shape == (128, 160, 160)
+
+
+@pytest.mark.parametrize("blocks", [2, 4, 8, 16, 32])
+def test_Fourier3D_inv_vert_blocks(data_cupy, angles, blocks):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+
+    recon_vol_block_size = cp.empty((detY, detX, detX), dtype=cp.float32)
+    block_size = blocks
+    index_start = 0
+    index_end = block_size
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=block_size,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    for block_index in range(0, detY // block_size):
+        proj_data_block = data_cupy[:, index_start:index_end, :]
+
+        lprec_block_recon = RecToolsCP.FOURIER_INV(
+            proj_data_block,
+            recon_mask_radius=2.0,
+            data_axes_labels_order=["angles", "detY", "detX"],
+        )
+        recon_vol_block_size[index_start:index_end, :, :] = lprec_block_recon
+        index_start += block_size
+        index_end += block_size
+
+    recon_data = cp.asnumpy(recon_vol_block_size)
+
+    assert_allclose(np.min(recon_data), -0.0372409, atol=1e-5)
+    assert_allclose(np.max(recon_data), 0.1035610, atol=1e-4)
+    assert recon_data.dtype == np.float32
+    assert recon_data.shape == (128, 160, 160)
+
+
+def test_Fourier3D_inv_vert_blocks_last_odd(data_cupy, angles):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+
+    recon_vol_block_size = cp.empty((detY, detX, detX), dtype=cp.float32)
+
+    odd_block_size_last = 3
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY
+        - odd_block_size_last,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    lprec_block_recon1 = RecToolsCP.FOURIER_INV(
+        data_cupy[:, 0 : detY - odd_block_size_last, :],
+        recon_mask_radius=2.0,
+        data_axes_labels_order=["angles", "detY", "detX"],
+    )
+
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=odd_block_size_last,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",
+    )
+    lprec_block_recon2 = RecToolsCP.FOURIER_INV(
+        data_cupy[:, detY - odd_block_size_last : :, :],
+        recon_mask_radius=2.0,
+        data_axes_labels_order=["angles", "detY", "detX"],
+    )
+
+    recon_vol_block_size[0 : detY - odd_block_size_last, :, :] = lprec_block_recon1
+    recon_vol_block_size[detY - odd_block_size_last : :, :, :] = lprec_block_recon2
+
+    recon_data = cp.asnumpy(recon_vol_block_size)
+
+    assert_allclose(np.min(recon_data), -0.0372409, atol=1e-5)
+    assert_allclose(np.max(recon_data), 0.1035610, atol=1e-4)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
