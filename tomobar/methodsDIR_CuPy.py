@@ -161,7 +161,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         cutoff_freq = 1.0  # default value
         filter_type = "shepp"  # default filter
 
-        center_size = 6144
+        center_size = 32768
         block_dim = [16, 16]
         block_dim_center = [32, 4]
 
