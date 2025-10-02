@@ -166,6 +166,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim_center = [32, 4]
 
         chunk_count = 4
+        filter_vol_chunk_count = 4
+        filter_proj_chunk_count = 4
+        oversampling_level = 4  # at least 3 or larger required
+        power_of_2_oversampling = True
+        power_of_2_cropping = False
+        min_mem_usage_filter = False
+        min_mem_usage_ifft2 = False
+        padding = 0
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -194,6 +202,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     )
                 else:
                     filter_type = value
+            elif key == "power_of_2_oversampling" and value is not None:
+                power_of_2_oversampling = value
+            elif key == "power_of_2_cropping" and value is not None:
+                power_of_2_cropping = value
+            elif key == "min_mem_usage_filter" and value is not None:
+                min_mem_usage_filter = value
+            elif key == "min_mem_usage_ifft2" and value is not None:
+                min_mem_usage_ifft2 = value
+            elif key == "padding" and value is not None:
+                if not isinstance(value, int) or value < 0:
+                    print(f"Invalid padding: {value}. Set to 0")
+                else:
+                    padding = value
             elif key == "chunk_count" and value is not None:
                 if not isinstance(value, int) or value <= 0:
                     print(f"Invalid chunk count: {value}. Set to 1")
@@ -236,7 +257,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data = data_p
             del data_p
 
-        n = data_n + self.Atools.detectors_x_pad * 2
+        n = data_n + self.Atools.detectors_x_pad * 2 + padding * 2
+        print(n)
+        if(power_of_2_cropping):
+            n_pow2 = 2 ** math.ceil(math.log2(n))
+            if( 0.9 < n / n_pow2 ):
+                n = n_pow2
+        print(n)
 
         # Limit the center size parameter
         center_size = min(center_size, n * 2)
@@ -263,11 +290,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 2 * n * 1 / np.pi * np.sqrt(-mu * np.log(eps) + (mu * n) * (mu * n) / 4)
             )
         )
-        oversampling_level = 4  # at least 3 or larger required
 
         # init filter
-        ne = int(oversampling_level * data_n)
-        ne = max(ne, n)
+        if power_of_2_oversampling:
+            ne = 2 ** math.ceil(math.log2(data_n * 3))
+            if n > ne:
+                ne = 2 ** math.ceil(math.log2(n))
+        else:
+            ne = int(oversampling_level * data_n)
+            ne = max(ne, n)
 
         padding_m = ne // 2 - data_n // 2
         unpad_m = ne // 2 - n // 2
@@ -282,30 +313,55 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # FBP filtering output
         tmp_p = cp.empty((nz, nproj, n), dtype=cp.float32)
 
-        slice_count_per_chunk = np.ceil(nz / chunk_count)
+        if min_mem_usage_filter:
+            filter_vol_chunk_count = nz
+
+        if min_mem_usage_ifft2:
+            chunk_count = nz // 2
+
+        slice_count_per_chunk = np.ceil(nz / filter_vol_chunk_count)
         # Loop over the chunks
-        for chunk_index in range(0, chunk_count):
-            start_index = min(chunk_index * slice_count_per_chunk, nz)
-            end_index = min((chunk_index + 1) * slice_count_per_chunk, nz)
-            if start_index >= end_index:
+        for chunk_index in range(0, filter_vol_chunk_count):
+            slice_start_index = min(chunk_index * slice_count_per_chunk, nz)
+            slice_end_index = min((chunk_index + 1) * slice_count_per_chunk, nz)
+            if slice_start_index >= slice_end_index:
                 break
 
             # processing by chunks over the second dimension
             # to avoid increased data sizes due to oversampling
-            nchunk = int(np.ceil(oversampling_level))
-            chunk = int(np.ceil(nproj / nchunk))
-            for j in range(nchunk):
-                st = j * chunk
-                end = min((j + 1) * chunk, nproj)
+            projection_count_per_projection_chunk = np.ceil(
+                nproj / filter_proj_chunk_count
+            )
+            for projection_chunk_index in range(filter_proj_chunk_count):
+                projection_start_index = min(
+                    projection_chunk_index * projection_count_per_projection_chunk,
+                    nproj,
+                )
+                projection_end_index = min(
+                    (projection_chunk_index + 1)
+                    * projection_count_per_projection_chunk,
+                    nproj,
+                )
+                if projection_start_index >= projection_end_index:
+                    break
+
                 tmp = cp.pad(
-                    data[start_index:end_index, st:end, :],
+                    data[
+                        slice_start_index:slice_end_index,
+                        projection_start_index:projection_end_index,
+                        :,
+                    ],
                     ((0, 0), (0, 0), (padding_m, padding_m)),
                     mode="edge",
                 )
 
                 tmp = w * rfft(tmp, axis=2)
                 tmp = irfft(tmp, axis=2)
-                tmp_p[start_index:end_index, st:end, :] = tmp[:, :, unpad_m:unpad_p]
+                tmp_p[
+                    slice_start_index:slice_end_index,
+                    projection_start_index:projection_end_index,
+                    :,
+                ] = tmp[:, :, unpad_m:unpad_p]
 
             del tmp
 
