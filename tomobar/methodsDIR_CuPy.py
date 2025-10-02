@@ -272,6 +272,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # init filter
         if power_of_2_oversampling:
             ne = 2 ** math.ceil(math.log2(data_n * 3))
+            if n > ne:
+                ne = 2 ** math.ceil(math.log2(n))
         else:
             ne = int(oversampling_level * data_n)
             ne = max(ne, n)
