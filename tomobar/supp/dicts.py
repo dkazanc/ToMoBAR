@@ -5,17 +5,6 @@ from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from typing import Union
 from tomobar.supp.funcs import _data_dims_swapper
 
-try:
-    import cupy as xp
-
-    try:
-        xp.cuda.Device(0).compute_capability
-        gpu_enabled = True  # CuPy is installed and GPU is available
-    except xp.cuda.runtime.CUDARuntimeError:
-        import numpy as xp
-except ImportError:
-    import numpy as xp
-
 
 def dicts_check(
     self,

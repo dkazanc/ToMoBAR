@@ -26,7 +26,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
-        DetectorsDimH_pad (int): Padding size of horizontal detector
+        DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
         CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
