@@ -138,7 +138,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         return check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
-        """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input, see more in 
+        """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input, see more in
         [NIKITIN2017]_. This implementation is originated from V. Nikitin's CUDA-C implementation:
         https://github.com/nikitinvv/radonusfft and TomoCuPy package.
 
