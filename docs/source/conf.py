@@ -17,18 +17,13 @@ sys.path.insert(0, os.path.abspath("../.."))
 # Mock imports instead of full environment in readthedocs
 MOCK_MODULES = [
     "cupy",
+    "cupyx",
+    "cupyx.scipy",
+    "cupyx.scipy.fft",
     "astra",
     "scipy",
     "scipy.fftpack",
 ]
-
-# MOCK_MODULES = [
-#     "cupy",
-#     "skimage",
-#     "scipy",
-#     "scipy.fft",
-#     "scipy.ndimage",
-# ]
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
@@ -37,6 +32,9 @@ autodoc_mock_imports = [
     "astra",
     "astra.experimental",
     "cupy",
+    "cupyx",
+    "cupyx.scipy",
+    "cupyx.scipy.fft",
     "scipy",
     "scipy.fftpack",
     "bm3d",
