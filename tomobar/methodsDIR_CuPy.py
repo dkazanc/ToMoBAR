@@ -238,6 +238,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         n = data_n + self.Atools.detectors_x_pad * 2
 
+        # Limit the center size parameter
+        center_size = min(center_size, n * 2)
+
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         theta = cp.array(-self.Atools.angles_vec, dtype=cp.float32)
         if center_size >= _CENTER_SIZE_MIN:
@@ -261,9 +264,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
         )
         oversampling_level = 4  # at least 3 or larger required
-
-        # Limit the center size parameter
-        center_size = min(center_size, n * 2)
 
         # init filter
         ne = int(oversampling_level * data_n)
