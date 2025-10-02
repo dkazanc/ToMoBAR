@@ -67,11 +67,19 @@ class AstraTools2D(AstraBase):
             astra_method = "FP"
         return super()._runAstraProj2D(image, None, astra_method)
 
+    def _forwprojCuPy(self, image: np.ndarray) -> np.ndarray:
+        # TODO: CuPy 2D forward projection is not implemented yet
+        return super()._runAstraProj2D(image, None, "FP_CUDA")
+
     def _forwprojOS(self, image: np.ndarray, os_index: int) -> np.ndarray:
         astra_method = "FP_CUDA"  # 2d forward projection
         if self.processing_arch == "cpu":
             astra_method = "FP"
         return super()._runAstraProj2D(image, os_index, astra_method)
+
+    def _forwprojOSCuPy(self, image: np.ndarray, os_index: int) -> np.ndarray:
+        # TODO: CuPy 2D forward projection is not implemented yet
+        return super()._runAstraProj2D(image, os_index, "FP_CUDA")
 
     def _backproj(self, sinogram: np.ndarray) -> np.ndarray:
         astra_method = "BP_CUDA"  # 2D back projection
@@ -79,11 +87,19 @@ class AstraTools2D(AstraBase):
             astra_method = "BP"
         return super()._runAstraBackproj2D(sinogram, astra_method, 1, None)
 
+    def _backprojCuPy(self, sinogram: np.ndarray) -> np.ndarray:
+        # TODO: CuPy 2D backprojection is not implemented yet
+        return super()._runAstraBackproj2D(sinogram, "BP_CUDA", 1, None)
+
     def _backprojOS(self, sinogram: np.ndarray, os_index: int) -> np.ndarray:
         astra_method = "BP_CUDA"  # 2D back projection
         if self.processing_arch == "cpu":
             astra_method = "BP"
         return super()._runAstraBackproj2D(sinogram, astra_method, 1, os_index)
+
+    def _backprojOSCuPy(self, sinogram: np.ndarray, os_index: int) -> np.ndarray:
+        # TODO: CuPy 2D backprojection is not implemented yet
+        return super()._runAstraBackproj2D(sinogram, "BP_CUDA", 1, os_index)
 
     def _fbp(self, sinogram: np.ndarray) -> np.ndarray:
         astra_method = "FBP_CUDA"  # 2D FBP reconstruction

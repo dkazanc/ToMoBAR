@@ -26,7 +26,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
     Args:
         DetectorsDimH (int): Horizontal detector dimension.
-        DetectorsDimH_pad (int): Padding size of horizontal detector
+        DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
         CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
@@ -243,6 +243,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         n = data_n + self.Atools.detectors_x_pad * 2
 
+        # Limit the center size parameter
+        center_size = min(center_size, n * 2)
+
         rotation_axis = self.Atools.centre_of_rotation + 0.5
         theta = cp.array(-self.Atools.angles_vec, dtype=cp.float32)
         if center_size >= _CENTER_SIZE_MIN:
@@ -265,9 +268,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 2 * n * 1 / np.pi * np.sqrt(-mu * np.log(eps) + (mu * n) * (mu * n) / 4)
             )
         )
-
-        # Limit the center size parameter
-        center_size = min(center_size, n * 2)
 
         # init filter
         if power_of_2_oversampling:

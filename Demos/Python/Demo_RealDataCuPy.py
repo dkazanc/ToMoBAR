@@ -46,7 +46,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
 RecToolsCP = RecToolsDIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
+    DetectorsDimH_pad=200,  # Padding size of horizontal detector
     DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -81,6 +81,58 @@ RectoolsCuPy = RecToolsIRCuPy(
 )
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%%%%%%%%%Reconstructing with CGLS method %%%%%%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+####################### Creating the data dictionary: #######################
+_data_ = {
+    "projection_norm_data": cp.asarray(
+        data_norm[:, :, 5:10]
+    ),  # Normalised projection data
+    "data_axes_labels_order": data_labels3D,
+}
+
+####################### Creating the algorithm dictionary: #######################
+_algorithm_ = {
+    "iterations": 20,
+    "recon_mask_radius": 2.0,
+}  # The number of iterations
+
+
+# RUN CGLS METHOD:
+Rec_CGLS = RectoolsCuPy.CGLS(_data_, _algorithm_)
+
+fig = plt.figure()
+plt.imshow(cp.asnumpy((Rec_CGLS[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
+plt.title("CGLS reconstruction")
+plt.show()
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%%%%%%%%%Reconstructing with SIRT method %%%%%%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+####################### Creating the data dictionary: #######################
+_data_ = {
+    "projection_norm_data": cp.asarray(
+        data_norm[:, :, 5:10]
+    ),  # Normalised projection data
+    "data_axes_labels_order": data_labels3D,
+}
+
+####################### Creating the algorithm dictionary: #######################
+_algorithm_ = {
+    "iterations": 400,
+    "recon_mask_radius": 2.0,
+}  # The number of iterations
+
+
+# RUN SIRT METHOD:
+Rec_SIRT = RectoolsCuPy.SIRT(_data_, _algorithm_)
+
+fig = plt.figure()
+plt.imshow(cp.asnumpy((Rec_SIRT[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
+plt.title("SIRT reconstruction")
+plt.show()
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
@@ -96,15 +148,16 @@ lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
 
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 25,
+    "iterations": 15,
     "lipschitz_const": lc.get(),
+    "recon_mask_radius": 2.0,
 }  # The number of iterations
 
 ##### creating regularisation dictionary: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
     "regul_param": 0.000002,  # Regularisation parameter
-    "iterations": 60,  # The number of regularisation iterations
+    "iterations": 50,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
 
@@ -137,6 +190,7 @@ lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
 _algorithm_ = {
     "iterations": 25,
     "lipschitz_const": lc.get(),
+    "recon_mask_radius": 0.95,
 }  # The number of iterations
 
 ##### creating regularisation dictionary  #####
