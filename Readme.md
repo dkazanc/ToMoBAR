@@ -17,7 +17,7 @@
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
 ###
-See [CHANGELOG]([https://github.com/dkazanc/ToMoBAR/CHANGELOG.md](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)) for all detailed changes.
+See [CHANGELOG]([https://github.com/dkazanc/ToMoBAR/CHANGELOG.md](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.
 
 There are $\sf\color{red}breaking$ $\sf\color{red}changes from ToMoBAR v.2025.08!$ The API for initializing geometry in both direct and iterative methods (the `RecTools` class) has been updated. A new parameter, `DetectorsDimH_pad`, has been [introduced](https://dkazanc.github.io/ToMoBAR/api/tomobar.methodsDIR.html) to control edge padding along the detector's horizontal dimension. This parameter can help reduce circular/arc [artifacts](https://dkazanc.github.io/ToMoBAR/tutorials/real_data_recon.html) in reconstructions, such as saturated circles or arcs. See updated [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
 
