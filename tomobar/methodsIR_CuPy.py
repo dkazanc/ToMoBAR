@@ -123,8 +123,6 @@ class RecToolsIRCuPy:
         self, _data_: dict, _algorithm_: Union[dict, None] = None
     ) -> cp.ndarray:
         """Using Landweber iterative technique to reconstruct projection data given as a CuPy array.
-        We perform the following iterations: :math: `x^{k+1} = x^{k} + \\tau * \mathbf{A}^{\intercal}(\mathbf{A}x^{k} - b)`.
-
 
         Args:
             _data_ (dict): Data dictionary, where projection data is provided.
@@ -175,7 +173,8 @@ class RecToolsIRCuPy:
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
         reconstruct projection data given as a CuPy array.
-        We perform the following iterations: :math:`x^{k+1} = \mathbf{C}\mathbf{A}^{\intercal}\mathbf{R}(b - \mathbf{A}x^{k})`.
+        See more about the method `here <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/SIRT3d_tomobar.html>`__.
+
 
         Args:
             _data_ (dict): Data dictionary, where projection data is provided.
@@ -236,8 +235,7 @@ class RecToolsIRCuPy:
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Conjugate Gradients Least Squares iterative technique to reconstruct projection data
-        given as a CuPy array. The algorithm aim to solve the system of normal equations
-        :math:`\mathbf{A}^{\intercal}\mathbf{A}x = \mathbf{A}^{\intercal} b`.
+        given as a CuPy array. See more about the method `here <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/CGLS3d_tomobar.html>`__.
 
         Args:
             _data_ (dict): Data dictionary, where projection data is provided.
@@ -414,6 +412,7 @@ class RecToolsIRCuPy:
     ) -> cp.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm [BT2009]_ with various types of regularisation from
         the regularisation toolkit [KAZ2019]_ (currently accepts ROF_TV and PD_TV only).
+        See more about the method `here <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/FISTA3d_tomobar.html>`__.
 
         All parameters for the algorithm should be provided in three dictionaries:
         :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`
@@ -497,7 +496,7 @@ class RecToolsIRCuPy:
                         - _data_upd_["projection_norm_data"]
                     )
                     grad_fidelity = self.Atools._backprojCuPy(res)
-                
+
                 del res
 
                 X = X_t - L_const_inv * grad_fidelity
