@@ -102,6 +102,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
     def FBP(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Filtered backprojection reconstruction on a CuPy array using a custom built SINC filter.
+           See more about the method `here <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/FBP3d_tomobar.html>`__.
 
         Args:
             data (cp.ndarray): projection data as a CuPy array
@@ -138,9 +139,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
         return check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
-        """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input, see more in 
+        """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input, see more in
         [NIKITIN2017]_. This implementation is originated from V. Nikitin's CUDA-C implementation:
         https://github.com/nikitinvv/radonusfft and TomoCuPy package.
+        See more about the method `here <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/LPRec3d_tomobar.html>`__.
 
 
         Args:
