@@ -234,8 +234,8 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
     angle_range[1] = theta_min_index;
     angle_range[2] = theta_max_index;
   } else {
-    float radius      = sqrtf(radius_2);
-    float length      = sqrtf(length_2);
+    float radius      = __fsqrt_rn(radius_2);
+    float length      = __fsqrt_rn(length_2);
     float angle_delta = asinf(radius/length);
     float acosangle   = acosf(point.x/length);
     float angle = (point.y < 0.f ? (M_PI - acosangle) : acosangle) + angle_delta;
@@ -362,7 +362,7 @@ gather_kernel_center_common(float2 *g, float *theta,
   if( radius_2 >= distance_2 ) {
 
     // Distance to intersect
-    float distance_to_intersect = sqrtf(radius_2 - distance_2);
+    float distance_to_intersect = __fsqrt_rn(radius_2 - distance_2);
 
     int radius_min, radius_max;
     if( fabsf(vector_polar.x) > fabsf(vector_polar.y) ) {
