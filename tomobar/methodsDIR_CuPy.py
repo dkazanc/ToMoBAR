@@ -172,8 +172,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
         filter_proj_chunk_count = 4
         oversampling_level = 4  # at least 3 or larger required
         power_of_2_oversampling = True
+        power_of_2_cropping = False
         min_mem_usage_filter = False
         min_mem_usage_ifft2 = False
+        padding = 0
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -204,10 +206,17 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     filter_type = value
             elif key == "power_of_2_oversampling" and value is not None:
                 power_of_2_oversampling = value
+            elif key == "power_of_2_cropping" and value is not None:
+                power_of_2_cropping = value
             elif key == "min_mem_usage_filter" and value is not None:
                 min_mem_usage_filter = value
             elif key == "min_mem_usage_ifft2" and value is not None:
                 min_mem_usage_ifft2 = value
+            elif key == "padding" and value is not None:
+                if not isinstance(value, int) or value < 0:
+                    print(f"Invalid padding: {value}. Set to 0")
+                else:
+                    padding = value
             elif key == "chunk_count" and value is not None:
                 if not isinstance(value, int) or value <= 0:
                     print(f"Invalid chunk count: {value}. Set to 1")
@@ -250,7 +259,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data = data_p
             del data_p
 
-        n = data_n + self.Atools.detectors_x_pad * 2
+        n = data_n + self.Atools.detectors_x_pad * 2 + padding * 2
+        print(n)
+        if(power_of_2_cropping):
+            n_pow2 = 2 ** math.ceil(math.log2(n))
+            if( 0.9 < n / n_pow2 ):
+                n = n_pow2
+        print(n)
 
         # Limit the center size parameter
         center_size = min(center_size, n * 2)
