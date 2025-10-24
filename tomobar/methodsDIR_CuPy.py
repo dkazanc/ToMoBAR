@@ -168,9 +168,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim_center = [32, 4]
 
         chunk_count = 4
-        projection_chunk_count = 4
+        filter_vol_chunk_count = 4
+        filter_proj_chunk_count = 4
         oversampling_level = 4  # at least 3 or larger required
         power_of_2_oversampling = True
+        power_of_2_cropping = False
+        min_mem_usage_filter = False
+        min_mem_usage_ifft2 = False
+        padding = 0
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -201,6 +206,17 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     filter_type = value
             elif key == "power_of_2_oversampling" and value is not None:
                 power_of_2_oversampling = value
+            elif key == "power_of_2_cropping" and value is not None:
+                power_of_2_cropping = value
+            elif key == "min_mem_usage_filter" and value is not None:
+                min_mem_usage_filter = value
+            elif key == "min_mem_usage_ifft2" and value is not None:
+                min_mem_usage_ifft2 = value
+            elif key == "padding" and value is not None:
+                if not isinstance(value, int) or value < 0:
+                    print(f"Invalid padding: {value}. Set to 0")
+                else:
+                    padding = value
             elif key == "chunk_count" and value is not None:
                 if not isinstance(value, int) or value <= 0:
                     print(f"Invalid chunk count: {value}. Set to 1")
@@ -243,7 +259,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data = data_p
             del data_p
 
-        n = data_n + self.Atools.detectors_x_pad * 2
+        n = data_n + self.Atools.detectors_x_pad * 2 + padding * 2
+        if(power_of_2_cropping):
+            n_pow2 = 2 ** math.ceil(math.log2(n))
+            if( 0.9 < n / n_pow2 ):
+                n = n_pow2
 
         # Limit the center size parameter
         center_size = min(center_size, n * 2)
@@ -293,9 +313,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # FBP filtering output
         tmp_p = cp.empty((nz, nproj, n), dtype=cp.float32)
 
-        slice_count_per_chunk = np.ceil(nz / chunk_count)
+        if min_mem_usage_filter:
+            filter_vol_chunk_count = nz
+
+        if min_mem_usage_ifft2:
+            chunk_count = nz // 2
+
+        slice_count_per_chunk = np.ceil(nz / filter_vol_chunk_count)
         # Loop over the chunks
-        for chunk_index in range(0, chunk_count):
+        for chunk_index in range(0, filter_vol_chunk_count):
             slice_start_index = min(chunk_index * slice_count_per_chunk, nz)
             slice_end_index = min((chunk_index + 1) * slice_count_per_chunk, nz)
             if slice_start_index >= slice_end_index:
@@ -304,9 +330,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
             # processing by chunks over the second dimension
             # to avoid increased data sizes due to oversampling
             projection_count_per_projection_chunk = np.ceil(
-                nproj / projection_chunk_count
+                nproj / filter_proj_chunk_count
             )
-            for projection_chunk_index in range(projection_chunk_count):
+            for projection_chunk_index in range(filter_proj_chunk_count):
                 projection_start_index = min(
                     projection_chunk_index * projection_count_per_projection_chunk,
                     nproj,
@@ -337,7 +363,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     :,
                 ] = tmp[:, :, unpad_m:unpad_p]
 
-            del tmp
+                del tmp
 
         # Memory clean up of filter and input data
         del data, t, wfilter, w
