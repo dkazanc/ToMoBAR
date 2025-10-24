@@ -7,7 +7,7 @@ CONDA_TOKEN=$(cat $HOME/secrets/my_secret.json)
 ls $HOME/secrets/
 
 mkdir ~/conda-bld
-conda config --set anaconda_upload no
+#conda config --set anaconda_upload no
 export CONDA_BLD_PATH=~/conda-bld
 
 $CONDA/bin/conda install conda-build
@@ -20,5 +20,5 @@ $CONDA/bin/conda build .
 find $CONDA_BLD_PATH/$OS -name *.conda | while read file
 do
     echo $file
-    $CONDA/bin/anaconda -v --show-traceback --token $CONDA_TOKEN upload $file --force
+    anaconda -v --show-traceback --token $HOME/secrets/my_secret.json upload $file --force
 done
