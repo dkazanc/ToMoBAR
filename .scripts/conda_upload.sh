@@ -4,7 +4,7 @@ PKG_NAME=tomobar
 USER=httomo-team
 OS=noarch
 CONDA_TOKEN=$(cat $HOME/secrets/my_secret.json)
-ls $HOME/secrets/
+echo $CONDA_TOKEN
 
 mkdir ~/conda-bld
 #conda config --set anaconda_upload no
@@ -20,5 +20,5 @@ $CONDA/bin/conda build .
 find $CONDA_BLD_PATH/$OS -name *.conda | while read file
 do
     echo $file
-    anaconda -v --show-traceback --token $HOME/secrets/my_secret.json upload $file --force
+    $CONDA/bin/anaconda -v --show-traceback --token $CONDA_TOKEN upload $file --force
 done
