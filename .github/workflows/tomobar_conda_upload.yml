@@ -32,12 +32,7 @@ jobs:
           $CONDA/bin/conda update conda-build
           $CONDA/bin/conda list
 
-      - name: Decrypt a secret
-        run: ./.scripts/decrypt_secret.sh
-        env:
-          LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
-
-      - name: Upload the tested package to conda cloud
+      - name: Upload the package to conda cloud
         run: |
           chmod +x ./.scripts/conda_upload.sh
           ./.scripts/conda_upload.sh
