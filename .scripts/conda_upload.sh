@@ -3,7 +3,7 @@
 PKG_NAME=tomobar
 USER=httomo-team
 OS=noarch
-CONDA_TOKEN=$(cat $HOME/.secrets/my_secret.json)
+CONDA_TOKEN=$(cat $HOME/secrets/my_secret.json)
 
 mkdir ~/conda-bld
 conda config --set anaconda_upload no
