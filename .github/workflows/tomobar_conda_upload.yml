@@ -41,3 +41,5 @@ jobs:
         run: |
           chmod +x ./.scripts/conda_upload.sh
           ./.scripts/conda_upload.sh
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.HTTOMO_TOKEN_26 }}
