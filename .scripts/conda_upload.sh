@@ -20,6 +20,5 @@ $CONDA/bin/conda build .
 find $CONDA_BLD_PATH/$OS -name *.conda | while read file
 do
     echo $file
-    $CONDA/bin/anaconda login --token $CONDA_TOKEN
-    $CONDA/bin/anaconda -v --show-traceback --token $CONDA_TOKEN upload $file --force
+    $CONDA/bin/anaconda -v --show-traceback -t $CONDA_TOKEN upload $file --force
 done
