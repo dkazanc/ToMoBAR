@@ -173,8 +173,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         oversampling_level = 4  # at least 3 or larger required
         power_of_2_oversampling = True
         power_of_2_cropping = False
-        min_mem_usage_filter = False
-        min_mem_usage_ifft2 = False
+        min_mem_usage_filter = True
+        min_mem_usage_ifft2 = True
         padding = 0
 
         for key, value in kwargs.items():
