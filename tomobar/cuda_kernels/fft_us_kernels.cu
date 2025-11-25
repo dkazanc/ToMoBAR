@@ -240,8 +240,7 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
     float acosangle   = acosf(point.x/length);
     float angle = (point.y < 0.f ? (M_PI - acosangle) : acosangle) + angle_delta;
 
-    float rotate_count = (angle - theta_min) < 0.f ?
-      ceilf((angle - theta_min) / M_PI) : floorf((angle - theta_min) / M_PI);
+    float rotate_count = floorf((angle - theta_min) / M_PI);
     float angle_end    = angle - M_PI * rotate_count;
     float angle_start  = angle_end - 2 * angle_delta;
 

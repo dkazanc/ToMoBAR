@@ -62,6 +62,7 @@ def test_Fourier3D_inv_prune(
         (-3.1416800022125244, 8.726646046852693e-05),
         (0, -2 * np.pi),
         (0, 2 * np.pi),
+        (100 * np.pi, 101 * np.pi),
     ],
 )
 @pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
