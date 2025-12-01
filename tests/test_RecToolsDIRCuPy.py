@@ -51,14 +51,11 @@ def test_Fourier3D_inv_prune(
 
 
 @pytest.mark.full
-# @pytest.mark.parametrize("projection_count", [1801, 2560, 3601])
-# @pytest.mark.parametrize("projection_count", [7])
-@pytest.mark.parametrize("projection_count", [1801])
-# @pytest.mark.parametrize("projection_count", [3601])
+@pytest.mark.parametrize("projection_count", [7, 1801, 2560, 3601])
 @pytest.mark.parametrize(
     "theta_range",
     [
-        (0, 0.25 * np.pi),
+        # (0, 0.25 * np.pi),
         (0, -np.pi),
         (0, np.pi),
         (np.pi / 2, -np.pi / 2),
@@ -70,14 +67,10 @@ def test_Fourier3D_inv_prune(
         (100 * np.pi, 101 * np.pi),
     ],
 )
-# @pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
-@pytest.mark.parametrize("theta_shuffle_radius", [0]) # EZEK MÁR JÓK
-# @pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
-@pytest.mark.parametrize("theta_shuffle_iteration_count", [2]) # EZEK MÁR JÓK
+@pytest.mark.parametrize("theta_shuffle_radius", [0, 128, -1])
+@pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
 @pytest.mark.parametrize(
-    # "center_size", [256, 512, 1024, 2048, 6144]
-    "center_size", [256]
-    # "center_size", [6144]
+    "center_size", [256, 512, 1024, 2048, 6144]
 )  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
 def test_Fourier3D_inv_prune_full(
     projection_count,
@@ -106,7 +99,6 @@ def __test_Fourier3D_inv_prune_common(
     ensure_clean_memory,
 ):
     module = load_cuda_module("fft_us_kernels")
-    render_projections = module.get_function("render_projections")
     gather_kernel_center_prune = module.get_function("gather_kernel_center_prune_naive")
     gather_kernel_center_angle_based_prune = module.get_function(
         "gather_kernel_center_angle_based_prune"
@@ -157,24 +149,6 @@ def __test_Fourier3D_inv_prune_common(
     theta_full_range = abs(sorted_theta_cpu[projection_count - 1] - sorted_theta_cpu[0])
     angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
 
-    projections = cp.zeros(
-        [center_size, center_size], dtype=cp.uint16
-    )
-    with time_range("render_projections", color_id=0, sync=True):
-        render_projections(
-            grid=(int(cp.ceil(center_size / 32)), int(cp.ceil(center_size / 8)), 1),
-            block=(32, 8, 1),
-            args=(
-                projections,
-                angle_range_pi_count * 2 + 1,
-                sorted_theta,
-                np.int32(interpolation_filter_half_size),
-                np.int32(center_size),
-                np.int32(detector_width),
-                np.int32(projection_count),
-            ),
-        )
-
     angle_range_expected = cp.zeros(
         [center_size, center_size, 1 + angle_range_pi_count * 2], dtype=cp.uint16
     )
@@ -216,65 +190,6 @@ def __test_Fourier3D_inv_prune_common(
     host_angle_range_expected = cp.asnumpy(angle_range_expected)
     host_angle_range_actual = cp.asnumpy(angle_range_actual)
 
-    diff = host_angle_range_actual[:, :, 0] - host_angle_range_expected[:, :, 0]
-    diff_min = host_angle_range_actual[:, :, 1] - host_angle_range_expected[:, :, 1]
-    diff_max = host_angle_range_actual[:, :, 2] - host_angle_range_expected[:, :, 2]
-
-    # diff = diff != 0
-    # diff_min  = diff_min  != 0
-    # diff_max  = diff_max  != 0
-
-    if True:
-    # if False:
-        import matplotlib.pyplot as plt
-        vmax = None
-
-        plt.figure()
-        plt.get_current_fig_manager().full_screen_toggle()
-        plt.subplot(431)
-        plt.imshow(host_angle_range_expected[:, :, 0], vmax=vmax)
-        plt.colorbar()
-        plt.title("expected")
-        plt.subplot(432)
-        plt.imshow(host_angle_range_expected[:, :, 1], vmax=vmax)
-        plt.colorbar()
-        plt.title("expected min")
-        plt.subplot(433)
-        plt.imshow(host_angle_range_expected[:, :, 2], vmax=vmax)
-        plt.colorbar()
-        plt.title("expected max")
-
-        plt.subplot(434)
-        plt.imshow(host_angle_range_actual[:, :, 0], vmax=vmax)
-        plt.colorbar()
-        plt.title("actual")
-        plt.subplot(435)
-        plt.imshow(host_angle_range_actual[:, :, 1], vmax=vmax)
-        plt.colorbar()
-        plt.title("actual min")
-        plt.subplot(436)
-        plt.imshow(host_angle_range_actual[:, :, 2], vmax=vmax)
-        plt.colorbar()
-        plt.title("actual max")
-
-        plt.subplot(437)
-        plt.imshow(diff, vmax=vmax)
-        plt.colorbar()
-        plt.title("diff")
-        plt.subplot(438)
-        plt.imshow(diff_min, vmax=vmax)
-        plt.colorbar()
-        plt.title("diff min")
-        plt.subplot(439)
-        plt.imshow(diff_max, vmax=vmax)
-        plt.colorbar()
-        plt.title("diff max")
-
-        plt.subplot(4, 3, 11)
-        plt.imshow(projections.get())
-        plt.colorbar()
-        plt.title("projections")
-        plt.show()
 
     diff = host_angle_range_actual[:, :, 0] - host_angle_range_expected[:, :, 0]
     assert np.all(diff == 0), "Angle range indices differ"
