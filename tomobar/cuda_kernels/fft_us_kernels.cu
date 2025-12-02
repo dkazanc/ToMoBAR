@@ -116,7 +116,6 @@ template<>
 bool __device__ eq_in_between<true>(float *theta, int nproj, int index, float value)
 {
   if(index < 1)
-    // return value <= theta[index];
     return false;
   else
     return theta[index - 1] <= value && value <= theta[index];
@@ -126,7 +125,6 @@ template<>
 bool __device__ eq_in_between<false>(float *theta, int nproj, int index, float value)
 {
   if(index >= (nproj - 1))
-    // return theta[index] < value;
     return false;
   else
     return theta[index] <= value && value <= theta[index + 1];
@@ -248,22 +246,15 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
     float angle_start = angle_end - 2 * angle_delta;
 
     int theta_pi_index = 0;
+    bool in_angle_range = false;
+    int last_range_end = 0;
+
     while (angle_start < theta_max)
     {
       int index_angle_start = binary_search_with_guess<false>(theta, nproj, angle_start, theta_step);
       int index_angle_end = binary_search_with_guess<true>(theta, nproj, angle_end, theta_step);
+      index_angle_start = max(last_range_end, index_angle_start);
 
-      for (int proj_index = index_angle_end; proj_index <= theta_max_index; proj_index++)
-      {
-        float distance_2 = distance_2_between_point_and_angle(point, theta[proj_index]);
-        index_angle_end = proj_index;
-        if (radius_2 < distance_2)
-        {
-          break;
-        }
-      }
-
-      bool in_angle_range = false;
       for (int proj_index = index_angle_start; proj_index <= index_angle_end; proj_index++)
       {
         float distance_2 = distance_2_between_point_and_angle(point, theta[proj_index]);
@@ -281,6 +272,7 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
           {
             in_angle_range = false;
             angle_range[theta_pi_index * 2 + 2] = proj_index;
+            last_range_end = min(theta_max_index, proj_index + 1);
             theta_pi_index++;
           }
         }
@@ -288,13 +280,35 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
 
       if (in_angle_range)
       {
-        in_angle_range = false;
-        angle_range[theta_pi_index * 2 + 2] = theta_max_index;
-        theta_pi_index++;
+        for (int proj_index = index_angle_end; proj_index <= theta_max_index; proj_index++)
+        {
+          float distance_2 = distance_2_between_point_and_angle(point, theta[proj_index]);
+          index_angle_end = proj_index;
+          if (radius_2 < distance_2)
+          {
+            in_angle_range = false;
+            angle_range[theta_pi_index * 2 + 2] = index_angle_end;
+            last_range_end = index_angle_end;
+            theta_pi_index++;
+            break;
+          }
+        }
+      }
+
+      if (in_angle_range)
+      {
+        break;
       }
 
       angle_start += M_PI;
       angle_end += M_PI;
+    }
+
+    if (in_angle_range)
+    {
+      in_angle_range = false;
+      angle_range[theta_pi_index * 2 + 2] = theta_max_index;
+      theta_pi_index++;
     }
 
     // Number of ranges

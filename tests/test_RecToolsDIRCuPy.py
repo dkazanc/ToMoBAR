@@ -1,7 +1,7 @@
 import math
 import cupy as cp
 import numpy as np
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose
 from cupy import float32
 
 # from cupy.cuda.nvtx import RangePush, RangePop
@@ -55,7 +55,6 @@ def test_Fourier3D_inv_prune(
 @pytest.mark.parametrize(
     "theta_range",
     [
-        # (0, 0.25 * np.pi),
         (0, -np.pi),
         (0, np.pi),
         (np.pi / 2, -np.pi / 2),
@@ -64,6 +63,8 @@ def test_Fourier3D_inv_prune(
         (0, -2 * np.pi),
         (0, 2 * np.pi),
         (0, 3 * np.pi),
+        (0, 4 * np.pi),
+        (-4 * np.pi, np.pi),
         (100 * np.pi, 101 * np.pi),
     ],
 )
@@ -189,7 +190,6 @@ def __test_Fourier3D_inv_prune_common(
 
     host_angle_range_expected = cp.asnumpy(angle_range_expected)
     host_angle_range_actual = cp.asnumpy(angle_range_actual)
-
 
     diff = host_angle_range_actual[:, :, 0] - host_angle_range_expected[:, :, 0]
     assert np.all(diff == 0), "Angle range indices differ"
