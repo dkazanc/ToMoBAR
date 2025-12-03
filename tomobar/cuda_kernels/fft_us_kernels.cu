@@ -244,16 +244,25 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
     int rotate_count = floorf((angle - theta_min) / M_PI);
     float angle_end = angle - M_PI * rotate_count;
     float angle_start = angle_end - 2 * angle_delta;
+    int rotate_count_until_end = ((theta_max - angle_start) / M_PI);
 
     int theta_pi_index = 0;
     bool in_angle_range = false;
-    int last_range_end = 0;
+    int last_index_angle_end = 0;
 
-    while (angle_start < theta_max)
+    for (int i = 0; i <= rotate_count_until_end; i++)
     {
-      int index_angle_start = binary_search_with_guess<false>(theta, nproj, angle_start, theta_step);
-      int index_angle_end = binary_search_with_guess<true>(theta, nproj, angle_end, theta_step);
-      index_angle_start = max(last_range_end, index_angle_start);
+      float current_angle_start = angle_start + i * M_PI;
+      float current_angle_end = angle_end + i * M_PI;
+      float next_angle_start = angle_start + (i + 1) * M_PI;
+
+      int index_angle_start = binary_search_with_guess<false>(theta, nproj, current_angle_start, theta_step);
+      int index_angle_end = binary_search_with_guess<true>(theta, nproj, current_angle_end, theta_step);
+      int next_index_angle_start = binary_search_with_guess<false>(theta, nproj, next_angle_start, theta_step);
+
+      index_angle_start = max(last_index_angle_end, index_angle_start);
+      index_angle_end = max(index_angle_start, index_angle_end);
+      next_index_angle_start = max(index_angle_end, next_index_angle_start);
 
       for (int proj_index = index_angle_start; proj_index <= index_angle_end; proj_index++)
       {
@@ -272,7 +281,6 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
           {
             in_angle_range = false;
             angle_range[theta_pi_index * 2 + 2] = proj_index;
-            last_range_end = min(theta_max_index, proj_index + 1);
             theta_pi_index++;
           }
         }
@@ -280,28 +288,22 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
 
       if (in_angle_range)
       {
-        for (int proj_index = index_angle_end; proj_index <= theta_max_index; proj_index++)
+        for (int proj_index = index_angle_end; proj_index <= next_index_angle_start; proj_index++)
         {
-          float distance_2 = distance_2_between_point_and_angle(point, theta[proj_index]);
           index_angle_end = proj_index;
+
+          float distance_2 = distance_2_between_point_and_angle(point, theta[index_angle_end]);
           if (radius_2 < distance_2)
           {
             in_angle_range = false;
             angle_range[theta_pi_index * 2 + 2] = index_angle_end;
-            last_range_end = index_angle_end;
             theta_pi_index++;
             break;
           }
         }
       }
 
-      if (in_angle_range)
-      {
-        break;
-      }
-
-      angle_start += M_PI;
-      angle_end += M_PI;
+      last_index_angle_end = index_angle_end;
     }
 
     if (in_angle_range)

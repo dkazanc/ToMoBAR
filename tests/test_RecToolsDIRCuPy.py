@@ -55,6 +55,7 @@ def test_Fourier3D_inv_prune(
 @pytest.mark.parametrize(
     "theta_range",
     [
+        (0, 0.25 * np.pi),
         (0, -np.pi),
         (0, np.pi),
         (np.pi / 2, -np.pi / 2),
@@ -64,7 +65,9 @@ def test_Fourier3D_inv_prune(
         (0, 2 * np.pi),
         (0, 3 * np.pi),
         (0, 4 * np.pi),
+        (0, 10 * np.pi),
         (-4 * np.pi, np.pi),
+        (-5 * np.pi, 5 * np.pi),
         (100 * np.pi, 101 * np.pi),
     ],
 )
