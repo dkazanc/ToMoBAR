@@ -115,38 +115,22 @@ bool __device__ eq_in_between(float *theta, int nproj, int index, float value)
 template<>
 bool __device__ eq_in_between<true>(float *theta, int nproj, int index, float value)
 {
-  if(index - 1 < 0)
-    return value <= theta[index];
+  if(index < 1)
+    return false;
   else
-    return theta[index - 1] < value && value <= theta[index];
+    return theta[index - 1] <= value && value <= theta[index];
 }
 
 template<>
 bool __device__ eq_in_between<false>(float *theta, int nproj, int index, float value)
 {
-  if( (nproj - 2) < index)
-    return theta[index] < value;
+  if(index >= (nproj - 1))
+    return false;
   else
-    return theta[index] < value && value <= theta[index + 1];
+    return theta[index] <= value && value <= theta[index + 1];
 }
 
-template<bool previous>
 bool __device__ out_of_range(float *theta, int nproj, int index, float value)
-{}
-
-template<>
-bool __device__ out_of_range<true>(float *theta, int nproj, int index, float value)
-{
-  if (index <= 0 && value < theta[0])
-    return true;
-  if (index >= (nproj - 1) && value > theta[nproj - 1])
-    return true;
-
-  return false;
-}
-
-template<>
-bool __device__ out_of_range<false>(float *theta, int nproj, int index, float value)
 {
   if (index <= 0 && value < theta[0])
     return true;
@@ -178,9 +162,8 @@ int __device__ binary_search_with_guess(float *theta, int nproj, float value, fl
   while (low <= high) {
     int middle = low + (high - low) / 2;
 
-    if (out_of_range<previous>(theta, nproj, middle, value) ||
-        eq_in_between<previous>(theta, nproj, middle, value))
-          return middle;
+    if (out_of_range(theta, nproj, middle, value) || eq_in_between<previous>(theta, nproj, middle, value))
+      return middle;
 
     if (theta[middle] > value)
       high = middle - 1;
@@ -191,14 +174,29 @@ int __device__ binary_search_with_guess(float *theta, int nproj, float value, fl
   return low;
 }
 
-extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short* angle_range,
+__device__ float distance_2_between_point_and_angle(float2 point, float angle)
+{
+  const float polar_radius   = 0.5;
+  const float polar_radius_2 = polar_radius * polar_radius;
+
+  float sintheta, costheta;
+  __sincosf(angle, &sintheta, &costheta);
+
+  float2 vector_polar = make_float2(polar_radius * costheta, polar_radius * sintheta);
+
+  float dot = vector_polar.x * point.x + vector_polar.y * point.y;
+  float2 mid_point = make_float2(dot * vector_polar.x / polar_radius_2, dot * vector_polar.y / polar_radius_2);
+
+  return (mid_point.x - point.x) * (mid_point.x - point.x) + (mid_point.y - point.y) * (mid_point.y - point.y);
+}
+
+extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short *angle_range,
                                                                   int angle_range_dim_x,
                                                                   float *theta,
                                                                   int m, int center_size,
                                                                   int n, int nproj)
 {
-
-  const int center_half_size = center_size/2;
+  const int center_half_size = center_size / 2;
 
   int thread_x = blockDim.x * blockIdx.x + threadIdx.x;
   int thread_y = blockDim.y * blockIdx.y + threadIdx.y;
@@ -209,54 +207,112 @@ extern "C" __global__ void gather_kernel_center_angle_based_prune(unsigned short
   if (thread_x >= center_size || thread_y >= center_size)
     return;
 
-  int f_stride = 2*n;
+  int f_stride = 2 * n;
   int f_stride_2 = f_stride * f_stride;
 
-  const float radius_2 =  2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
+  const float radius_2 = 2.f * (float(m) + 0.5f) * (float(m) + 0.5f) / f_stride_2;
 
   // offset angle_index_out by thread_x and thread_y
   angle_range += (unsigned long long)angle_range_dim_x * (thread_x + thread_y * center_size);
 
   // Point coordinates
-  float2 point   = make_float2(float(tx - n) / float(2 * n), float(n - ty) / float(2 * n));
+  float2 point = make_float2(float(tx - n) / float(2 * n), float(n - ty) / float(2 * n));
   float length_2 = point.x * point.x + point.y * point.y;
 
   // Theta parameters
   int theta_min_index = 0;
-  int theta_max_index = nproj-1;
+  int theta_max_index = nproj - 1;
   float theta_min = theta[theta_min_index];
   float theta_max = theta[theta_max_index];
   float theta_range = theta_max - theta_min;
-  float theta_step  = theta_range/nproj;
+  float theta_step = theta_range / nproj;
 
-  if( radius_2 >= length_2 ) {
+  if (radius_2 >= length_2)
+  {
     angle_range[0] = 1;
     angle_range[1] = theta_min_index;
     angle_range[2] = theta_max_index;
-  } else {
-    float radius      = __fsqrt_rn(radius_2);
-    float length      = __fsqrt_rn(length_2);
-    float angle_delta = asinf(radius/length);
-    float acosangle   = acosf(point.x/length);
+  }
+  else
+  {
+    float radius = __fsqrt_rn(radius_2);
+    float length = __fsqrt_rn(length_2);
+    float angle_delta = asinf(radius / length);
+    float acosangle = acosf(point.x / length);
     float angle = (point.y < 0.f ? (M_PI - acosangle) : acosangle) + angle_delta;
 
-    float rotate_count = (angle - theta_min) < 0.f ?
-      ceilf((angle - theta_min) / M_PI) : floorf((angle - theta_min) / M_PI);
-    float angle_end    = angle - M_PI * rotate_count;
-    float angle_start  = angle_end - 2 * angle_delta;
+    int rotate_count = floorf((angle - theta_min) / M_PI);
+    float angle_end = angle - M_PI * rotate_count;
+    float angle_start = angle_end - 2 * angle_delta;
+    int rotate_count_until_end = ((theta_max - angle_start) / M_PI);
 
     int theta_pi_index = 0;
-    while( angle_start < theta_max ) {
-      int index_angle_start = binary_search_with_guess<false>(theta, nproj, angle_start, theta_step);
-      int index_angle_end   = binary_search_with_guess<true> (theta, nproj, angle_end  , theta_step);
+    bool in_angle_range = false;
+    int last_index_angle_end = 0;
 
-      angle_range[theta_pi_index * 2 + 1] = max(theta_min_index, index_angle_start - 1);
-      angle_range[theta_pi_index * 2 + 2] = min(theta_max_index, index_angle_end + 1);
+    for (int i = 0; i <= rotate_count_until_end; i++)
+    {
+      float current_angle_start = angle_start + i * M_PI;
+      float current_angle_end = angle_end + i * M_PI;
+      float next_angle_start = angle_start + (i + 1) * M_PI;
 
-      angle_start += M_PI;
-      angle_end += M_PI;
+      int index_angle_start = binary_search_with_guess<false>(theta, nproj, current_angle_start, theta_step);
+      int index_angle_end = binary_search_with_guess<true>(theta, nproj, current_angle_end, theta_step);
+      int next_index_angle_start = binary_search_with_guess<false>(theta, nproj, next_angle_start, theta_step);
+
+      index_angle_start = max(last_index_angle_end, index_angle_start);
+      index_angle_end = max(index_angle_start, index_angle_end);
+      next_index_angle_start = max(index_angle_end, next_index_angle_start);
+
+      for (int proj_index = index_angle_start; proj_index <= index_angle_end; proj_index++)
+      {
+        float distance_2 = distance_2_between_point_and_angle(point, theta[proj_index]);
+        if (radius_2 >= distance_2)
+        {
+          if (!in_angle_range)
+          {
+            in_angle_range = true;
+            angle_range[theta_pi_index * 2 + 1] = proj_index;
+          }
+        }
+        else
+        {
+          if (in_angle_range)
+          {
+            in_angle_range = false;
+            angle_range[theta_pi_index * 2 + 2] = proj_index;
+            theta_pi_index++;
+          }
+        }
+      }
+
+      if (in_angle_range)
+      {
+        for (int proj_index = index_angle_end; proj_index <= next_index_angle_start; proj_index++)
+        {
+          index_angle_end = proj_index;
+
+          float distance_2 = distance_2_between_point_and_angle(point, theta[index_angle_end]);
+          if (radius_2 < distance_2)
+          {
+            in_angle_range = false;
+            angle_range[theta_pi_index * 2 + 2] = index_angle_end;
+            theta_pi_index++;
+            break;
+          }
+        }
+      }
+
+      last_index_angle_end = index_angle_end;
+    }
+
+    if (in_angle_range)
+    {
+      in_angle_range = false;
+      angle_range[theta_pi_index * 2 + 2] = theta_max_index;
       theta_pi_index++;
     }
+
     // Number of ranges
     angle_range[0] = theta_pi_index;
   }
@@ -295,21 +351,7 @@ extern "C" __global__ void gather_kernel_center_prune_naive(unsigned short* angl
   bool in_angle_range = false;
   int angle_range_index = 0;
   for (int proj_index = 0; proj_index < nproj; proj_index++) {
-    float sintheta, costheta;
-    __sincosf(theta[proj_index], &sintheta, &costheta);
-
-    float polar_radius   = 0.5;
-    float polar_radius_2 = polar_radius * polar_radius;
-
-    float2 vector_polar = make_float2(polar_radius * costheta, polar_radius * sintheta);
-    float2 vector_point = make_float2(point.x,  point.y);
-
-    float dot = vector_polar.x * vector_point.x + vector_polar.y * vector_point.y;
-    float2 mid_point = make_float2(dot * vector_polar.x / polar_radius_2,
-                                   dot * vector_polar.y / polar_radius_2);
-
-    float distance_2 = (mid_point.x - vector_point.x) * (mid_point.x - vector_point.x) +
-                       (mid_point.y - vector_point.y) * (mid_point.y - vector_point.y);
+    float distance_2 = distance_2_between_point_and_angle(point, theta[proj_index]);
 
     if(radius_2 >= distance_2) {
       if(!in_angle_range) {
