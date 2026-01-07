@@ -17,7 +17,7 @@
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
 ### Updates:
-* $\sf\color{red}!$ To better communicate breaking changes, ToMoBAR is moving from calendar versioning to semantic versioning. The initial 1.0 release (for conda versioning 2026.1.0.0) is based on the 2025.12 version.
+* $\sf\color{red}!$ To better communicate breaking changes, ToMoBAR is moving from calendar versioning to semantic versioning. The 2026.1.0.0 release is based on the 2025.12 version. We keep the year in order to make the sorting work, so we'd have the following structure: year.major.minor.patch.
 * There are $\sf\color{red}BREAKING$ $\sf\color{red}CHANGES$ from ToMoBAR $\sf\color{red}v.2025.08$, see [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.
 
 ## ToMoBAR highlights:
