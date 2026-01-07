@@ -1,13 +1,13 @@
 package:
   name: tomobar
-  version: "1.0.2"
+  version: "2026.1.0.1"
 
 source:
   path: ../
 
 build:
   noarch: python
-  number: 2000
+  number: 0
   script: python -m pip install --no-deps --ignore-installed .
 
 requirements:
