@@ -1,15 +1,13 @@
-{% set name = "tomobar" %}
-
 package:
-  name: {{ name|lower }}
-  version: {{ environ['VERSION'] }}
+  name: tomobar
+  version: "1.0.1"
 
 source:
   path: ../
 
 build:
   noarch: python
-  number: 0
+  number: 1
   script: python -m pip install --no-deps --ignore-installed .
 
 requirements:
@@ -23,7 +21,7 @@ requirements:
     - setuptools
     - pillow
     - pytest
-    
+
 about:
   home: https://github.com/dkazanc/ToMoBAR
   summary: 'TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software'
