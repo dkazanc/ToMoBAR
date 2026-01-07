@@ -2,8 +2,9 @@
 
 Installation Guide
 ------------------
-ToMoBAR is a Python package with several :ref:`ref_dependencies`. To ensure its full functionality it is recommended to install them.
-It mostly relies on the GPU-enabled computations and therefore we suggest using a decent NVIDIA graphics card to support it.
+ToMoBAR is a Python package with several :ref:`ref_dependencies`. To enable full functionality, it is recommended to install a subset of these dependencies.
+
+.. note:: ToMoBAR relies on GPU-accelerated computations; therefore, we also recommend using a capable NVIDIA graphics card to take full advantage of its features.
 
 .. _ref_python:
 

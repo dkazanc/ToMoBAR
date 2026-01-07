@@ -2,6 +2,9 @@
 
 Synthethic data reconstruction
 ******************************
+
+.. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
+
 This tutorial covers a concrete example when the data is synthetically generated using
 `Tomophantom <https://github.com/dkazanc/TomoPhantom>`_ software and reconstructed using ToMoBAR.
 We recommend installing TomoPhantom (see :ref:`ref_dependencies`) as most of **Demos** use it.

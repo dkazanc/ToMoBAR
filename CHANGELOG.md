@@ -1,6 +1,10 @@
 # Change Log
 All notable changes in ToMoBAR project will be documented in this file.
 
+## v.1.0
+
+To better communicate breaking changes, ToMoBAR is moving from calendar versioning to semantic versioning. The initial `1.0` release is based on the `2025.12` version.
+
 ## v.2025.10
 
 ### Changed
