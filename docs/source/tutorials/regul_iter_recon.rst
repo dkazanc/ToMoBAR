@@ -2,6 +2,10 @@
 
 Regularised iterative reconstruction
 ************************************
+
+.. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
+
+
 This tutorial covers the main contribution of ToMoBAR - the advanced model-based
 iterative reconstruction with regularisation. It is the `plug-and-play` functionality
 of model-based methods makes them versatile for different types of data with

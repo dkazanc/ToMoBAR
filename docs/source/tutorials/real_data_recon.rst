@@ -2,10 +2,11 @@
 
 Real data reconstruction
 ************************
-This tutorial covers real data reconstruction using ToMoBAR software. The data is obtained at
-Diamond Light Source facility (UK synchrotron), i12 beamline. The sample is a magnesium allow
-which undergoes some thermal changes in which the dendritic growth occurs. See more details about the
-experiment in [GUO2018]_ and more on reconstruction using ToMoBAR in [KAZ2017]_.
+
+.. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
+
+This tutorial demonstrates real data reconstruction using the ToMoBAR software. The dataset was acquired at the Diamond Light Source synchrotron facility (UK), on the i12 beamline. The sample is a magnesium alloy undergoing thermal cycling, during which dendritic growth occurs.
+See more details about the experiment in [GUO2018]_ and more on reconstruction using ToMoBAR in [KAZ2017]_.
 
 This tutorial loosely follows `Demo_RealData.py <https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/Demo_RealData.py>`_
 demo.

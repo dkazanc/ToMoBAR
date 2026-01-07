@@ -10,7 +10,7 @@ export CONDA_BLD_PATH=~/conda-bld
 $CONDA/bin/conda install conda-build
 $CONDA/bin/conda install -c anaconda anaconda-client
 
-export VERSION=$(date +%Y.%m)
+export VERSION=1.0.0
 $CONDA/bin/conda build .
 
 # upload packages to conda

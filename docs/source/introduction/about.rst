@@ -16,22 +16,22 @@ a common geometry for X-ray synchrotron imaging [SX2022]_.
 Where it is used:
 =================
 
-ToMoBAR is currently used in production at `Diamond Light Source <https://www.diamond.ac.uk/Home.html>`_, which is 
-the United Kingdom's national synchrotron science facility. ToMoBAR is exposed through the 
+ToMoBAR is currently used in production at `Diamond Light Source <https://www.diamond.ac.uk/Home.html>`_, which is
+the United Kingdom's national synchrotron science facility. ToMoBAR is exposed through the
 `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ library which is the backend for the
-`HTTomo <https://diamondlightsource.github.io/httomo/>`_ framework for big-data processing and 
+`HTTomo <https://diamondlightsource.github.io/httomo/>`_'s framework for big-data processing and
 reconstruction.
 
 
 What can ToMoBAR do:
 ====================
 
-ToMoBAR can operate in GPU device-to-device fashion on CuPy arrays therefore ensuring a better computational 
+ToMoBAR can operate in GPU device-to-device fashion on CuPy arrays therefore ensuring a better computational
 efficiency. With the GPU device controlling :ref:`ref_api` exposed it can also support multi-GPU parallel computing [CT2020]_ .
 
 * Reconstruct parallel-beam projection data in 2D and 3D using GPU-accelerated routines from ASTRA-toolbox [VanAarle2015]_.
 * Employ fast GPU-accelerated direct methods, such as FBP method in :mod:`tomobar.methodsDIR` and CuPy accelerated Fourier
-  reconstruction :func:`FOURIER_INV` in :mod:`tomobar.methodsDIR_CuPy`.
+  reconstruction :func:`FOURIER_INV` [NIKITIN2017]_ in :mod:`tomobar.methodsDIR_CuPy`.
 * Use advanced model-based regularised iterative schemes such as FISTA and ADMM proximal splitting algorithms in :mod:`tomobar.methodsIR` or
   even faster implementations with CuPy in :mod:`tomobar.methodsIR_CuPy`.
 * The FISTA algorithm [BT2009]_, [Xu2016]_ offers various modifications: convergence acceleration with ordered-subsets,

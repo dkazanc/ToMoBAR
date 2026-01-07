@@ -3,6 +3,8 @@
 Basic iterative reconstruction
 *******************************
 
+.. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
+
 We start by defining a 3D projection data Numpy array of unsigned integer 16-bit data type (optional)
 and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide the corresponding flats and darks fields
 (also 3D arrays of the same axes order).
