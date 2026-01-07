@@ -260,9 +260,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
             del data_p
 
         n = data_n + self.Atools.detectors_x_pad * 2 + padding * 2
-        if(power_of_2_cropping):
+        if power_of_2_cropping:
             n_pow2 = 2 ** math.ceil(math.log2(n))
-            if( 0.9 < n / n_pow2 ):
+            if 0.9 < n / n_pow2:
                 n = n_pow2
 
         # Limit the center size parameter
