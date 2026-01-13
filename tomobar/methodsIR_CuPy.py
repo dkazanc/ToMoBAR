@@ -541,6 +541,11 @@ class RecToolsIRCuPy:
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
+        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_norm_data"],
+            self.Atools.detectors_x_pad,
+            cupyrun=True,
+        )
         ######################################################################
 
         def ADMM_Ax(x: cp.ndarray):
