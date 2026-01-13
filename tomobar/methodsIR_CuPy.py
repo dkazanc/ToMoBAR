@@ -11,6 +11,7 @@ from typing import Union
 
 try:
     import cupy as cp
+    import cupyx.scipy.sparse.linalg as linalg
 except ImportError:
     print(
         "Cupy library is a required dependency for this part of the code, please install"
@@ -517,3 +518,117 @@ class RecToolsIRCuPy:
             return perform_recon_crop(X, self.objsize_user_given)
 
         return check_kwargs(X, **additional_args)
+
+    def ADMM(
+        self,
+        _data_: dict,
+        _algorithm_: Union[dict, None] = None,
+        _regularisation_: Union[dict, None] = None,
+    ) -> cp.ndarray:
+        """Alternating Directions Method of Multipliers with various types of regularisation and
+        data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
+
+        Args:
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
+            _regularisation_ (dict, optional): Regularisation dictionary.
+
+        Returns:
+            cp.ndarray: ADMM-reconstructed CuPy array
+        """
+        ######################################################################
+        # parameters check and initialisation
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+            self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
+        )
+        ######################################################################
+
+        def ADMM_Ax(x: cp.ndarray):
+            geom_size = astra.geom_size(self.Atools.vol_geom)
+            data_upd = self.Atools._forwprojCuPy(cp.reshape(x, geom_size))
+            x_temp = self.Atools._backprojCuPy(data_upd).ravel()
+            x_upd = x_temp + _algorithm_upd_["ADMM_rho_const"] * x
+            return x_upd
+
+        def ADMM_Atb(b):
+            geom_size = astra.geom_size(self.Atools.proj_geom)
+            b = self.Atools._backprojCuPy(cp.reshape(b, geom_size))
+            return b
+
+        rec_dim = np.prod(astra.geom_size(self.Atools.vol_geom))
+
+        # initialise the solution and other ADMM variables
+        if cp.size(_algorithm_upd_["initialise"]) == rec_dim:
+            # the object has been initialised with an array
+            X = _algorithm_upd_["initialise"].ravel()
+        else:
+            X = cp.zeros(rec_dim, "float32")
+
+        denomN = 1.0 / cp.size(X)
+        z = cp.zeros(rec_dim, "float32")
+        u = cp.zeros(rec_dim, "float32")
+        b_to_solver_const = self.Atools._backprojCuPy(
+            _data_upd_["projection_norm_data"]
+        ).ravel()
+
+        # Outer ADMM iterations
+        for iter_no in range(_algorithm_upd_["iterations"]):
+            X_old = X
+            # solving quadratic problem using linalg solver
+            A_to_solver = linalg.LinearOperator(
+                (rec_dim, rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb, dtype="float32"
+            )
+            b_to_solver = b_to_solver_const + _algorithm_upd_["ADMM_rho_const"] * (
+                z - u
+            )
+            outputSolver = linalg.gmres(
+                A_to_solver, b_to_solver, atol=1e-05, maxiter=15
+            )
+            X = outputSolver[0]  # get gmres solution
+            if _algorithm_upd_["nonnegativity"] == "ENABLE":
+                X[X < 0.0] = 0.0
+            # z-update with relaxation
+            zold = z.copy()
+            x_hat = (
+                _algorithm_upd_["ADMM_relax_par"] * X
+                + (1.0 - _algorithm_upd_["ADMM_relax_par"]) * zold
+            )
+            x_prox_reg = (x_hat + u).reshape(
+                [
+                    self.Atools.detectors_y,
+                    self.Atools.recon_size,
+                    self.Atools.recon_size,
+                ]
+            )
+            # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
+            if _regularisation_upd_["method"] is not None:
+                # The proximal operator of the chosen regulariser
+                z = prox_regul(self, x_prox_reg, _regularisation_upd_)
+            z = z.ravel()
+            # update u variable
+            u = u + (x_hat - z)
+            if _algorithm_upd_["verbose"]:
+                if cp.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
+                    print(
+                        "ADMM iteration (",
+                        iter_no + 1,
+                        ") using",
+                        _regularisation_upd_["method"],
+                        "regularisation",
+                    )
+            if iter_no == _algorithm_upd_["iterations"] - 1:
+                print("ADMM stopped at iteration (", iter_no + 1, ")")
+
+            # stopping criteria (checked after reasonable number of iterations)
+            if iter_no > 5:
+                nrm = cp.linalg.norm(X - X_old) * denomN
+                if nrm < _algorithm_upd_["tolerance"]:
+                    print("ADMM stopped at iteration (", iter_no, ")")
+                    break
+        return X.reshape(
+            [
+                self.Atools.detectors_y,
+                self.Atools.recon_size,
+                self.Atools.recon_size,
+            ]
+        )
