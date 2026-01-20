@@ -590,6 +590,8 @@ class RecToolsIRCuPy:
                 )
                 for sub_ind in range(_data_upd_["OS_number"]):
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
+                    if indVec[self.Atools.NumbProjBins - 1] == 0:
+                        indVec = indVec[:-1]  # shrink vector size
                     proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
                     backprojected = self.Atools._backprojOSCuPy(
                         proj_data,
