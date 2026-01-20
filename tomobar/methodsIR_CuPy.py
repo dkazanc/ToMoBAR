@@ -559,6 +559,11 @@ class RecToolsIRCuPy:
             cupyrun=True,
             mem_stack=mem_stack,
         )
+
+        additional_args = {
+            "cupyrun": True,
+            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
+        }
         ######################################################################
 
         rec_dim = np.prod(astra.geom_size(self.Atools.vol_geom))
@@ -719,13 +724,16 @@ class RecToolsIRCuPy:
                     print("ADMM stopped at iteration (", iter_no, ")")
                     break
         if mem_stack is None:
-            return X.reshape(
+            X = X.reshape(
                 [
                     self.Atools.detectors_y,
                     self.Atools.recon_size,
                     self.Atools.recon_size,
                 ]
             )
+            if self.objsize_user_given is not None:
+                return perform_recon_crop(X, self.objsize_user_given)
+            return check_kwargs(X, **additional_args)
         else:
             return mem_stack.highwater
 
