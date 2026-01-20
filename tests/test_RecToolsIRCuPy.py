@@ -746,3 +746,70 @@ def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
     assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
+
+
+class MaxMemoryHook(cp.cuda.MemoryHook):
+    def __init__(self, initial=0):
+        self.max_mem = initial
+        self.current = initial
+
+    def malloc_postprocess(
+        self, device_id: int, size: int, mem_size: int, mem_ptr: int, pmem_id: int
+    ):
+        self.current += mem_size
+        self.max_mem = max(self.max_mem, self.current)
+
+    def free_postprocess(
+        self, device_id: int, mem_size: int, mem_ptr: int, pmem_id: int
+    ):
+        self.current -= mem_size
+
+
+@pytest.mark.parametrize("os_number", [1, 5])
+def test_ADMM_cp_3D_calc_mem(data_cupy, angles, os_number):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=10,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+    _data_ = {
+        "projection_norm_data": data_cupy.shape,
+        "OS_number": os_number,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    _algorithm_ = {
+        "iterations": 6,
+        "ADMM_rho_const": 4000.0,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    regularization = {
+        "method": "ROF_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "time_marching_step": 0.001,
+        "device_regulariser": 0,
+    }
+    peak_gpu = RecTools.ADMM(
+        _data_, _algorithm_, regularization, calc_peak_gpu_mem=True
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "OS_number": os_number,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+
+    hook = MaxMemoryHook()
+    with hook:
+        RecTools.ADMM(_data_, _algorithm_, regularization)
+
+    assert hook.max_mem * 1.03 > peak_gpu
+    assert hook.max_mem * 0.99 < peak_gpu

@@ -30,6 +30,7 @@ from tomobar.supp.suppTools import (
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+from tomobar.supp.memory_estimator_helpers import _DeviceMemStack
 
 
 class RecToolsIRCuPy:
@@ -524,6 +525,7 @@ class RecToolsIRCuPy:
         _data_: dict,
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
+        calc_peak_gpu_mem: bool = False,
     ) -> cp.ndarray:
         """Alternating Directions Method of Multipliers with various types of regularisation and
         data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
@@ -536,7 +538,11 @@ class RecToolsIRCuPy:
         Returns:
             cp.ndarray: ADMM-reconstructed CuPy array
         """
-        cp._default_memory_pool.free_all_blocks()
+        mem_stack = None
+        if calc_peak_gpu_mem:
+            mem_stack = _DeviceMemStack()
+        else:
+            cp._default_memory_pool.free_all_blocks()
 
         if self.geom == "2D":
             # 2D reconstruction
@@ -551,6 +557,7 @@ class RecToolsIRCuPy:
             _data_upd_["projection_norm_data"],
             self.Atools.detectors_x_pad,
             cupyrun=True,
+            mem_stack=mem_stack,
         )
         ######################################################################
 
@@ -561,30 +568,74 @@ class RecToolsIRCuPy:
             # the object has been initialised with an array
             X = _algorithm_upd_["initialise"].ravel()
         else:
-            X = cp.zeros(rec_dim, "float32")
-
-        denomN = 1.0 / cp.size(X)
-        z = cp.zeros(rec_dim, "float32")
-        u = cp.zeros(rec_dim, "float32")
+            if mem_stack is None:
+                X = cp.zeros(rec_dim, "float32")
+                denomN = 1.0 / cp.size(X)
+                z = cp.zeros(rec_dim, "float32")
+                u = cp.zeros(rec_dim, "float32")
+            else:
+                mem_stack.malloc(rec_dim * np.float32().itemsize)  # X
+                mem_stack.malloc(rec_dim * np.float32().itemsize)  # z
+                mem_stack.malloc(rec_dim * np.float32().itemsize)  # u
+                X = rec_dim
+                z = rec_dim
+                u = rec_dim
 
         use_os = _data_upd_["OS_number"] > 1
         if use_os:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
-            b_to_solver_const = cp.empty(
-                [_data_upd_["OS_number"], rec_dim], dtype="float32"
-            )
-            for sub_ind in range(_data_upd_["OS_number"]):
-                indVec = self.Atools.newInd_Vec[sub_ind, :]
-                b_to_solver_const[sub_ind, :] = self.Atools._backprojOSCuPy(
-                    _data_upd_["projection_norm_data"][:, indVec, :],
-                    os_index=sub_ind,
-                ).ravel()
+            if mem_stack is None:
+                b_to_solver_const = cp.empty(
+                    [_data_upd_["OS_number"], rec_dim], dtype="float32"
+                )
+                for sub_ind in range(_data_upd_["OS_number"]):
+                    indVec = self.Atools.newInd_Vec[sub_ind, :]
+                    proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
+                    backprojected = self.Atools._backprojOSCuPy(
+                        proj_data,
+                        os_index=sub_ind,
+                    )
+                    del proj_data
+                    b_to_solver_const[sub_ind, :] = backprojected.ravel()
+                    del backprojected
+            else:
+                backproj_dims = astra.geom_size(self.Atools.vol_geom)
+                mem_stack.malloc(
+                    _data_upd_["OS_number"]
+                    * np.prod(backproj_dims)
+                    * np.float32().itemsize
+                )  # b_to_solver_const
+                b_to_solver_const = (_data_upd_["OS_number"], np.prod(backproj_dims))
+
+                for sub_ind in range(_data_upd_["OS_number"]):
+                    indVec = self.Atools.newInd_Vec[sub_ind, :]
+                    tmp_size = list(_data_upd_["projection_norm_data"])
+                    tmp_size[1] = np.size(indVec)
+                    mem_stack.malloc(
+                        np.prod(tmp_size) * np.float32().itemsize
+                    )  # proj_data
+
+                    mem_stack.malloc(
+                        np.prod(backproj_dims) * np.float32().itemsize
+                    )  # backproj
+                    mem_stack.free(
+                        np.prod(backproj_dims) * np.float32().itemsize
+                    )  # backproj
+
+                    mem_stack.free(
+                        np.prod(tmp_size) * np.float32().itemsize
+                    )  # proj_data
         else:
-            b_to_solver_const = (
-                self.Atools._backprojCuPy(_data_upd_["projection_norm_data"])
-                .ravel()
-                .reshape(1, -1)
-            )
+            if mem_stack is None:
+                b_to_solver_const = (
+                    self.Atools._backprojCuPy(_data_upd_["projection_norm_data"])
+                    .ravel()
+                    .reshape(1, -1)
+                )
+            else:
+                backproj_dims = astra.geom_size(self.Atools.vol_geom)
+                mem_stack.malloc(np.prod(backproj_dims) * np.float32().itemsize)
+                b_to_solver_const = (1, np.prod(backproj_dims))
 
         # Outer ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
@@ -611,26 +662,41 @@ class RecToolsIRCuPy:
                         dtype="float32",
                     )
 
-                b_to_solver = b_to_solver_const[sub_ind, :] + _algorithm_upd_[
-                    "ADMM_rho_const"
-                ] * (z - u)
-                X, _ = linalg.gmres(A_to_solver, b_to_solver, atol=1e-05, maxiter=15)
-                if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                    X[X < 0.0] = 0.0
-                # z-update with relaxation
-                x_prox_reg = (X + u).reshape(
-                    [
-                        self.Atools.detectors_y,
-                        self.Atools.recon_size,
-                        self.Atools.recon_size,
-                    ]
-                )
-                # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
-                if _regularisation_upd_["method"] is not None:
-                    # The proximal operator of the chosen regulariser
-                    z = prox_regul(self, x_prox_reg, _regularisation_upd_).ravel()
-                # update u variable
-                u = u + (X - z)
+                if mem_stack is None:
+                    b_to_solver = b_to_solver_const[sub_ind, :] + _algorithm_upd_[
+                        "ADMM_rho_const"
+                    ] * (z - u)
+                    X, _ = linalg.gmres(
+                        A_to_solver, b_to_solver, atol=1e-05, maxiter=15
+                    )
+                    del b_to_solver
+                    if _algorithm_upd_["nonnegativity"] == "ENABLE":
+                        X[X < 0.0] = 0.0
+                        # z-update with relaxation
+                    x_prox_reg = (X + u).reshape(
+                        [
+                            self.Atools.detectors_y,
+                            self.Atools.recon_size,
+                            self.Atools.recon_size,
+                        ]
+                    )
+                    # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
+                    if _regularisation_upd_["method"] is not None:
+                        # The proximal operator of the chosen regulariser
+                        z = prox_regul(self, x_prox_reg, _regularisation_upd_).ravel()
+                    # update u variable
+                    u = u + (X - z)
+                else:
+                    mem_stack.malloc(z * np.float32().itemsize)  # z - u
+                    mem_stack.malloc(z * np.float32().itemsize)  # rho * (z - u)
+                    mem_stack.malloc(z * np.float32().itemsize)  # b_to_solver
+                    mem_stack.free(z * np.float32().itemsize)  # rho * (z - u)
+                    mem_stack.free(z * np.float32().itemsize)  # z - u
+
+                    mem_stack.malloc(30 * z * np.float32().itemsize)  # gmres
+                    mem_stack.free(30 * z * np.float32().itemsize)  # gmres
+
+                    mem_stack.free(z * np.float32().itemsize)  # b_to_solver
 
             if _algorithm_upd_["verbose"]:
                 if np.mod(iter_no, round(_algorithm_upd_["iterations"] / 5) + 1) == 0:
@@ -650,19 +716,24 @@ class RecToolsIRCuPy:
                 if nrm < _algorithm_upd_["tolerance"]:
                     print("ADMM stopped at iteration (", iter_no, ")")
                     break
-        return X.reshape(
-            [
-                self.Atools.detectors_y,
-                self.Atools.recon_size,
-                self.Atools.recon_size,
-            ]
-        )
+        if mem_stack is None:
+            return X.reshape(
+                [
+                    self.Atools.detectors_y,
+                    self.Atools.recon_size,
+                    self.Atools.recon_size,
+                ]
+            )
+        else:
+            return mem_stack.highwater
 
     def _ADMM_Ax(self, rho_const, x: cp.ndarray):
         geom_size = astra.geom_size(self.Atools.vol_geom)
         data_upd = self.Atools._forwprojCuPy(cp.reshape(x, geom_size))
         x_temp = self.Atools._backprojCuPy(data_upd)
         x_upd = x_temp.ravel() + rho_const * x
+        del data_upd
+        del x_temp
         return x_upd
 
     def _ADMM_Atb(self, b: cp.ndarray):
