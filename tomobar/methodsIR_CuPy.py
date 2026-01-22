@@ -682,25 +682,28 @@ class RecToolsIRCuPy:
                     mem_stack.free(30 * z * np.float32().itemsize)  # gmres
 
                     mem_stack.free(z * np.float32().itemsize)  # b_to_solver
+            if mem_stack is None:
+                if _algorithm_upd_["verbose"]:
+                    if (
+                        np.mod(iter_no, round(_algorithm_upd_["iterations"] / 5) + 1)
+                        == 0
+                    ):
+                        print(
+                            "ADMM iteration (",
+                            iter_no + 1,
+                            ") using",
+                            _regularisation_upd_["method"],
+                            "regularisation",
+                        )
+                if iter_no == _algorithm_upd_["iterations"] - 1:
+                    print("ADMM stopped at iteration (", iter_no + 1, ")")
 
-            if _algorithm_upd_["verbose"]:
-                if np.mod(iter_no, round(_algorithm_upd_["iterations"] / 5) + 1) == 0:
-                    print(
-                        "ADMM iteration (",
-                        iter_no + 1,
-                        ") using",
-                        _regularisation_upd_["method"],
-                        "regularisation",
-                    )
-            if iter_no == _algorithm_upd_["iterations"] - 1:
-                print("ADMM stopped at iteration (", iter_no + 1, ")")
-
-            # stopping criteria (checked after reasonable number of iterations)
-            if iter_no > 5:
-                nrm = cp.linalg.norm(X - X_old) * denomN
-                if nrm < _algorithm_upd_["tolerance"]:
-                    print("ADMM stopped at iteration (", iter_no, ")")
-                    break
+                # stopping criteria (checked after reasonable number of iterations)
+                if iter_no > 5:
+                    nrm = cp.linalg.norm(X - X_old) * denomN
+                    if nrm < _algorithm_upd_["tolerance"]:
+                        print("ADMM stopped at iteration (", iter_no, ")")
+                        break
         if mem_stack is None:
             X = X.reshape(
                 [
