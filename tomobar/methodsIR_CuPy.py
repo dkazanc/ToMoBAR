@@ -589,60 +589,15 @@ class RecToolsIRCuPy:
         use_os = _data_upd_["OS_number"] > 1
         if use_os:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
-            if mem_stack is None:
-                b_to_solver_const = cp.empty(
-                    [_data_upd_["OS_number"], rec_dim], dtype="float32"
-                )
-                for sub_ind in range(_data_upd_["OS_number"]):
-                    indVec = self.Atools.newInd_Vec[sub_ind, :]
-                    if indVec[self.Atools.NumbProjBins - 1] == 0:
-                        indVec = indVec[:-1]  # shrink vector size
-                    proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
-                    backprojected = self.Atools._backprojOSCuPy(
-                        proj_data,
-                        os_index=sub_ind,
-                    )
-                    del proj_data
-                    b_to_solver_const[sub_ind, :] = backprojected.ravel()
-                    del backprojected
-            else:
-                backproj_dims = astra.geom_size(self.Atools.vol_geom)
-                mem_stack.malloc(
-                    _data_upd_["OS_number"]
-                    * np.prod(backproj_dims)
-                    * np.float32().itemsize
-                )  # b_to_solver_const
-                b_to_solver_const = (_data_upd_["OS_number"], np.prod(backproj_dims))
-
-                for sub_ind in range(_data_upd_["OS_number"]):
-                    indVec = self.Atools.newInd_Vec[sub_ind, :]
-                    tmp_size = list(_data_upd_["projection_norm_data"])
-                    tmp_size[1] = np.size(indVec)
-                    mem_stack.malloc(
-                        np.prod(tmp_size) * np.float32().itemsize
-                    )  # proj_data
-
-                    mem_stack.malloc(
-                        np.prod(backproj_dims) * np.float32().itemsize
-                    )  # backproj
-                    mem_stack.free(
-                        np.prod(backproj_dims) * np.float32().itemsize
-                    )  # backproj
-
-                    mem_stack.free(
-                        np.prod(tmp_size) * np.float32().itemsize
-                    )  # proj_data
         else:
             if mem_stack is None:
-                b_to_solver_const = (
-                    self.Atools._backprojCuPy(_data_upd_["projection_norm_data"])
-                    .ravel()
-                    .reshape(1, -1)
-                )
+                b_to_solver_const = self.Atools._backprojCuPy(
+                    _data_upd_["projection_norm_data"]
+                ).ravel()
             else:
                 backproj_dims = astra.geom_size(self.Atools.vol_geom)
                 mem_stack.malloc(np.prod(backproj_dims) * np.float32().itemsize)
-                b_to_solver_const = (1, np.prod(backproj_dims))
+                b_to_solver_const = np.prod(backproj_dims)
 
         # Outer ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
@@ -670,9 +625,24 @@ class RecToolsIRCuPy:
                     )
 
                 if mem_stack is None:
-                    b_to_solver = b_to_solver_const[sub_ind, :] + _algorithm_upd_[
+                    if use_os:
+                        indVec = self.Atools.newInd_Vec[sub_ind, :]
+                        if indVec[self.Atools.NumbProjBins - 1] == 0:
+                            indVec = indVec[:-1]  # shrink vector size
+                        proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
+                        b_to_solver_const = self.Atools._backprojOSCuPy(
+                            proj_data,
+                            os_index=sub_ind,
+                        ).ravel()
+                        del proj_data
+
+                    b_to_solver = b_to_solver_const + _algorithm_upd_[
                         "ADMM_rho_const"
                     ] * (z - u)
+
+                    if use_os:
+                        del b_to_solver_const
+
                     X, _ = linalg.gmres(
                         A_to_solver, b_to_solver, atol=1e-05, maxiter=15
                     )
@@ -694,11 +664,19 @@ class RecToolsIRCuPy:
                     # update u variable
                     u = u + (X - z)
                 else:
+                    if use_os:
+                        indVec = self.Atools.newInd_Vec[sub_ind, :]
+                        proj_data = list(astra.geom_size(self.Atools.vol_geom))
+                        proj_data[1] = np.size(indVec)
+                        b_to_solver_const = np.prod(proj_data)
+                        mem_stack.malloc(b_to_solver_const * np.float32().itemsize)
                     mem_stack.malloc(z * np.float32().itemsize)  # z - u
                     mem_stack.malloc(z * np.float32().itemsize)  # rho * (z - u)
                     mem_stack.malloc(z * np.float32().itemsize)  # b_to_solver
                     mem_stack.free(z * np.float32().itemsize)  # rho * (z - u)
                     mem_stack.free(z * np.float32().itemsize)  # z - u
+                    if use_os:
+                        mem_stack.free(b_to_solver_const * np.float32().itemsize)
 
                     mem_stack.malloc(30 * z * np.float32().itemsize)  # gmres
                     mem_stack.free(30 * z * np.float32().itemsize)  # gmres
