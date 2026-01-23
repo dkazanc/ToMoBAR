@@ -151,7 +151,13 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
     """
     for swap_tuple in data_swap_list:
         if swap_tuple is not None:
-            if cupy_enabled:
+            if type(data) is tuple:
+                data = list(data)
+                tmp = data[swap_tuple[0]]
+                data[swap_tuple[0]] = data[swap_tuple[1]]
+                data[swap_tuple[1]] = tmp
+                data = tuple(data)
+            elif cupy_enabled:
                 xpp = xp.get_array_module(data)
                 return xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
             else:

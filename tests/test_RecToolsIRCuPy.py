@@ -627,35 +627,39 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
 
 
 ADMM_TEST_CASES = [
-    (None, -0.0018831016, 0.0071009593),
-    (
-        {
-            "method": "ROF_TV",
-            "regul_param": 0.0005,
-            "iterations": 10,
-            "time_marching_step": 0.001,
-            "device_regulariser": 0,
-        },
-        -0.01029565,
-        0.02129409,
-    ),
-    (
-        {
-            "method": "PD_TV",
-            "regul_param": 0.0005,
-            "iterations": 10,
-            "device_regulariser": 0,
-        },
-        -0.009153,
-        0.02050696,
-    ),
+    None,
+    {
+        "method": "ROF_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "time_marching_step": 0.001,
+        "device_regulariser": 0,
+    },
+    {
+        "method": "PD_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "device_regulariser": 0,
+    },
 ]
 ADMM_TEST_IDS = ["no-regularization", "ROF_TV", "PD_TV"]
 
 
 @pytest.mark.parametrize(
     "test_case",
-    ADMM_TEST_CASES,
+    zip(
+        ADMM_TEST_CASES,
+        [
+            -0.0018831016,
+            -0.00917555,
+            -0.00800405,
+        ],
+        [
+            0.0071009593,
+            0.02129409,
+            0.02050696,
+        ],
+    ),
     ids=ADMM_TEST_IDS,
 )
 def test_ADMM_cp_3D(data_cupy, test_case, angles):
@@ -694,7 +698,19 @@ def test_ADMM_cp_3D(data_cupy, test_case, angles):
 
 @pytest.mark.parametrize(
     "test_case",
-    ADMM_TEST_CASES,
+    zip(
+        ADMM_TEST_CASES,
+        [
+            -0.00052789,
+            -0.00113824,
+            -0.00052669,
+        ],
+        [
+            0.00060961,
+            0.02321448,
+            0.02226579,
+        ],
+    ),
     ids=ADMM_TEST_IDS,
 )
 def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
@@ -730,3 +746,70 @@ def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
     assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
+
+
+class MaxMemoryHook(cp.cuda.MemoryHook):
+    def __init__(self, initial=0):
+        self.max_mem = initial
+        self.current = initial
+
+    def malloc_postprocess(
+        self, device_id: int, size: int, mem_size: int, mem_ptr: int, pmem_id: int
+    ):
+        self.current += mem_size
+        self.max_mem = max(self.max_mem, self.current)
+
+    def free_postprocess(
+        self, device_id: int, mem_size: int, mem_ptr: int, pmem_id: int
+    ):
+        self.current -= mem_size
+
+
+@pytest.mark.parametrize("os_number", [1, 5])
+def test_ADMM_cp_3D_calc_mem(data_cupy, angles, os_number):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=10,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+    _data_ = {
+        "projection_norm_data": data_cupy.shape,
+        "OS_number": os_number,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    _algorithm_ = {
+        "iterations": 6,
+        "ADMM_rho_const": 4000.0,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    regularization = {
+        "method": "ROF_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "time_marching_step": 0.001,
+        "device_regulariser": 0,
+    }
+    peak_gpu = RecTools.ADMM(
+        _data_, _algorithm_, regularization, calc_peak_gpu_mem=True
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "OS_number": os_number,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+
+    hook = MaxMemoryHook()
+    with hook:
+        RecTools.ADMM(_data_, _algorithm_, regularization)
+
+    assert hook.max_mem * 1.03 > peak_gpu
+    assert hook.max_mem * 0.99 < peak_gpu
