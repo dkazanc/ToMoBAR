@@ -246,7 +246,7 @@ _data_ = {
     "data_axes_labels_order": ["detX", "angles"],
 }
 
-_algorithm_ = {"iterations": 15, "ADMM_rho_const": 500.0}
+_algorithm_ = {"iterations": 15, "ADMM_rho_const": 150.0}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {

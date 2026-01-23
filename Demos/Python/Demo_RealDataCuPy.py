@@ -211,7 +211,40 @@ plt.title("FISTA OS-TV (ROF_TV) reconstruction")
 plt.show()
 # fig.savefig('dendr_PWLS.png', dpi=200)
 # %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM - TV method %%%%%%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+####################### Creating the data dictionary: #######################
+_data_ = {
+    "projection_norm_data": cp.asarray(
+        data_norm[:, :, 5:10]
+    ),  # Normalised projection data
+    "data_axes_labels_order": data_labels3D,
+}
 
+####################### Creating the algorithm dictionary: #######################
+_algorithm_ = {
+    "iterations": 15,
+    "recon_mask_radius": 2.0,
+    "ADMM_rho_const": 200,
+}  # The number of iterations
+
+_regularisation_ = {
+    "method": "PD_TV",  # Selected regularisation method
+    "regul_param": 0.01,  # Regularisation parameter
+    "iterations": 150,  # The number of regularisation iterations
+    "half_precision": True,  # enabling half-precision calculation
+}
+
+
+# RUN THE ADMM METHOD:
+RecADMM = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
+
+fig = plt.figure()
+plt.imshow(cp.asnumpy((RecADMM[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
+plt.title("ADMM (CuPy) reconstruction")
+plt.show()
+#%%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -226,27 +259,28 @@ _data_ = {
 
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 15,
+    "iterations": 1,
     "recon_mask_radius": 2.0,
+    "ADMM_rho_const": 100,
 }  # The number of iterations
 
 ##### creating regularisation dictionary: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.000002,  # Regularisation parameter
+    "regul_param": 0.00002,  # Regularisation parameter
     "iterations": 50,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
 
 
 # RUN THE FISTA METHOD:
-RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
+RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_)
 
 fig = plt.figure()
-plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
+#plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
+plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), cmap="gray")
 plt.title("ADMM OS-TV (PD) reconstruction")
 plt.show()
-# fig.savefig('dendr_PWLS.png', dpi=200)
 # %%
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
