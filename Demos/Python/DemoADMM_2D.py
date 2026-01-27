@@ -186,3 +186,55 @@ Qtools = QualityTools(phantom_2D, RecADMM_reg)
 RMSE_ADMM = Qtools.rmse()
 print("RMSE for regularised ADMM is {}".format(RMSE_ADMM))
 # %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM-OS method")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+
+# set parameters and initiate a class object
+Rectools = RecToolsIR(
+    DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
+    DetectorsDimV=None,  # Vertical detector dimension
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
+    device_projector="gpu",
+)
+
+# prepare dictionaries with parameters:
+_data_ = {"projection_norm_data": noisy_sino,
+          "OS_number": 6,  # The number of subsets
+          }  # data dictionary
+
+_algorithm_ = {
+    "initialise": FBPrec,
+    "iterations": 10,
+    "ADMM_rho_const": 0.1,
+    "ADMM_relax_par": 1.6,
+}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {
+    "method": "FGP_TV",
+    "regul_param": 1,
+    "iterations": 100,
+    "device_regulariser": "gpu",
+}
+
+# Run ADMM reconstrucion algorithm with regularisation
+RecADMM_OS_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_)
+
+plt.figure()
+# plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")
+plt.imshow(RecADMM_OS_reg, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
+plt.title("ADMM-OS-TV reconstruction")
+plt.show()
+
+# calculate errors
+Qtools = QualityTools(phantom_2D, RecADMM_OS_reg)
+RMSE_ADMM_OS = Qtools.rmse()
+print("RMSE for regularised ADMM-OS is {}".format(RMSE_ADMM_OS))
+#%%

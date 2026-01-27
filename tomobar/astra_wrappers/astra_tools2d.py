@@ -1,7 +1,7 @@
 from tomobar.astra_wrappers.astra_base import AstraBase
 
 import numpy as np
-
+from typing import Union
 
 ###########Child class############
 class AstraTools2D(AstraBase):
@@ -71,7 +71,7 @@ class AstraTools2D(AstraBase):
         # TODO: CuPy 2D forward projection is not implemented yet
         return super()._runAstraProj2D(image, None, "FP_CUDA")
 
-    def _forwprojOS(self, image: np.ndarray, os_index: int) -> np.ndarray:
+    def _forwprojOS(self, image: np.ndarray, os_index: Union[int, None]) -> np.ndarray:
         astra_method = "FP_CUDA"  # 2d forward projection
         if self.processing_arch == "cpu":
             astra_method = "FP"
@@ -91,7 +91,7 @@ class AstraTools2D(AstraBase):
         # TODO: CuPy 2D backprojection is not implemented yet
         return super()._runAstraBackproj2D(sinogram, "BP_CUDA", 1, None)
 
-    def _backprojOS(self, sinogram: np.ndarray, os_index: int) -> np.ndarray:
+    def _backprojOS(self, sinogram: np.ndarray, os_index: Union[int, None]) -> np.ndarray:
         astra_method = "BP_CUDA"  # 2D back projection
         if self.processing_arch == "cpu":
             astra_method = "BP"

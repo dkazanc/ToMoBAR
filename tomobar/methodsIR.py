@@ -7,7 +7,7 @@
 
 import numpy as xp
 from numpy import linalg
-from typing import Union
+from typing import Union, Optional
 
 try:
     import cupy as cp
@@ -860,6 +860,14 @@ class RecToolsIR:
             geom_size = astra.geom_size(self.Atools.proj_geom)
             return self.Atools._backproj(cp.reshape(b, geom_size)).ravel()
 
+        def Ax_OS(x, sub_ind: int):
+            geom_size = astra.geom_size(self.Atools.vol_geom)
+            return self.Atools._forwprojOS(cp.reshape(x, geom_size), os_index=sub_ind).ravel()        
+
+        def Atb_OS(b, sub_ind: int):
+            geom_size = astra.geom_size(self.Atools.proj_geom_OS)
+            return self.Atools._backprojOS(cp.reshape(b, geom_size), os_index=sub_ind).ravel()
+        
         rec_dim = xp.prod(astra.geom_size(self.Atools.vol_geom))
         # initialisation of the solution
         if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
@@ -867,6 +875,9 @@ class RecToolsIR:
         else:
             x0 = xp.zeros(rec_dim, "float32").ravel()
 
+        use_os = _data_upd_["OS_number"] > 1
+        if use_os:
+            _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
         # ADMM variables
         x = x0.copy()
         z = x0.copy()
@@ -880,46 +891,66 @@ class RecToolsIR:
 
         # Outer ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
-            # ---- z-update (linearized data term) ----
-            if self.datafidelity == "KL":
-                grad_data = Atb(
-                    1 - _data_upd_["projection_norm_data"].ravel() / (Ax(z) + 1e-8)
-                ) # KL term
-            else:
-                grad_data = Atb(
-                    Ax(z) - _data_upd_["projection_norm_data"].ravel()
-                )  # LS term
-            grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
-            z = z - tau * (grad_data + grad_admm)
+            for sub_ind in range(_data_upd_["OS_number"]):             
+                if use_os:
+                    # select a specific set of indeces for the subset (OS)
+                    indVec = self.Atools.newInd_Vec[sub_ind, :]
+                    if indVec[self.Atools.NumbProjBins - 1] == 0:
+                        indVec = indVec[:-1]  # shrink vector size
+                    proj_data = _data_upd_["projection_norm_data"][indVec, :].ravel()
 
-            if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                z[z < 0.0] = 0.0
-            # z-update with relaxation
-            if iter_no > 1:
-                z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old + _algorithm_upd_[
-                    "ADMM_relax_par"
-                ] * z
-            z_old = z.copy()
+                # ---- z-update (linearized data term) ----
+                if self.datafidelity == "KL":
+                    if use_os:
+                        grad_data = Atb_OS(
+                            1 - proj_data / (Ax_OS(z, sub_ind) + 1e-8), sub_ind
+                        ) # KL term       
+                    else:
+                        grad_data = Atb(
+                            1 - _data_upd_["projection_norm_data"].ravel() / (Ax(z) + 1e-8)
+                        ) # KL term
+                else:
+                    if use_os:
+                        grad_data = Atb_OS(
+                            Ax_OS(z, sub_ind) - proj_data, sub_ind
+                        )  # LS term                        
+                    else:
+                        grad_data = Atb(
+                            Ax(z) - _data_upd_["projection_norm_data"].ravel()
+                        )  # LS term
 
-            if self.geom == "2D":
-                x_prox_reg = (z + u).reshape(
-                    [self.Atools.recon_size, self.Atools.recon_size]
-                )
-            if self.geom == "3D":
-                x_prox_reg = (z + u).reshape(
-                    [
-                        self.Atools.detectors_y,
-                        self.Atools.recon_size,
-                        self.Atools.recon_size,
-                    ]
-                )
-            # X-update (proximal regularization)
-            if _regularisation_upd_["method"] is not None:
-                (x, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
-            x = x.ravel()
+                grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
+                z = z - tau * (grad_data + grad_admm)
+
+                if _algorithm_upd_["nonnegativity"] == "ENABLE":
+                    z[z < 0.0] = 0.0
+                # z-update with relaxation
+                if iter_no > 1:
+                    z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old + _algorithm_upd_[
+                        "ADMM_relax_par"
+                    ] * z
+                z_old = z.copy()
+
+                if self.geom == "2D":
+                    x_prox_reg = (z + u).reshape(
+                        [self.Atools.recon_size, self.Atools.recon_size]
+                    )
+                if self.geom == "3D":
+                    x_prox_reg = (z + u).reshape(
+                        [
+                            self.Atools.detectors_y,
+                            self.Atools.recon_size,
+                            self.Atools.recon_size,
+                        ]
+                    )
+                # X-update (proximal regularization)
+                if _regularisation_upd_["method"] is not None:
+                    (x, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
+                x = x.ravel()
 
             # update u variable (dual update)
             u = u + (z - x)
+
             if _algorithm_upd_["verbose"]:
                 if xp.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
                     print(
