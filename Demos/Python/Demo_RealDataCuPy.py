@@ -235,7 +235,7 @@ _algorithm_ = {
     "ADMM_rho_const": 1000,
     "ADMM_solver": "cgs",
     "ADMM_solver_iterations": 15,
-    "ADMM_solver_tolerance": 1e-06 
+    "ADMM_solver_tolerance": 1e-06,
 }
 
 _regularisation_ = {
@@ -256,7 +256,7 @@ fig = plt.figure()
 plt.imshow(cp.asnumpy((RecADMM[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
 plt.title("ADMM (CuPy) reconstruction")
 plt.show()
-#%%
+# %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -275,7 +275,7 @@ _algorithm_ = {
     "ADMM_rho_const": 1000.0,
     "ADMM_solver": "cgs",
     "ADMM_solver_iterations": 10,
-    "ADMM_solver_tolerance": 1e-06
+    "ADMM_solver_tolerance": 1e-06,
 }  # The number of iterations
 
 ##### creating regularisation dictionary: #####
@@ -318,7 +318,7 @@ _algorithm_ = {
     "ADMM_rho_const": 8000.0,
     "ADMM_solver": "cgs",
     "ADMM_solver_iterations": 10,
-    "ADMM_solver_tolerance": 1e-06
+    "ADMM_solver_tolerance": 1e-06,
 }  # The number of iterations
 
 ##### creating regularisation dictionary  #####

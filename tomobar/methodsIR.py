@@ -733,22 +733,34 @@ class RecToolsIR:
             b_to_solver = b_to_solver_const + _algorithm_upd_["ADMM_rho_const"] * (
                 z - u
             )
-            if _algorithm_upd_["ADMM_solver"] == 'cgs':
+            if _algorithm_upd_["ADMM_solver"] == "cgs":
                 outputSolver = scipy.sparse.linalg.cgs(
-                    A_to_solver, b_to_solver, atol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
+                    A_to_solver,
+                    b_to_solver,
+                    atol=_algorithm_upd_["ADMM_solver_tolerance"],
+                    maxiter=_algorithm_upd_["ADMM_solver_iterations"],
                 )
-            elif _algorithm_upd_["ADMM_solver"] == 'cg':
+            elif _algorithm_upd_["ADMM_solver"] == "cg":
                 outputSolver = scipy.sparse.linalg.cg(
-                    A_to_solver, b_to_solver, tol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
-                )                        
-            elif _algorithm_upd_["ADMM_solver"] == 'gmres':
-                outputSolver = scipy.sparse.linalg.gmres(
-                    A_to_solver, b_to_solver, atol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
+                    A_to_solver,
+                    b_to_solver,
+                    tol=_algorithm_upd_["ADMM_solver_tolerance"],
+                    maxiter=_algorithm_upd_["ADMM_solver_iterations"],
                 )
-            elif _algorithm_upd_["ADMM_solver"] == 'minres':
+            elif _algorithm_upd_["ADMM_solver"] == "gmres":
+                outputSolver = scipy.sparse.linalg.gmres(
+                    A_to_solver,
+                    b_to_solver,
+                    atol=_algorithm_upd_["ADMM_solver_tolerance"],
+                    maxiter=_algorithm_upd_["ADMM_solver_iterations"],
+                )
+            elif _algorithm_upd_["ADMM_solver"] == "minres":
                 outputSolver = scipy.sparse.linalg.minres(
-                    A_to_solver, b_to_solver, tol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
-                )                
+                    A_to_solver,
+                    b_to_solver,
+                    tol=_algorithm_upd_["ADMM_solver_tolerance"],
+                    maxiter=_algorithm_upd_["ADMM_solver_iterations"],
+                )
             else:
                 raise ValueError("Please select from cgs, cg, gmres, minres solvers")
 
@@ -757,7 +769,9 @@ class RecToolsIR:
                 z[z < 0.0] = 0.0
             # z-update with relaxation
             if iter_no > 1:
-                z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old +  _algorithm_upd_["ADMM_relax_par"] * z
+                z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old + _algorithm_upd_[
+                    "ADMM_relax_par"
+                ] * z
             z_old = z.copy()
 
             if self.geom == "2D":
@@ -774,7 +788,6 @@ class RecToolsIR:
                 )
             # X-update (proximal regularization)
             if _regularisation_upd_["method"] is not None:
-
                 (X, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
             X = X.ravel()
             # update u variable (dual update)
@@ -810,116 +823,125 @@ class RecToolsIR:
                 ]
             )
         return X
-# *****************************ADMM ends here*********************************#
 
+    # *****************************ADMM ends here*********************************#
 
     def ADMM_test(
-            self,
-            _data_: dict,
-            _algorithm_: Union[dict, None] = None,
-            _regularisation_: Union[dict, None] = None,
-        ) -> xp.ndarray:
-            """Linearised and Relaxed Alternating Directions Method of Multipliers with various types 
-            of regularisation and data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
+        self,
+        _data_: dict,
+        _algorithm_: Union[dict, None] = None,
+        _regularisation_: Union[dict, None] = None,
+    ) -> xp.ndarray:
+        """Linearised and Relaxed Alternating Directions Method of Multipliers with various types
+        of regularisation and data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
 
-            Args:
-                _data_ (dict): Data dictionary, where input data is provided.
-                _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
-                _regularisation_ (dict, optional): Regularisation dictionary.
+        Args:
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
+            _regularisation_ (dict, optional): Regularisation dictionary.
 
-            Returns:
-                xp.ndarray: ADMM-reconstructed numpy array
-            """
-            if not self.cupyrun:
-                import numpy as xp
-            ######################################################################
-            # parameters check and initialisation
-            (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
-                self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
-            )
-            ######################################################################
+        Returns:
+            xp.ndarray: ADMM-reconstructed numpy array
+        """
+        if not self.cupyrun:
+            import numpy as xp
+        ######################################################################
+        # parameters check and initialisation
+        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+            self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
+        )
+        ######################################################################
 
-            def Ax(x):
-                geom_size = astra.geom_size(self.Atools.vol_geom)
-                return self.Atools._forwproj(cp.reshape(x, geom_size)).ravel() 
+        def Ax(x):
+            geom_size = astra.geom_size(self.Atools.vol_geom)
+            return self.Atools._forwproj(cp.reshape(x, geom_size)).ravel()
 
-            def Atb(b):
-                geom_size = astra.geom_size(self.Atools.proj_geom)
-                return self.Atools._backproj(cp.reshape(b, geom_size)).ravel() 
+        def Atb(b):
+            geom_size = astra.geom_size(self.Atools.proj_geom)
+            return self.Atools._backproj(cp.reshape(b, geom_size)).ravel()
 
-            rec_dim = xp.prod(astra.geom_size(self.Atools.vol_geom))
-            # initialisation of the solution 
-            if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
-                x0 = _algorithm_upd_["initialise"].ravel()
+        rec_dim = xp.prod(astra.geom_size(self.Atools.vol_geom))
+        # initialisation of the solution
+        if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
+            x0 = _algorithm_upd_["initialise"].ravel()
+        else:
+            x0 = xp.zeros(rec_dim, "float32").ravel()
+
+        # ADMM variables
+        x = x0.copy()
+        z = x0.copy()
+        u = xp.zeros_like(x0)
+        tau = 0.9 / (
+            _algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"]
+        )
+        _regularisation_upd_["regul_param"] = (
+            _regularisation_upd_["regul_param"] / _algorithm_upd_["ADMM_rho_const"]
+        )
+
+        # Outer ADMM iterations
+        for iter_no in range(_algorithm_upd_["iterations"]):
+            # ---- z-update (linearized data term) ----
+            if self.datafidelity == "KL":
+                grad_data = Atb(
+                    1 - _data_upd_["projection_norm_data"].ravel() / (Ax(z) + 1e-8)
+                ) # KL term
             else:
-                x0 = xp.zeros(rec_dim, "float32").ravel()
+                grad_data = Atb(
+                    Ax(z) - _data_upd_["projection_norm_data"].ravel()
+                )  # LS term
+            grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
+            z = z - tau * (grad_data + grad_admm)
 
-            #ADMM variables
-            x = x0.copy()
-            z = x0.copy()
-            u = xp.zeros_like(x0)
-            tau = 0.9 / (_algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"])
-            _regularisation_upd_["regul_param"] = _regularisation_upd_["regul_param"] / _algorithm_upd_["ADMM_rho_const"]
-
-            # Outer ADMM iterations
-            for iter_no in range(_algorithm_upd_["iterations"]):
-                # ---- z-update (linearized data term) ----
-                grad_data = Atb(Ax(z) - _data_upd_["projection_norm_data"].ravel()) # LS term
-                if self.datafidelity == 'KL':
-                    grad_data = Atb(1 - _data_upd_["projection_norm_data"].ravel() / (Ax(z) + 1e-8)) # KL term
-                else:
-                    grad_data = Atb(Ax(z) - _data_upd_["projection_norm_data"].ravel()) # LS term
-                grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
-                z = z - tau * (grad_data + grad_admm)
-
-                if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                    z[z < 0.0] = 0.0
-                # z-update with relaxation
-                if iter_no > 1:
-                    z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old +  _algorithm_upd_["ADMM_relax_par"] * z
-                z_old = z.copy()            
-    
-                if self.geom == "2D":
-                    x_prox_reg = (z + u).reshape(
-                        [self.Atools.recon_size, self.Atools.recon_size]
-                    )
-                if self.geom == "3D":
-                    x_prox_reg = (z + u).reshape(
-                        [
-                            self.Atools.detectors_y,
-                            self.Atools.recon_size,
-                            self.Atools.recon_size,
-                        ]
-                    )
-                # X-update (proximal regularization)
-                if _regularisation_upd_["method"] is not None:
-                    (x, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
-                x = x.ravel()
-
-                # update u variable (dual update)
-                u = u + (z - x)
-                if _algorithm_upd_["verbose"]:
-                    if xp.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
-                        print(
-                            "ADMM iteration (",
-                            iter_no + 1,
-                            ") using",
-                            _regularisation_upd_["method"],
-                            "regularisation for (",
-                            (int)(info_vec[0]),
-                            ") iterations",
-                        )
-                if iter_no == _algorithm_upd_["iterations"] - 1:
-                    print("ADMM stopped at iteration (", iter_no + 1, ")")
+            if _algorithm_upd_["nonnegativity"] == "ENABLE":
+                z[z < 0.0] = 0.0
+            # z-update with relaxation
+            if iter_no > 1:
+                z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old + _algorithm_upd_[
+                    "ADMM_relax_par"
+                ] * z
+            z_old = z.copy()
 
             if self.geom == "2D":
-                return x.reshape([self.Atools.recon_size, self.Atools.recon_size])
+                x_prox_reg = (z + u).reshape(
+                    [self.Atools.recon_size, self.Atools.recon_size]
+                )
             if self.geom == "3D":
-                return x.reshape(
+                x_prox_reg = (z + u).reshape(
                     [
                         self.Atools.detectors_y,
                         self.Atools.recon_size,
                         self.Atools.recon_size,
                     ]
                 )
-            return x
+            # X-update (proximal regularization)
+            if _regularisation_upd_["method"] is not None:
+                (x, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
+            x = x.ravel()
+
+            # update u variable (dual update)
+            u = u + (z - x)
+            if _algorithm_upd_["verbose"]:
+                if xp.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
+                    print(
+                        "ADMM iteration (",
+                        iter_no + 1,
+                        ") using",
+                        _regularisation_upd_["method"],
+                        "regularisation for (",
+                        (int)(info_vec[0]),
+                        ") iterations",
+                    )
+            if iter_no == _algorithm_upd_["iterations"] - 1:
+                print("ADMM stopped at iteration (", iter_no + 1, ")")
+
+        if self.geom == "2D":
+            return x.reshape([self.Atools.recon_size, self.Atools.recon_size])
+        if self.geom == "3D":
+            return x.reshape(
+                [
+                    self.Atools.detectors_y,
+                    self.Atools.recon_size,
+                    self.Atools.recon_size,
+                ]
+            )
+        return x

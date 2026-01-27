@@ -246,12 +246,13 @@ _data_ = {
     "data_axes_labels_order": ["detX", "angles"],
 }
 
-_algorithm_ = {"iterations": 20,
-               "ADMM_rho_const": 1000.0,
-               "ADMM_solver": "cgs",
-               "ADMM_solver_iterations": 15,
-               "ADMM_solver_tolerance": 1e-06,
-               }
+_algorithm_ = {
+    "iterations": 20,
+    "ADMM_rho_const": 1000.0,
+    "ADMM_solver": "cgs",
+    "ADMM_solver_iterations": 15,
+    "ADMM_solver_tolerance": 1e-06,
+}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
@@ -266,7 +267,7 @@ RecADMM_LS_TV = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
 
 fig = plt.figure()
 plt.imshow(RecADMM_LS_TV[100:900, 100:900], vmin=0, vmax=0.003, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation='vertical')
+plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
 plt.title("ADMM LS-TV reconstruction")
 plt.show()
 # fig.savefig('dendr_TV.png', dpi=200)

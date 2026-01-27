@@ -647,31 +647,47 @@ class RecToolsIRCuPy:
                     if use_os:
                         del b_to_solver_const
 
-                    if _algorithm_upd_["ADMM_solver"] == 'cgs':
+                    if _algorithm_upd_["ADMM_solver"] == "cgs":
                         z, _ = linalg.cgs(
-                            A_to_solver, b_to_solver, atol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
+                            A_to_solver,
+                            b_to_solver,
+                            atol=_algorithm_upd_["ADMM_solver_tolerance"],
+                            maxiter=_algorithm_upd_["ADMM_solver_iterations"],
                         )
-                    elif _algorithm_upd_["ADMM_solver"] == 'cg':
+                    elif _algorithm_upd_["ADMM_solver"] == "cg":
                         z, _ = linalg.cg(
-                            A_to_solver, b_to_solver, tol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
-                        )                        
-                    elif _algorithm_upd_["ADMM_solver"] == 'gmres':
-                        z, _ = linalg.gmres(
-                            A_to_solver, b_to_solver, atol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
+                            A_to_solver,
+                            b_to_solver,
+                            tol=_algorithm_upd_["ADMM_solver_tolerance"],
+                            maxiter=_algorithm_upd_["ADMM_solver_iterations"],
                         )
-                    elif _algorithm_upd_["ADMM_solver"] == 'minres':
+                    elif _algorithm_upd_["ADMM_solver"] == "gmres":
+                        z, _ = linalg.gmres(
+                            A_to_solver,
+                            b_to_solver,
+                            atol=_algorithm_upd_["ADMM_solver_tolerance"],
+                            maxiter=_algorithm_upd_["ADMM_solver_iterations"],
+                        )
+                    elif _algorithm_upd_["ADMM_solver"] == "minres":
                         z, _ = linalg.minres(
-                            A_to_solver, b_to_solver, tol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
-                        )                
+                            A_to_solver,
+                            b_to_solver,
+                            tol=_algorithm_upd_["ADMM_solver_tolerance"],
+                            maxiter=_algorithm_upd_["ADMM_solver_iterations"],
+                        )
                     else:
-                        raise ValueError("Please select from cgs, cg, gmres, minres solvers")
-                                  
+                        raise ValueError(
+                            "Please select from cgs, cg, gmres, minres solvers"
+                        )
+
                     del b_to_solver
                     if _algorithm_upd_["nonnegativity"] == "ENABLE":
                         z[z < 0.0] = 0.0
                     # z-update with relaxation
                     if iter_no > 1:
-                        z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old +  _algorithm_upd_["ADMM_relax_par"] * z
+                        z = (
+                            1.0 - _algorithm_upd_["ADMM_relax_par"]
+                        ) * z_old + _algorithm_upd_["ADMM_relax_par"] * z
                     z_old = z.copy()
                     x_prox_reg = (z + u).reshape(
                         [

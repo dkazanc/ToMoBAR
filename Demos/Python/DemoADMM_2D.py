@@ -107,10 +107,13 @@ Rectools = RecToolsIR(
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": noisy_sino}  # data dictionary
-_algorithm_ = {"iterations": 25, "ADMM_rho_const": 1000.0,
-               "ADMM_solver": "cgs",
-               "ADMM_solver_iterations": 20,
-               "ADMM_solver_tolerance": 1e-06}
+_algorithm_ = {
+    "iterations": 25,
+    "ADMM_rho_const": 1000.0,
+    "ADMM_solver": "cgs",
+    "ADMM_solver_iterations": 20,
+    "ADMM_solver_tolerance": 1e-06,
+}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
@@ -153,10 +156,12 @@ Rectools = RecToolsIR(
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": noisy_sino}  # data dictionary
-_algorithm_ = {"initialise": FBPrec,
-                "iterations": 200, 
-                "ADMM_rho_const": 0.1, 
-                "ADMM_relax_par": 1.6,}
+_algorithm_ = {
+    "initialise": FBPrec,
+    "iterations": 200,
+    "ADMM_rho_const": 0.1,
+    "ADMM_relax_par": 1.6,
+}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
@@ -170,7 +175,7 @@ _regularisation_ = {
 RecADMM_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
-#plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")
+# plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")
 plt.imshow(RecADMM_reg, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
 plt.title("ADMM reconstruction")
@@ -181,4 +186,3 @@ Qtools = QualityTools(phantom_2D, RecADMM_reg)
 RMSE_ADMM = Qtools.rmse()
 print("RMSE for regularised ADMM is {}".format(RMSE_ADMM))
 # %%
-
