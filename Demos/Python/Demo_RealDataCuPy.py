@@ -8,6 +8,7 @@ D. Kazantsev et al. 2017. Model-based iterative reconstruction using
 higher-order regularization of dynamic synchrotron data.
 Measurement Science and Technology, 28(9), p.094004.
 """
+import timeit
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io
@@ -163,7 +164,12 @@ _regularisation_ = {
 
 
 # RUN THE FISTA METHOD:
+tic = timeit.default_timer()
 RecFISTA_os_tv = RectoolsCuPy.FISTA(_data_, _algorithm_, _regularisation_)
+toc = timeit.default_timer()
+Run_time = toc - tic
+print("FISTA OS-TV reconstruction done in {} seconds".format(Run_time))
+
 
 fig = plt.figure()
 plt.imshow(cp.asnumpy((RecFISTA_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
@@ -226,19 +232,25 @@ _data_ = {
 _algorithm_ = {
     "iterations": 15,
     "recon_mask_radius": 2.0,
-    "ADMM_rho_const": 200,
-}  # The number of iterations
+    "ADMM_rho_const": 1000,
+    "ADMM_solver": "cgs",
+    "ADMM_solver_iterations": 15,
+    "ADMM_solver_tolerance": 1e-06 
+}
 
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.01,  # Regularisation parameter
-    "iterations": 150,  # The number of regularisation iterations
+    "regul_param": 0.001,  # Regularisation parameter
+    "iterations": 120,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
 
-
 # RUN THE ADMM METHOD:
+tic = timeit.default_timer()
 RecADMM = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
+toc = timeit.default_timer()
+Run_time = toc - tic
+print("ADMM-TV reconstruction done in {} seconds".format(Run_time))
 
 fig = plt.figure()
 plt.imshow(cp.asnumpy((RecADMM[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
@@ -256,32 +268,36 @@ _data_ = {
     "OS_number": 6,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
-
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 1,
+    "iterations": 5,
     "recon_mask_radius": 2.0,
-    "ADMM_rho_const": 100,
+    "ADMM_rho_const": 1000.0,
+    "ADMM_solver": "cgs",
+    "ADMM_solver_iterations": 10,
+    "ADMM_solver_tolerance": 1e-06
 }  # The number of iterations
 
 ##### creating regularisation dictionary: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.00002,  # Regularisation parameter
-    "iterations": 50,  # The number of regularisation iterations
+    "regul_param": 0.00001,  # Regularisation parameter
+    "iterations": 40,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
 
-
-# RUN THE FISTA METHOD:
-RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_)
+# RUN THE ADMM-OS-TV METHOD:
+tic = timeit.default_timer()
+RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
+toc = timeit.default_timer()
+Run_time = toc - tic
+print("ADMM-OS-TV (PD) reconstruction done in {} seconds".format(Run_time))
 
 fig = plt.figure()
-#plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
-plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), cmap="gray")
+plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
 plt.title("ADMM OS-TV (PD) reconstruction")
 plt.show()
-# %%
+
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-TV (ROF) method %%%%%%%%%%%%%%%%")
@@ -297,21 +313,29 @@ _data_ = {
 
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 25,
-    "recon_mask_radius": 0.95,
+    "iterations": 10,
+    "recon_mask_radius": 2.0,
+    "ADMM_rho_const": 8000.0,
+    "ADMM_solver": "cgs",
+    "ADMM_solver_iterations": 10,
+    "ADMM_solver_tolerance": 1e-06
 }  # The number of iterations
 
 ##### creating regularisation dictionary  #####
 _regularisation_ = {
     "method": "ROF_TV",  # Selected regularisation method
-    "regul_param": 0.000005,  # Regularisation parameter
+    "regul_param": 0.00003,  # Regularisation parameter
     "iterations": 100,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
 
 
 # RUN THE ADMM METHOD:
+tic = timeit.default_timer()
 RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
+toc = timeit.default_timer()
+Run_time = toc - tic
+print("ADMM-OS-TV-ROF reconstruction done in {} seconds".format(Run_time))
 
 fig = plt.figure()
 plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")

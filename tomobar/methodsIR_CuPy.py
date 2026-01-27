@@ -572,6 +572,8 @@ class RecToolsIRCuPy:
         if cp.size(_algorithm_upd_["initialise"]) == rec_dim:
             # the object has been initialised with an array
             X = _algorithm_upd_["initialise"].ravel()
+            z = X.copy()
+            u = cp.zeros(rec_dim, "float32")
         else:
             if mem_stack is None:
                 X = cp.zeros(rec_dim, "float32")
@@ -604,7 +606,6 @@ class RecToolsIRCuPy:
 
         # Outer ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
-            X_old = X
             # loop over subsets (OS)
             for sub_ind in range(_data_upd_["OS_number"]):
                 # solving quadratic problem using linalg solver
@@ -646,26 +647,42 @@ class RecToolsIRCuPy:
                     if use_os:
                         del b_to_solver_const
 
-                    X, _ = linalg.gmres(
-                        A_to_solver, b_to_solver, atol=1e-05, maxiter=15
-                    )
+                    if _algorithm_upd_["ADMM_solver"] == 'cgs':
+                        z, _ = linalg.cgs(
+                            A_to_solver, b_to_solver, atol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
+                        )
+                    elif _algorithm_upd_["ADMM_solver"] == 'cg':
+                        z, _ = linalg.cg(
+                            A_to_solver, b_to_solver, tol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
+                        )                        
+                    elif _algorithm_upd_["ADMM_solver"] == 'gmres':
+                        z, _ = linalg.gmres(
+                            A_to_solver, b_to_solver, atol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
+                        )
+                    elif _algorithm_upd_["ADMM_solver"] == 'minres':
+                        z, _ = linalg.minres(
+                            A_to_solver, b_to_solver, tol=_algorithm_upd_["ADMM_solver_tolerance"], maxiter=_algorithm_upd_["ADMM_solver_iterations"]
+                        )                
+                    else:
+                        raise ValueError("Please select from cgs, cg, gmres, minres solvers")
+                                  
                     del b_to_solver
                     if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                        X[X < 0.0] = 0.0
-                        # z-update with relaxation
-                    x_prox_reg = (X + u).reshape(
+                        z[z < 0.0] = 0.0
+                    # z-update with relaxation
+                    if iter_no > 1:
+                        z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old +  _algorithm_upd_["ADMM_relax_par"] * z
+                    z_old = z.copy()
+                    x_prox_reg = (z + u).reshape(
                         [
                             self.Atools.detectors_y,
                             self.Atools.recon_size,
                             self.Atools.recon_size,
                         ]
                     )
-                    # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
+                    # X-update (proximal regularization)
                     if _regularisation_upd_["method"] is not None:
-                        # The proximal operator of the chosen regulariser
-                        z = prox_regul(self, x_prox_reg, _regularisation_upd_).ravel()
-                    # update u variable
-                    u = u + (X - z)
+                        X = prox_regul(self, x_prox_reg, _regularisation_upd_).ravel()
                 else:
                     if use_os:
                         indVec = self.Atools.newInd_Vec[sub_ind, :]
@@ -685,6 +702,8 @@ class RecToolsIRCuPy:
                     mem_stack.free(30 * z * np.float32().itemsize)  # gmres
 
                     mem_stack.free(z * np.float32().itemsize)  # b_to_solver
+            # update u variable (dual update)
+            u = u + (z - X)
             if mem_stack is None:
                 if _algorithm_upd_["verbose"]:
                     if (
@@ -700,13 +719,6 @@ class RecToolsIRCuPy:
                         )
                 if iter_no == _algorithm_upd_["iterations"] - 1:
                     print("ADMM stopped at iteration (", iter_no + 1, ")")
-
-                # stopping criteria (checked after reasonable number of iterations)
-                if iter_no > 5:
-                    nrm = cp.linalg.norm(X - X_old) * denomN
-                    if nrm < _algorithm_upd_["tolerance"]:
-                        print("ADMM stopped at iteration (", iter_no, ")")
-                        break
         if mem_stack is None:
             X = X.reshape(
                 [

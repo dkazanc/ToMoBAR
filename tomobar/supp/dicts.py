@@ -41,7 +41,10 @@ def dicts_check(
         _algorithm_['initialise'] (ndarray): Initialisation for the solution. An array of the expected output size must be provided.
         _algorithm_['lipschitz_const'] (float): Lipschitz constant for the FISTA algorithm. If not provided, it will be calculated for each method call.
         _algorithm_['ADMM_rho_const'] (float): Augmented Lagrangian parameter for the ADMM algorithm.
-        _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm.
+        _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm.      
+        _algorithm_['ADMM_solver"] (str): Iterative methods for linear equation systems, choose from cgs, cg, gmres and minres. Defaults to cgs
+        _algorithm_['ADMM_solver_iterations']  (int): The number of iterations for the inner iterative solver. Defaults to 15
+        _algorithm_['ADMM_solver_tolerance'] (float): The tolerance for the inner iterative solver. Defaults to 1e-05
         _algorithm_['tolerance'] (float): Tolerance to terminate reconstruction algorithm iterations earlier. Defaults to 0.0.
         _algorithm_['verbose'] (bool): Switch on printing of iterations number and other messages. Defaults to False.
 
@@ -140,7 +143,7 @@ def dicts_check(
     # ----------  dealing with _algorithm_  --------------
     if _algorithm_ is None:
         _algorithm_ = {}
-    if method_run in {"SIRT", "CGLS", "power", "ADMM", "Landweber"}:
+    if method_run in {"SIRT", "CGLS", "power", "Landweber"}:
         _algorithm_["lipschitz_const"] = 0  # bypass Lipshitz const calculation bellow
         if _algorithm_.get("iterations") is None:
             if method_run == "SIRT":
@@ -170,6 +173,15 @@ def dicts_check(
         # ADMM over-relaxation parameter to accelerate convergence
         if "ADMM_relax_par" not in _algorithm_:
             _algorithm_["ADMM_relax_par"] = 1.0
+        # Iterative methods for linear equation systems
+        if "ADMM_solver" not in _algorithm_:
+            _algorithm_["ADMM_solver"] = 'cgs'
+        # The number of iterations for the inner iterative solver
+        if "ADMM_solver_iterations" not in _algorithm_:
+            _algorithm_["ADMM_solver_iterations"] = 15
+        # The tolerance for the inner iterative solver            
+        if "ADMM_solver_tolerance" not in _algorithm_:
+            _algorithm_["ADMM_solver_tolerance"] = 1e-05    
     # initialise an algorithm with an array
     if "initialise" not in _algorithm_:
         _algorithm_["initialise"] = None
