@@ -6,11 +6,12 @@
 """
 
 import numpy as np
-from numpy import float32
 import math
 import cupy as cp
 from cupyx.scipy.fft import fft, ifft2, rfftfreq, rfft, irfft
+from cupyx.scipy.fftpack import get_fft_plan
 
+from tomobar.supp.memory_estimator_helpers import _DeviceMemStack
 from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 from tomobar.supp.funcs import _data_dims_swapper
 from tomobar.fourier import _filtersinc3D_cupy, calc_filter
@@ -177,6 +178,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         min_mem_usage_ifft2 = True
         padding = 0
 
+        calc_peak_gpu_mem = False
+
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
@@ -222,6 +225,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     print(f"Invalid chunk count: {value}. Set to 1")
                 else:
                     chunk_count = value
+            elif key == "calc_peak_gpu_mem" and value is not None:
+                if not isinstance(value, bool):
+                    print(f"Invalid flag: {value}. Set to False")
+                calc_peak_gpu_mem = value
+
+        mem_stack = _DeviceMemStack() if calc_peak_gpu_mem else None
+        if mem_stack:
+            mem_stack.malloc(np.prod(data.shape) * data.dtype.itemsize)
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
@@ -253,11 +264,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
         nz += odd_vert
 
         if odd_horiz or odd_vert:
-            data_p = cp.zeros((nz, nproj, data_n), dtype=cp.float32)
-            data_p[: nz - odd_vert, :, : data_n - odd_horiz] = data
-            data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
-            data = data_p
-            del data_p
+            if mem_stack:
+                mem_stack.malloc(np.prod((nz, nproj, data_n)) * cp.float32().itemsize)
+            else:
+                data_p = cp.zeros((nz, nproj, data_n), dtype=cp.float32)
+                data_p[: nz - odd_vert, :, : data_n - odd_horiz] = data
+                data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
+                data = data_p
+                del data_p
 
         n = data_n + self.Atools.detectors_x_pad * 2 + padding * 2
         if power_of_2_cropping:
@@ -268,19 +282,41 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # Limit the center size parameter
         center_size = min(center_size, n * 2)
 
-        rotation_axis = self.Atools.centre_of_rotation + 0.5
+        if mem_stack:
+            mem_stack.malloc(
+                np.prod(self.Atools.angles_vec.shape) * cp.float32().itemsize
+            )
+
         theta = cp.array(-self.Atools.angles_vec, dtype=cp.float32)
+
         if center_size >= _CENTER_SIZE_MIN:
-            sorted_theta_indices = cp.argsort(theta)
-            sorted_theta = theta[sorted_theta_indices]
-            sorted_theta_cpu = sorted_theta.get()
+            if mem_stack:
+                mem_stack.malloc(
+                    np.prod(self.Atools.angles_vec.shape) * np.int64().itemsize
+                )
+                mem_stack.malloc(
+                    np.prod(self.Atools.angles_vec.shape) * np.float32().itemsize
+                )
+
+                sorted_theta_cpu = cp.sort(theta).get()
+            else:
+                sorted_theta_indices = cp.argsort(theta)
+                sorted_theta = theta[sorted_theta_indices]
+                sorted_theta_cpu = sorted_theta.get()
 
             theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
             angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
-            angle_range = cp.zeros(
-                [center_size, center_size, 1 + angle_range_pi_count * 2],
-                dtype=cp.uint16,
-            )
+
+            if mem_stack:
+                mem_stack.malloc(
+                    np.prod((center_size, center_size, (1 + angle_range_pi_count * 2)))
+                    * cp.uint16().itemsize
+                )
+            else:
+                angle_range = cp.zeros(
+                    [center_size, center_size, 1 + angle_range_pi_count * 2],
+                    dtype=cp.uint16,
+                )
 
         # usfft parameters
         eps = 1e-4  # accuracy of usfft
@@ -304,14 +340,23 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_m = ne // 2 - n // 2
         unpad_p = ne // 2 + n // 2
 
-        wfilter = calc_filter(ne, filter_type, cutoff_freq)
+        rotation_axis = self.Atools.centre_of_rotation + 0.5
 
         # STEP0: FBP filtering
-        t = rfftfreq(ne).astype(cp.float32)
-        w = wfilter * cp.exp(-2 * cp.pi * 1j * t * (rotation_axis))
+        if mem_stack:
+            mem_stack.malloc((ne // 2 + 1) * np.float32().itemsize)
+            mem_stack.malloc((ne // 2 + 1) * np.float32().itemsize)
+            mem_stack.malloc((ne // 2 + 1) * np.float32().itemsize)
+        else:
+            wfilter = calc_filter(ne, filter_type, cutoff_freq)
+            t = rfftfreq(ne).astype(cp.float32)
+            w = wfilter * cp.exp(-2 * cp.pi * 1j * t * (rotation_axis))
 
         # FBP filtering output
-        tmp_p = cp.empty((nz, nproj, n), dtype=cp.float32)
+        if mem_stack:
+            mem_stack.malloc(np.prod((nz, nproj, n)) * cp.float32().itemsize)
+        else:
+            tmp_p = cp.empty((nz, nproj, n), dtype=cp.float32)
 
         if min_mem_usage_filter:
             filter_vol_chunk_count = nz
@@ -345,71 +390,191 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 if projection_start_index >= projection_end_index:
                     break
 
-                tmp = cp.pad(
-                    data[
+                if mem_stack:
+                    rfft_input = cp.empty(
+                        (
+                            int(slice_end_index - slice_start_index),
+                            int(projection_end_index - projection_start_index),
+                            int(data_n + padding_m * 2),
+                        ),
+                        cp.float32,
+                    )
+                    mem_stack.malloc(rfft_input.nbytes)
+
+                    rfft_plan = get_fft_plan(rfft_input, axes=(2), value_type="R2C")
+                    mem_stack.malloc(rfft_plan.work_area.mem.size)
+                    mem_stack.free(rfft_plan.work_area.mem.size)
+
+                    rfft_output_shape = (
+                        int(slice_end_index - slice_start_index),
+                        int(projection_end_index - projection_start_index),
+                        int(data_n + padding_m * 2) // 2 + 1,
+                    )
+                    rfft_output = cp.empty(
+                        rfft_output_shape,
+                        cp.complex64,
+                    )
+
+                    mem_stack.malloc(rfft_output.nbytes)
+                    mem_stack.free(rfft_input.nbytes)
+
+                    irfft_plan = get_fft_plan(rfft_output, axes=(2), value_type="C2R")
+                    mem_stack.malloc(irfft_plan.work_area.mem.size)
+                    mem_stack.free(irfft_plan.work_area.mem.size)
+
+                    irfft_output_size = (
+                        np.prod(
+                            (
+                                slice_end_index - slice_start_index,
+                                projection_end_index - projection_start_index,
+                                (data_n + padding_m * 2),
+                            )
+                        )
+                        * cp.float32().itemsize
+                    )
+
+                    mem_stack.malloc(irfft_output_size)
+                    mem_stack.free(rfft_output.nbytes)
+                    mem_stack.free(irfft_output_size)
+                else:
+                    tmp = cp.pad(
+                        data[
+                            slice_start_index:slice_end_index,
+                            projection_start_index:projection_end_index,
+                            :,
+                        ],
+                        ((0, 0), (0, 0), (padding_m, padding_m)),
+                        mode="edge",
+                    )
+
+                    tmp = w * rfft(tmp, axis=2)
+                    tmp = irfft(tmp, axis=2)
+                    tmp_p[
                         slice_start_index:slice_end_index,
                         projection_start_index:projection_end_index,
                         :,
-                    ],
-                    ((0, 0), (0, 0), (padding_m, padding_m)),
-                    mode="edge",
-                )
+                    ] = tmp[:, :, unpad_m:unpad_p]
 
-                tmp = w * rfft(tmp, axis=2)
-                tmp = irfft(tmp, axis=2)
-                tmp_p[
-                    slice_start_index:slice_end_index,
-                    projection_start_index:projection_end_index,
-                    :,
-                ] = tmp[:, :, unpad_m:unpad_p]
-
-                del tmp
+                    del tmp
 
         # Memory clean up of filter and input data
-        del data, t, wfilter, w
+        if mem_stack:
+            mem_stack.free(np.prod((nz, nproj, data_n)) * cp.float32().itemsize)
+            mem_stack.free((ne // 2 + 1) * np.float32().itemsize)
+            mem_stack.free((ne // 2 + 1) * np.float32().itemsize)
+            mem_stack.free((ne // 2 + 1) * np.float32().itemsize)
+        else:
+            del data, t, wfilter, w
 
         # BACKPROJECTION
         # input data
-        datac = cp.empty((nz // 2, nproj, n), dtype=cp.complex64)
+        if mem_stack:
+            fft_input = cp.empty((nz // 2, nproj, n), cp.complex64)
+            mem_stack.malloc(fft_input.nbytes)
+            mem_stack.malloc(np.prod((nz // 2, 2 * n, 2 * n)) * cp.complex64().itemsize)
+            mem_stack.free(np.prod((nz, nproj, n)) * cp.float32().itemsize)
 
-        # fft, reusable by chunks
-        if center_size >= _CENTER_SIZE_MIN:
-            fde = cp.empty([nz // 2, 2 * n, 2 * n], dtype=cp.complex64)
+            fft_plan = get_fft_plan(fft_input, axes=(-1))
+            mem_stack.malloc(fft_plan.work_area.mem.size)
+            mem_stack.free(fft_plan.work_area.mem.size)
         else:
-            fde = cp.zeros([nz // 2, 2 * n, 2 * n], dtype=cp.complex64)
+            datac = cp.empty((nz // 2, nproj, n), dtype=cp.complex64)
 
-        # STEP1: fft 1d
-        r2c_c1dfftshift(
-            (
-                int(np.ceil(n / 32)),
-                int(np.ceil(nproj / 32)),
-                np.int32(nz // 2),
-            ),
-            (32, 32, 1),
-            (tmp_p, datac, n, nproj, nz // 2),
-        )
+            # fft, reusable by chunks
+            if center_size >= _CENTER_SIZE_MIN:
+                fde = cp.empty([nz // 2, 2 * n, 2 * n], dtype=cp.complex64)
+            else:
+                fde = cp.zeros([nz // 2, 2 * n, 2 * n], dtype=cp.complex64)
 
-        # Memory clean up of interpolation extra arrays
-        del tmp_p
+            # STEP1: fft 1d
+            r2c_c1dfftshift(
+                (
+                    int(np.ceil(n / 32)),
+                    int(np.ceil(nproj / 32)),
+                    np.int32(nz // 2),
+                ),
+                (32, 32, 1),
+                (tmp_p, datac, n, nproj, nz // 2),
+            )
 
-        datac = fft(datac)
+            # Memory clean up of interpolation extra arrays
+            del tmp_p
 
-        c1dfftshift(
-            (
-                int(np.ceil(n / 32)),
-                int(np.ceil(nproj / 32)),
-                np.int32(nz // 2),
-            ),
-            (32, 32, 1),
-            (datac, np.float32(4 / n), n, nproj, nz // 2),
-        )
+            datac = fft(datac)
 
-        # STEP2: interpolation (gathering) in the frequency domain
-        # Use original one kernel at low dimension.
+            c1dfftshift(
+                (
+                    int(np.ceil(n / 32)),
+                    int(np.ceil(nproj / 32)),
+                    np.int32(nz // 2),
+                ),
+                (32, 32, 1),
+                (datac, np.float32(4 / n), n, nproj, nz // 2),
+            )
 
-        if center_size >= _CENTER_SIZE_MIN:
-            if center_size != (n * 2):
-                gather_kernel_partial(
+            # STEP2: interpolation (gathering) in the frequency domain
+            # Use original one kernel at low dimension.
+
+            if center_size >= _CENTER_SIZE_MIN:
+                if center_size != (n * 2):
+                    gather_kernel_partial(
+                        (
+                            int(np.ceil(n / block_dim[0])),
+                            int(np.ceil(nproj / block_dim[1])),
+                            nz // 2,
+                        ),
+                        (block_dim[0], block_dim[1], 1),
+                        (
+                            datac,
+                            fde,
+                            theta,
+                            np.int32(m),
+                            np.float32(mu),
+                            np.int32(center_size),
+                            np.int32(n),
+                            np.int32(nproj),
+                            np.int32(nz // 2),
+                        ),
+                    )
+
+                gather_kernel_center_angle_based_prune(
+                    (int(np.ceil(center_size / 256)), center_size, 1),
+                    (256, 1, 1),
+                    (
+                        angle_range,
+                        angle_range_pi_count * 2 + 1,
+                        sorted_theta,
+                        np.int32(m),
+                        np.int32(center_size),
+                        np.int32(n),
+                        np.int32(nproj),
+                    ),
+                )
+
+                gather_kernel_center(
+                    (
+                        int(np.ceil(center_size / block_dim_center[0])),
+                        int(np.ceil(center_size / block_dim_center[1])),
+                        nz // 2,
+                    ),
+                    (block_dim_center[0], block_dim_center[1], 1),
+                    (
+                        datac,
+                        fde,
+                        angle_range,
+                        angle_range_pi_count * 2 + 1,
+                        theta,
+                        sorted_theta_indices,
+                        np.int32(m),
+                        np.float32(mu),
+                        np.int32(center_size),
+                        np.int32(n),
+                        np.int32(nproj),
+                        np.int32(nz // 2),
+                    ),
+                )
+            else:
+                gather_kernel(
                     (
                         int(np.ceil(n / block_dim[0])),
                         int(np.ceil(nproj / block_dim[1])),
@@ -422,81 +587,27 @@ class RecToolsDIRCuPy(RecToolsDIR):
                         theta,
                         np.int32(m),
                         np.float32(mu),
-                        np.int32(center_size),
                         np.int32(n),
                         np.int32(nproj),
                         np.int32(nz // 2),
                     ),
                 )
 
-            gather_kernel_center_angle_based_prune(
-                (int(np.ceil(center_size / 256)), center_size, 1),
-                (256, 1, 1),
-                (
-                    angle_range,
-                    angle_range_pi_count * 2 + 1,
-                    sorted_theta,
-                    np.int32(m),
-                    np.int32(center_size),
-                    np.int32(n),
-                    np.int32(nproj),
-                ),
-            )
-
-            gather_kernel_center(
-                (
-                    int(np.ceil(center_size / block_dim_center[0])),
-                    int(np.ceil(center_size / block_dim_center[1])),
-                    nz // 2,
-                ),
-                (block_dim_center[0], block_dim_center[1], 1),
-                (
-                    datac,
-                    fde,
-                    angle_range,
-                    angle_range_pi_count * 2 + 1,
-                    theta,
-                    sorted_theta_indices,
-                    np.int32(m),
-                    np.float32(mu),
-                    np.int32(center_size),
-                    np.int32(n),
-                    np.int32(nproj),
-                    np.int32(nz // 2),
-                ),
-            )
+        if mem_stack:
+            mem_stack.free(np.prod((nz // 2, nproj, n)) * cp.complex64().itemsize)
         else:
-            gather_kernel(
+            del datac
+
+            # STEP3: ifft 2d
+            c2dfftshift(
                 (
-                    int(np.ceil(n / block_dim[0])),
-                    int(np.ceil(nproj / block_dim[1])),
-                    nz // 2,
-                ),
-                (block_dim[0], block_dim[1], 1),
-                (
-                    datac,
-                    fde,
-                    theta,
-                    np.int32(m),
-                    np.float32(mu),
-                    np.int32(n),
-                    np.int32(nproj),
+                    int(np.ceil((2 * n) / 32)),
+                    int(np.ceil((2 * n) / 8)),
                     np.int32(nz // 2),
                 ),
+                (32, 8, 1),
+                (fde, n, nz // 2),
             )
-
-        del datac
-
-        # STEP3: ifft 2d
-        c2dfftshift(
-            (
-                int(np.ceil((2 * n) / 32)),
-                int(np.ceil((2 * n) / 8)),
-                np.int32(nz // 2),
-            ),
-            (32, 8, 1),
-            (fde, n, nz // 2),
-        )
 
         slice_count_per_chunk = np.ceil(nz // 2 / chunk_count)
         # Loop over the chunks
@@ -506,21 +617,37 @@ class RecToolsDIRCuPy(RecToolsDIR):
             if start_index >= end_index:
                 break
 
-            tmp = fde[start_index:end_index, :, :]
-            tmp = ifft2(tmp, axes=(-2, -1), overwrite_x=True)
-            fde[start_index:end_index, :, :] = tmp
+            if mem_stack:
+                ifft2_input = cp.empty(
+                    (
+                        int(end_index - start_index),
+                        int(2 * n),
+                        int(2 * n),
+                    ),
+                    cp.complex64,
+                )
+                mem_stack.malloc(ifft2_input.nbytes)
 
-            del tmp
+                ifft2_plan = get_fft_plan(ifft2_input, axes=(-2, -1))
+                mem_stack.malloc(ifft2_plan.work_area.mem.size)
+                mem_stack.free(ifft2_plan.work_area.mem.size)
+                mem_stack.free(ifft2_input.nbytes)
+            else:
+                tmp = fde[start_index:end_index, :, :]
+                tmp = ifft2(tmp, axes=(-2, -1), overwrite_x=True)
+                fde[start_index:end_index, :, :] = tmp
+                del tmp
 
-        c2dfftshift(
-            (
-                int(np.ceil((2 * n) / 32)),
-                int(np.ceil((2 * n) / 8)),
-                np.int32(nz // 2),
-            ),
-            (32, 8, 1),
-            (fde, n, nz // 2),
-        )
+        if not mem_stack:
+            c2dfftshift(
+                (
+                    int(np.ceil((2 * n) / 32)),
+                    int(np.ceil((2 * n) / 8)),
+                    np.int32(nz // 2),
+                ),
+                (32, 8, 1),
+                (fde, n, nz // 2),
+            )
 
         # Unpadded recon output size
         odd_recon_size = bool(recon_size % 2)
@@ -530,6 +657,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_recon_size = unpad_recon_p - unpad_recon_m
 
         # memory for recon
+        if mem_stack:
+            mem_stack.malloc(
+                np.prod((unpad_z, unpad_recon_size, unpad_recon_size))
+                * cp.float32().itemsize
+            )
+            mem_stack.free(np.prod((nz // 2, 2 * n, 2 * n)) * cp.complex64().itemsize)
+            return mem_stack.highwater * 1.35
+
         recon_up = cp.empty(
             [unpad_z, unpad_recon_size, unpad_recon_size], dtype=cp.float32
         )

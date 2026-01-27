@@ -7,16 +7,16 @@ class _DeviceMemStack:
         self.current = 0
         self.highwater = 0
 
-    def malloc(self, bytes):
-        self.allocations.append(bytes)
-        allocated = self._round_up(bytes)
+    def malloc(self, byte_count):
+        self.allocations.append(byte_count)
+        allocated = self._round_up(byte_count)
         self.current += allocated
         self.highwater = max(self.current, self.highwater)
 
-    def free(self, bytes):
-        assert bytes in self.allocations
-        self.allocations.remove(bytes)
-        self.current -= self._round_up(bytes)
+    def free(self, byte_count):
+        assert byte_count in self.allocations
+        self.allocations.remove(byte_count)
+        self.current -= self._round_up(byte_count)
         assert self.current >= 0
 
     def _round_up(self, size):
