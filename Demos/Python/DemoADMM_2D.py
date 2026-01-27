@@ -158,7 +158,7 @@ Rectools = RecToolsIR(
 _data_ = {"projection_norm_data": noisy_sino}  # data dictionary
 _algorithm_ = {
     "initialise": FBPrec,
-    "iterations": 200,
+    "iterations": 300,
     "ADMM_rho_const": 0.1,
     "ADMM_relax_par": 1.6,
 }
@@ -175,8 +175,7 @@ _regularisation_ = {
 RecADMM_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
-# plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")
-plt.imshow(RecADMM_reg, cmap="gray")
+plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
 plt.title("ADMM reconstruction")
 plt.show()
@@ -205,21 +204,21 @@ Rectools = RecToolsIR(
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": noisy_sino,
-          "OS_number": 6,  # The number of subsets
+          "OS_number": 12,  # The number of subsets
           }  # data dictionary
 
 _algorithm_ = {
     "initialise": FBPrec,
     "iterations": 10,
-    "ADMM_rho_const": 0.1,
+    "ADMM_rho_const": 1.0,
     "ADMM_relax_par": 1.6,
 }
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
     "method": "FGP_TV",
-    "regul_param": 1,
-    "iterations": 100,
+    "regul_param": 0.45,
+    "iterations": 70,
     "device_regulariser": "gpu",
 }
 
@@ -227,8 +226,7 @@ _regularisation_ = {
 RecADMM_OS_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_)
 
 plt.figure()
-# plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")
-plt.imshow(RecADMM_OS_reg, cmap="gray")
+plt.imshow(RecADMM_OS_reg, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
 plt.title("ADMM-OS-TV reconstruction")
 plt.show()

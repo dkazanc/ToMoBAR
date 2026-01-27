@@ -585,6 +585,7 @@ def test_ADMM2D_test(data, angles):
     _data_ = {
         "projection_norm_data": data2D,
         "data_axes_labels_order": ["angles", "detX"],
+        "OS_number": 6,  # The number of subsets
     }
 
     _algorithm_ = {"iterations": 5, "ADMM_rho_const": 0.1}
