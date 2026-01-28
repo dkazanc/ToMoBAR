@@ -400,21 +400,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                         cp.float32,
                     )
                     mem_stack.malloc(rfft_input.nbytes)
-                else:
-                    tmp = cp.pad(
-                        data[
-                            slice_start_index:slice_end_index,
-                            projection_start_index:projection_end_index,
-                            :,
-                        ],
-                        ((0, 0), (0, 0), (padding_m, padding_m)),
-                        mode="edge",
-                    )
-                    rfft_input = tmp
 
-                rfft_plan = get_fft_plan(rfft_input, axes=(2), value_type="R2C")
-
-                if mem_stack:
+                    rfft_plan = get_fft_plan(rfft_input, axes=(2), value_type="R2C")
                     mem_stack.malloc(rfft_plan.work_area.mem.size)
                     mem_stack.free(rfft_plan.work_area.mem.size)
 
@@ -427,17 +414,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
                         rfft_output_shape,
                         cp.complex64,
                     )
+
                     mem_stack.malloc(rfft_output.nbytes)
-
                     mem_stack.free(rfft_input.nbytes)
-                else:
-                    with rfft_plan:
-                        tmp = w * rfft(tmp, axis=2)
-                    rfft_output = tmp
 
-                irfft_plan = get_fft_plan(rfft_output, axes=(2), value_type="C2R")
-
-                if mem_stack:
+                    irfft_plan = get_fft_plan(rfft_output, axes=(2), value_type="C2R")
                     mem_stack.malloc(irfft_plan.work_area.mem.size)
                     mem_stack.free(irfft_plan.work_area.mem.size)
 
@@ -451,14 +432,23 @@ class RecToolsDIRCuPy(RecToolsDIR):
                         )
                         * cp.float32().itemsize
                     )
-                    mem_stack.malloc(irfft_output_size)
 
+                    mem_stack.malloc(irfft_output_size)
                     mem_stack.free(rfft_output.nbytes)
                     mem_stack.free(irfft_output_size)
                 else:
-                    with irfft_plan:
-                        tmp = irfft(tmp, axis=2)
+                    tmp = cp.pad(
+                        data[
+                            slice_start_index:slice_end_index,
+                            projection_start_index:projection_end_index,
+                            :,
+                        ],
+                        ((0, 0), (0, 0), (padding_m, padding_m)),
+                        mode="edge",
+                    )
 
+                    tmp = w * rfft(tmp, axis=2)
+                    tmp = irfft(tmp, axis=2)
                     tmp_p[
                         slice_start_index:slice_end_index,
                         projection_start_index:projection_end_index,
@@ -481,23 +471,22 @@ class RecToolsDIRCuPy(RecToolsDIR):
         if mem_stack:
             fft_input = cp.empty((nz // 2, nproj, n), cp.complex64)
             mem_stack.malloc(fft_input.nbytes)
+            mem_stack.malloc(np.prod((nz // 2, 2 * n, 2 * n)) * cp.complex64().itemsize)
+            mem_stack.free(np.prod((nz, nproj, n)) * cp.float32().itemsize)
+
+            fft_plan = get_fft_plan(fft_input, axes=(-1))
+            mem_stack.malloc(fft_plan.work_area.mem.size)
+            mem_stack.free(fft_plan.work_area.mem.size)
         else:
             datac = cp.empty((nz // 2, nproj, n), dtype=cp.complex64)
-            fft_input = datac
 
-        # fft, reusable by chunks
-        if mem_stack:
-            mem_stack.malloc(np.prod((nz // 2, 2 * n, 2 * n)) * cp.complex64().itemsize)
-        else:
+            # fft, reusable by chunks
             if center_size >= _CENTER_SIZE_MIN:
                 fde = cp.empty([nz // 2, 2 * n, 2 * n], dtype=cp.complex64)
             else:
                 fde = cp.zeros([nz // 2, 2 * n, 2 * n], dtype=cp.complex64)
 
-        # STEP1: fft 1d
-        if mem_stack:
-            mem_stack.free(np.prod((nz, nproj, n)) * cp.float32().itemsize)
-        else:
+            # STEP1: fft 1d
             r2c_c1dfftshift(
                 (
                     int(np.ceil(n / 32)),
@@ -511,14 +500,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             # Memory clean up of interpolation extra arrays
             del tmp_p
 
-        fft_plan = get_fft_plan(fft_input, axes=(-1))
-
-        if mem_stack:
-            mem_stack.malloc(fft_plan.work_area.mem.size)
-            mem_stack.free(fft_plan.work_area.mem.size)
-        else:
-            with fft_plan:
-                datac = fft(datac)
+            datac = fft(datac)
 
             c1dfftshift(
                 (
@@ -645,23 +627,15 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     cp.complex64,
                 )
                 mem_stack.malloc(ifft2_input.nbytes)
-            else:
-                tmp = fde[start_index:end_index, :, :]
-                ifft2_input = tmp
 
-            ifft2_plan = get_fft_plan(ifft2_input, axes=(-2, -1))
-
-            if mem_stack:
+                ifft2_plan = get_fft_plan(ifft2_input, axes=(-2, -1))
                 mem_stack.malloc(ifft2_plan.work_area.mem.size)
                 mem_stack.free(ifft2_plan.work_area.mem.size)
-            else:
-                with ifft2_plan:
-                    tmp = ifft2(ifft2_input, axes=(-2, -1), overwrite_x=True)
-                fde[start_index:end_index, :, :] = tmp
-
-            if mem_stack:
                 mem_stack.free(ifft2_input.nbytes)
             else:
+                tmp = fde[start_index:end_index, :, :]
+                tmp = ifft2(tmp, axes=(-2, -1), overwrite_x=True)
+                fde[start_index:end_index, :, :] = tmp
                 del tmp
 
         if not mem_stack:
