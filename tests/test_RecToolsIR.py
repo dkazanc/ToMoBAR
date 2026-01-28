@@ -567,6 +567,36 @@ def test_ADMM2D(data, angles):
     assert Iter_rec.shape == (160, 160)
 
 
+def test_ADMM2D_test(data, angles):
+    detX = np.shape(data)[2]
+    detY = 0
+    data2D = data[:, 60, :]
+    N_size = detX
+    RecTools = RecToolsIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+    _data_ = {
+        "projection_norm_data": data2D,
+        "data_axes_labels_order": ["angles", "detX"],
+        "OS_number": 6,  # The number of subsets
+    }
+
+    _algorithm_ = {"iterations": 5, "ADMM_rho_const": 0.1}
+
+    Iter_rec = RecTools.ADMM_test(_data_, _algorithm_)
+    assert_allclose(np.min(Iter_rec), 0.00047048455, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.0020609223, rtol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (160, 160)
+
+
 def test_ADMM3D(data, angles):
     detX = np.shape(data)[2]
     detY = np.shape(data)[1]

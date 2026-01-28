@@ -9,6 +9,7 @@ import timeit
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import cupy as cp
 import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.qualitymetrics import QualityTools
@@ -79,46 +80,46 @@ plt.imshow(projData3D_analyt_noise[:, :, sliceSel], vmin=0, vmax=intens_max)
 plt.title("Tangentogram view")
 plt.show()
 # %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsDIR import RecToolsDIR
+# print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# print("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
+# print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
-RectoolsDIR = RecToolsDIR(
-    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=None,  # Center of Rotation (CoR) scalar
-    AnglesVec=angles_rad,  # a vector of angles in radians
-    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
-    device_projector="gpu",
-)
+# RectoolsDIR = RecToolsDIRCuPy(
+#     DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+#     DetectorsDimH_pad=0,  # Padding size of horizontal detector
+#     DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+#     CenterRotOffset=None,  # Center of Rotation (CoR) scalar
+#     AnglesVec=angles_rad,  # a vector of angles in radians
+#     ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+#     device_projector=0,
+# )
 
-FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise)  # perform FBP
+# FBPrec = RectoolsDIR.FBP(cp.asarray(projData3D_analyt_noise))  # perform FBP
 
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-plt.imshow(FBPrec[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D FBP Reconstruction, axial view")
+# sliceSel = int(0.5 * N_size)
+# max_val = 1
+# plt.figure()
+# plt.subplot(131)
+# plt.imshow(FBPrec[sliceSel, :, :], vmin=0, vmax=max_val)
+# plt.title("3D FBP Reconstruction, axial view")
 
-plt.subplot(132)
-plt.imshow(FBPrec[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D FBP Reconstruction, coronal view")
+# plt.subplot(132)
+# plt.imshow(FBPrec[:, sliceSel, :], vmin=0, vmax=max_val)
+# plt.title("3D FBP Reconstruction, coronal view")
 
-plt.subplot(133)
-plt.imshow(FBPrec[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D FBP Reconstruction, sagittal view")
-plt.show()
+# plt.subplot(133)
+# plt.imshow(FBPrec[:, :, sliceSel], vmin=0, vmax=max_val)
+# plt.title("3D FBP Reconstruction, sagittal view")
+# plt.show()
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM method (ASTRA used for projection)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
 # set parameters and initiate a class object
-Rectools = RecToolsIR(
+Rectools = RecToolsIRCuPy(
     DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
     DetectorsDimH_pad=0,  # Padding size of horizontal detector
     DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
@@ -126,13 +127,15 @@ Rectools = RecToolsIR(
     AnglesVec=angles_rad,  # a vector of angles in radians
     ObjSize=N_size,  # a scalar to define reconstructed object dimensions
     datafidelity="LS",  # data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-    device_projector="gpu",
+    device_projector=0,
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_noise}  # data dictionary
+_data_ = {
+    "projection_norm_data": cp.asarray(projData3D_analyt_noise)
+}  # data dictionary
 _algorithm_ = {
-    "iterations": 25,
+    "iterations": 150,
     "ADMM_rho_const": 1000.0,
     "ADMM_solver": "cgs",
     "ADMM_solver_iterations": 20,
@@ -141,15 +144,15 @@ _algorithm_ = {
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
-    "method": "FGP_TV",
-    "regul_param": 0.03,
+    "method": "ROF_TV",
+    "regul_param": 0.3,
     "iterations": 300,
     "device_regulariser": "gpu",
 }
 
 
 # Run ADMM reconstrucion algorithm with regularisation
-RecADMM_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_)
+RecADMM_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_).get()
 
 
 sliceSel = int(0.5 * N_size)
@@ -172,67 +175,68 @@ plt.show()
 Qtools = QualityTools(phantom_tm, RecADMM_reg)
 RMSE_ADMM = Qtools.rmse()
 print("RMSE for regularised ADMM is {}".format(RMSE_ADMM))
+
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with ADMM method (ASTRA used for projection)")
+print("Reconstructing with ADMM-OS method")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
 # set parameters and initiate a class object
-Rectools = RecToolsIR(
-    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+Rectools = RecToolsIRCuPy(
+    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
     DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=None,  # Center of Rotation (CoR) scalar
-    AnglesVec=angles_rad,  # a vector of angles in radians
-    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
-    datafidelity="LS",  # data fidelity, choose LS, PWLS, GH (wip), Student (wip)
-    device_projector="gpu",
+    DetectorsDimV=Vert_det,  # Vertical detector dimension
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
+    device_projector=0,
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_noise}  # data dictionary
+_data_ = {
+    "projection_norm_data": cp.asarray(projData3D_analyt_noise),
+    "OS_number": 12,  # The number of subsets
+}  # data dictionary
+
 _algorithm_ = {
-    "initialise": FBPrec,
-    "iterations": 25,
-    "ADMM_rho_const": 0.1,
-    "ADMM_relax_par": 1.6,
-    # "ADMM_solver": "cgs",
-    # "ADMM_solver_iterations": 20,
-    # "ADMM_solver_tolerance": 1e-06,
+    "iterations": 30,
+    "ADMM_rho_const": 1000.0,
+    "ADMM_solver": "cgs",
+    "ADMM_solver_iterations": 20,
+    "ADMM_solver_tolerance": 1e-06,
 }
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
-    "method": "FGP_TV",
-    "regul_param": 1,
+    "method": "ROF_TV",
+    "regul_param": 0.3,
     "iterations": 300,
     "device_regulariser": "gpu",
 }
 
 
 # Run ADMM reconstrucion algorithm with regularisation
-RecADMM_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_)
-
+RecADMM_OS_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_).get()
 
 sliceSel = int(0.5 * N_size)
 max_val = 1
 plt.figure()
 plt.subplot(131)
-plt.imshow(RecADMM_reg[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D ADMM Reconstruction, axial view")
+plt.imshow(RecADMM_OS_reg[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("3D ADMM-OS Reconstruction, axial view")
 
 plt.subplot(132)
-plt.imshow(RecADMM_reg[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D ADMM Reconstruction, coronal view")
+plt.imshow(RecADMM_OS_reg[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("3D ADMM-OS Reconstruction, coronal view")
 
 plt.subplot(133)
-plt.imshow(RecADMM_reg[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D ADMM Reconstruction, sagittal view")
+plt.imshow(RecADMM_OS_reg[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("3D ADMM-OS Reconstruction, sagittal view")
 plt.show()
 
 # calculate errors
-Qtools = QualityTools(phantom_tm, RecADMM_reg)
+Qtools = QualityTools(phantom_tm, RecADMM_OS_reg)
 RMSE_ADMM = Qtools.rmse()
-print("RMSE for regularised ADMM is {}".format(RMSE_ADMM))
-# %%
+print("RMSE for regularised ADMM-OS is {}".format(RMSE_ADMM))

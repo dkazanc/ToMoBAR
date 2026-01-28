@@ -7,6 +7,7 @@ List of functions:
 
 """
 
+from typing import Optional
 import numpy as np
 
 try:
@@ -39,6 +40,7 @@ try:
 except ImportError:
     # "____! BM3D module is required to use for dynamic flat fields calculation !____"
     pass
+from tomobar.supp.memory_estimator_helpers import _DeviceMemStack
 
 
 def _DFFC(data, flats, darks, downsample, nrPArepetions):
@@ -415,12 +417,19 @@ def perform_recon_crop(data, croped_size):
     return data[:, crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop]
 
 
-def _apply_horiz_detector_padding(data, detector_width_pad, cupyrun):
+def _apply_horiz_detector_padding(
+    data, detector_width_pad, cupyrun, mem_stack: Optional[_DeviceMemStack] = None
+):
     """extending the size of the horizontal detector, here
     assuming the order of the 3D data as: ["detY", "angles", "detX"] and
     2D data: ["angles", "detX"]"""
     if detector_width_pad > 0:
-        if len(data.shape) == 2:
+        if mem_stack is not None:
+            padded_size = (data[0], data[1], data[2] + 2 * detector_width_pad)
+            if cupyrun:
+                mem_stack.malloc(np.prod(padded_size) * np.float32().itemsize)
+            return padded_size
+        elif len(data.shape) == 2:
             # there are no cupy implementions for 2D geometry
             return np.pad(
                 data,
