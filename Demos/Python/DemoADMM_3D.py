@@ -131,19 +131,88 @@ Rectools = RecToolsIR(
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": projData3D_analyt_noise}  # data dictionary
-_algorithm_ = {"iterations": 15, "ADMM_rho_const": 2000.0}
+_algorithm_ = {
+    "iterations": 25,
+    "ADMM_rho_const": 1000.0,
+    "ADMM_solver": "cgs",
+    "ADMM_solver_iterations": 20,
+    "ADMM_solver_tolerance": 1e-06,
+}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
     "method": "FGP_TV",
-    "regul_param": 0.001,
-    "iterations": 200,
+    "regul_param": 0.03,
+    "iterations": 300,
     "device_regulariser": "gpu",
 }
 
 
 # Run ADMM reconstrucion algorithm with regularisation
-RecADMM_reg = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
+RecADMM_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_)
+
+
+sliceSel = int(0.5 * N_size)
+max_val = 1
+plt.figure()
+plt.subplot(131)
+plt.imshow(RecADMM_reg[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("3D ADMM Reconstruction, axial view")
+
+plt.subplot(132)
+plt.imshow(RecADMM_reg[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("3D ADMM Reconstruction, coronal view")
+
+plt.subplot(133)
+plt.imshow(RecADMM_reg[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("3D ADMM Reconstruction, sagittal view")
+plt.show()
+
+# calculate errors
+Qtools = QualityTools(phantom_tm, RecADMM_reg)
+RMSE_ADMM = Qtools.rmse()
+print("RMSE for regularised ADMM is {}".format(RMSE_ADMM))
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM method (ASTRA used for projection)")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+
+# set parameters and initiate a class object
+Rectools = RecToolsIR(
+    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
+    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+    CenterRotOffset=None,  # Center of Rotation (CoR) scalar
+    AnglesVec=angles_rad,  # a vector of angles in radians
+    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+    datafidelity="LS",  # data fidelity, choose LS, PWLS, GH (wip), Student (wip)
+    device_projector="gpu",
+)
+
+# prepare dictionaries with parameters:
+_data_ = {"projection_norm_data": projData3D_analyt_noise}  # data dictionary
+_algorithm_ = {
+    "initialise": FBPrec,
+    "iterations": 25,
+    "ADMM_rho_const": 0.1,
+    "ADMM_relax_par": 1.6,
+    # "ADMM_solver": "cgs",
+    # "ADMM_solver_iterations": 20,
+    # "ADMM_solver_tolerance": 1e-06,
+}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {
+    "method": "FGP_TV",
+    "regul_param": 1,
+    "iterations": 300,
+    "device_regulariser": "gpu",
+}
+
+
+# Run ADMM reconstrucion algorithm with regularisation
+RecADMM_reg = Rectools.ADMM_test(_data_, _algorithm_, _regularisation_)
 
 
 sliceSel = int(0.5 * N_size)
