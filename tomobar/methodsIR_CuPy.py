@@ -537,6 +537,12 @@ class RecToolsIRCuPy:
         Returns:
             xp.ndarray: ADMM-reconstructed numpy array
         """
+        cp._default_memory_pool.free_all_blocks()
+
+        if self.geom == "2D":
+            # 2D reconstruction
+            raise ValueError("2D CuPy reconstruction is not yet supported")
+
         ######################################################################
         # parameters check and initialisation
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
@@ -547,24 +553,23 @@ class RecToolsIRCuPy:
             _data_upd_["projection_norm_data"],
             self.Atools.detectors_x_pad,
             cupyrun=True,
-            # mem_stack=mem_stack,
         )
 
-        def _Ax(self, x):
+        def _Ax(x):
             geom_size = astra.geom_size(self.Atools.vol_geom)
             return self.Atools._forwprojCuPy(cp.reshape(x, geom_size)).ravel()
 
-        def _Atb(self, b):
+        def _Atb(b):
             geom_size = astra.geom_size(self.Atools.proj_geom)
             return self.Atools._backprojCuPy(cp.reshape(b, geom_size)).ravel()
 
-        def _Ax_OS(self, x, sub_ind: int):
+        def _Ax_OS(x, sub_ind: int):
             geom_size = astra.geom_size(self.Atools.vol_geom)
             return self.Atools._forwprojOSCuPy(
                 cp.reshape(x, geom_size), os_index=sub_ind
             ).ravel()
 
-        def _Atb_OS(self, b, sub_ind: int):
+        def _Atb_OS(b, sub_ind: int):
             geom_size = astra.geom_size(self.Atools.proj_geom_OS[sub_ind])
             return self.Atools._backprojOSCuPy(
                 cp.reshape(b, geom_size), os_index=sub_ind
@@ -605,29 +610,25 @@ class RecToolsIRCuPy:
                 if self.datafidelity == "KL":
                     if use_os:
                         grad_data = _Atb_OS(
-                            self,
-                            1 - proj_data / (_Ax_OS(self, z, sub_ind) + 1e-8),
+                            1 - proj_data / (_Ax_OS(z, sub_ind) + 1e-8),
                             sub_ind,
                         )  # KL term
                     else:
                         grad_data = _Atb(
-                            self,
                             1
                             - _data_upd_["projection_norm_data"].ravel()
-                            / (_Ax(self, z) + 1e-8),
+                            / (_Ax(z) + 1e-8),
                         )  # KL term
                 else:
                     if use_os:
                         proj_size = astra.geom_size(self.Atools.proj_geom_OS[sub_ind])
                         grad_data = _Atb_OS(
-                            self,
-                            _Ax_OS(self, z, sub_ind) - proj_data,
+                            _Ax_OS(z, sub_ind) - proj_data,
                             sub_ind,
                         )  # LS term
                     else:
                         grad_data = _Atb(
-                            self,
-                            _Ax(self, z) - _data_upd_["projection_norm_data"].ravel(),
+                            _Ax(z) - _data_upd_["projection_norm_data"].ravel(),
                         )  # LS term
 
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
@@ -641,19 +642,13 @@ class RecToolsIRCuPy:
                         1.0 - _algorithm_upd_["ADMM_relax_par"]
                     ) * z_old + _algorithm_upd_["ADMM_relax_par"] * z
                 z_old = z.copy()
-
-                if self.geom == "2D":
-                    x_prox_reg = (z + u).reshape(
-                        [self.Atools.recon_size, self.Atools.recon_size]
-                    )
-                if self.geom == "3D":
-                    x_prox_reg = (z + u).reshape(
-                        [
-                            self.Atools.detectors_y,
-                            self.Atools.recon_size,
-                            self.Atools.recon_size,
-                        ]
-                    )
+                x_prox_reg = (z + u).reshape(
+                    [
+                        self.Atools.detectors_y,
+                        self.Atools.recon_size,
+                        self.Atools.recon_size,
+                    ]
+                )
                 # X-update (proximal regularization)
                 if _regularisation_upd_["method"] is not None:
                     x = prox_regul(self, x_prox_reg, _regularisation_upd_)
@@ -669,21 +664,15 @@ class RecToolsIRCuPy:
                         iter_no + 1,
                         ") using",
                         _regularisation_upd_["method"],
-                        "regularisation for (",
-                        (int)(info_vec[0]),
-                        ") iterations",
+                        "regularisation",
                     )
             if iter_no == _algorithm_upd_["iterations"] - 1:
                 print("ADMM stopped at iteration (", iter_no + 1, ")")
 
-        if self.geom == "2D":
-            return x.reshape([self.Atools.recon_size, self.Atools.recon_size])
-        if self.geom == "3D":
-            return x.reshape(
-                [
-                    self.Atools.detectors_y,
-                    self.Atools.recon_size,
-                    self.Atools.recon_size,
-                ]
-            )
-        return x
+        return x.reshape(
+            [
+                self.Atools.detectors_y,
+                self.Atools.recon_size,
+                self.Atools.recon_size,
+            ]
+        )
