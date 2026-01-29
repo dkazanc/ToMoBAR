@@ -664,169 +664,8 @@ class RecToolsIR:
     # # *****************************FISTA ends here*********************************#
 
     # **********************************ADMM***************************************#
+
     def ADMM(
-        self,
-        _data_: dict,
-        _algorithm_: Union[dict, None] = None,
-        _regularisation_: Union[dict, None] = None,
-    ) -> xp.ndarray:
-        """Alternating Directions Method of Multipliers with various types of regularisation and
-        data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
-
-        Args:
-            _data_ (dict): Data dictionary, where input data is provided.
-            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
-            _regularisation_ (dict, optional): Regularisation dictionary.
-
-        Returns:
-            xp.ndarray: ADMM-reconstructed numpy array
-        """
-        try:
-            import scipy.sparse.linalg
-        except ImportError:
-            print(
-                "____! Scipy toolbox package is missing, please install for ADMM !____"
-            )
-        if not self.cupyrun:
-            import numpy as xp
-        ######################################################################
-        # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
-            self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
-        )
-        ######################################################################
-
-        def ADMM_Ax(x):
-            data_upd = self.Atools.A_optomo(x)
-            x_temp = self.Atools.A_optomo.transposeOpTomo(data_upd)
-            x_upd = x_temp + _algorithm_upd_["ADMM_rho_const"] * x
-            return x_upd
-
-        def ADMM_Atb(b):
-            b = self.Atools.A_optomo.transposeOpTomo(b)
-            return b
-
-        (data_dim, rec_dim) = xp.shape(self.Atools.A_optomo)
-
-        # initialise the solution and other ADMM variables
-        if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
-            # the object has been initialised with an array
-            X = _algorithm_upd_["initialise"].ravel()
-        else:
-            X = xp.zeros(rec_dim, "float32")
-
-        info_vec = (0, 2)
-        denomN = 1.0 / xp.size(X)
-        z = X.copy()
-        u = xp.zeros(rec_dim, "float32")
-        b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(
-            _data_upd_["projection_norm_data"].ravel()
-        )
-
-        # Outer ADMM iterations
-        for iter_no in range(_algorithm_upd_["iterations"]):
-            X_old = X
-            # solving quadratic problem using linalg solver
-            A_to_solver = scipy.sparse.linalg.LinearOperator(
-                (rec_dim, rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb
-            )
-            b_to_solver = b_to_solver_const + _algorithm_upd_["ADMM_rho_const"] * (
-                z - u
-            )
-            if _algorithm_upd_["ADMM_solver"] == "cgs":
-                outputSolver = scipy.sparse.linalg.cgs(
-                    A_to_solver,
-                    b_to_solver,
-                    atol=_algorithm_upd_["ADMM_solver_tolerance"],
-                    maxiter=_algorithm_upd_["ADMM_solver_iterations"],
-                )
-            elif _algorithm_upd_["ADMM_solver"] == "cg":
-                outputSolver = scipy.sparse.linalg.cg(
-                    A_to_solver,
-                    b_to_solver,
-                    tol=_algorithm_upd_["ADMM_solver_tolerance"],
-                    maxiter=_algorithm_upd_["ADMM_solver_iterations"],
-                )
-            elif _algorithm_upd_["ADMM_solver"] == "gmres":
-                outputSolver = scipy.sparse.linalg.gmres(
-                    A_to_solver,
-                    b_to_solver,
-                    atol=_algorithm_upd_["ADMM_solver_tolerance"],
-                    maxiter=_algorithm_upd_["ADMM_solver_iterations"],
-                )
-            elif _algorithm_upd_["ADMM_solver"] == "minres":
-                outputSolver = scipy.sparse.linalg.minres(
-                    A_to_solver,
-                    b_to_solver,
-                    tol=_algorithm_upd_["ADMM_solver_tolerance"],
-                    maxiter=_algorithm_upd_["ADMM_solver_iterations"],
-                )
-            else:
-                raise ValueError("Please select from cgs, cg, gmres, minres solvers")
-
-            z = xp.float32(outputSolver[0])  # get LS system solution
-            if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                z[z < 0.0] = 0.0
-            # z-update with relaxation
-            if iter_no > 1:
-                z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old + _algorithm_upd_[
-                    "ADMM_relax_par"
-                ] * z
-            z_old = z.copy()
-
-            if self.geom == "2D":
-                x_prox_reg = (z + u).reshape(
-                    [self.Atools.recon_size, self.Atools.recon_size]
-                )
-            if self.geom == "3D":
-                x_prox_reg = (z + u).reshape(
-                    [
-                        self.Atools.detectors_y,
-                        self.Atools.recon_size,
-                        self.Atools.recon_size,
-                    ]
-                )
-            # X-update (proximal regularization)
-            if _regularisation_upd_["method"] is not None:
-                (X, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
-            X = X.ravel()
-            # update u variable (dual update)
-            u = u + (z - X)
-            if _algorithm_upd_["verbose"]:
-                if xp.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
-                    print(
-                        "ADMM iteration (",
-                        iter_no + 1,
-                        ") using",
-                        _regularisation_upd_["method"],
-                        "regularisation for (",
-                        (int)(info_vec[0]),
-                        ") iterations",
-                    )
-            if iter_no == _algorithm_upd_["iterations"] - 1:
-                print("ADMM stopped at iteration (", iter_no + 1, ")")
-
-            # stopping criteria (checked after reasonable number of iterations)
-            if iter_no > 5:
-                nrm = xp.linalg.norm(X - X_old) * denomN
-                if nrm < _algorithm_upd_["tolerance"]:
-                    print("ADMM stopped at iteration (", iter_no, ")")
-                    break
-        if self.geom == "2D":
-            return X.reshape([self.Atools.recon_size, self.Atools.recon_size])
-        if self.geom == "3D":
-            return X.reshape(
-                [
-                    self.Atools.detectors_y,
-                    self.Atools.recon_size,
-                    self.Atools.recon_size,
-                ]
-            )
-        return X
-
-    # *****************************ADMM ends here*********************************#
-
-    def ADMM_test(
         self,
         _data_: dict,
         _algorithm_: Union[dict, None] = None,
@@ -896,8 +735,11 @@ class RecToolsIR:
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
-                        indVec = indVec[:-1]  # shrink vector size                        
-                    proj_data = _data_upd_["projection_norm_data"][indVec, :].ravel()
+                        indVec = indVec[:-1]  # shrink vector size
+                    if self.geom == "2D":
+                        proj_data = _data_upd_["projection_norm_data"][indVec, :].ravel()
+                    else:
+                        proj_data = _data_upd_["projection_norm_data"][:, indVec, :].ravel()
 
                 # ---- z-update (linearized data term) ----
                 if self.datafidelity == "KL":
@@ -976,3 +818,4 @@ class RecToolsIR:
                 ]
             )
         return x
+    # *****************************ADMM ends here*********************************#

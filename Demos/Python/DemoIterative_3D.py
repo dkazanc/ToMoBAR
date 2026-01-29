@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 A script to generate 3D analytical phantoms and their projection data with added
-noise and then reconstruct using regularised FISTA algorithm.
+noise and then reconstruct using various iterative algorithms
+
 """
 import timeit
 import os
@@ -83,26 +84,23 @@ plt.subplot(133)
 plt.imshow(projData3D_analyt_noise[:, :, sliceSel], vmin=0, vmax=intens_max)
 plt.title("Tangentogram view")
 plt.show()
-
-# %%
+#%%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsDIR import RecToolsDIR
 
 RectoolsDIR = RecToolsDIR(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
     DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+    CenterRotOffset=None,  # Center of Rotation (CoR) scalar
+    AnglesVec=angles_rad,  # a vector of angles in radians
+    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
     device_projector="gpu",
 )
 
-FBPrec = RectoolsDIR.FBP(
-    projData3D_analyt_noise, data_axes_labels_order=data_labels3D
-)  # perform FBP
+FBPrec = RectoolsDIR.FBP(projData3D_analyt_noise)  # perform FBP
 
 sliceSel = int(0.5 * N_size)
 max_val = 1
@@ -119,43 +117,7 @@ plt.subplot(133)
 plt.imshow(FBPrec[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FBP Reconstruction, sagittal view")
 plt.show()
-# %%
-RecTools = RecToolsIR(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
-)
-
-_data_ = {
-    "projection_norm_data": projData3D_analyt_noise,
-    "data_axes_labels_order": data_labels3D,
-}  # data dictionary
-
-_algorithm_ = {"iterations": 200}
-
-Iter_rec = RecTools.SIRT(_data_, _algorithm_)
-
-max_val = 1
-plt.figure()
-plt.subplot(131)
-plt.imshow(Iter_rec[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D SIRT Reconstruction, axial view")
-
-plt.subplot(132)
-plt.imshow(Iter_rec[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D SIRT Reconstruction, coronal view")
-
-plt.subplot(133)
-plt.imshow(Iter_rec[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D SIRT Reconstruction, sagittal view")
-plt.show()
-
-# %%
+#%%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA method (ASTRA used for projection)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -324,4 +286,68 @@ Qtools = QualityTools(phantom_tm, RecFISTA_os_reg)
 RMSE_FISTA_os_reg = Qtools.rmse()
 print("RMSE for FISTA-OS is {}".format(RMSE_FISTA_os))
 print("RMSE for regularised FISTA-OS is {}".format(RMSE_FISTA_os_reg))
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM-OS method")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+
+# set parameters and initiate a class object
+Rectools = RecToolsIR(
+    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
+    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
+    CenterRotOffset=None,  # Center of Rotation (CoR) scalar
+    AnglesVec=angles_rad,  # a vector of angles in radians
+    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+    datafidelity="LS",  # data fidelity, choose LS, PWLS (wip)
+    device_projector="gpu",
+)
+
+# prepare dictionaries with parameters:
+_data_ = {"projection_norm_data": projData3D_analyt_noise,
+          "OS_number": 12,  # The number of subsets
+          }  # data dictionary
+
+_algorithm_ = {
+    "initialise": FBPrec,
+    "iterations": 15,
+    "ADMM_rho_const": 3.5,
+    "ADMM_relax_par": 1.7,
+}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {
+    "method": "PD_TV",
+    "regul_param": 0.45,
+    "iterations": 30,
+    "device_regulariser": "gpu",
+}
+
+# Run ADMM reconstrucion algorithm with regularisation
+start_time = timeit.default_timer()
+RecADMM_reg = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
+txtstr = "%s = %.3fs" % ("elapsed time", timeit.default_timer() - start_time)
+print(txtstr)
+
+sliceSel = int(0.5 * N_size)
+max_val = 1
+plt.figure()
+plt.subplot(131)
+plt.imshow(RecADMM_reg[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("3D ADMM-OS Reconstruction, axial view")
+
+plt.subplot(132)
+plt.imshow(RecADMM_reg[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("3D ADMM-OS Reconstruction, coronal view")
+
+plt.subplot(133)
+plt.imshow(RecADMM_reg[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("3D ADMM-OS Reconstruction, sagittal view")
+plt.show()
+
+# calculate errors
+Qtools = QualityTools(phantom_tm, RecADMM_reg)
+RMSE_ADMM = Qtools.rmse()
+print("RMSE for regularised ADMM is {}".format(RMSE_ADMM))
 # %%
