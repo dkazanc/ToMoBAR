@@ -84,7 +84,7 @@ plt.subplot(133)
 plt.imshow(projData3D_analyt_noise[:, :, sliceSel], vmin=0, vmax=intens_max)
 plt.title("Tangentogram view")
 plt.show()
-#%%
+# %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -117,7 +117,7 @@ plt.subplot(133)
 plt.imshow(FBPrec[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FBP Reconstruction, sagittal view")
 plt.show()
-#%%
+# %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA method (ASTRA used for projection)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -305,9 +305,10 @@ Rectools = RecToolsIR(
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": projData3D_analyt_noise,
-          "OS_number": 12,  # The number of subsets
-          }  # data dictionary
+_data_ = {
+    "projection_norm_data": projData3D_analyt_noise,
+    "OS_number": 12,  # The number of subsets
+}  # data dictionary
 
 _algorithm_ = {
     "initialise": FBPrec,

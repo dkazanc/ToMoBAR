@@ -701,12 +701,16 @@ class RecToolsIR:
 
         def _Ax_OS(self, x, sub_ind: int):
             geom_size = astra.geom_size(self.Atools.vol_geom)
-            return self.Atools._forwprojOS(cp.reshape(x, geom_size), os_index=sub_ind).ravel()        
+            return self.Atools._forwprojOS(
+                cp.reshape(x, geom_size), os_index=sub_ind
+            ).ravel()
 
-        def _Atb_OS(self, b, sub_ind: int):            
+        def _Atb_OS(self, b, sub_ind: int):
             geom_size = astra.geom_size(self.Atools.proj_geom_OS[sub_ind])
-            return self.Atools._backprojOS(cp.reshape(b, geom_size), os_index=sub_ind).ravel()
-        
+            return self.Atools._backprojOS(
+                cp.reshape(b, geom_size), os_index=sub_ind
+            ).ravel()
+
         rec_dim = xp.prod(astra.geom_size(self.Atools.vol_geom))
         # initialisation of the solution
         if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
@@ -730,35 +734,45 @@ class RecToolsIR:
 
         # Outer ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
-            for sub_ind in range(_data_upd_["OS_number"]):             
+            for sub_ind in range(_data_upd_["OS_number"]):
                 if use_os:
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
                         indVec = indVec[:-1]  # shrink vector size
                     if self.geom == "2D":
-                        proj_data = _data_upd_["projection_norm_data"][indVec, :].ravel()
+                        proj_data = _data_upd_["projection_norm_data"][
+                            indVec, :
+                        ].ravel()
                     else:
-                        proj_data = _data_upd_["projection_norm_data"][:, indVec, :].ravel()
+                        proj_data = _data_upd_["projection_norm_data"][
+                            :, indVec, :
+                        ].ravel()
 
                 # ---- z-update (linearized data term) ----
                 if self.datafidelity == "KL":
                     if use_os:
-                        grad_data = _Atb_OS(self,
-                            1 - proj_data / (_Ax_OS(self, z, sub_ind) + 1e-8), sub_ind
-                        ) # KL term       
+                        grad_data = _Atb_OS(
+                            self,
+                            1 - proj_data / (_Ax_OS(self, z, sub_ind) + 1e-8),
+                            sub_ind,
+                        )  # KL term
                     else:
-                        grad_data = _Atb(self, 
-                            1 - _data_upd_["projection_norm_data"].ravel() / (_Ax(self, z) + 1e-8)
-                        ) # KL term
+                        grad_data = _Atb(
+                            self,
+                            1
+                            - _data_upd_["projection_norm_data"].ravel()
+                            / (_Ax(self, z) + 1e-8),
+                        )  # KL term
                 else:
                     if use_os:
-                        grad_data = _Atb_OS(self,
-                            _Ax_OS(self, z, sub_ind) - proj_data, sub_ind
-                        )  # LS term                        
+                        grad_data = _Atb_OS(
+                            self, _Ax_OS(self, z, sub_ind) - proj_data, sub_ind
+                        )  # LS term
                     else:
-                        grad_data = _Atb(self,
-                            _Ax(self, z) - _data_upd_["projection_norm_data"].ravel()
+                        grad_data = _Atb(
+                            self,
+                            _Ax(self, z) - _data_upd_["projection_norm_data"].ravel(),
                         )  # LS term
 
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
@@ -768,9 +782,9 @@ class RecToolsIR:
                     z[z < 0.0] = 0.0
                 # z-update with relaxation
                 if iter_no > 1:
-                    z = (1.0 - _algorithm_upd_["ADMM_relax_par"]) * z_old + _algorithm_upd_[
-                        "ADMM_relax_par"
-                    ] * z
+                    z = (
+                        1.0 - _algorithm_upd_["ADMM_relax_par"]
+                    ) * z_old + _algorithm_upd_["ADMM_relax_par"] * z
                 z_old = z.copy()
 
                 if self.geom == "2D":
@@ -818,4 +832,5 @@ class RecToolsIR:
                 ]
             )
         return x
+
     # *****************************ADMM ends here*********************************#

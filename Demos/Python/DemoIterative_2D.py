@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Demo where generated 2D analytical phantoms and their sinograms 
+"""Demo where generated 2D analytical phantoms and their sinograms
 reconstructed iteratively.
 """
 import numpy as np
@@ -57,7 +57,7 @@ plt.rcParams.update({"font.size": 21})
 plt.imshow(noisy_sino, cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation="vertical")
 plt.title("{}" "{}".format("Analytical noisy sinogram", model))
-#%%
+# %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -83,7 +83,7 @@ plt.rcParams.update({"font.size": 20})
 plt.imshow(FBPrec, vmin=0, vmax=1, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
 plt.title("FBP reconstruction")
-#%%
+# %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%Reconstructing with SIRT method %%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -189,9 +189,11 @@ Rectools = RecToolsIR(
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": noisy_sino, 
-          "OS_number": 10,
-          "initialise": FBPrec}  # data dictionary
+_data_ = {
+    "projection_norm_data": noisy_sino,
+    "OS_number": 10,
+    "initialise": FBPrec,
+}  # data dictionary
 lc = Rectools.powermethod(
     _data_
 )  # calculate Lipschitz constant (run once to initialise)
@@ -296,9 +298,10 @@ Rectools = RecToolsIR(
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": noisy_sino,
-          "OS_number": 12,  # The number of subsets
-          }  # data dictionary
+_data_ = {
+    "projection_norm_data": noisy_sino,
+    "OS_number": 12,  # The number of subsets
+}  # data dictionary
 
 _algorithm_ = {
     "initialise": FBPrec,
@@ -329,4 +332,4 @@ plt.show()
 Qtools = QualityTools(phantom_2D, RecADMM_OS_reg)
 RMSE_ADMM_OS = Qtools.rmse()
 print("RMSE for regularised ADMM-OS is {}".format(RMSE_ADMM_OS))
-#%%
+# %%
