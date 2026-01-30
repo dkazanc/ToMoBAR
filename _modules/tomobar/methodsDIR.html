@@ -1,0 +1,702 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tomobar.methodsDIR &#8212; Tomobar Documentation page</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/general.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=780dcd79"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tomobar/methodsDIR';</script>
+    <link rel="icon" href="../../_static/tomobar_logo_light.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Jan 30, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/tomobar_logo_light.png" class="logo__image only-light" alt="Tomobar Documentation page - Home"/>
+    <script>document.write(`<img src="../../_static/tomobar_logo_dark.png" class="logo__image only-dark" alt="Tomobar Documentation page - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/about.html">About ToMoBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How To's</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../howto/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../howto/use.html">Using ToMoBAR</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/direct_recon.html">Direct reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/basic_iter_recon.html">Basic iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/regul_iter_recon.html">Regularised iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/synthetic_recon.html">Synthethic data reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/real_data_recon.html">Real data reconstruction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../reference/api.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsDIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsDIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.regularisers.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisers</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.regularisersCuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisersCuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.supp.dicts.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.dicts</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.supp.suppTools.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.suppTools</span></code></a></li>
+</ul>
+</details></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for tomobar.methodsDIR</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Reconstruction class for direct reconstruction methods (2D/3D).</span>
+
+<span class="sd">* :func:`RecToolsDIR.FORWPROJ` and :func:`RecToolsDIR.BACKPROJ` Forward/Backward 2D/3D projection (ASTRA-Toolbox)</span>
+<span class="sd">* :func:`RecToolsDIR.FOURIER` Fourier Slice Theorem-based reconstruction in 2D only (adopted from the Tim Day&#39;s code)</span>
+<span class="sd">* :func:`RecToolsDIR.FBP` Filtered Back Projection 2D/3D (ASTRA with the custom built filter).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.fftpack</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.astra_wrappers.astra_tools2d</span><span class="w"> </span><span class="kn">import</span> <span class="n">AstraTools2D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.astra_wrappers.astra_tools3d</span><span class="w"> </span><span class="kn">import</span> <span class="n">AstraTools3D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.funcs</span><span class="w"> </span><span class="kn">import</span> <span class="n">_data_dims_swapper</span><span class="p">,</span> <span class="n">_parse_device_argument</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.suppTools</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_kwargs</span><span class="p">,</span> <span class="n">_apply_horiz_detector_padding</span>
+
+
+<div class="viewcode-block" id="RecToolsDIR">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR.html#tomobar.methodsDIR.RecToolsDIR">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RecToolsDIR</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruction class using DIRect methods (FBP and Fourier).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        DetectorsDimH (int): Horizontal detector dimension.</span>
+<span class="sd">        DetectorsDimH_pad (int): Padding size of horizontal detector</span>
+<span class="sd">        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.</span>
+<span class="sd">        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.</span>
+<span class="sd">        AnglesVec (np.ndarray): Vector of projection angles in radians.</span>
+<span class="sd">        ObjSize (int): Reconstructed object dimensions (a scalar).</span>
+<span class="sd">        device_projector (str, int, optional): &#39;cpu&#39; or &#39;gpu&#39;  device OR provide a GPU index (integer) of a specific GPU device.</span>
+<span class="sd">        cupyrun (bool, optional): instantiate CuPy class if True.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">DetectorsDimH</span><span class="p">,</span>  <span class="c1"># DetectorsDimH # detector dimension (horizontal)</span>
+        <span class="n">DetectorsDimH_pad</span><span class="p">,</span>  <span class="c1"># Padding size of horizontal detector</span>
+        <span class="n">DetectorsDimV</span><span class="p">,</span>  <span class="c1"># DetectorsDimV # detector dimension (vertical) for 3D case only</span>
+        <span class="n">CenterRotOffset</span><span class="p">,</span>  <span class="c1"># Centre of Rotation (CoR) scalar or a vector</span>
+        <span class="n">AnglesVec</span><span class="p">,</span>  <span class="c1"># Array of angles in radians</span>
+        <span class="n">ObjSize</span><span class="p">,</span>  <span class="c1"># A scalar to define reconstructed object dimensions</span>
+        <span class="n">device_projector</span><span class="o">=</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span>  <span class="c1"># Choose the device  to be &#39;cpu&#39; or &#39;gpu&#39; OR provide a GPU index (integer) of a specific device</span>
+    <span class="p">):</span>
+        <span class="n">device_projector</span><span class="p">,</span> <span class="n">GPUdevice_index</span> <span class="o">=</span> <span class="n">_parse_device_argument</span><span class="p">(</span><span class="n">device_projector</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">DetectorsDimV</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">DetectorsDimV</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="s2">&quot;2D&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span> <span class="o">=</span> <span class="n">AstraTools2D</span><span class="p">(</span>
+                <span class="n">DetectorsDimH</span><span class="p">,</span>
+                <span class="n">DetectorsDimH_pad</span><span class="p">,</span>
+                <span class="n">AnglesVec</span><span class="p">,</span>
+                <span class="n">CenterRotOffset</span><span class="p">,</span>
+                <span class="n">ObjSize</span><span class="p">,</span>
+                <span class="n">device_projector</span><span class="p">,</span>
+                <span class="n">GPUdevice_index</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="s2">&quot;3D&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span> <span class="o">=</span> <span class="n">AstraTools3D</span><span class="p">(</span>
+                <span class="n">DetectorsDimH</span><span class="p">,</span>
+                <span class="n">DetectorsDimH_pad</span><span class="p">,</span>
+                <span class="n">DetectorsDimV</span><span class="p">,</span>
+                <span class="n">AnglesVec</span><span class="p">,</span>
+                <span class="n">CenterRotOffset</span><span class="p">,</span>
+                <span class="n">ObjSize</span><span class="p">,</span>
+                <span class="n">device_projector</span><span class="p">,</span>
+                <span class="n">GPUdevice_index</span><span class="p">,</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="RecToolsDIR.FORWPROJ">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR.html#tomobar.methodsDIR.RecToolsDIR.FORWPROJ">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">FORWPROJ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Module to perform forward projection of 2d/3d data numpy array</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (np.ndarray): 2D or 3D object</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the OUTPUT data.</span>
+<span class="sd">                 When &quot;None&quot; we assume  [&quot;angles&quot;, &quot;detX&quot;] for 2D and [&quot;detY&quot;, &quot;angles&quot;, &quot;detX&quot;] for 3D.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: Forward projected numpy array (projection data)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">projected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwproj</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                    <span class="n">projected</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">projected</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">projected</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                        <span class="n">projected</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">]</span>
+                    <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">projected</span></div>
+
+
+<div class="viewcode-block" id="RecToolsDIR.BACKPROJ">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR.html#tomobar.methodsDIR.RecToolsDIR.BACKPROJ">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">BACKPROJ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Module to perform back-projection of 2d/3d data numpy array</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (np.ndarray): 2D/3D projection data</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.</span>
+<span class="sd">                 When &quot;None&quot; we assume  [&quot;angles&quot;, &quot;detX&quot;] for 2D and [&quot;detY&quot;, &quot;angles&quot;, &quot;detX&quot;] for 3D.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: Backprojected 2D/3D object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">_apply_horiz_detector_padding</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span> <span class="n">cupyrun</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backproj</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RecToolsDIR.FBP">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR.html#tomobar.methodsDIR.RecToolsDIR.FBP">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">FBP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Filtered backprojection reconstruction module for 2D or 3D data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (np.ndarray): 2D or 3D projection data.</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.</span>
+<span class="sd">                 When &quot;None&quot; we assume  [&quot;angles&quot;, &quot;detX&quot;] for 2D and [&quot;detY&quot;, &quot;angles&quot;, &quot;detX&quot;] for 3D.</span>
+<span class="sd">            filter_type (str) : type of projection filter, see https://astra-toolbox.com/docs/algs/FBP_CUDA.html for all available options</span>
+<span class="sd">            filter_parameter (float) : Parameter value for the &#39;tukey&#39;, &#39;gaussian&#39;, &#39;blackman&#39; and &#39;kaiser&#39; filter types (see ASTRA&#39;s API).</span>
+<span class="sd">            filter_d (float) : &quot;D&quot; parameter value for &#39;shepp-logan&#39;, &#39;cosine&#39;, &#39;hamming&#39; and &#39;hann&#39; filter types (see ASTRA&#39;s API).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: FBP reconstructed 2D or 3D object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;filter_type&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">fbp_filter_type</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;filter_parameter&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">fbp_filter_parameter</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;filter_d&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">fbp_filter_d</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="n">cupyrun</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;cupyrun&quot;</span><span class="p">:</span> <span class="n">cupyrun</span><span class="p">})</span>  <span class="c1"># needed for agnostic array cropping</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">processing_arch</span> <span class="o">==</span> <span class="s2">&quot;gpu&quot;</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">_apply_horiz_detector_padding</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span> <span class="n">cupyrun</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">check_kwargs</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_fbp</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span>
+                <span class="p">)</span>  <span class="c1"># 2D FBP reconstruction using ASTRA&#39;s API which includes options for a variety of filters</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="s2">&quot;dealing with FBP 2D not working for parallel_vec geometry and CPU&quot;</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">_apply_horiz_detector_padding</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span> <span class="n">cupyrun</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">check_kwargs</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backproj</span><span class="p">(</span><span class="n">_filtersinc2D</span><span class="p">(</span><span class="n">data</span><span class="p">)),</span> <span class="o">**</span><span class="n">kwargs</span>
+                <span class="p">)</span>  <span class="c1"># 2D FBP reconstruction using the customised SINC filter</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">_apply_horiz_detector_padding</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span> <span class="n">cupyrun</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">check_kwargs</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backproj</span><span class="p">(</span><span class="n">_filtersinc3D</span><span class="p">(</span><span class="n">data</span><span class="p">)),</span> <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>  <span class="c1"># 3D FBP reconstruction using customised SINC filter</span></div>
+
+
+<div class="viewcode-block" id="RecToolsDIR.FOURIER">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR.html#tomobar.methodsDIR.RecToolsDIR.FOURIER">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">FOURIER</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;2D Reconstruction using Fourier slice theorem (scipy required)</span>
+<span class="sd">        for griddata interpolation module choose nearest, linear or cubic</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (np.ndarray): 2D sinogram data</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.</span>
+<span class="sd">                 When &quot;None&quot; we assume  [&quot;angles&quot;, &quot;detX&quot;] for 2D and [&quot;detY&quot;, &quot;angles&quot;, &quot;detX&quot;] for 3D.</span>
+<span class="sd">            method (str, optional): Interpolation type (nearest, linear, or cubic). Defaults to &quot;linear&quot;.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: Reconstructed object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Fourier method is currently for 2D data only, use FBP if 3D reconstruction needed&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;method&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;nearest&quot;</span><span class="p">,</span> <span class="s2">&quot;cubic&quot;</span><span class="p">]:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;For griddata interpolation module choose nearest, linear or cubic&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">method</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.fft</span><span class="w"> </span><span class="kn">import</span> <span class="n">fftshift</span><span class="p">,</span> <span class="n">ifftshift</span><span class="p">,</span> <span class="n">fft</span><span class="p">,</span> <span class="n">ifft2</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.interpolate</span><span class="w"> </span><span class="kn">import</span> <span class="n">griddata</span>
+
+        <span class="n">ObjSize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span>
+        <span class="c1"># pad sinogram and move it to compensate for CoR</span>
+        <span class="n">oversampling</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># 2 or larger</span>
+        <span class="n">angles_tot</span><span class="p">,</span> <span class="n">DetectorsDimH</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">DetectorsDimH</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The horizontal detector size of the projection data (sinogram) must be even&quot;</span>
+            <span class="p">)</span>
+        <span class="n">det_x_up</span> <span class="o">=</span> <span class="n">oversampling</span> <span class="o">*</span> <span class="n">DetectorsDimH</span>
+        <span class="n">sino_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">angles_tot</span><span class="p">,</span> <span class="n">det_x_up</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">pad_from</span> <span class="o">=</span> <span class="n">DetectorsDimH</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">)</span>
+        <span class="n">pad_to</span> <span class="o">=</span> <span class="n">det_x_up</span> <span class="o">-</span> <span class="n">DetectorsDimH</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">)</span>
+        <span class="n">sino_up</span><span class="p">[:,</span> <span class="n">pad_from</span><span class="p">:</span><span class="n">pad_to</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+
+        <span class="c1"># Fourier transform the rows of the sinogram, move the DC component to the row&#39;s centre</span>
+        <span class="n">sinogram_fft_rows</span> <span class="o">=</span> <span class="n">fftshift</span><span class="p">(</span><span class="n">fft</span><span class="p">(</span><span class="n">ifftshift</span><span class="p">(</span><span class="n">sino_up</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="mi">1</span><span class="p">)),</span> <span class="n">axes</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Coordinates of sinogram FFT-ed rows&#39; samples in 2D FFT space</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">angles_vec</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">det_x_up</span><span class="p">)</span> <span class="o">-</span> <span class="n">det_x_up</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">r</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">srcx</span> <span class="o">=</span> <span class="p">(</span><span class="n">det_x_up</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+        <span class="n">srcy</span> <span class="o">=</span> <span class="p">(</span><span class="n">det_x_up</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+        <span class="c1"># Coordinates of regular grid in 2D FFT space</span>
+        <span class="n">dstx</span><span class="p">,</span> <span class="n">dsty</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">det_x_up</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">det_x_up</span><span class="p">))</span>
+        <span class="n">dstx</span> <span class="o">=</span> <span class="n">dstx</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">dsty</span> <span class="o">=</span> <span class="n">dsty</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="c1"># Interpolate the 2D Fourier space grid from the transformed sinogram rows</span>
+        <span class="n">fft2</span> <span class="o">=</span> <span class="n">griddata</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">srcy</span><span class="p">,</span> <span class="n">srcx</span><span class="p">),</span>
+            <span class="n">sinogram_fft_rows</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+            <span class="p">(</span><span class="n">dsty</span><span class="p">,</span> <span class="n">dstx</span><span class="p">),</span>
+            <span class="n">method</span><span class="p">,</span>
+            <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">det_x_up</span><span class="p">,</span> <span class="n">det_x_up</span><span class="p">))</span>
+        <span class="c1"># Transform from 2D Fourier space back to a reconstruction of the target</span>
+        <span class="n">recon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">fftshift</span><span class="p">(</span><span class="n">ifft2</span><span class="p">(</span><span class="n">ifftshift</span><span class="p">(</span><span class="n">fft2</span><span class="p">))))</span>
+
+        <span class="c1"># Cropping the reconstruction to size of the original image</span>
+        <span class="n">unpad_from</span> <span class="o">=</span> <span class="n">det_x_up</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">ObjSize</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="n">unpad_to</span> <span class="o">=</span> <span class="n">det_x_up</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">ObjSize</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">recon</span><span class="p">[</span><span class="n">unpad_from</span><span class="p">:</span><span class="n">unpad_to</span><span class="p">,</span> <span class="n">unpad_from</span><span class="p">:</span><span class="n">unpad_to</span><span class="p">]</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtersinc3D</span><span class="p">(</span><span class="n">projection3D</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies a 3D filter to 3D projection data for FBP</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        projection3D (np.ndarray): projection data</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        np.ndarray: Filtered data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mf">1.1</span>
+    <span class="p">[</span><span class="n">DetectorsLengthV</span><span class="p">,</span> <span class="n">projectionsNum</span><span class="p">,</span> <span class="n">DetectorsLengthH</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">projection3D</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="n">DetectorsLengthH</span><span class="p">,</span>
+        <span class="n">DetectorsLengthH</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">rn1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">/</span> <span class="n">a</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">w</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">))</span>
+    <span class="n">rn2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">w</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">rd</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">w</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="n">rd_c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">DetectorsLengthH</span><span class="p">])</span>
+    <span class="n">rd_c</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">rd</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">rn1</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rn2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">rd_c</span><span class="p">)))</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">multiplier</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">projectionsNum</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">fftpack</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+    <span class="c1"># making a 2d filter for projection</span>
+    <span class="n">f_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">DetectorsLengthV</span><span class="p">,</span> <span class="n">DetectorsLengthH</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="n">f_2d</span><span class="p">[</span><span class="mi">0</span><span class="p">::,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">f</span>
+    <span class="n">filtered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">projection3D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">projectionsNum</span><span class="p">):</span>
+        <span class="n">IMG</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">fftpack</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span><span class="n">projection3D</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:])</span>
+        <span class="n">fimg</span> <span class="o">=</span> <span class="n">IMG</span> <span class="o">*</span> <span class="n">f_2d</span>
+        <span class="n">filtered</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">fftpack</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">fimg</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">multiplier</span> <span class="o">*</span> <span class="n">filtered</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filtersinc2D</span><span class="p">(</span><span class="n">sinogram</span><span class="p">):</span>
+    <span class="c1"># applies filters to __2D projection data__ in order to achieve FBP</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mf">1.1</span>
+    <span class="p">[</span><span class="n">projectionsNum</span><span class="p">,</span> <span class="n">DetectorsLengthH</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">sinogram</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="n">DetectorsLengthH</span><span class="p">,</span>
+        <span class="n">DetectorsLengthH</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">rn1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">/</span> <span class="n">a</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">w</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">))</span>
+    <span class="n">rn2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">w</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">rd</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">w</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="n">rd_c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">DetectorsLengthH</span><span class="p">])</span>
+    <span class="n">rd_c</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">rd</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">rn1</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rn2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">rd_c</span><span class="p">)))</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">multiplier</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">projectionsNum</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">fftpack</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+    <span class="n">filtered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">sinogram</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">projectionsNum</span><span class="p">):</span>
+        <span class="n">IMG</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">fftpack</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">sinogram</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:])</span>
+        <span class="n">fimg</span> <span class="o">=</span> <span class="n">IMG</span> <span class="o">*</span> <span class="n">f</span>
+        <span class="n">filtered</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">multiplier</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">fftpack</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="n">fimg</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">filtered</span><span class="p">)</span>
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Daniil Kazantsev
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Diamond Light Source and Manchester University, UK.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Jan 30, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

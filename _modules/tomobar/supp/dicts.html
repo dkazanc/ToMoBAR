@@ -1,0 +1,660 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tomobar.supp.dicts &#8212; Tomobar Documentation page</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/general.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../_static/documentation_options.js?v=780dcd79"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tomobar/supp/dicts';</script>
+    <link rel="icon" href="../../../_static/tomobar_logo_light.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Jan 30, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/tomobar_logo_light.png" class="logo__image only-light" alt="Tomobar Documentation page - Home"/>
+    <script>document.write(`<img src="../../../_static/tomobar_logo_dark.png" class="logo__image only-dark" alt="Tomobar Documentation page - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/about.html">About ToMoBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How To's</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/use.html">Using ToMoBAR</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/direct_recon.html">Direct reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/basic_iter_recon.html">Basic iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/regul_iter_recon.html">Regularised iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/synthetic_recon.html">Synthethic data reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/real_data_recon.html">Real data reconstruction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../reference/api.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsDIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsDIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.regularisers.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisers</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.regularisersCuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisersCuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.supp.dicts.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.dicts</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.supp.suppTools.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.suppTools</span></code></a></li>
+</ul>
+</details></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for tomobar.supp.dicts</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.astra_wrappers.astra_tools2d</span><span class="w"> </span><span class="kn">import</span> <span class="n">AstraTools2D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.astra_wrappers.astra_tools3d</span><span class="w"> </span><span class="kn">import</span> <span class="n">AstraTools3D</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.funcs</span><span class="w"> </span><span class="kn">import</span> <span class="n">_data_dims_swapper</span>
+
+
+<div class="viewcode-block" id="dicts_check">
+<a class="viewcode-back" href="../../../api/tomobar.supp.dicts.html#tomobar.supp.dicts.dicts_check">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dicts_check</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">_data_</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">_algorithm_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">_regularisation_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">method_run</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;FISTA&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This function accepts the `_data_`, `_algorithm_`, and  `_regularisation_`</span>
+<span class="sd">    dictionaries and populates parameters in them, if required. Please note that the dictionaries are</span>
+<span class="sd">    needed for iterative methods only. The most versatile methods that can accept a variety of different parameters</span>
+<span class="sd">    are FISTA and ADMM.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        _data_ (dict):  *Data dictionary where data-related items must be specified.*</span>
+<span class="sd">        _algorithm_ (dict, optional): *Algorithm dictionary. Defaults to None.*</span>
+<span class="sd">        _regularisation_ (dict, optional): *Regularisation dictionary. Needed only for FISTA and ADMM algorithms. Defaults to None.*</span>
+<span class="sd">        method_run (str): *The name of the method to be run. Defaults to &quot;FISTA&quot;.*</span>
+
+<span class="sd">    Keyword Args:</span>
+<span class="sd">        _data_[&#39;projection_norm_data&#39;] (ndarray):  Negative log(normalised) projection data as a 2D sinogram or as a 3D data array.</span>
+<span class="sd">        _data_[&#39;projection_raw_data&#39;] (ndarray): Raw data for PWLS and SWLS models. A FISTA-related parameter.</span>
+<span class="sd">        _data_[&#39;data_axes_labels_order&#39;] (list, None).  The order of the axes labels for the input data. The default data labels are: [&quot;detY&quot;, &quot;angles&quot;, &quot;detX&quot;].</span>
+<span class="sd">        _data_[&#39;OS_number&#39;] (int): The number of the ordered subsets. If None or 1 is used then the classical (full data) algorithm executed. Defaults to 1.</span>
+<span class="sd">        _data_[&#39;huber_threshold&#39;] (float): Parameter for the Huber data fidelity (to suppress outliers) [KAZ1_2017]_.</span>
+<span class="sd">        _data_[&#39;studentst_threshold] (float):  Parameter for Students&#39;t data fidelity (to suppress outliers) [KAZ1_2017]_.</span>
+<span class="sd">        _data_[&#39;ringGH_lambda&#39;] (float):  Parameter for Group-Huber data model [PM2015]_ to suppress the full rings of the uniform intensity.</span>
+<span class="sd">        _data_[&#39;ringGH_accelerate&#39;] (float): Group-Huber data model acceleration factor (can lead to divergence for higher values). Defaults to 50.</span>
+<span class="sd">        _data_[&#39;beta_SWLS&#39;] (float): Regularisation parameter for stripe-weighted data model [HOA2017]_ for ring artefacts removal. Defaults to 0.1.</span>
+
+<span class="sd">        _algorithm_[&#39;iterations&#39;] (int): The number of iterations for the reconstruction algorithm.</span>
+<span class="sd">        _algorithm_[&#39;nonnegativity&#39;] (bool): Enable nonnegativity for the solution. Defaults to False.</span>
+<span class="sd">        _algorithm_[&#39;recon_mask_radius&#39;] (float): Enables the circular mask cutoff in the reconstructed image. Defaults to 1.0.</span>
+<span class="sd">        _algorithm_[&#39;initialise&#39;] (ndarray): Initialisation for the solution. An array of the expected output size must be provided.</span>
+<span class="sd">        _algorithm_[&#39;lipschitz_const&#39;] (float): Lipschitz constant for the FISTA algorithm. If not provided, it will be calculated for each method call.</span>
+<span class="sd">        _algorithm_[&#39;ADMM_rho_const&#39;] (float): Augmented Lagrangian parameter for the ADMM algorithm.</span>
+<span class="sd">        _algorithm_[&#39;ADMM_relax_par&#39;] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm. Values withing 1.5-18 range work well.</span>
+<span class="sd">        _algorithm_[&#39;tolerance&#39;] (float): Tolerance to terminate reconstruction algorithm iterations earlier. Defaults to 0.0.</span>
+<span class="sd">        _algorithm_[&#39;verbose&#39;] (bool): Switch on printing of iterations number and other messages. Defaults to False.</span>
+
+<span class="sd">        _regularisation_[&#39;method&#39;] (str): Select the regularisation method from the CCPi-regularisation toolkit [KAZ2019]_. The supported</span>
+<span class="sd">                methods listed: ROF_TV, FGP_TV, PD_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV.</span>
+<span class="sd">                If the `pypwt` package is installed for Wavelets, then one can do WAVELET regularisation by adding WAVELETS string to any method&#39;s name above.</span>
+<span class="sd">                For instance, ROF_TV_WAVELETS would enable dual regularisation with ROF_TV and wavelets. See `regul_param2` to control wavelets smoothing.</span>
+<span class="sd">        _regularisation_[&#39;regul_param&#39;] (float): The main regularisation parameter for regularisers to control the amount of smoothing. Defaults to 0.001.</span>
+<span class="sd">        _regularisation_[&#39;iterations&#39;] (int): The number of iterations for regularisers (INNER iterations). Defaults to 150.</span>
+<span class="sd">        _regularisation_[&#39;device_regulariser&#39;] (str, int): Select between &#39;cpu&#39; or &#39;gpu&#39; devices. One can also provide a GPU index (integer) of a specific GPU device.</span>
+<span class="sd">        _regularisation_[&#39;edge_threhsold&#39;] (float): Noise-related threshold parameter for NDF and DIFF4th (diffusion) regularisers.</span>
+<span class="sd">        _regularisation_[&#39;tolerance&#39;] (float): Tolerance to stop inner regularisation iterations prematurely.</span>
+<span class="sd">        _regularisation_[&#39;time_marching_step&#39;] (float): Time step parameter for convergence of gradient-based methods: ROF_TV, LLT_ROF, NDF,Diff4th.</span>
+<span class="sd">        _regularisation_[&#39;regul_param2&#39;] (float): The second regularisation parameter for LLT_ROF or when WAVELETS used.</span>
+<span class="sd">        _regularisation_[&#39;TGV_alpha1&#39;] (float): The TGV penalty specific parameter for the 1st order term.</span>
+<span class="sd">        _regularisation_[&#39;TGV_alpha2&#39;] (float): The TGV penalty specific parameter for the 2nd order term.</span>
+<span class="sd">        _regularisation_[&#39;PD_LipschitzConstant&#39;] (float): The Primal-Dual (PD) penalty related parameter for convergence (PD_TV and TGV specific).</span>
+<span class="sd">        _regularisation_[&#39;NDF_penalty&#39;] (str): The NDF-method specific penalty type: Huber (default), Perona, Tukey.</span>
+<span class="sd">        _regularisation_[&#39;NLTV_H_i&#39;] (ndarray): The NLTV penalty related weights, the array of i-related indices.</span>
+<span class="sd">        _regularisation_[&#39;NLTV_H_j&#39;] (ndarray): The NLTV penalty related weights, the array of j-related indices.</span>
+<span class="sd">        _regularisation_[&#39;NLTV_Weights] (ndarray): The NLTV-specific penalty type, the array of Weights.</span>
+<span class="sd">        _regularisation_[&#39;methodTV&#39;] (int): 0/1 - TV specific isotropic/anisotropic choice.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: A tuple with three populated dictionaries (_data_, _algorithm_, _regularisation_).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">_data_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s2">&quot;The data dictionary must be always provided&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># -------- dealing with _data_ dictionary ------------</span>
+        <span class="k">if</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s2">&quot;No input &#39;projection_norm_data&#39; has been provided&quot;</span><span class="p">)</span>
+        <span class="c1"># projection raw data for PWLS/SWLS type data models</span>
+        <span class="k">if</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span>
+                    <span class="s2">&quot;No input &#39;projection_raw_data&#39; provided for PWLS or SWLS data fidelity&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">],</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">],</span>
+                    <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">]:</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                        <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">],</span>
+                        <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">],</span>
+                        <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">],</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">],</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">],</span>
+                    <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">]:</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                        <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">],</span>
+                        <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">],</span>
+                        <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">],</span>
+                    <span class="p">)</span>
+                    <span class="c1"># we need to reset the swap option here as the data already been modified so we don&#39;t swap it again in the method</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OS_number&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># classical approach (default)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">OS_number</span> <span class="o">=</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">&quot;FISTA&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;beta_SWLS&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># SWLS related parameter (ring supression)</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;beta_SWLS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;beta_SWLS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;beta_SWLS&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span>
+                    <span class="p">)</span>
+            <span class="c1"># Huber data model to supress artifacts</span>
+            <span class="k">if</span> <span class="s2">&quot;huber_threshold&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;huber_threshold&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="c1"># Students&#39;t data model to supress artifactsand (self.datafidelity == &#39;SWLS&#39;):</span>
+            <span class="k">if</span> <span class="s2">&quot;studentst_threshold&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;studentst_threshold&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="c1"># Group-Huber data model to supress full rings of the same intensity</span>
+            <span class="k">if</span> <span class="s2">&quot;ringGH_lambda&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;ringGH_lambda&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="c1"># Group-Huber data model acceleration factor (use carefully to avoid divergence)</span>
+            <span class="k">if</span> <span class="s2">&quot;ringGH_accelerate&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;ringGH_accelerate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="c1"># ----------  dealing with _algorithm_  --------------</span>
+    <span class="k">if</span> <span class="n">_algorithm_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_algorithm_</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;SIRT&quot;</span><span class="p">,</span> <span class="s2">&quot;CGLS&quot;</span><span class="p">,</span> <span class="s2">&quot;power&quot;</span><span class="p">,</span> <span class="s2">&quot;Landweber&quot;</span><span class="p">}:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;lipschitz_const&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># bypass Lipshitz const calculation bellow</span>
+        <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;iterations&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">&quot;SIRT&quot;</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+            <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">&quot;CGLS&quot;</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30</span>
+            <span class="k">if</span> <span class="n">method_run</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;power&quot;</span><span class="p">,</span> <span class="s2">&quot;ADMM&quot;</span><span class="p">}:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">15</span>
+            <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">&quot;Landweber&quot;</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1500</span>
+        <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tau_step_lanweber&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;tau_step_lanweber&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-05</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">&quot;FISTA&quot;</span><span class="p">:</span>
+        <span class="c1"># default iterations number for FISTA reconstruction algorithm</span>
+        <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;iterations&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">20</span>  <span class="c1"># Ordered - Subsets</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">400</span>  <span class="c1"># Classical</span>
+    <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lipschitz_const&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># if not provided calculate Lipschitz constant automatically</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;lipschitz_const&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">powermethod</span><span class="p">(</span><span class="n">_data_</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">&quot;ADMM&quot;</span><span class="p">:</span>
+        <span class="c1"># ADMM -algorithm  augmented Lagrangian parameter</span>
+        <span class="k">if</span> <span class="s2">&quot;ADMM_rho_const&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+            <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;ADMM_rho_const&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="c1"># ADMM over-relaxation parameter to accelerate convergence</span>
+        <span class="k">if</span> <span class="s2">&quot;ADMM_relax_par&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+            <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;ADMM_relax_par&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.6</span>
+    <span class="c1"># initialise an algorithm with an array</span>
+    <span class="k">if</span> <span class="s2">&quot;initialise&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;initialise&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># ENABLE or DISABLE the nonnegativity for algorithm</span>
+    <span class="k">if</span> <span class="s2">&quot;nonnegativity&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;nonnegativity&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;nonnegativity&quot;</span><span class="p">]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nonneg_regul</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># enable nonnegativity for regularisers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nonneg_regul</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># disable nonnegativity for regularisers</span>
+    <span class="k">if</span> <span class="s2">&quot;recon_mask_radius&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;recon_mask_radius&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="c1"># tolerance to stop OUTER algorithm iterations earlier</span>
+    <span class="k">if</span> <span class="s2">&quot;tolerance&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;tolerance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">if</span> <span class="s2">&quot;verbose&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># ----------  deal with _regularisation_  --------------</span>
+    <span class="k">if</span> <span class="n">_regularisation_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_regularisation_</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">_regularisation_</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;FISTA&quot;</span><span class="p">,</span> <span class="s2">&quot;ADMM&quot;</span><span class="p">}:</span>
+        <span class="c1"># regularisation parameter  (main)</span>
+        <span class="k">if</span> <span class="s2">&quot;regul_param&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;regul_param&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.001</span>
+        <span class="c1"># regularisation parameter second (LLT_ROF)</span>
+        <span class="k">if</span> <span class="s2">&quot;regul_param2&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;regul_param2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.001</span>
+        <span class="c1"># set the number of inner (regularisation) iterations</span>
+        <span class="k">if</span> <span class="s2">&quot;iterations&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">150</span>
+        <span class="c1"># tolerance to stop inner regularisation iterations prematurely</span>
+        <span class="k">if</span> <span class="s2">&quot;tolerance&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;tolerance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c1"># time marching step to ensure convergence for gradient based methods: ROF_TV, LLT_ROF,  NDF, Diff4th</span>
+        <span class="k">if</span> <span class="s2">&quot;time_marching_step&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;time_marching_step&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.005</span>
+        <span class="c1">#  TGV specific parameter for the 1st order term</span>
+        <span class="k">if</span> <span class="s2">&quot;TGV_alpha1&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;TGV_alpha1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="c1">#  TGV specific parameter for the 2тв order term</span>
+        <span class="k">if</span> <span class="s2">&quot;TGV_alpha2&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;TGV_alpha2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span>
+        <span class="c1"># Primal-dual parameter for convergence (TGV specific)</span>
+        <span class="k">if</span> <span class="s2">&quot;PD_LipschitzConstant&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;PD_LipschitzConstant&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">12.0</span>
+        <span class="c1"># edge (noise) threshold parameter for NDF and DIFF4th models</span>
+        <span class="k">if</span> <span class="s2">&quot;edge_threhsold&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;edge_threhsold&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.001</span>
+        <span class="c1"># NDF specific penalty type: Huber (default), Perona, Tukey</span>
+        <span class="k">if</span> <span class="s2">&quot;NDF_penalty&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;NDF_penalty&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Huber&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">NDF_method</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;NDF_penalty&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Huber&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">NDF_method</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;NDF_penalty&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Perona&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">NDF_method</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="k">elif</span> <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;NDF_penalty&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Tukey&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">NDF_method</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s2">&quot;For NDF_penalty choose Huber, Perona or Tukey&quot;</span><span class="p">)</span>
+        <span class="c1"># NLTV penalty related weights, , the array of i-related indices</span>
+        <span class="k">if</span> <span class="s2">&quot;NLTV_H_i&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;NLTV_H_i&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># NLTV penalty related weights, , the array of i-related indices</span>
+        <span class="k">if</span> <span class="s2">&quot;NLTV_H_j&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;NLTV_H_j&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># NLTV-specific penalty type, the array of Weights</span>
+        <span class="k">if</span> <span class="s2">&quot;NLTV_Weights&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;NLTV_Weights&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># 0/1 - TV specific isotropic/anisotropic choice</span>
+        <span class="k">if</span> <span class="s2">&quot;methodTV&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;methodTV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># choose the type of the device for the regulariser</span>
+        <span class="k">if</span> <span class="s2">&quot;device_regulariser&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">&quot;device_regulariser&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;gpu&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">_regularisation_</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_reinitialise_atools_OS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;reinitialises OS geometry by overwriting the existing Atools</span>
+<span class="sd">       Note: Not an ideal thing to do as it can lead to various problems,</span>
+<span class="sd">       worth considering moving the subsets definition to the class init.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        _data_ (dict): data dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span> <span class="o">=</span> <span class="n">AstraTools2D</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">processing_arch</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">device_index</span><span class="p">,</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">],</span>
+        <span class="p">)</span>  <span class="c1"># initiate 2D ASTRA class OS object</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span> <span class="o">=</span> <span class="n">AstraTools3D</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">centre_of_rotation</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">processing_arch</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">device_index</span><span class="p">,</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">],</span>
+        <span class="p">)</span>  <span class="c1"># initiate 3D ASTRA class OS object</span>
+    <span class="k">return</span> <span class="n">_data_</span>
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Daniil Kazantsev
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Diamond Light Source and Manchester University, UK.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Jan 30, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

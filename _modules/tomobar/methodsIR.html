@@ -1,0 +1,1259 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tomobar.methodsIR &#8212; Tomobar Documentation page</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/general.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=780dcd79"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tomobar/methodsIR';</script>
+    <link rel="icon" href="../../_static/tomobar_logo_light.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Jan 30, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/tomobar_logo_light.png" class="logo__image only-light" alt="Tomobar Documentation page - Home"/>
+    <script>document.write(`<img src="../../_static/tomobar_logo_dark.png" class="logo__image only-dark" alt="Tomobar Documentation page - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/about.html">About ToMoBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How To's</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../howto/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../howto/use.html">Using ToMoBAR</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/direct_recon.html">Direct reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/basic_iter_recon.html">Basic iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/regul_iter_recon.html">Regularised iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/synthetic_recon.html">Synthethic data reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/real_data_recon.html">Real data reconstruction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../reference/api.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsDIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsDIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.regularisers.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisers</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.regularisersCuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisersCuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.supp.dicts.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.dicts</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.supp.suppTools.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.suppTools</span></code></a></li>
+</ul>
+</details></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for tomobar.methodsIR</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Reconstruction class for regularised iterative methods (2D/3D).</span>
+
+<span class="sd">* :func:`RecToolsIR.FISTA` FISTA - iterative regularised algorithm [BT2009]_, [Xu2016]_.</span>
+<span class="sd">* :func:`RecToolsIR.ADMM` ADMM iterative regularised algorithm [Boyd2011]_.</span>
+<span class="sd">* :func:`RecToolsIR.SIRT` and :func:`RecToolsIR.CGLS` algorithms are wrapped directly from the ASTRA package.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">linalg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+
+    <span class="n">cupy_imported</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+
+    <span class="n">cupy_imported</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">astra</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;____! Astra-toolbox package is missing, please install !____&quot;</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.dicts</span><span class="w"> </span><span class="kn">import</span> <span class="n">dicts_check</span><span class="p">,</span> <span class="n">_reinitialise_atools_OS</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.suppTools</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_circular_mask</span><span class="p">,</span> <span class="n">check_kwargs</span><span class="p">,</span> <span class="n">perform_recon_crop</span><span class="p">,</span><span class="n">_apply_horiz_detector_padding</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.funcs</span><span class="w"> </span><span class="kn">import</span> <span class="n">_data_dims_swapper</span><span class="p">,</span> <span class="n">_parse_device_argument</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.regularisers</span><span class="w"> </span><span class="kn">import</span> <span class="n">prox_regul</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.astra_wrappers.astra_tools2d</span><span class="w"> </span><span class="kn">import</span> <span class="n">AstraTools2D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.astra_wrappers.astra_tools3d</span><span class="w"> </span><span class="kn">import</span> <span class="n">AstraTools3D</span>
+
+
+<div class="viewcode-block" id="RecToolsIR">
+<a class="viewcode-back" href="../../api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RecToolsIR</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Iterative reconstruction algorithms (FISTA and ADMM) using ASTRA toolbox and CCPi-RGL toolkit.</span>
+<span class="sd">    Parameters for reconstruction algorithms should be provided in three dictionaries:</span>
+<span class="sd">    :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`</span>
+<span class="sd">    function of ToMoBAR&#39;s :ref:`ref_api` for all parameters explained.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        DetectorsDimH (int): Horizontal detector dimension.</span>
+<span class="sd">        DetectorsDimH_pad (int): Padding size of horizontal detector</span>
+<span class="sd">        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.</span>
+<span class="sd">        CenterRotOffset (float): The Centre of Rotation (CoR) scalar or a vector for each angle.</span>
+<span class="sd">        AnglesVec (np.ndarray): Vector of projection angles in radians.</span>
+<span class="sd">        ObjSize (int): Reconstructed object dimensions (a scalar).</span>
+<span class="sd">        datafidelity (str): Data fidelity, choose from LS, KL, PWLS or SWLS.</span>
+<span class="sd">        device_projector (str, int): &#39;cpu&#39; or &#39;gpu&#39;  device OR provide a GPU index (integer) of a specific GPU device.</span>
+<span class="sd">        cupyrun (bool, optional): instantiate CuPy modules.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">DetectorsDimH</span><span class="p">,</span>  <span class="c1"># Horizontal detector dimension</span>
+        <span class="n">DetectorsDimH_pad</span><span class="p">,</span>  <span class="c1"># Padding size of horizontal detector</span>
+        <span class="n">DetectorsDimV</span><span class="p">,</span>  <span class="c1"># Vertical detector dimension (3D case), 0 or None for 2D case</span>
+        <span class="n">CenterRotOffset</span><span class="p">,</span>  <span class="c1"># The Centre of Rotation scalar or a vector</span>
+        <span class="n">AnglesVec</span><span class="p">,</span>  <span class="c1"># Array of projection angles in radians</span>
+        <span class="n">ObjSize</span><span class="p">,</span>  <span class="c1"># Reconstructed object dimensions (scalar)</span>
+        <span class="n">datafidelity</span><span class="o">=</span><span class="s2">&quot;LS&quot;</span><span class="p">,</span>  <span class="c1"># Data fidelity, choose from LS, KL, PWLS, SWLS</span>
+        <span class="n">device_projector</span><span class="o">=</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span>  <span class="c1"># Choose the device  to be &#39;cpu&#39; or &#39;gpu&#39; OR provide a GPU index (integer) of a specific device</span>
+        <span class="n">cupyrun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">=</span> <span class="n">datafidelity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span> <span class="o">=</span> <span class="n">cupyrun</span>
+
+        <span class="k">if</span> <span class="n">DetectorsDimH_pad</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">objsize_user_given</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">objsize_user_given</span> <span class="o">=</span> <span class="n">ObjSize</span>
+
+        <span class="k">if</span> <span class="n">DetectorsDimH_pad</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># when we pad horizontal detector we might need to reconstruct on a larger grid as well to avoid artifacts</span>
+            <span class="n">ObjSize</span> <span class="o">=</span> <span class="n">DetectorsDimH</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">DetectorsDimH_pad</span>                  
+
+        <span class="n">device_projector</span><span class="p">,</span> <span class="n">GPUdevice_index</span> <span class="o">=</span> <span class="n">_parse_device_argument</span><span class="p">(</span><span class="n">device_projector</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">DetectorsDimV</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">DetectorsDimV</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="s2">&quot;2D&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span> <span class="o">=</span> <span class="n">AstraTools2D</span><span class="p">(</span>
+                <span class="n">DetectorsDimH</span><span class="p">,</span>
+                <span class="n">DetectorsDimH_pad</span><span class="p">,</span>
+                <span class="n">AnglesVec</span><span class="p">,</span>
+                <span class="n">CenterRotOffset</span><span class="p">,</span>
+                <span class="n">ObjSize</span><span class="p">,</span>
+                <span class="n">device_projector</span><span class="p">,</span>
+                <span class="n">GPUdevice_index</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="s2">&quot;3D&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span> <span class="o">=</span> <span class="n">AstraTools3D</span><span class="p">(</span>
+                <span class="n">DetectorsDimH</span><span class="p">,</span>
+                <span class="n">DetectorsDimH_pad</span><span class="p">,</span>
+                <span class="n">DetectorsDimV</span><span class="p">,</span>
+                <span class="n">AnglesVec</span><span class="p">,</span>
+                <span class="n">CenterRotOffset</span><span class="p">,</span>
+                <span class="n">ObjSize</span><span class="p">,</span>
+                <span class="n">device_projector</span><span class="p">,</span>
+                <span class="n">GPUdevice_index</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">datafidelity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datafidelity</span>
+
+    <span class="nd">@datafidelity</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">datafidelity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datafidelity_val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">datafidelity_val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;LS&quot;</span><span class="p">,</span> <span class="s2">&quot;PWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;KL&quot;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown data fidelity type, select: LS, PWLS, SWLS or KL&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_datafidelity</span> <span class="o">=</span> <span class="n">datafidelity_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cupyrun</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cupyrun</span>
+
+    <span class="nd">@cupyrun</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cupyrun</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cupyrun_val</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cupyrun</span> <span class="o">=</span> <span class="n">cupyrun_val</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">objsize_user_given</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objsize_user_given</span>
+
+    <span class="nd">@objsize_user_given</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">objsize_user_given</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objsize_user_given_val</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objsize_user_given</span> <span class="o">=</span> <span class="n">objsize_user_given_val</span>        
+
+<div class="viewcode-block" id="RecToolsIR.SIRT">
+<a class="viewcode-back" href="../../api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR.SIRT">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">SIRT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _data_ (dict): Data dictionary, where input data is provided.</span>
+<span class="sd">            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            xp.ndarray: SIRT-reconstructed numpy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">######################################################################</span>
+        <span class="c1"># parameters check and initialisation</span>
+        <span class="p">(</span><span class="n">_data_upd_</span><span class="p">,</span> <span class="n">_algorithm_upd_</span><span class="p">,</span> <span class="n">_regularisation_upd_</span><span class="p">)</span> <span class="o">=</span> <span class="n">dicts_check</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">method_run</span><span class="o">=</span><span class="s2">&quot;SIRT&quot;</span>
+        <span class="p">)</span>
+        <span class="c1">######################################################################</span>
+        <span class="c1"># SIRT reconstruction algorithm from ASTRA wrappers</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_sirt</span><span class="p">(</span>
+            <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">],</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RecToolsIR.CGLS">
+<a class="viewcode-back" href="../../api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR.CGLS">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">CGLS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Conjugate Gradient Least Squares from ASTRA toolbox.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _data_ (dict): Data dictionary, where input data is provided</span>
+<span class="sd">            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            xp.ndarray: CGLS-reconstructed numpy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">######################################################################</span>
+        <span class="c1"># parameters check and initialisation</span>
+        <span class="p">(</span><span class="n">_data_upd_</span><span class="p">,</span> <span class="n">_algorithm_upd_</span><span class="p">,</span> <span class="n">_regularisation_upd_</span><span class="p">)</span> <span class="o">=</span> <span class="n">dicts_check</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">method_run</span><span class="o">=</span><span class="s2">&quot;CGLS&quot;</span>
+        <span class="p">)</span>
+        <span class="c1">######################################################################</span>
+        <span class="c1"># CGLS reconstruction algorithm from ASTRA-wrappers</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_cgls</span><span class="p">(</span>
+            <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">],</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RecToolsIR.powermethod">
+<a class="viewcode-back" href="../../api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR.powermethod">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">powermethod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).</span>
+<span class="sd">        projection_raw_data is required for PWLS fidelity, otherwise will be ignored.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _data_ (dict): Data dictionary, where input data is provided.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: the Lipschitz constant</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cupy_imported</span><span class="p">:</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+        <span class="k">if</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">]</span>
+            <span class="ow">and</span> <span class="s2">&quot;projection_raw_data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_data_</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Please provide projection_raw_data for this model&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">]:</span>
+            <span class="n">sqweight</span> <span class="o">=</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">],</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">],</span>
+                    <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">]:</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                        <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">],</span>
+                        <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">],</span>
+                        <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">],</span>
+                    <span class="p">)</span>
+                    <span class="n">sqweight</span> <span class="o">=</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">],</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">],</span>
+                    <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;PWLS&quot;</span><span class="p">,</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">]:</span>
+                    <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                        <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">],</span>
+                        <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">],</span>
+                        <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">],</span>
+                    <span class="p">)</span>
+                    <span class="n">sqweight</span> <span class="o">=</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">]</span>
+                    <span class="c1"># we need to reset the swap option here as the data already been modified so we don&#39;t swap it again in the method</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OS_number&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># the classical approach (default)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_data_</span> <span class="o">=</span> <span class="n">_reinitialise_atools_OS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">)</span>
+
+        <span class="n">power_iterations</span> <span class="o">=</span> <span class="mi">15</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">proj_geom</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">proj_geom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">proj_geom</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># non-OS approach</span>
+            <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojCuPy</span><span class="p">(</span><span class="n">x1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwproj</span><span class="p">(</span><span class="n">x1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;PWLS&quot;</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">sqweight</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">iterations</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">power_iterations</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+                    <span class="n">x1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojCuPy</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">x1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backproj</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">/</span> <span class="n">s</span>
+                <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojCuPy</span><span class="p">(</span><span class="n">x1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwproj</span><span class="p">(</span><span class="n">x1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;PWLS&quot;</span><span class="p">:</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">sqweight</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># OS approach</span>
+            <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOSCuPy</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;PWLS&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">sqweight</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="p">:],</span> <span class="n">y</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">sqweight</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="p">:],</span> <span class="n">y</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">power_iterations</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+                    <span class="n">x1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojOSCuPy</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">x1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojOS</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">/</span> <span class="n">s</span>
+                <span class="k">if</span> <span class="n">cupy_imported</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOSCuPy</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;PWLS&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                        <span class="n">y</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">sqweight</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="p">:],</span> <span class="n">y</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">y</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">sqweight</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="p">:],</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="RecToolsIR.FISTA">
+<a class="viewcode-back" href="../../api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR.FISTA">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">FISTA</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_data_</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">_algorithm_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_regularisation_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and</span>
+<span class="sd">        data fidelity terms provided in three dictionaries.</span>
+<span class="sd">        See :mod:`tomobar.supp.dicts` for all parameters to the dictionaries bellow.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _data_ (dict): Data dictionary, where input data is provided.</span>
+<span class="sd">            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.</span>
+<span class="sd">            _regularisation_ (dict, optional): Regularisation dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: FISTA-reconstructed numpy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cupy_imported</span><span class="p">:</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+        <span class="c1">######################################################################</span>
+        <span class="c1"># parameters check and initialisation</span>
+        <span class="p">(</span><span class="n">_data_upd_</span><span class="p">,</span> <span class="n">_algorithm_upd_</span><span class="p">,</span> <span class="n">_regularisation_upd_</span><span class="p">)</span> <span class="o">=</span> <span class="n">dicts_check</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">_regularisation_</span><span class="p">,</span> <span class="n">method_run</span><span class="o">=</span><span class="s2">&quot;FISTA&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">_data_upd_</span> <span class="o">=</span> <span class="n">_reinitialise_atools_OS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_data_upd_</span><span class="p">)</span>
+        <span class="c1">######################################################################</span>
+
+        <span class="n">L_const_inv</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mf">1.0</span> <span class="o">/</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;lipschitz_const&quot;</span><span class="p">]</span>
+        <span class="p">)</span>  <span class="c1"># inverted Lipschitz constant</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+            <span class="c1"># 2D reconstruction</span>
+            <span class="c1"># initialise the solution</span>
+            <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;initialise&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="o">**</span><span class="mi">2</span><span class="p">:</span>
+                <span class="c1"># the object has been initialised with an array</span>
+                <span class="n">X</span> <span class="o">=</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;initialise&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">X</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span>
+                <span class="p">)</span>  <span class="c1"># initialise with zeros</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span>
+            <span class="p">)</span>  <span class="c1"># 1D array of sparse &quot;ring&quot; variables (GH)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;3D&quot;</span><span class="p">:</span>
+            <span class="c1"># initialise the solution</span>
+            <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;initialise&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="o">**</span><span class="mi">3</span><span class="p">:</span>
+                <span class="c1"># the object has been initialised with an array</span>
+                <span class="n">X</span> <span class="o">=</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;initialise&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">X</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="s2">&quot;float32&quot;</span><span class="p">,</span>
+                <span class="p">)</span>  <span class="c1"># initialise with zeros</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span>
+            <span class="p">)</span>  <span class="c1"># 2D array of sparse &quot;ring&quot; variables (GH)</span>
+        <span class="n">info_vec</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># ****************************************************************************#</span>
+        <span class="c1"># FISTA (model-based modification) algorithm begins here:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">denomN</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">xp</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">X_t</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">r_x</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c1"># Outer FISTA iterations</span>
+        <span class="k">for</span> <span class="n">iter_no</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]):</span>
+            <span class="n">r_old</span> <span class="o">=</span> <span class="n">r</span>
+            <span class="c1"># Do GH fidelity pre-calculations using the full projections dataset for OS version</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_lambda&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="p">(</span><span class="n">iter_no</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                    <span class="n">vec</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">vec</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">sub_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]):</span>
+                    <span class="c1"># select a specific set of indeces for the subset (OS)</span>
+                    <span class="n">indVec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="k">if</span> <span class="n">indVec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">NumbProjBins</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">indVec</span> <span class="o">=</span> <span class="n">indVec</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># shrink vector size</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                        <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                            <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][</span><span class="n">indVec</span><span class="p">,</span> <span class="p">:]</span>
+                        <span class="p">)</span>
+                        <span class="n">res</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">res</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_accelerate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">r_x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="n">vec</span> <span class="o">=</span> <span class="n">vec</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]))</span> <span class="o">*</span> <span class="n">res</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                            <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][:,</span> <span class="n">indVec</span><span class="p">,</span> <span class="p">:]</span>
+                        <span class="p">)</span>
+                        <span class="k">for</span> <span class="n">ang_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indVec</span><span class="p">)):</span>
+                            <span class="n">res</span><span class="p">[:,</span> <span class="n">ang_index</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="n">res</span><span class="p">[:,</span> <span class="n">ang_index</span><span class="p">,</span> <span class="p">:]</span>
+                                <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_accelerate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">r_x</span>
+                            <span class="p">)</span>
+                        <span class="n">vec</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                    <span class="n">r</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">L_const_inv</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">r_x</span> <span class="o">-</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">L_const_inv</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+
+            <span class="c1"># loop over subsets (OS)</span>
+            <span class="k">for</span> <span class="n">sub_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]):</span>
+                <span class="n">X_old</span> <span class="o">=</span> <span class="n">X</span>
+                <span class="n">t_old</span> <span class="o">=</span> <span class="n">t</span>
+                <span class="k">if</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="c1"># select a specific set of indeces for the subset (OS)</span>
+                    <span class="n">indVec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="k">if</span> <span class="n">indVec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">NumbProjBins</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">indVec</span> <span class="o">=</span> <span class="n">indVec</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># shrink vector size</span>
+                    <span class="c1"># OS-reduced residuals</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;LS&quot;</span><span class="p">:</span>
+                            <span class="c1"># 2D Least-squares (LS) data fidelity - OS (linear)</span>
+                            <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                                <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][</span><span class="n">indVec</span><span class="p">,</span> <span class="p">:]</span>
+                            <span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;PWLS&quot;</span><span class="p">:</span>
+                            <span class="c1"># 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)</span>
+                            <span class="n">res</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+                                <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">][</span><span class="n">indVec</span><span class="p">,</span> <span class="p">:],</span>
+                                <span class="p">(</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                                    <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][</span><span class="n">indVec</span><span class="p">,</span> <span class="p">:]</span>
+                                <span class="p">),</span>
+                            <span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">:</span>
+                            <span class="c1"># 2D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)</span>
+                            <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                                <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][</span><span class="n">indVec</span><span class="p">,</span> <span class="p">:]</span>
+                            <span class="p">)</span>
+                            <span class="k">for</span> <span class="n">det_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">):</span>
+                                <span class="n">wk</span> <span class="o">=</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">][</span>
+                                    <span class="n">indVec</span><span class="p">,</span> <span class="n">det_index</span>
+                                <span class="p">]</span>
+                                <span class="n">res</span><span class="p">[:,</span> <span class="n">det_index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                    <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">wk</span><span class="p">,</span> <span class="n">res</span><span class="p">[:,</span> <span class="n">det_index</span><span class="p">])</span>
+                                    <span class="o">-</span> <span class="mf">1.0</span>
+                                    <span class="o">/</span> <span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wk</span><span class="p">)</span> <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;beta_SWLS&quot;</span><span class="p">][</span><span class="n">det_index</span><span class="p">])</span>
+                                    <span class="o">*</span> <span class="p">(</span><span class="n">wk</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">res</span><span class="p">[:,</span> <span class="n">det_index</span><span class="p">]))</span>
+                                    <span class="o">*</span> <span class="n">wk</span>
+                                <span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;KL&quot;</span><span class="p">:</span>
+                            <span class="c1"># 2D Kullback-Leibler (KL) data fidelity - OS</span>
+                            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                            <span class="n">res</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span>
+                                <span class="n">tmp</span> <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][</span><span class="n">indVec</span><span class="p">,</span> <span class="p">:],</span>
+                                <span class="n">tmp</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="c1"># ring removal part for Group-Huber (GH) fidelity (2D)</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_lambda&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">iter_no</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                            <span class="n">res</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="n">res</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="kc">None</span><span class="p">]</span>
+                                <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_accelerate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">r_x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+                            <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>  <span class="c1"># 3D</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;LS&quot;</span><span class="p">:</span>
+                            <span class="c1"># 3D Least-squares (LS) data fidelity - OS (linear)</span>
+                            <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                                <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][:,</span> <span class="n">indVec</span><span class="p">,</span> <span class="p">:]</span>
+                            <span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;PWLS&quot;</span><span class="p">:</span>
+                            <span class="c1"># 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)</span>
+                            <span class="n">res</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+                                <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">][:,</span> <span class="n">indVec</span><span class="p">,</span> <span class="p">:],</span>
+                                <span class="p">(</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                                    <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][:,</span> <span class="n">indVec</span><span class="p">,</span> <span class="p">:]</span>
+                                <span class="p">),</span>
+                            <span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">:</span>
+                            <span class="c1"># 3D Stripe-Weighted Least-squares - OS data fidelity (helps to minimise stripe arifacts)</span>
+                            <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                                <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][:,</span> <span class="n">indVec</span><span class="p">,</span> <span class="p">:]</span>
+                            <span class="p">)</span>
+                            <span class="k">for</span> <span class="n">detVert_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">):</span>
+                                <span class="k">for</span> <span class="n">detHorz_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">):</span>
+                                    <span class="n">wk</span> <span class="o">=</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">][</span>
+                                        <span class="n">detVert_index</span><span class="p">,</span> <span class="n">indVec</span><span class="p">,</span> <span class="n">detHorz_index</span>
+                                    <span class="p">]</span>
+                                    <span class="n">res</span><span class="p">[</span><span class="n">detVert_index</span><span class="p">,</span> <span class="p">:,</span> <span class="n">detHorz_index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                        <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+                                            <span class="n">wk</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="n">detVert_index</span><span class="p">,</span> <span class="p">:,</span> <span class="n">detHorz_index</span><span class="p">]</span>
+                                        <span class="p">)</span>
+                                        <span class="o">-</span> <span class="mf">1.0</span>
+                                        <span class="o">/</span> <span class="p">(</span>
+                                            <span class="n">xp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wk</span><span class="p">)</span>
+                                            <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;beta_SWLS&quot;</span><span class="p">][</span><span class="n">detHorz_index</span><span class="p">]</span>
+                                        <span class="p">)</span>
+                                        <span class="o">*</span> <span class="p">(</span><span class="n">wk</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">detVert_index</span><span class="p">,</span> <span class="p">:,</span> <span class="n">detHorz_index</span><span class="p">]))</span>
+                                        <span class="o">*</span> <span class="n">wk</span>
+                                    <span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;KL&quot;</span><span class="p">:</span>
+                            <span class="c1"># 3D Kullback-Leibler (KL) data fidelity - OS</span>
+                            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                            <span class="n">res</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span>
+                                <span class="n">tmp</span> <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][:,</span> <span class="n">indVec</span><span class="p">,</span> <span class="p">:],</span>
+                                <span class="n">tmp</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="c1"># GH - fidelity part (3D)</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_lambda&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">iter_no</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                            <span class="k">for</span> <span class="n">ang_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indVec</span><span class="p">)):</span>
+                                <span class="n">res</span><span class="p">[:,</span> <span class="n">ang_index</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span>
+                                    <span class="n">res</span><span class="p">[:,</span> <span class="n">ang_index</span><span class="p">,</span> <span class="p">:]</span>
+                                    <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_accelerate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">r_x</span>
+                                <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># CLASSICAL all-data approach</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;LS&quot;</span><span class="p">:</span>
+                        <span class="c1"># full residual for LS fidelity</span>
+                        <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwproj</span><span class="p">(</span><span class="n">X_t</span><span class="p">)</span>
+                            <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;PWLS&quot;</span><span class="p">:</span>
+                        <span class="c1"># full gradient for the PWLS fidelity</span>
+                        <span class="n">res</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+                            <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">],</span>
+                            <span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwproj</span><span class="p">(</span><span class="n">X_t</span><span class="p">)</span>
+                                <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span>
+                            <span class="p">),</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;KL&quot;</span><span class="p">:</span>
+                        <span class="c1"># Kullback-Leibler (KL) data fidelity</span>
+                        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwproj</span><span class="p">(</span><span class="n">X_t</span><span class="p">)</span>
+                        <span class="n">res</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span>
+                            <span class="n">tmp</span> <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">],</span> <span class="n">tmp</span> <span class="o">+</span> <span class="mf">1.0</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_lambda&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">iter_no</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                            <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+                                <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_accelerate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">r_x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+                            <span class="p">)</span>
+                            <span class="n">vec</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                            <span class="n">r</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">L_const_inv</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>  <span class="c1"># 3D case</span>
+                            <span class="k">for</span> <span class="n">ang_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">)):</span>
+                                <span class="n">res</span><span class="p">[:,</span> <span class="n">ang_index</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span>
+                                    <span class="n">res</span><span class="p">[:,</span> <span class="n">ang_index</span><span class="p">,</span> <span class="p">:]</span>
+                                    <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_accelerate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">r_x</span>
+                                <span class="p">)</span>
+                                <span class="n">vec</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                                <span class="n">r</span> <span class="o">=</span> <span class="n">r_x</span> <span class="o">-</span> <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">L_const_inv</span><span class="p">,</span> <span class="n">vec</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;SWLS&quot;</span><span class="p">:</span>
+                        <span class="n">res</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwproj</span><span class="p">(</span><span class="n">X_t</span><span class="p">)</span>
+                            <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">det_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">):</span>
+                                <span class="n">wk</span> <span class="o">=</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">][:,</span> <span class="n">det_index</span><span class="p">]</span>
+                                <span class="n">res</span><span class="p">[:,</span> <span class="n">det_index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                    <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">wk</span><span class="p">,</span> <span class="n">res</span><span class="p">[:,</span> <span class="n">det_index</span><span class="p">])</span>
+                                    <span class="o">-</span> <span class="mf">1.0</span>
+                                    <span class="o">/</span> <span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wk</span><span class="p">)</span> <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;beta_SWLS&quot;</span><span class="p">][</span><span class="n">det_index</span><span class="p">])</span>
+                                    <span class="o">*</span> <span class="p">(</span><span class="n">wk</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">res</span><span class="p">[:,</span> <span class="n">det_index</span><span class="p">]))</span>
+                                    <span class="o">*</span> <span class="n">wk</span>
+                                <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>  <span class="c1"># 3D case</span>
+                            <span class="k">for</span> <span class="n">detVert_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">):</span>
+                                <span class="k">for</span> <span class="n">detHorz_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x</span><span class="p">):</span>
+                                    <span class="n">wk</span> <span class="o">=</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_raw_data&quot;</span><span class="p">][</span>
+                                        <span class="n">detVert_index</span><span class="p">,</span> <span class="p">:,</span> <span class="n">detHorz_index</span>
+                                    <span class="p">]</span>
+                                    <span class="n">res</span><span class="p">[</span><span class="n">detVert_index</span><span class="p">,</span> <span class="p">:,</span> <span class="n">detHorz_index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                        <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
+                                            <span class="n">wk</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="n">detVert_index</span><span class="p">,</span> <span class="p">:,</span> <span class="n">detHorz_index</span><span class="p">]</span>
+                                        <span class="p">)</span>
+                                        <span class="o">-</span> <span class="mf">1.0</span>
+                                        <span class="o">/</span> <span class="p">(</span>
+                                            <span class="n">xp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wk</span><span class="p">)</span>
+                                            <span class="o">+</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;beta_SWLS&quot;</span><span class="p">][</span><span class="n">detHorz_index</span><span class="p">]</span>
+                                        <span class="p">)</span>
+                                        <span class="o">*</span> <span class="p">(</span><span class="n">wk</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">detVert_index</span><span class="p">,</span> <span class="p">:,</span> <span class="n">detHorz_index</span><span class="p">]))</span>
+                                        <span class="o">*</span> <span class="n">wk</span>
+                                    <span class="p">)</span>
+                <span class="k">if</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;huber_threshold&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># apply Huber penalty</span>
+                    <span class="n">multHuber</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">res</span><span class="p">))</span>
+                    <span class="n">multHuber</span><span class="p">[</span>
+                        <span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;huber_threshold&quot;</span><span class="p">]))</span>
+                    <span class="p">]</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span>
+                        <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;huber_threshold&quot;</span><span class="p">],</span>
+                        <span class="n">xp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
+                            <span class="n">res</span><span class="p">[(</span><span class="n">xp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;huber_threshold&quot;</span><span class="p">]))]</span>
+                        <span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c1"># OS-Huber-gradient</span>
+                        <span class="n">grad_fidelity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojOS</span><span class="p">(</span>
+                            <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">multHuber</span><span class="p">,</span> <span class="n">res</span><span class="p">),</span> <span class="n">sub_ind</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># full Huber gradient</span>
+                        <span class="n">grad_fidelity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backproj</span><span class="p">(</span>
+                            <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">multHuber</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+                        <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;studentst_threshold&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># apply Students&#39;t penalty</span>
+                    <span class="n">multStudent</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">res</span><span class="p">))</span>
+                    <span class="n">multStudent</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span>
+                        <span class="mf">2.0</span><span class="p">,</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;studentst_threshold&quot;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">res</span><span class="o">**</span><span class="mi">2</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c1"># OS-Students&#39;t-gradient</span>
+                        <span class="n">grad_fidelity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojOS</span><span class="p">(</span>
+                            <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">multStudent</span><span class="p">,</span> <span class="n">res</span><span class="p">),</span> <span class="n">sub_ind</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># full Students&#39;t gradient</span>
+                        <span class="n">grad_fidelity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backproj</span><span class="p">(</span>
+                            <span class="n">xp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">multStudent</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c1"># OS reduced gradient</span>
+                        <span class="n">grad_fidelity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojOS</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># full gradient</span>
+                        <span class="n">grad_fidelity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backproj</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+                <span class="n">X</span> <span class="o">=</span> <span class="n">X_t</span> <span class="o">-</span> <span class="n">L_const_inv</span> <span class="o">*</span> <span class="n">grad_fidelity</span>
+                <span class="k">if</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;nonnegativity&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;ENABLE&quot;</span><span class="p">:</span>
+                    <span class="n">X</span><span class="p">[</span><span class="n">X</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="k">if</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;recon_mask_radius&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">X</span> <span class="o">=</span> <span class="n">apply_circular_mask</span><span class="p">(</span>
+                        <span class="n">X</span><span class="p">,</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;recon_mask_radius&quot;</span><span class="p">],</span> <span class="kc">False</span>
+                    <span class="p">)</span>  <span class="c1"># applying a circular mask</span>
+                <span class="k">if</span> <span class="n">_regularisation_upd_</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1">##### The proximal operator of the chosen regulariser #####</span>
+                    <span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">info_vec</span><span class="p">)</span> <span class="o">=</span> <span class="n">prox_regul</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">_regularisation_upd_</span><span class="p">)</span>
+                    <span class="c1">###########################################################</span>
+                <span class="c1"># updating t variable</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">xp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">t</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="mf">0.5</span>
+                <span class="n">X_t</span> <span class="o">=</span> <span class="n">X</span> <span class="o">+</span> <span class="p">((</span><span class="n">t_old</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">t</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="n">X_old</span><span class="p">)</span>  <span class="c1"># updating X</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_lambda&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">iter_no</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">xp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;ringGH_lambda&quot;</span><span class="p">]),</span> <span class="mf">0.0</span>
+                <span class="p">)</span> <span class="o">*</span> <span class="n">xp</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span>
+                    <span class="n">r</span>
+                <span class="p">)</span>  <span class="c1"># soft-thresholding operator for ring vector</span>
+                <span class="n">r_x</span> <span class="o">=</span> <span class="n">r</span> <span class="o">+</span> <span class="p">((</span><span class="n">t_old</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">t</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="n">r_old</span><span class="p">)</span>  <span class="c1"># updating r</span>
+            <span class="k">if</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">iter_no</span><span class="p">,</span> <span class="p">(</span><span class="nb">round</span><span class="p">)(</span><span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;FISTA iteration (&quot;</span><span class="p">,</span>
+                        <span class="n">iter_no</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="s2">&quot;) using&quot;</span><span class="p">,</span>
+                        <span class="n">_regularisation_upd_</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;regularisation for (&quot;</span><span class="p">,</span>
+                        <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="n">info_vec</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="s2">&quot;) iterations&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="n">iter_no</span> <span class="o">==</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;FISTA stopped at iteration (&quot;</span><span class="p">,</span> <span class="n">iter_no</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+            <span class="c1"># stopping criteria (checked only after a reasonable number of iterations)</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">iter_no</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">iter_no</span> <span class="o">&gt;</span> <span class="mi">150</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">nrm</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="n">X_old</span><span class="p">)</span> <span class="o">*</span> <span class="n">denomN</span>
+                <span class="k">if</span> <span class="n">nrm</span> <span class="o">&lt;</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;tolerance&quot;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;FISTA stopped at iteration (&quot;</span><span class="p">,</span> <span class="n">iter_no</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+        <span class="k">return</span> <span class="n">X</span></div>
+
+
+    <span class="c1"># # *****************************FISTA ends here*********************************#</span>
+
+    <span class="c1"># **********************************ADMM***************************************#</span>
+
+<div class="viewcode-block" id="RecToolsIR.ADMM">
+<a class="viewcode-back" href="../../api/tomobar.methodsIR.html#tomobar.methodsIR.RecToolsIR.ADMM">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ADMM</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">_data_</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">_algorithm_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_regularisation_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Linearised and Relaxed Alternating Directions Method of Multipliers with various types</span>
+<span class="sd">        of regularisation and data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _data_ (dict): Data dictionary, where input data is provided.</span>
+<span class="sd">            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.</span>
+<span class="sd">            _regularisation_ (dict, optional): Regularisation dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            xp.ndarray: ADMM-reconstructed numpy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cupyrun</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+        <span class="c1">######################################################################</span>
+        <span class="c1"># parameters check and initialisation</span>
+        <span class="p">(</span><span class="n">_data_upd_</span><span class="p">,</span> <span class="n">_algorithm_upd_</span><span class="p">,</span> <span class="n">_regularisation_upd_</span><span class="p">)</span> <span class="o">=</span> <span class="n">dicts_check</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">_regularisation_</span><span class="p">,</span> <span class="n">method_run</span><span class="o">=</span><span class="s2">&quot;ADMM&quot;</span>
+        <span class="p">)</span>
+        <span class="c1">######################################################################</span>
+        <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_apply_horiz_detector_padding</span><span class="p">(</span>
+            <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span>
+            <span class="n">cupyrun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">additional_args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;cupyrun&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;recon_mask_radius&quot;</span><span class="p">:</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;recon_mask_radius&quot;</span><span class="p">],</span>
+        <span class="p">}</span>        
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_Ax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+            <span class="n">geom_size</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwproj</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">geom_size</span><span class="p">))</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_Atb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+            <span class="n">geom_size</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">proj_geom</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backproj</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">geom_size</span><span class="p">))</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_Ax_OS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">geom_size</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojOS</span><span class="p">(</span>
+                <span class="n">cp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">geom_size</span><span class="p">),</span> <span class="n">os_index</span><span class="o">=</span><span class="n">sub_ind</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_Atb_OS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">geom_size</span> <span class="o">=</span> <span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">proj_geom_OS</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">])</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojOS</span><span class="p">(</span>
+                <span class="n">cp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">geom_size</span><span class="p">),</span> <span class="n">os_index</span><span class="o">=</span><span class="n">sub_ind</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="n">use_os</span> <span class="o">=</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">use_os</span><span class="p">:</span>
+            <span class="n">_data_upd_</span> <span class="o">=</span> <span class="n">_reinitialise_atools_OS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_data_upd_</span><span class="p">)</span>
+
+        <span class="n">rec_dim</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">))</span>
+        <span class="c1"># initialisation of the solution (warm-start)</span>
+        <span class="k">if</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;initialise&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;initialise&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="n">rec_dim</span><span class="p">:</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;initialise&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Provided initialisation (array) has incorrect dimensions, the correct dims are </span><span class="si">{</span><span class="n">astra</span><span class="o">.</span><span class="n">geom_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">vol_geom</span><span class="p">)</span><span class="si">}</span><span class="s2">. Zero initialisation is used.&quot;</span><span class="p">)</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rec_dim</span><span class="p">,</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rec_dim</span><span class="p">,</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="c1"># ADMM variables</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+        <span class="n">tau</span> <span class="o">=</span> <span class="mf">0.9</span> <span class="o">/</span> <span class="p">(</span>
+            <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;lipschitz_const&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;ADMM_rho_const&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">_regularisation_upd_</span><span class="p">[</span><span class="s2">&quot;regul_param&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">_regularisation_upd_</span><span class="p">[</span><span class="s2">&quot;regul_param&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;ADMM_rho_const&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Outer ADMM iterations</span>
+        <span class="k">for</span> <span class="n">iter_no</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">sub_ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;OS_number&quot;</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="n">use_os</span><span class="p">:</span>
+                    <span class="c1"># select a specific set of indeces for the subset (OS)</span>
+                    <span class="n">indVec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">newInd_Vec</span><span class="p">[</span><span class="n">sub_ind</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="k">if</span> <span class="n">indVec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">NumbProjBins</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">indVec</span> <span class="o">=</span> <span class="n">indVec</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># shrink vector size</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                        <span class="n">proj_data</span> <span class="o">=</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][</span>
+                            <span class="n">indVec</span><span class="p">,</span> <span class="p">:</span>
+                        <span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">proj_data</span> <span class="o">=</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">][</span>
+                            <span class="p">:,</span> <span class="n">indVec</span><span class="p">,</span> <span class="p">:</span>
+                        <span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+                <span class="c1"># ---- z-update (linearized data term) ----</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datafidelity</span> <span class="o">==</span> <span class="s2">&quot;KL&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">use_os</span><span class="p">:</span>
+                        <span class="n">grad_data</span> <span class="o">=</span> <span class="n">_Atb_OS</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="p">,</span>
+                            <span class="mi">1</span> <span class="o">-</span> <span class="n">proj_data</span> <span class="o">/</span> <span class="p">(</span><span class="n">_Ax_OS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-8</span><span class="p">),</span>
+                            <span class="n">sub_ind</span><span class="p">,</span>
+                        <span class="p">)</span>  <span class="c1"># KL term</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">grad_data</span> <span class="o">=</span> <span class="n">_Atb</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="p">,</span>
+                            <span class="mi">1</span>
+                            <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+                            <span class="o">/</span> <span class="p">(</span><span class="n">_Ax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-8</span><span class="p">),</span>
+                        <span class="p">)</span>  <span class="c1"># KL term</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">use_os</span><span class="p">:</span>
+                        <span class="n">grad_data</span> <span class="o">=</span> <span class="n">_Atb_OS</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="p">,</span> <span class="n">_Ax_OS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">sub_ind</span><span class="p">)</span> <span class="o">-</span> <span class="n">proj_data</span><span class="p">,</span> <span class="n">sub_ind</span>
+                        <span class="p">)</span>  <span class="c1"># LS term</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">grad_data</span> <span class="o">=</span> <span class="n">_Atb</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="p">,</span>
+                            <span class="n">_Ax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="n">_data_upd_</span><span class="p">[</span><span class="s2">&quot;projection_norm_data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+                        <span class="p">)</span>  <span class="c1"># LS term</span>
+
+                <span class="n">grad_admm</span> <span class="o">=</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;ADMM_rho_const&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="n">x</span> <span class="o">+</span> <span class="n">u</span><span class="p">)</span>
+                <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="o">-</span> <span class="n">tau</span> <span class="o">*</span> <span class="p">(</span><span class="n">grad_data</span> <span class="o">+</span> <span class="n">grad_admm</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;nonnegativity&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;ENABLE&quot;</span><span class="p">:</span>
+                    <span class="n">z</span><span class="p">[</span><span class="n">z</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="c1"># z-update with relaxation</span>
+                <span class="k">if</span> <span class="n">iter_no</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">z</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="mf">1.0</span> <span class="o">-</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;ADMM_relax_par&quot;</span><span class="p">]</span>
+                    <span class="p">)</span> <span class="o">*</span> <span class="n">z_old</span> <span class="o">+</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;ADMM_relax_par&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">z</span>
+                <span class="n">z_old</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+                    <span class="n">x_prox_reg</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;3D&quot;</span><span class="p">:</span>
+                    <span class="n">x_prox_reg</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span>
+                        <span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="c1"># X-update (proximal regularization)</span>
+                <span class="k">if</span> <span class="n">_regularisation_upd_</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">info_vec</span><span class="p">)</span> <span class="o">=</span> <span class="n">prox_regul</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_prox_reg</span><span class="p">,</span> <span class="n">_regularisation_upd_</span><span class="p">)</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+            <span class="c1"># update u variable (dual update)</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">u</span> <span class="o">+</span> <span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">xp</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">iter_no</span><span class="p">,</span> <span class="p">(</span><span class="nb">round</span><span class="p">)(</span><span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;ADMM iteration (&quot;</span><span class="p">,</span>
+                        <span class="n">iter_no</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="s2">&quot;) using&quot;</span><span class="p">,</span>
+                        <span class="n">_regularisation_upd_</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;regularisation for (&quot;</span><span class="p">,</span>
+                        <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="n">info_vec</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="s2">&quot;) iterations&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">if</span> <span class="n">iter_no</span> <span class="o">==</span> <span class="n">_algorithm_upd_</span><span class="p">[</span><span class="s2">&quot;iterations&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ADMM stopped at iteration (&quot;</span><span class="p">,</span> <span class="n">iter_no</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;2D&quot;</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">==</span> <span class="s2">&quot;3D&quot;</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_y</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">objsize_user_given</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">perform_recon_crop</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">objsize_user_given</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">check_kwargs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">additional_args</span><span class="p">)</span></div>
+</div>
+
+
+    <span class="c1"># *****************************ADMM ends here*********************************#</span>
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Daniil Kazantsev
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Diamond Light Source and Manchester University, UK.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Jan 30, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

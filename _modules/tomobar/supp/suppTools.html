@@ -1,0 +1,850 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tomobar.supp.suppTools &#8212; Tomobar Documentation page</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/general.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../_static/documentation_options.js?v=780dcd79"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tomobar/supp/suppTools';</script>
+    <link rel="icon" href="../../../_static/tomobar_logo_light.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Jan 30, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/tomobar_logo_light.png" class="logo__image only-light" alt="Tomobar Documentation page - Home"/>
+    <script>document.write(`<img src="../../../_static/tomobar_logo_dark.png" class="logo__image only-dark" alt="Tomobar Documentation page - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/about.html">About ToMoBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How To's</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/use.html">Using ToMoBAR</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/direct_recon.html">Direct reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/basic_iter_recon.html">Basic iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/regul_iter_recon.html">Regularised iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/synthetic_recon.html">Synthethic data reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/real_data_recon.html">Real data reconstruction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../reference/api.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsDIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsDIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.regularisers.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisers</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.regularisersCuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisersCuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.supp.dicts.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.dicts</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.supp.suppTools.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.suppTools</span></code></a></li>
+</ul>
+</details></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for tomobar.supp.suppTools</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Supplementary pre/post processing data tools:</span>
+
+<span class="sd">List of functions:</span>
+
+<span class="sd">* normaliser - Projection data normalisation module.</span>
+<span class="sd">* autocropper - automatically crops 3D projection data to reduce its size.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">xp</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Device</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">compute_capability</span>
+    <span class="k">except</span> <span class="n">xp</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">CUDARuntimeError</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CuPy is installed but the GPU device is inaccessible&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xp</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">skimage.transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">downscale_local_mean</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;____! Skimage module is required for Dynamic Flat fields estimation !____&quot;</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">skimage.restoration</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_sigma</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;____! Skimage module is required for Dynamic Flat fields estimation !____&quot;</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">scipy</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;____! scipy module is required for Dynamic Flat fields estimation !____&quot;</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">bm3d</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c1"># &quot;____! BM3D module is required to use for dynamic flat fields calculation !____&quot;</span>
+    <span class="k">pass</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_DFFC</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">flats</span><span class="p">,</span> <span class="n">darks</span><span class="p">,</span> <span class="n">downsample</span><span class="p">,</span> <span class="n">nrPArepetions</span><span class="p">):</span>
+    <span class="c1"># Load frames</span>
+    <span class="n">meanDarkfield</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">darks</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">whiteVect</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">flats</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">flats</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">flats</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">flats</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">whiteVect</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">flats</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">-</span> <span class="n">meanDarkfield</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">mn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">whiteVect</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Substract mean flat field</span>
+    <span class="n">M</span><span class="p">,</span> <span class="n">N</span> <span class="o">=</span> <span class="n">whiteVect</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">Data</span> <span class="o">=</span> <span class="n">whiteVect</span> <span class="o">-</span> <span class="n">mn</span>
+
+    <span class="c1"># =============================================================================</span>
+    <span class="c1"># Parallel Analysis (EEFs selection):</span>
+    <span class="c1">#      Selection of the number of components for PCA using parallel Analysis.</span>
+    <span class="c1">#      Each flat field is a single row of the matrix flatFields, different</span>
+    <span class="c1">#      rows are different observations.</span>
+    <span class="c1"># =============================================================================</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">cov</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
+        <span class="n">one_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">one_vector</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span> <span class="o">/</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">X_mean_subtract</span> <span class="o">=</span> <span class="n">X</span> <span class="o">-</span> <span class="n">mu</span>
+        <span class="n">covA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X_mean_subtract</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">X_mean_subtract</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">covA</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">parallelAnalysis</span><span class="p">(</span><span class="n">flatFields</span><span class="p">,</span> <span class="n">repetitions</span><span class="p">):</span>
+        <span class="n">stdEFF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">flatFields</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="n">flatFields</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">keepTrack</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">H</span><span class="p">,</span> <span class="n">repetitions</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">stdMatrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">stdEFF</span><span class="p">,</span> <span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">repetitions</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parallel Analysis - repetition </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="n">stdMatrix</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+            <span class="n">D1</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span>
+            <span class="n">keepTrack</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">D1</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">mean_flat_fields_EFF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">flatFields</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">F</span> <span class="o">=</span> <span class="n">flatFields</span> <span class="o">-</span> <span class="n">mean_flat_fields_EFF</span>
+        <span class="n">D1</span><span class="p">,</span> <span class="n">V1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">F</span><span class="p">))</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">H</span><span class="p">))</span>
+        <span class="c1"># mean + 2 * std</span>
+        <span class="n">selection</span><span class="p">[</span>
+            <span class="p">:,</span> <span class="n">D1</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">keepTrack</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">keepTrack</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">numberPC</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">selection</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">V1</span><span class="p">,</span> <span class="n">D1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">numberPC</span><span class="p">)</span>
+
+    <span class="c1"># Parallel Analysis</span>
+    <span class="n">nrEigenflatfields</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Parallel Analysis:&quot;</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">nrEigenflatfields</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">V1</span><span class="p">,</span> <span class="n">D1</span><span class="p">,</span> <span class="n">nrEigenflatfields</span> <span class="o">=</span> <span class="n">parallelAnalysis</span><span class="p">(</span><span class="n">Data</span><span class="p">,</span> <span class="n">nrPArepetions</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">nrEigenflatfields</span><span class="si">}</span><span class="s2"> eigen flat fields selected!&quot;</span><span class="p">)</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">D1</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">D1</span> <span class="o">=</span> <span class="n">D1</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">V1</span> <span class="o">=</span> <span class="n">V1</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">]</span>
+
+    <span class="c1"># Calculation eigen flat fields</span>
+    <span class="n">H</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">eig0</span> <span class="o">=</span> <span class="n">mn</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">))</span>
+    <span class="n">EFF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nrEigenflatfields</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">))</span>  <span class="c1"># n_EFF + 1 eig0</span>
+    <span class="n">EFF_denoised</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nrEigenflatfields</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">))</span>  <span class="c1"># n_EFF + 1 eig0</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Calculating EFFs:&quot;</span><span class="p">)</span>
+    <span class="n">EFF</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">eig0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nrEigenflatfields</span><span class="p">):</span>
+        <span class="n">EFF</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">Data</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">V1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">))</span>
+
+    <span class="n">EFF_denoised</span> <span class="o">=</span> <span class="n">EFF</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="c1"># Denoise eigen flat fields</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Denoising EFFs using BM3D method:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">EFF</span><span class="p">)):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Denoising EFF </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">EFF_max</span><span class="p">,</span> <span class="n">EFF_min</span> <span class="o">=</span> <span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">EFF_min</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">EFF_max</span> <span class="o">-</span> <span class="n">EFF_min</span><span class="p">)</span>
+        <span class="n">sigma_bm3d</span> <span class="o">=</span> <span class="n">estimate_sigma</span><span class="p">(</span><span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span> <span class="o">*</span> <span class="mi">10</span>
+        <span class="c1"># print(f&quot;Estimated sigma: {sigma_bm3d}&quot;)</span>
+        <span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">bm3d</span><span class="o">.</span><span class="n">bm3d</span><span class="p">(</span><span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">sigma_bm3d</span><span class="p">)</span>
+        <span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">EFF_denoised</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">*</span> <span class="p">(</span><span class="n">EFF_max</span> <span class="o">-</span> <span class="n">EFF_min</span><span class="p">))</span> <span class="o">+</span> <span class="n">EFF_min</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Denoising completed.&quot;</span><span class="p">)</span>
+    <span class="c1"># =============================================================================</span>
+    <span class="c1"># cost_func: cost funcion used to estimate the weights using TV</span>
+    <span class="c1"># =============================================================================</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">cost_func</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">projections</span><span class="p">,</span> <span class="n">meanFF</span><span class="p">,</span> <span class="n">FF</span><span class="p">,</span> <span class="n">DF</span><span class="p">)</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="n">FF_eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">FF</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">FF</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">FF</span><span class="p">)):</span>
+            <span class="n">FF_eff</span> <span class="o">=</span> <span class="n">FF_eff</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">FF</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">logCorProj</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">projections</span> <span class="o">-</span> <span class="n">DF</span><span class="p">)</span>
+            <span class="o">/</span> <span class="p">(</span><span class="n">meanFF</span> <span class="o">+</span> <span class="n">FF_eff</span><span class="p">)</span>
+            <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">meanFF</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">+</span> <span class="n">FF_eff</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="n">Gx</span><span class="p">,</span> <span class="n">Gy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">logCorProj</span><span class="p">)</span>
+        <span class="n">mag</span> <span class="o">=</span> <span class="p">(</span><span class="n">Gx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Gy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mag</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">cost</span>
+
+    <span class="c1"># =============================================================================</span>
+    <span class="c1"># CondTVmean function: finds the optimal estimates  of the coefficients of the</span>
+    <span class="c1"># eigen flat fields.</span>
+    <span class="c1"># =============================================================================</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">condTVmean</span><span class="p">(</span><span class="n">projection</span><span class="p">,</span> <span class="n">meanFF</span><span class="p">,</span> <span class="n">FF</span><span class="p">,</span> <span class="n">DF</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">DS</span><span class="p">):</span>
+        <span class="c1"># Downsample image</span>
+        <span class="n">projection</span> <span class="o">=</span> <span class="n">downscale_local_mean</span><span class="p">(</span><span class="n">projection</span><span class="p">,</span> <span class="p">(</span><span class="n">DS</span><span class="p">,</span> <span class="n">DS</span><span class="p">))</span>
+        <span class="n">meanFF</span> <span class="o">=</span> <span class="n">downscale_local_mean</span><span class="p">(</span><span class="n">meanFF</span><span class="p">,</span> <span class="p">(</span><span class="n">DS</span><span class="p">,</span> <span class="n">DS</span><span class="p">))</span>
+        <span class="n">FF2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">FF</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">meanFF</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">meanFF</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">FF</span><span class="p">)):</span>
+            <span class="n">FF2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">downscale_local_mean</span><span class="p">(</span><span class="n">FF</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">(</span><span class="n">DS</span><span class="p">,</span> <span class="n">DS</span><span class="p">))</span>
+        <span class="n">FF</span> <span class="o">=</span> <span class="n">FF2</span>
+        <span class="n">DF</span> <span class="o">=</span> <span class="n">downscale_local_mean</span><span class="p">(</span><span class="n">DF</span><span class="p">,</span> <span class="p">(</span><span class="n">DS</span><span class="p">,</span> <span class="n">DS</span><span class="p">))</span>
+        <span class="c1"># Optimize weights (x)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span>
+            <span class="n">cost_func</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">projection</span><span class="p">,</span> <span class="n">meanFF</span><span class="p">,</span> <span class="n">FF</span><span class="p">,</span> <span class="n">DF</span><span class="p">),</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;BFGS&quot;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-8</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">x</span>
+
+    <span class="n">H</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;TV optimisation for DFF coefficients:&quot;</span><span class="p">)</span>
+    <span class="n">clean_DFFC</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">H</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">W</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">C</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Normalising projection&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">projection</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="c1"># Estimate weights for a single projection</span>
+        <span class="n">meanFF</span> <span class="o">=</span> <span class="n">EFF_denoised</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">FF</span> <span class="o">=</span> <span class="n">EFF_denoised</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nrEigenflatfields</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">condTVmean</span><span class="p">(</span><span class="n">projection</span><span class="p">,</span> <span class="n">meanFF</span><span class="p">,</span> <span class="n">FF</span><span class="p">,</span> <span class="n">meanDarkfield</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">downsample</span><span class="p">)</span>
+        <span class="c1"># Dynamic FFC</span>
+        <span class="n">FFeff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">meanDarkfield</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nrEigenflatfields</span><span class="p">):</span>
+            <span class="n">FFeff</span> <span class="o">=</span> <span class="n">FFeff</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">EFF_denoised</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">((</span><span class="n">projection</span> <span class="o">-</span> <span class="n">meanDarkfield</span><span class="p">),</span> <span class="p">(</span><span class="n">EFF_denoised</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">FFeff</span><span class="p">))</span>
+        <span class="n">clean_DFFC</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">tmp</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">clean_DFFC</span><span class="p">,</span> <span class="n">EFF</span><span class="p">,</span> <span class="n">EFF_denoised</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="normaliser">
+<a class="viewcode-back" href="../../../api/tomobar.supp.suppTools.html#tomobar.supp.suppTools.normaliser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normaliser</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">flats</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">darks</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">log</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Data normalisation module</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (np.ndarray): 3d numpy array of raw data.</span>
+<span class="sd">        flats (np.ndarray): 2d numpy array for flat field.</span>
+<span class="sd">        darks (np.ndarray): 2d numpy array for dark field.</span>
+<span class="sd">        log (bool, optional): Take negative log. Defaults to True.</span>
+<span class="sd">        method (str, optional): Normalisation method, choose &quot;mean&quot;, &quot;median&quot; or &quot;dynamic&quot;. Defaults to &quot;mean&quot;.</span>
+<span class="sd">        axis (int, optional): Define the ANGLES axis.</span>
+<span class="sd">        dyn_downsample (int, optional): Parameter for &quot;dynamic&quot; method. Defaults to 2.</span>
+<span class="sd">        dyn_iterations (int, optional): Parameter for &quot;dynamic&quot; method. Defaults to 10.</span>
+
+
+<span class="sd">    Raises:</span>
+<span class="sd">        NameError: method error</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        np.ndarray: 3d numpy array of normalised data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s2">&quot;Normalisation is implemented for 3d data input&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">darks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">darks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">flats</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
+        <span class="n">flats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">flats</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>  <span class="c1"># mean across flats</span>
+        <span class="n">darks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">darks</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>  <span class="c1"># mean across darks</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;median&quot;</span><span class="p">:</span>
+        <span class="n">flats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flats</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>  <span class="c1"># median across flats</span>
+        <span class="n">darks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">darks</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>  <span class="c1"># median across darks</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;dynamic&quot;</span><span class="p">:</span>
+        <span class="c1"># dynamic flat field normalisation according to the paper of Vincent Van Nieuwenhove</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;dyn_downsample&quot;</span><span class="p">:</span>
+                <span class="n">dyn_downsample_v</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dyn_downsample_v</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;dyn_iterations&quot;</span><span class="p">:</span>
+                <span class="n">dyn_iterations_v</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dyn_iterations_v</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="p">[</span><span class="n">data_norm</span><span class="p">,</span> <span class="n">EFF</span><span class="p">,</span> <span class="n">EFF_filt</span><span class="p">]</span> <span class="o">=</span> <span class="n">_DFFC</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">flats</span><span class="p">,</span>
+            <span class="n">darks</span><span class="p">,</span>
+            <span class="n">downsample</span><span class="o">=</span><span class="n">dyn_downsample_v</span><span class="p">,</span>
+            <span class="n">nrPArepetions</span><span class="o">=</span><span class="n">dyn_iterations_v</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span>
+            <span class="s2">&quot;Please select an appropriate method for normalisation: mean, median or dynamic&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">&quot;dynamic&quot;</span><span class="p">:</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="n">flats</span> <span class="o">-</span> <span class="n">darks</span>
+        <span class="n">denom</span><span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">denom</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">))]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mf">1.0</span>  <span class="c1"># remove zeros/negatives in the denominator if any</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="n">denom</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">darks</span> <span class="o">=</span> <span class="n">darks</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">nomin</span> <span class="o">=</span> <span class="n">data</span> <span class="o">-</span> <span class="n">darks</span>  <span class="c1"># get nominator</span>
+        <span class="n">nomin</span><span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">nomin</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">))]</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># remove negatives</span>
+        <span class="n">data_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">true_divide</span><span class="p">(</span><span class="n">nomin</span><span class="p">,</span> <span class="n">denom</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">log</span><span class="p">:</span>
+        <span class="c1"># calculate negative log (avoiding of log(0) (= inf) and &gt; 1.0 (negative val))</span>
+        <span class="n">data_norm</span><span class="p">[</span><span class="n">data_norm</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">data_norm</span><span class="p">[</span><span class="n">data_norm</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">])</span>
+        <span class="n">data_norm</span><span class="p">[</span><span class="n">data_norm</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># remove negative values</span>
+    <span class="c1"># return [data_norm, EFF, EFF_filt]</span>
+    <span class="k">return</span> <span class="n">data_norm</span></div>
+
+
+
+<div class="viewcode-block" id="autocropper">
+<a class="viewcode-back" href="../../../api/tomobar.supp.suppTools.html#tomobar.supp.suppTools.autocropper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">autocropper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">addbox</span><span class="p">,</span> <span class="n">backgr_pix1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The method crops 3D projection data in order to reduce the total data size.</span>
+<span class="sd">    Method assumes that the object is positioned vertically around the central</span>
+<span class="sd">    point of the horizontal detector. It is important since the vertical mid ROI</span>
+<span class="sd">    of each projection is used to estimate the background noise levels.</span>
+
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (np.ndarray) The required dimensions: [Projections, detectorsVertical, detectorsHoriz] !</span>
+<span class="sd">        addbox: (int) to add additional pixels in addition to automatically found cropped values, i.e. increasing the cropping region (safety option)</span>
+<span class="sd">        backgr_pix1 (int): to create rectangular ROIs to collect noise statistics on both (vertical) sides of each 2D projection</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">backgr_pix2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">backgr_pix1</span><span class="p">)</span>  <span class="c1"># usually enough to collect noise statistics</span>
+
+    <span class="p">[</span><span class="n">Projections</span><span class="p">,</span> <span class="n">detectorsVertical</span><span class="p">,</span> <span class="n">detectorsHoriz</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="n">horiz_left_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Projections</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">horiz_right_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Projections</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">vert_up_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Projections</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">vert_down_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Projections</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Projections</span><span class="p">):</span>
+        <span class="n">proj2D</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>  <span class="c1"># extract 2D projection</span>
+        <span class="n">detectorsVert_mid</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">detectorsVertical</span><span class="p">)</span>
+        <span class="c1"># extract two small regions which belong to the background</span>
+        <span class="n">RegionLEFT</span> <span class="o">=</span> <span class="n">proj2D</span><span class="p">[</span>
+            <span class="n">detectorsVert_mid</span> <span class="o">-</span> <span class="n">backgr_pix2</span> <span class="p">:</span> <span class="n">detectorsVert_mid</span> <span class="o">+</span> <span class="n">backgr_pix2</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">:</span><span class="n">backgr_pix1</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">RegionRIGHT</span> <span class="o">=</span> <span class="n">proj2D</span><span class="p">[</span>
+            <span class="n">detectorsVert_mid</span> <span class="o">-</span> <span class="n">backgr_pix2</span> <span class="p">:</span> <span class="n">detectorsVert_mid</span> <span class="o">+</span> <span class="n">backgr_pix2</span><span class="p">,</span>
+            <span class="o">-</span><span class="mi">1</span> <span class="o">-</span> <span class="n">backgr_pix1</span> <span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">ValMean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">RegionLEFT</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">RegionRIGHT</span><span class="p">)</span>
+        <span class="c1"># get 1D mean vectors</span>
+        <span class="n">vert_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">proj2D</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">horiz_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">proj2D</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># find the maximum values across the vectors</span>
+        <span class="n">largest_vert_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">vert_sum</span> <span class="o">==</span> <span class="nb">max</span><span class="p">(</span><span class="n">vert_sum</span><span class="p">))</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">largest_horiz_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">horiz_sum</span> <span class="o">==</span> <span class="nb">max</span><span class="p">(</span><span class="n">horiz_sum</span><span class="p">))</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># now we need to find the dips of the &quot;gaussian&quot; moving down from the top</span>
+        <span class="k">if</span> <span class="n">largest_vert_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">min_vert_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">min_vert_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">vert_sum</span><span class="p">[</span><span class="n">largest_vert_index</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">ValMean</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">largest_vert_index</span> <span class="o">==</span> <span class="p">(</span><span class="n">detectorsVertical</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">max_vert_index</span> <span class="o">=</span> <span class="n">largest_vert_index</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">max_vert_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">vert_sum</span><span class="p">[</span><span class="n">largest_vert_index</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">ValMean</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">largest_horiz_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">min_horiz_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">min_horiz_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">horiz_sum</span><span class="p">[</span><span class="n">largest_horiz_index</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">ValMean</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">largest_horiz_index</span> <span class="o">==</span> <span class="p">(</span><span class="n">detectorsHoriz</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">max_horiz_index</span> <span class="o">=</span> <span class="n">largest_horiz_index</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">max_horiz_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">horiz_sum</span><span class="p">[</span><span class="n">largest_horiz_index</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">ValMean</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+            <span class="p">)</span>
+        <span class="c1"># checking the boudaries of the selected indices</span>
+        <span class="k">if</span> <span class="n">min_vert_index</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">min_vert_index</span> <span class="o">=</span> <span class="n">largest_vert_index</span> <span class="o">-</span> <span class="n">min_vert_index</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">min_vert_index</span> <span class="o">-</span> <span class="n">addbox</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">min_vert_index</span> <span class="o">-=</span> <span class="n">addbox</span>
+        <span class="k">if</span> <span class="n">max_vert_index</span> <span class="o">!=</span> <span class="p">(</span><span class="n">detectorsVertical</span><span class="p">):</span>
+            <span class="n">max_vert_index</span> <span class="o">=</span> <span class="n">largest_vert_index</span> <span class="o">+</span> <span class="n">max_vert_index</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">max_vert_index</span> <span class="o">+</span> <span class="n">addbox</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">detectorsVertical</span><span class="p">:</span>
+                <span class="n">max_vert_index</span> <span class="o">+=</span> <span class="n">addbox</span>
+        <span class="k">if</span> <span class="n">min_horiz_index</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">min_horiz_index</span> <span class="o">=</span> <span class="n">largest_horiz_index</span> <span class="o">-</span> <span class="n">min_horiz_index</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">min_horiz_index</span> <span class="o">-</span> <span class="n">addbox</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">min_horiz_index</span> <span class="o">-=</span> <span class="n">addbox</span>
+        <span class="k">if</span> <span class="n">max_horiz_index</span> <span class="o">!=</span> <span class="p">(</span><span class="n">detectorsHoriz</span><span class="p">):</span>
+            <span class="n">max_horiz_index</span> <span class="o">=</span> <span class="n">largest_horiz_index</span> <span class="o">+</span> <span class="n">max_horiz_index</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">max_horiz_index</span> <span class="o">+</span> <span class="n">addbox</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">detectorsHoriz</span><span class="p">:</span>
+                <span class="n">max_horiz_index</span> <span class="o">+=</span> <span class="n">addbox</span>
+        <span class="n">horiz_left_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_horiz_index</span>
+        <span class="n">horiz_right_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_horiz_index</span>
+        <span class="n">vert_up_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_vert_index</span>
+        <span class="n">vert_down_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_vert_index</span>
+
+    <span class="n">crop_left_horiz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">horiz_left_indices</span><span class="p">)</span>
+    <span class="n">crop_right_horiz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">horiz_right_indices</span><span class="p">)</span>
+    <span class="n">crop_up_vert</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">vert_up_indices</span><span class="p">)</span>
+    <span class="n">crop_down_vert</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">vert_down_indices</span><span class="p">)</span>
+
+    <span class="c1"># Finally time to crop the data</span>
+    <span class="n">cropped_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span>
+        <span class="p">:,</span> <span class="n">crop_up_vert</span><span class="p">:</span><span class="n">crop_down_vert</span><span class="p">,</span> <span class="n">crop_left_horiz</span><span class="p">:</span><span class="n">crop_right_horiz</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">cropped_data</span></div>
+
+
+
+<div class="viewcode-block" id="apply_circular_mask">
+<a class="viewcode-back" href="../../../api/tomobar.supp.suppTools.html#tomobar.supp.suppTools.apply_circular_mask">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_circular_mask</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">recon_mask_radius</span><span class="p">,</span> <span class="n">cupyrun</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies a circular mask of a certain radius to zero the values outside tha mask</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (cp or np ndarray): reconstructed volume</span>
+<span class="sd">        recon_mask_radius (float): radius size</span>
+<span class="sd">        cupyrun (bool): CuPy run or not</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        cp or np ndarray: recon volume after mask applied</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># axis to extract the reconstructed data shape, e.g. axis = 1 for 2d and 2 for 3d.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">recon_size</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+    <span class="n">half_size</span> <span class="o">=</span> <span class="n">recon_size</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">cupyrun</span><span class="p">:</span>
+        <span class="n">Y</span><span class="p">,</span> <span class="n">X</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[:</span><span class="n">recon_size</span><span class="p">,</span> <span class="p">:</span><span class="n">recon_size</span><span class="p">]</span>
+        <span class="n">dist_from_center</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">X</span> <span class="o">-</span> <span class="n">half_size</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span> <span class="o">-</span> <span class="n">half_size</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Y</span><span class="p">,</span> <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[:</span><span class="n">recon_size</span><span class="p">,</span> <span class="p">:</span><span class="n">recon_size</span><span class="p">]</span>
+        <span class="n">dist_from_center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">X</span> <span class="o">-</span> <span class="n">half_size</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span> <span class="o">-</span> <span class="n">half_size</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">recon_mask_radius</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">dist_from_center</span> <span class="o">&lt;=</span> <span class="n">half_size</span> <span class="o">-</span> <span class="nb">abs</span><span class="p">(</span>
+            <span class="n">half_size</span> <span class="o">-</span> <span class="n">half_size</span> <span class="o">/</span> <span class="n">recon_mask_radius</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">dist_from_center</span> <span class="o">&lt;=</span> <span class="n">half_size</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span>
+            <span class="n">half_size</span> <span class="o">-</span> <span class="n">half_size</span> <span class="o">/</span> <span class="n">recon_mask_radius</span>
+        <span class="p">)</span>
+    <span class="n">data</span> <span class="o">*=</span> <span class="n">mask</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="perform_recon_crop">
+<a class="viewcode-back" href="../../../api/tomobar.supp.suppTools.html#tomobar.supp.suppTools.perform_recon_crop">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">perform_recon_crop</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">croped_size</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform croipping of the larger 3D data array (reconstruction) to a smaller one defined by croped_size</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (xp.ndarray): 3D array [vertical, reconX, reconY] or 2D array [reconX, reconY] to crop</span>
+<span class="sd">        croped_size (int): the size of the array after cropping</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        xp.ndarry: cropped 3D array [vertical, reconX_new_size, reconY_new_size]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># or 1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">original_recon_size</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+    <span class="n">crop_limit_start</span> <span class="o">=</span> <span class="p">(</span><span class="n">original_recon_size</span> <span class="o">-</span> <span class="n">croped_size</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">crop_limit_stop</span> <span class="o">=</span> <span class="n">croped_size</span> <span class="o">+</span> <span class="n">crop_limit_start</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">crop_limit_start</span><span class="p">:</span><span class="n">crop_limit_stop</span><span class="p">,</span> <span class="n">crop_limit_start</span><span class="p">:</span><span class="n">crop_limit_stop</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">crop_limit_start</span><span class="p">:</span><span class="n">crop_limit_stop</span><span class="p">,</span> <span class="n">crop_limit_start</span><span class="p">:</span><span class="n">crop_limit_stop</span><span class="p">]</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_apply_horiz_detector_padding</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">detector_width_pad</span><span class="p">,</span> <span class="n">cupyrun</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;extending the size of the horizontal detector, here</span>
+<span class="sd">    assuming the order of the 3D data as: [&quot;detY&quot;, &quot;angles&quot;, &quot;detX&quot;] and</span>
+<span class="sd">    2D data: [&quot;angles&quot;, &quot;detX&quot;]&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">detector_width_pad</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># there are no cupy implementions for 2D geometry</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span>
+                <span class="n">pad_width</span><span class="o">=</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="n">detector_width_pad</span><span class="p">,</span> <span class="n">detector_width_pad</span><span class="p">)),</span>
+                <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;edge&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cupyrun</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">xp</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">,</span>
+                    <span class="n">pad_width</span><span class="o">=</span><span class="p">(</span>
+                        <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                        <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                        <span class="p">(</span><span class="n">detector_width_pad</span><span class="p">,</span> <span class="n">detector_width_pad</span><span class="p">),</span>
+                    <span class="p">),</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;edge&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">,</span>
+                    <span class="n">pad_width</span><span class="o">=</span><span class="p">(</span>
+                        <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                        <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                        <span class="p">(</span><span class="n">detector_width_pad</span><span class="p">,</span> <span class="n">detector_width_pad</span><span class="p">),</span>
+                    <span class="p">),</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;edge&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+
+<div class="viewcode-block" id="check_kwargs">
+<a class="viewcode-back" href="../../../api/tomobar.supp.suppTools.html#tomobar.supp.suppTools.check_kwargs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_kwargs</span><span class="p">(</span><span class="n">reconstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># Iterating over optional parameters:</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;recon_mask_radius&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">apply_circular_mask</span><span class="p">(</span><span class="n">reconstruction</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;cupyrun&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">reconstruction</span></div>
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Daniil Kazantsev
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Diamond Light Source and Manchester University, UK.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Jan 30, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

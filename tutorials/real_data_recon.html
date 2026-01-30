@@ -1,0 +1,584 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Real data reconstruction &#8212; Tomobar Documentation page</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/general.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=780dcd79"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/real_data_recon';</script>
+    <link rel="icon" href="../_static/tomobar_logo_light.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="API reference" href="../reference/api.html" />
+    <link rel="prev" title="Synthethic data reconstruction" href="synthetic_recon.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Jan 30, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/tomobar_logo_light.png" class="logo__image only-light" alt="Tomobar Documentation page - Home"/>
+    <script>document.write(`<img src="../_static/tomobar_logo_dark.png" class="logo__image only-dark" alt="Tomobar Documentation page - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/about.html">About ToMoBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How To's</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../howto/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../howto/use.html">Using ToMoBAR</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="direct_recon.html">Direct reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basic_iter_recon.html">Basic iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="regul_iter_recon.html">Regularised iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="synthetic_recon.html">Synthethic data reconstruction</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Real data reconstruction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../reference/api.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/tomobar.methodsDIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tomobar.methodsDIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tomobar.methodsIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tomobar.methodsIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tomobar.regularisers.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisers</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tomobar.regularisersCuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisersCuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tomobar.supp.dicts.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.dicts</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tomobar.supp.suppTools.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.suppTools</span></code></a></li>
+</ul>
+</details></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/tutorials/real_data_recon.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Real data reconstruction</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="real-data-reconstruction">
+<span id="examples-real-data"></span><h1>Real data reconstruction<a class="headerlink" href="#real-data-reconstruction" title="Link to this heading">#</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Installing <a class="reference external" href="https://diamondlightsource.github.io/httomolibgpu/">HTTomolibGPU</a> provides access to a wide range of GPU-accelerated processing tools, in addition to <a class="reference external" href="https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html">reconstruction</a> wrappers that leverage ToMoBAR’s modules, see point 6 in <a class="reference internal" href="../introduction/dependencies.html#ref-dependencies"><span class="std std-ref">Dependencies</span></a>.</p>
+</div>
+<p>This tutorial demonstrates real data reconstruction using the ToMoBAR software. The dataset was acquired at the Diamond Light Source synchrotron facility (UK), on the i12 beamline. The sample is a magnesium alloy undergoing thermal cycling, during which dendritic growth occurs.
+See more details about the experiment in <a class="reference internal" href="../introduction/references.html#guo2018" id="id1"><span>[GUO2018]</span></a> and more on reconstruction using ToMoBAR in <a class="reference internal" href="../introduction/references.html#kaz2017" id="id2"><span>[KAZ2017]</span></a>.</p>
+<p>This tutorial loosely follows <a class="reference external" href="https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/Demo_RealData.py">Demo_RealData.py</a>
+demo.</p>
+<ul class="simple">
+<li><p>We will extract a 2D sinogram out of 3D projection data and reconstruct it using the FBP method.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.methodsDIR</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecToolsDIR</span>
+
+<span class="n">Rectools</span> <span class="o">=</span> <span class="n">RecToolsDIR</span><span class="p">(</span>
+    <span class="n">DetectorsDimH</span><span class="o">=</span><span class="n">detectorHoriz</span><span class="p">,</span>  <span class="c1"># Horizontal detector dimension</span>
+    <span class="n">DetectorsDimH_pad</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Padding size of horizontal detector</span>
+    <span class="n">DetectorsDimV</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Vertical detector dimension</span>
+    <span class="n">CenterRotOffset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Center of Rotation scalar</span>
+    <span class="n">AnglesVec</span><span class="o">=</span><span class="n">angles_rad</span><span class="p">,</span>  <span class="c1"># A vector of projection angles in radians</span>
+    <span class="n">ObjSize</span><span class="o">=</span><span class="n">N_size</span><span class="p">,</span>  <span class="c1"># Reconstructed object dimensions (scalar)</span>
+    <span class="n">device_projector</span><span class="o">=</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">FBPrec</span> <span class="o">=</span> <span class="n">Rectools</span><span class="o">.</span><span class="n">FBP</span><span class="p">(</span><span class="n">sinogram</span><span class="p">,</span> <span class="n">data_axes_labels_order</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;detX&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../_images/dendr_FBPnopad.jpg"><img alt="FBP recon without padding" height="412" src="../_images/dendr_FBPnopad.jpg" width="406" />
+</a>
+</figure>
+<ul class="simple">
+<li><p>In order to remove the circular artifact on the edges of the FBP reconstruction, one can edge-pad the horizontal detector.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.methodsDIR</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecToolsDIR</span>
+
+<span class="n">Rectools</span> <span class="o">=</span> <span class="n">RecToolsDIR</span><span class="p">(</span>
+    <span class="n">DetectorsDimH</span><span class="o">=</span><span class="n">detectorHoriz</span><span class="p">,</span>  <span class="c1"># Horizontal detector dimension</span>
+    <span class="n">DetectorsDimH_pad</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># Padding size of horizontal detector</span>
+    <span class="n">DetectorsDimV</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Vertical detector dimension</span>
+    <span class="n">CenterRotOffset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Center of Rotation scalar</span>
+    <span class="n">AnglesVec</span><span class="o">=</span><span class="n">angles_rad</span><span class="p">,</span>  <span class="c1"># A vector of projection angles in radians</span>
+    <span class="n">ObjSize</span><span class="o">=</span><span class="n">N_size</span><span class="p">,</span>  <span class="c1"># Reconstructed object dimensions (scalar)</span>
+    <span class="n">device_projector</span><span class="o">=</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">FBPrec</span> <span class="o">=</span> <span class="n">Rectools</span><span class="o">.</span><span class="n">FBP</span><span class="p">(</span><span class="n">sinogram</span><span class="p">,</span> <span class="n">data_axes_labels_order</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;detX&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../_images/dendr_FBPpad.jpg"><img alt="FBP recon with padding" height="412" src="../_images/dendr_FBPpad.jpg" width="406" />
+</a>
+</figure>
+<ul class="simple">
+<li><p>Next we reconstruct using ordered-subsets FISTA with Total Variation regularisation.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.methodsIR</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecToolsIR</span>
+
+<span class="n">Rectools</span> <span class="o">=</span> <span class="n">RecToolsIR</span><span class="p">(</span>
+    <span class="n">DetectorsDimH</span><span class="o">=</span><span class="n">detectorHoriz</span><span class="p">,</span>  <span class="c1"># Horizontal detector dimension</span>
+    <span class="n">DetectorsDimH_pad</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Padding size of horizontal detector</span>
+    <span class="n">DetectorsDimV</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Vertical detector dimension (3D case)</span>
+    <span class="n">CenterRotOffset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Center of Rotation scalar</span>
+    <span class="n">AnglesVec</span><span class="o">=</span><span class="n">angles_rad</span><span class="p">,</span>  <span class="c1"># A vector of projection angles in radians</span>
+    <span class="n">ObjSize</span><span class="o">=</span><span class="n">N_size</span><span class="p">,</span>  <span class="c1"># Reconstructed object dimensions (scalar)</span>
+    <span class="n">datafidelity</span><span class="o">=</span><span class="s2">&quot;PWLS&quot;</span><span class="p">,</span>  <span class="c1"># Data fidelity term</span>
+    <span class="n">device_projector</span><span class="o">=</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">_data_</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;projection_norm_data&quot;</span><span class="p">:</span> <span class="n">sinogram</span><span class="p">,</span>  <span class="c1"># Normalised projection data</span>
+    <span class="s2">&quot;projection_raw_data&quot;</span><span class="p">:</span> <span class="n">sinogram_raw</span><span class="p">,</span>  <span class="c1"># Raw projection data</span>
+    <span class="s2">&quot;OS_number&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>  <span class="c1"># The number of subsets</span>
+    <span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;detX&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">],</span>
+<span class="p">}</span>
+<span class="n">lc</span> <span class="o">=</span> <span class="n">Rectools</span><span class="o">.</span><span class="n">powermethod</span><span class="p">(</span><span class="n">_data_</span><span class="p">)</span>  <span class="c1"># calculate Lipschitz constant</span>
+
+<span class="n">_algorithm_</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;iterations&quot;</span><span class="p">:</span> <span class="mi">25</span><span class="p">,</span> <span class="s2">&quot;lipschitz_const&quot;</span><span class="p">:</span> <span class="n">lc</span><span class="p">}</span>
+
+<span class="n">_regularisation_</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;PD_TV&quot;</span><span class="p">,</span>  <span class="c1"># Regularisation method</span>
+    <span class="s2">&quot;regul_param&quot;</span><span class="p">:</span> <span class="mf">0.000002</span><span class="p">,</span>  <span class="c1"># Regularisation parameter</span>
+    <span class="s2">&quot;iterations&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>  <span class="c1"># The number of regularisation iterations</span>
+    <span class="s2">&quot;device_regulariser&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">RecFISTA</span> <span class="o">=</span> <span class="n">Rectools</span><span class="o">.</span><span class="n">FISTA</span><span class="p">(</span><span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">_regularisation_</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../_images/FISTA_TV_dendr.jpg"><img alt="FISTA recon" height="385" src="../_images/FISTA_TV_dendr.jpg" width="386" />
+</a>
+</figure>
+<ul class="simple">
+<li><p>Then we will add the Group-Huber data fidelity model <a class="reference internal" href="../introduction/references.html#pm2015" id="id3"><span>[PM2015]</span></a> to minimise the ring artefacts.
+We need to add new parameters to the <cite>_data_</cite> dictionary.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">_data_</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;projection_norm_data&quot;</span><span class="p">:</span> <span class="n">sinogram</span><span class="p">,</span>  <span class="c1"># Normalised projection data</span>
+    <span class="s2">&quot;projection_raw_data&quot;</span><span class="p">:</span> <span class="n">sinogram_raw</span><span class="p">,</span>  <span class="c1"># Raw projection data</span>
+    <span class="s2">&quot;OS_number&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>  <span class="c1"># The number of subsets</span>
+    <span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;detX&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;ringGH_lambda&quot;</span><span class="p">:</span> <span class="mf">0.000015</span><span class="p">,</span>
+    <span class="s2">&quot;ringGH_accelerate&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">RecFISTA</span> <span class="o">=</span> <span class="n">Rectools</span><span class="o">.</span><span class="n">FISTA</span><span class="p">(</span><span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">_regularisation_</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../_images/FISTA_GH_TV_dendr.jpg"><img alt="FISTA recon" height="385" src="../_images/FISTA_GH_TV_dendr.jpg" width="386" />
+</a>
+</figure>
+<ul class="simple">
+<li><p>We also can try the Stripe-Weighted Least Squares (SWLS) data model <a class="reference internal" href="../introduction/references.html#hoa2017" id="id4"><span>[HOA2017]</span></a>. As we change the data fidelity, we need to re-initialise the geometry
+object.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Rectools</span> <span class="o">=</span> <span class="n">RecToolsIR</span><span class="p">(</span>
+    <span class="n">DetectorsDimH</span><span class="o">=</span><span class="n">detectorHoriz</span><span class="p">,</span>  <span class="c1"># Horizontal detector dimension</span>
+    <span class="n">DetectorsDimH_pad</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Padding size of horizontal detector</span>
+    <span class="n">DetectorsDimV</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Vertical detector dimension (3D case)</span>
+    <span class="n">CenterRotOffset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Center of Rotation scalar</span>
+    <span class="n">AnglesVec</span><span class="o">=</span><span class="n">angles_rad</span><span class="p">,</span>  <span class="c1"># A vector of projection angles in radians</span>
+    <span class="n">ObjSize</span><span class="o">=</span><span class="n">N_size</span><span class="p">,</span>  <span class="c1"># Reconstructed object dimensions (scalar)</span>
+    <span class="n">datafidelity</span><span class="o">=</span><span class="s2">&quot;SWLS&quot;</span><span class="p">,</span>  <span class="c1"># Data fidelity term</span>
+    <span class="n">device_projector</span><span class="o">=</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">_data_</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;projection_norm_data&quot;</span><span class="p">:</span> <span class="n">sinogram</span><span class="p">,</span>  <span class="c1"># Normalised projection data</span>
+    <span class="s2">&quot;projection_raw_data&quot;</span><span class="p">:</span> <span class="n">sinogram_raw</span><span class="p">,</span>  <span class="c1"># Raw projection data</span>
+    <span class="s2">&quot;OS_number&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>  <span class="c1"># The number of subsets</span>
+    <span class="s2">&quot;beta_SWLS&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>  <span class="c1">#  parameter for the SWLS model</span>
+    <span class="s2">&quot;data_axes_labels_order&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;detX&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">RecFISTA</span> <span class="o">=</span> <span class="n">Rectools</span><span class="o">.</span><span class="n">FISTA</span><span class="p">(</span><span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">_regularisation_</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../_images/FISTA_SWLS_TV_dendr.jpg"><img alt="FISTA recon" height="385" src="../_images/FISTA_SWLS_TV_dendr.jpg" width="386" />
+</a>
+</figure>
+<p>As one can see that visually the SWLS model produced the best reconstruction here.
+This model is indeed works very well when the stripes (rings) are full and not partial.</p>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="synthetic_recon.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Synthethic data reconstruction</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../reference/api.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Daniil Kazantsev
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Diamond Light Source and Manchester University, UK.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Jan 30, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

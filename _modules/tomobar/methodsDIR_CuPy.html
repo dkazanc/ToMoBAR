@@ -1,0 +1,949 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tomobar.methodsDIR_CuPy &#8212; Tomobar Documentation page</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/general.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=780dcd79"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tomobar/methodsDIR_CuPy';</script>
+    <link rel="icon" href="../../_static/tomobar_logo_light.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Jan 30, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/tomobar_logo_light.png" class="logo__image only-light" alt="Tomobar Documentation page - Home"/>
+    <script>document.write(`<img src="../../_static/tomobar_logo_dark.png" class="logo__image only-dark" alt="Tomobar Documentation page - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/about.html">About ToMoBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How To's</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../howto/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../howto/use.html">Using ToMoBAR</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/direct_recon.html">Direct reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/basic_iter_recon.html">Basic iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/regul_iter_recon.html">Regularised iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/synthetic_recon.html">Synthethic data reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/real_data_recon.html">Real data reconstruction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../reference/api.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsDIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsDIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.methodsIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.regularisers.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisers</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.regularisersCuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisersCuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.supp.dicts.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.dicts</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tomobar.supp.suppTools.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.suppTools</span></code></a></li>
+</ul>
+</details></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for tomobar.methodsDIR_CuPy</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Reconstruction class for 3D direct methods using CuPy-library.</span>
+
+<span class="sd">* :func:`RecToolsDIRCuPy.FORWPROJ` and :func:`RecToolsDIRCuPy.BACKPROJ` - Forward/Backward projection modules (ASTRA with DirectLink and CuPy).</span>
+<span class="sd">* :func:`RecToolsDIRCuPy.FBP` - Filtered Back Projection (ASTRA, the filter is implemented with CuPy).</span>
+<span class="sd">* :func:`RecToolsDIRCuPy.FOURIER_INV` - Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method [NIKITIN2017]_.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">float32</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cupyx.scipy.fft</span><span class="w"> </span><span class="kn">import</span> <span class="n">fft</span><span class="p">,</span> <span class="n">ifft2</span><span class="p">,</span> <span class="n">rfftfreq</span><span class="p">,</span> <span class="n">rfft</span><span class="p">,</span> <span class="n">irfft</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.suppTools</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_kwargs</span><span class="p">,</span> <span class="n">_apply_horiz_detector_padding</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.funcs</span><span class="w"> </span><span class="kn">import</span> <span class="n">_data_dims_swapper</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.fourier</span><span class="w"> </span><span class="kn">import</span> <span class="n">_filtersinc3D_cupy</span><span class="p">,</span> <span class="n">calc_filter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.cuda_kernels</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_cuda_module</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.methodsDIR</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecToolsDIR</span>
+
+<span class="n">_CENTER_SIZE_MIN</span> <span class="o">=</span> <span class="mi">192</span>  <span class="c1"># must be divisible by 8</span>
+
+
+<div class="viewcode-block" id="RecToolsDIRCuPy">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR_CuPy.html#tomobar.methodsDIR_CuPy.RecToolsDIRCuPy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RecToolsDIRCuPy</span><span class="p">(</span><span class="n">RecToolsDIR</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruction class using direct methods with CuPy API.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        DetectorsDimH (int): Horizontal detector dimension.</span>
+<span class="sd">        DetectorsDimH_pad (int): The amount of padding for the horizontal detector.</span>
+<span class="sd">        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.</span>
+<span class="sd">        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.</span>
+<span class="sd">        AnglesVec (np.ndarray): Vector of projection angles in radians.</span>
+<span class="sd">        ObjSize (int): Reconstructed object dimensions (a scalar).</span>
+<span class="sd">        device_projector (int): An index (integer) of a specific GPU device.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">DetectorsDimH</span><span class="p">,</span>  <span class="c1"># Horizontal detector dimension</span>
+        <span class="n">DetectorsDimH_pad</span><span class="p">,</span>  <span class="c1"># Padding size of horizontal detector</span>
+        <span class="n">DetectorsDimV</span><span class="p">,</span>  <span class="c1"># Vertical detector dimension (3D case)</span>
+        <span class="n">CenterRotOffset</span><span class="p">,</span>  <span class="c1"># The Centre of Rotation scalar or a vector</span>
+        <span class="n">AnglesVec</span><span class="p">,</span>  <span class="c1"># Array of projection angles in radians</span>
+        <span class="n">ObjSize</span><span class="p">,</span>  <span class="c1"># Reconstructed object dimensions (scalar)</span>
+        <span class="n">device_projector</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># set an index (integer) of a specific GPU device</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">DetectorsDimH</span><span class="p">,</span>
+            <span class="n">DetectorsDimH_pad</span><span class="p">,</span>
+            <span class="n">DetectorsDimV</span><span class="p">,</span>
+            <span class="n">CenterRotOffset</span><span class="p">,</span>
+            <span class="n">AnglesVec</span><span class="p">,</span>
+            <span class="n">ObjSize</span><span class="p">,</span>
+            <span class="n">device_projector</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># if DetectorsDimV == 0 or DetectorsDimV is None:</span>
+        <span class="c1">#     raise ValueError(&quot;2D CuPy reconstruction is not yet supported, only 3D is&quot;)</span>
+
+<div class="viewcode-block" id="RecToolsDIRCuPy.FORWPROJ">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR_CuPy.html#tomobar.methodsDIR_CuPy.RecToolsDIRCuPy.FORWPROJ">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">FORWPROJ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">cp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Module to perform forward projection of 2d/3d data as a cupy array</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (cp.ndarray): 2D or 3D object as a cupy array</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the OUTPUT data.</span>
+<span class="sd">                 When &quot;None&quot; we assume  [&quot;angles&quot;, &quot;detX&quot;] for 2D and [&quot;detY&quot;, &quot;angles&quot;, &quot;detX&quot;] for 3D.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            cp.ndarray: Forward projected cupy array (projection data)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">projected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_forwprojCuPy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">projected</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                    <span class="n">projected</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">]</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">projected</span></div>
+
+
+<div class="viewcode-block" id="RecToolsDIRCuPy.BACKPROJ">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR_CuPy.html#tomobar.methodsDIR_CuPy.RecToolsDIRCuPy.BACKPROJ">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">BACKPROJ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">cp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Module to perform back-projection of 2d/3d data as a cupy array</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (cp.ndarray): 2D/3D projection data as a cupy array</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.</span>
+<span class="sd">                 When &quot;None&quot; we assume  [&quot;angles&quot;, &quot;detX&quot;] for 2D and [&quot;detY&quot;, &quot;angles&quot;, &quot;detX&quot;] for 3D.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            cp.ndarray: Backprojected 2D/3D object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">_apply_horiz_detector_padding</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span> <span class="n">cupyrun</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojCuPy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RecToolsDIRCuPy.FBP">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR_CuPy.html#tomobar.methodsDIR_CuPy.RecToolsDIRCuPy.FBP">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">FBP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">cp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Filtered backprojection reconstruction on a CuPy array using a custom built SINC filter.</span>
+<span class="sd">           See more about the method `here &lt;https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/FBP3d_tomobar.html&gt;`__.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (cp.ndarray): projection data as a CuPy array</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.</span>
+<span class="sd">                 When &quot;None&quot; we assume  [&quot;angles&quot;, &quot;detX&quot;] for 2D and [&quot;angles&quot;, &quot;detY&quot;, &quot;detX&quot;] for 3D.</span>
+<span class="sd">            recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].</span>
+<span class="sd">            cutoff_freq (float): Cutoff frequency parameter for the sinc filter. Defaults to 0.35.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            cp.ndarray: The FBP reconstructed volume as a CuPy array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">cupyrun</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;cupyrun&quot;</span><span class="p">:</span> <span class="n">cupyrun</span><span class="p">})</span>  <span class="c1"># needed for agnostic array cropping</span>
+        <span class="n">cutoff_freq</span> <span class="o">=</span> <span class="mf">0.35</span>  <span class="c1"># default value</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;cutoff_freq&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">cutoff_freq</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="c1"># Edge-Pad the horizontal detector (detX) on both sides symmetrically using the provided amount of pixels.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">_apply_horiz_detector_padding</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span><span class="p">,</span> <span class="n">cupyrun</span><span class="p">)</span>
+        <span class="c1"># filter the data on the GPU and keep the result there</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">_filtersinc3D_cupy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff_freq</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get_plan_cache</span><span class="p">()</span>
+        <span class="n">cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># flush FFT cache here before backprojection</span>
+        <span class="n">cp</span><span class="o">.</span><span class="n">_default_memory_pool</span><span class="o">.</span><span class="n">free_all_blocks</span><span class="p">()</span>  <span class="c1"># free everything related to the filtering before starting Astra</span>
+        <span class="n">reconstruction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">_backprojCuPy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># 3d backprojecting</span>
+        <span class="k">return</span> <span class="n">check_kwargs</span><span class="p">(</span><span class="n">reconstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RecToolsDIRCuPy.FOURIER_INV">
+<a class="viewcode-back" href="../../api/tomobar.methodsDIR_CuPy.html#tomobar.methodsDIR_CuPy.RecToolsDIRCuPy.FOURIER_INV">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">FOURIER_INV</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">cp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input, see more in</span>
+<span class="sd">        [NIKITIN2017]_. This implementation is originated from V. Nikitin&#39;s CUDA-C implementation:</span>
+<span class="sd">        https://github.com/nikitinvv/radonusfft and TomoCuPy package.</span>
+<span class="sd">        See more about the method `here &lt;https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/LPRec3d_tomobar.html&gt;`__.</span>
+
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (cp.ndarray): projection data as a CuPy array</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.</span>
+<span class="sd">                        When &quot;None&quot; we assume  [&quot;angles&quot;, &quot;detX&quot;] for 2D and [&quot;angles&quot;, &quot;detY&quot;, &quot;detX&quot;] for 3D.</span>
+<span class="sd">            recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].</span>
+<span class="sd">            filter_type (str): Filter type, the accepted values are: none, ramp, shepp, cosine, cosine2, hamming, hann, parzen.</span>
+<span class="sd">            cutoff_freq (float): Cutoff frequency parameter for different filter. The higher values increase resolution and noise.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            cp.ndarray: The NUFFT reconstructed volume as a CuPy array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cupyrun</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;cupyrun&quot;</span><span class="p">:</span> <span class="n">cupyrun</span><span class="p">})</span>  <span class="c1"># needed for agnostic array cropping</span>
+        <span class="n">cutoff_freq</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># default value</span>
+        <span class="n">filter_type</span> <span class="o">=</span> <span class="s2">&quot;shepp&quot;</span>  <span class="c1"># default filter</span>
+
+        <span class="n">center_size</span> <span class="o">=</span> <span class="mi">32768</span>
+        <span class="n">block_dim</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+        <span class="n">block_dim_center</span> <span class="o">=</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+
+        <span class="n">chunk_count</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="n">filter_vol_chunk_count</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="n">filter_proj_chunk_count</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="n">oversampling_level</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># at least 3 or larger required</span>
+        <span class="n">power_of_2_oversampling</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">power_of_2_cropping</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">min_mem_usage_filter</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">min_mem_usage_ifft2</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">padding</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data_axes_labels_order&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;detY&quot;</span><span class="p">,</span> <span class="s2">&quot;angles&quot;</span><span class="p">,</span> <span class="s2">&quot;detX&quot;</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;center_size&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">center_size</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;block_dim&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">block_dim</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;block_dim_center&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">block_dim_center</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;cutoff_freq&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">cutoff_freq</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;filter_type&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span>
+                    <span class="s2">&quot;none&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;ramp&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;shepp&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;cosine&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;cosine2&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;hamming&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;hann&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;parzen&quot;</span><span class="p">,</span>
+                <span class="p">]:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;Unknown filter name, please use: none, ramp, shepp, cosine, cosine2, hamming, hann or parzen. Set to shepp filter&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">filter_type</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;power_of_2_oversampling&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">power_of_2_oversampling</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;power_of_2_cropping&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">power_of_2_cropping</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;min_mem_usage_filter&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">min_mem_usage_filter</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;min_mem_usage_ifft2&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">min_mem_usage_ifft2</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;padding&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid padding: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">. Set to 0&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">padding</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;chunk_count&quot;</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid chunk count: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">. Set to 1&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">chunk_count</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="c1"># extract kernels from CUDA modules</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">load_cuda_module</span><span class="p">(</span><span class="s2">&quot;fft_us_kernels&quot;</span><span class="p">)</span>
+        <span class="n">gather_kernel</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;gather_kernel&quot;</span><span class="p">)</span>
+        <span class="n">gather_kernel_partial</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;gather_kernel_partial&quot;</span><span class="p">)</span>
+        <span class="n">gather_kernel_center_angle_based_prune</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span>
+            <span class="s2">&quot;gather_kernel_center_angle_based_prune&quot;</span>
+        <span class="p">)</span>
+        <span class="n">gather_kernel_center</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;gather_kernel_center&quot;</span><span class="p">)</span>
+        <span class="n">r2c_c1dfftshift</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;r2c_c1dfftshift&quot;</span><span class="p">)</span>
+        <span class="n">c1dfftshift</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;c1dfftshift&quot;</span><span class="p">)</span>
+        <span class="n">c2dfftshift</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;c2dfftshift&quot;</span><span class="p">)</span>
+        <span class="n">unpadding_mul_phi</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;unpadding_mul_phi&quot;</span><span class="p">)</span>
+
+        <span class="c1"># initialisation</span>
+        <span class="p">[</span><span class="n">nz</span><span class="p">,</span> <span class="n">nproj</span><span class="p">,</span> <span class="n">data_n</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">recon_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">recon_size</span>
+        <span class="k">if</span> <span class="n">recon_size</span> <span class="o">&gt;</span> <span class="n">data_n</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The reconstruction size </span><span class="si">{}</span><span class="s2"> should not be larger than the size of the horizontal detector </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">recon_size</span><span class="p">,</span> <span class="n">data_n</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">odd_horiz</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">data_n</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">odd_vert</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">nz</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">data_n</span> <span class="o">+=</span> <span class="n">odd_horiz</span>
+        <span class="n">nz</span> <span class="o">+=</span> <span class="n">odd_vert</span>
+
+        <span class="k">if</span> <span class="n">odd_horiz</span> <span class="ow">or</span> <span class="n">odd_vert</span><span class="p">:</span>
+            <span class="n">data_p</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nz</span><span class="p">,</span> <span class="n">nproj</span><span class="p">,</span> <span class="n">data_n</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="n">data_p</span><span class="p">[:</span> <span class="n">nz</span> <span class="o">-</span> <span class="n">odd_vert</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:</span> <span class="n">data_n</span> <span class="o">-</span> <span class="n">odd_horiz</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="n">data_p</span><span class="p">[:</span> <span class="n">nz</span> <span class="o">-</span> <span class="n">odd_vert</span><span class="p">,</span> <span class="p">:,</span> <span class="o">-</span><span class="n">odd_horiz</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="o">-</span><span class="n">odd_horiz</span><span class="p">]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data_p</span>
+            <span class="k">del</span> <span class="n">data_p</span>
+
+        <span class="n">n</span> <span class="o">=</span> <span class="n">data_n</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">detectors_x_pad</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">padding</span> <span class="o">*</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="n">power_of_2_cropping</span><span class="p">:</span>
+            <span class="n">n_pow2</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+            <span class="k">if</span> <span class="mf">0.9</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">/</span> <span class="n">n_pow2</span><span class="p">:</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="n">n_pow2</span>
+
+        <span class="c1"># Limit the center size parameter</span>
+        <span class="n">center_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">center_size</span><span class="p">,</span> <span class="n">n</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">rotation_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">centre_of_rotation</span> <span class="o">+</span> <span class="mf">0.5</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Atools</span><span class="o">.</span><span class="n">angles_vec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">center_size</span> <span class="o">&gt;=</span> <span class="n">_CENTER_SIZE_MIN</span><span class="p">:</span>
+            <span class="n">sorted_theta_indices</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+            <span class="n">sorted_theta</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">sorted_theta_indices</span><span class="p">]</span>
+            <span class="n">sorted_theta_cpu</span> <span class="o">=</span> <span class="n">sorted_theta</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+            <span class="n">theta_full_range</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sorted_theta_cpu</span><span class="p">[</span><span class="n">nproj</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">sorted_theta_cpu</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">angle_range_pi_count</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">theta_full_range</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+            <span class="n">angle_range</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">center_size</span><span class="p">,</span> <span class="n">center_size</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">angle_range_pi_count</span> <span class="o">*</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">uint16</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># usfft parameters</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-4</span>  <span class="c1"># accuracy of usfft</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">*</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="o">-</span><span class="n">mu</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">mu</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">mu</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># init filter</span>
+        <span class="k">if</span> <span class="n">power_of_2_oversampling</span><span class="p">:</span>
+            <span class="n">ne</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">data_n</span> <span class="o">*</span> <span class="mi">3</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="n">ne</span><span class="p">:</span>
+                <span class="n">ne</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ne</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">oversampling_level</span> <span class="o">*</span> <span class="n">data_n</span><span class="p">)</span>
+            <span class="n">ne</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ne</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+        <span class="n">padding_m</span> <span class="o">=</span> <span class="n">ne</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">data_n</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="n">unpad_m</span> <span class="o">=</span> <span class="n">ne</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">n</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="n">unpad_p</span> <span class="o">=</span> <span class="n">ne</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">n</span> <span class="o">//</span> <span class="mi">2</span>
+
+        <span class="n">wfilter</span> <span class="o">=</span> <span class="n">calc_filter</span><span class="p">(</span><span class="n">ne</span><span class="p">,</span> <span class="n">filter_type</span><span class="p">,</span> <span class="n">cutoff_freq</span><span class="p">)</span>
+
+        <span class="c1"># STEP0: FBP filtering</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">rfftfreq</span><span class="p">(</span><span class="n">ne</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">wfilter</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="n">rotation_axis</span><span class="p">))</span>
+
+        <span class="c1"># FBP filtering output</span>
+        <span class="n">tmp_p</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nz</span><span class="p">,</span> <span class="n">nproj</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">min_mem_usage_filter</span><span class="p">:</span>
+            <span class="n">filter_vol_chunk_count</span> <span class="o">=</span> <span class="n">nz</span>
+
+        <span class="k">if</span> <span class="n">min_mem_usage_ifft2</span><span class="p">:</span>
+            <span class="n">chunk_count</span> <span class="o">=</span> <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span>
+
+        <span class="n">slice_count_per_chunk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">nz</span> <span class="o">/</span> <span class="n">filter_vol_chunk_count</span><span class="p">)</span>
+        <span class="c1"># Loop over the chunks</span>
+        <span class="k">for</span> <span class="n">chunk_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">filter_vol_chunk_count</span><span class="p">):</span>
+            <span class="n">slice_start_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_index</span> <span class="o">*</span> <span class="n">slice_count_per_chunk</span><span class="p">,</span> <span class="n">nz</span><span class="p">)</span>
+            <span class="n">slice_end_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">chunk_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">slice_count_per_chunk</span><span class="p">,</span> <span class="n">nz</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">slice_start_index</span> <span class="o">&gt;=</span> <span class="n">slice_end_index</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="c1"># processing by chunks over the second dimension</span>
+            <span class="c1"># to avoid increased data sizes due to oversampling</span>
+            <span class="n">projection_count_per_projection_chunk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+                <span class="n">nproj</span> <span class="o">/</span> <span class="n">filter_proj_chunk_count</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">projection_chunk_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">filter_proj_chunk_count</span><span class="p">):</span>
+                <span class="n">projection_start_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                    <span class="n">projection_chunk_index</span> <span class="o">*</span> <span class="n">projection_count_per_projection_chunk</span><span class="p">,</span>
+                    <span class="n">nproj</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">projection_end_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">projection_chunk_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="o">*</span> <span class="n">projection_count_per_projection_chunk</span><span class="p">,</span>
+                    <span class="n">nproj</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">projection_start_index</span> <span class="o">&gt;=</span> <span class="n">projection_end_index</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">[</span>
+                        <span class="n">slice_start_index</span><span class="p">:</span><span class="n">slice_end_index</span><span class="p">,</span>
+                        <span class="n">projection_start_index</span><span class="p">:</span><span class="n">projection_end_index</span><span class="p">,</span>
+                        <span class="p">:,</span>
+                    <span class="p">],</span>
+                    <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="n">padding_m</span><span class="p">,</span> <span class="n">padding_m</span><span class="p">)),</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;edge&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">w</span> <span class="o">*</span> <span class="n">rfft</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">irfft</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">tmp_p</span><span class="p">[</span>
+                    <span class="n">slice_start_index</span><span class="p">:</span><span class="n">slice_end_index</span><span class="p">,</span>
+                    <span class="n">projection_start_index</span><span class="p">:</span><span class="n">projection_end_index</span><span class="p">,</span>
+                    <span class="p">:,</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">unpad_m</span><span class="p">:</span><span class="n">unpad_p</span><span class="p">]</span>
+
+                <span class="k">del</span> <span class="n">tmp</span>
+
+        <span class="c1"># Memory clean up of filter and input data</span>
+        <span class="k">del</span> <span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">wfilter</span><span class="p">,</span> <span class="n">w</span>
+
+        <span class="c1"># BACKPROJECTION</span>
+        <span class="c1"># input data</span>
+        <span class="n">datac</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nproj</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
+
+        <span class="c1"># fft, reusable by chunks</span>
+        <span class="k">if</span> <span class="n">center_size</span> <span class="o">&gt;=</span> <span class="n">_CENTER_SIZE_MIN</span><span class="p">:</span>
+            <span class="n">fde</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">([</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fde</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
+
+        <span class="c1"># STEP1: fft 1d</span>
+        <span class="n">r2c_c1dfftshift</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)),</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">nproj</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">tmp_p</span><span class="p">,</span> <span class="n">datac</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">nproj</span><span class="p">,</span> <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Memory clean up of interpolation extra arrays</span>
+        <span class="k">del</span> <span class="n">tmp_p</span>
+
+        <span class="n">datac</span> <span class="o">=</span> <span class="n">fft</span><span class="p">(</span><span class="n">datac</span><span class="p">)</span>
+
+        <span class="n">c1dfftshift</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)),</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">nproj</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">datac</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mi">4</span> <span class="o">/</span> <span class="n">n</span><span class="p">),</span> <span class="n">n</span><span class="p">,</span> <span class="n">nproj</span><span class="p">,</span> <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># STEP2: interpolation (gathering) in the frequency domain</span>
+        <span class="c1"># Use original one kernel at low dimension.</span>
+
+        <span class="k">if</span> <span class="n">center_size</span> <span class="o">&gt;=</span> <span class="n">_CENTER_SIZE_MIN</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">center_size</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="mi">2</span><span class="p">):</span>
+                <span class="n">gather_kernel_partial</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="n">block_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
+                        <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">nproj</span> <span class="o">/</span> <span class="n">block_dim</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span>
+                        <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="p">(</span><span class="n">block_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">block_dim</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span>
+                    <span class="p">(</span>
+                        <span class="n">datac</span><span class="p">,</span>
+                        <span class="n">fde</span><span class="p">,</span>
+                        <span class="n">theta</span><span class="p">,</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">m</span><span class="p">),</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">mu</span><span class="p">),</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">center_size</span><span class="p">),</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nproj</span><span class="p">),</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+
+            <span class="n">gather_kernel_center_angle_based_prune</span><span class="p">(</span>
+                <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">center_size</span> <span class="o">/</span> <span class="mi">256</span><span class="p">)),</span> <span class="n">center_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">(</span>
+                    <span class="n">angle_range</span><span class="p">,</span>
+                    <span class="n">angle_range_pi_count</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="n">sorted_theta</span><span class="p">,</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">m</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">center_size</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nproj</span><span class="p">),</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+            <span class="n">gather_kernel_center</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">center_size</span> <span class="o">/</span> <span class="n">block_dim_center</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">center_size</span> <span class="o">/</span> <span class="n">block_dim_center</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span>
+                    <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="p">(</span><span class="n">block_dim_center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">block_dim_center</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">(</span>
+                    <span class="n">datac</span><span class="p">,</span>
+                    <span class="n">fde</span><span class="p">,</span>
+                    <span class="n">angle_range</span><span class="p">,</span>
+                    <span class="n">angle_range_pi_count</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="n">theta</span><span class="p">,</span>
+                    <span class="n">sorted_theta_indices</span><span class="p">,</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">m</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">mu</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">center_size</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nproj</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gather_kernel</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="n">block_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
+                    <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">nproj</span> <span class="o">/</span> <span class="n">block_dim</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span>
+                    <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="p">(</span><span class="n">block_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">block_dim</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">(</span>
+                    <span class="n">datac</span><span class="p">,</span>
+                    <span class="n">fde</span><span class="p">,</span>
+                    <span class="n">theta</span><span class="p">,</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">m</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">mu</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nproj</span><span class="p">),</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="k">del</span> <span class="n">datac</span>
+
+        <span class="c1"># STEP3: ifft 2d</span>
+        <span class="n">c2dfftshift</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)),</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="mi">8</span><span class="p">)),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">fde</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">slice_count_per_chunk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">chunk_count</span><span class="p">)</span>
+        <span class="c1"># Loop over the chunks</span>
+        <span class="k">for</span> <span class="n">chunk_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">chunk_count</span><span class="p">):</span>
+            <span class="n">start_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_index</span> <span class="o">*</span> <span class="n">slice_count_per_chunk</span><span class="p">,</span> <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">end_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">chunk_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">slice_count_per_chunk</span><span class="p">,</span> <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">start_index</span> <span class="o">&gt;=</span> <span class="n">end_index</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">fde</span><span class="p">[</span><span class="n">start_index</span><span class="p">:</span><span class="n">end_index</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">ifft2</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">overwrite_x</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">fde</span><span class="p">[</span><span class="n">start_index</span><span class="p">:</span><span class="n">end_index</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">tmp</span>
+
+            <span class="k">del</span> <span class="n">tmp</span>
+
+        <span class="n">c2dfftshift</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)),</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="mi">8</span><span class="p">)),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">(</span><span class="n">fde</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Unpadded recon output size</span>
+        <span class="n">odd_recon_size</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">recon_size</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">unpad_z</span> <span class="o">=</span> <span class="n">nz</span> <span class="o">-</span> <span class="n">odd_vert</span>
+        <span class="n">unpad_recon_m</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">odd_horiz</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">recon_size</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="n">unpad_recon_p</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">odd_horiz</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">recon_size</span> <span class="o">+</span> <span class="n">odd_recon_size</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+        <span class="n">unpad_recon_size</span> <span class="o">=</span> <span class="n">unpad_recon_p</span> <span class="o">-</span> <span class="n">unpad_recon_m</span>
+
+        <span class="c1"># memory for recon</span>
+        <span class="n">recon_up</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">unpad_z</span><span class="p">,</span> <span class="n">unpad_recon_size</span><span class="p">,</span> <span class="n">unpad_recon_size</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">float32</span>
+        <span class="p">)</span>
+
+        <span class="c1"># STEP4: unpadding, multiplication by phi and restructure memory</span>
+        <span class="n">unpadding_mul_phi</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">unpad_recon_size</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)),</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">unpad_recon_size</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">(</span>
+                <span class="n">recon_up</span><span class="p">,</span>
+                <span class="n">fde</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">mu</span><span class="p">),</span>
+                <span class="n">nproj</span><span class="p">,</span>
+                <span class="n">unpad_recon_p</span><span class="p">,</span>
+                <span class="n">unpad_z</span><span class="p">,</span>
+                <span class="n">unpad_recon_m</span><span class="p">,</span>
+                <span class="n">n</span><span class="p">,</span>
+                <span class="n">nz</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">del</span> <span class="n">fde</span>
+
+        <span class="k">return</span> <span class="n">check_kwargs</span><span class="p">(</span>
+            <span class="n">recon_up</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Daniil Kazantsev
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Diamond Light Source and Manchester University, UK.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Jan 30, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
