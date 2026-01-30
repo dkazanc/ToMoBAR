@@ -375,10 +375,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 block_dim,
                 block_dim_center,
                 theta,
-                sorted_theta,
-                sorted_theta_indices,
-                angle_range_pi_count,
-                angle_range,
+                sorted_theta if center_size >= _CENTER_SIZE_MIN else None,
+                sorted_theta_indices if center_size >= _CENTER_SIZE_MIN else None,
+                angle_range_pi_count if center_size >= _CENTER_SIZE_MIN else None,
+                angle_range if center_size >= _CENTER_SIZE_MIN else None,
                 eps,
                 mu,
                 c1dfftshift,
@@ -407,7 +407,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
 
             mem_stack.free(np.prod((nz // 2, 2 * n, 2 * n)) * cp.complex64().itemsize)
-            return mem_stack.highwater * 1.35
+            return mem_stack.highwater * 1.4
 
         recon_up = self.unpad_reconstructed_data(
             fde,
@@ -713,10 +713,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
         block_dim,
         block_dim_center,
         theta: cp.ndarray,
-        sorted_theta: cp.ndarray,
-        sorted_theta_indices: cp.ndarray,
-        angle_range_pi_count: int,
-        angle_range: cp.ndarray,
+        sorted_theta: cp.ndarray | None,
+        sorted_theta_indices: cp.ndarray | None,
+        angle_range_pi_count: int | None,
+        angle_range: cp.ndarray | None,
         eps: float,
         mu: float,
         c1dfftshift: cp.RawKernel,
