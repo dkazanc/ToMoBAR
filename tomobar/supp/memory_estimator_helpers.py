@@ -8,10 +8,10 @@ class DeviceMemStack:
     def __enter__(self):
         if DeviceMemStack._stack_count == 0:
             DeviceMemStack._instance = self
-            
+
         DeviceMemStack._stack_count += 1
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         DeviceMemStack._stack_count -= 1
 
