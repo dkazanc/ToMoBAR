@@ -152,7 +152,8 @@ class RecToolsIRCuPy:
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
         ######################################################################
-
+        import timeit
+        tic = timeit.default_timer()
         x_rec = cp.zeros(
             astra.geom_size(self.Atools.vol_geom), dtype=cp.float32
         )  # initialisation
@@ -166,6 +167,10 @@ class RecToolsIRCuPy:
             )
             if _algorithm_upd_["nonnegativity"]:
                 x_rec[x_rec < 0.0] = 0.0
+
+        toc = timeit.default_timer()
+        Run_time = toc - tic
+        print("Landweber iterations {}".format(Run_time))
 
         if self.objsize_user_given is not None:
             return perform_recon_crop(x_rec, self.objsize_user_given)
@@ -435,8 +440,7 @@ class RecToolsIRCuPy:
         if self.geom == "2D":
             # 2D reconstruction
             raise ValueError("2D CuPy reconstruction is not yet supported")
-        # initialise the solution
-        X = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=cp.float32)
+        
 
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
@@ -456,6 +460,16 @@ class RecToolsIRCuPy:
 
         if _data_upd_["OS_number"] > 1:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+
+        # initialisation of the solution (warm-start)
+        if _algorithm_upd_["initialise"] is not None:
+            if cp.size(_algorithm_upd_["initialise"]) == np.prod(astra.geom_size(self.Atools.vol_geom)):
+                X = _algorithm_upd_["initialise"]
+            else:
+                print(f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used.")
+                X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32").ravel()
+        else:
+            X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32").ravel()   
 
         L_const_inv = cp.float32(
             1.0 / _algorithm_upd_["lipschitz_const"]
@@ -554,6 +568,10 @@ class RecToolsIRCuPy:
             self.Atools.detectors_x_pad,
             cupyrun=True,
         )
+        additional_args = {
+            "cupyrun": True,
+            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
+        }
 
         def _Ax(x):
             geom_size = astra.geom_size(self.Atools.vol_geom)
@@ -576,15 +594,20 @@ class RecToolsIRCuPy:
             ).ravel()
 
         rec_dim = np.prod(astra.geom_size(self.Atools.vol_geom))
-        # initialisation of the solution
-        if cp.size(_algorithm_upd_["initialise"]) == rec_dim:
-            x0 = _algorithm_upd_["initialise"].ravel()
+        # initialisation of the solution (warm-start)
+        if _algorithm_upd_["initialise"] is not None:
+            if cp.size(_algorithm_upd_["initialise"]) == rec_dim:
+                x0 = _algorithm_upd_["initialise"].ravel()
+            else:
+                print(f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used.")
+                x0 = cp.zeros(rec_dim, "float32").ravel()
         else:
             x0 = cp.zeros(rec_dim, "float32").ravel()
 
         use_os = _data_upd_["OS_number"] > 1
         if use_os:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+
         # ADMM variables
         x = x0.copy()
         z = x0.copy()
@@ -621,7 +644,6 @@ class RecToolsIRCuPy:
                         )  # KL term
                 else:
                     if use_os:
-                        proj_size = astra.geom_size(self.Atools.proj_geom_OS[sub_ind])
                         grad_data = _Atb_OS(
                             _Ax_OS(z, sub_ind) - proj_data,
                             sub_ind,
@@ -669,10 +691,17 @@ class RecToolsIRCuPy:
             if iter_no == _algorithm_upd_["iterations"] - 1:
                 print("ADMM stopped at iteration (", iter_no + 1, ")")
 
-        return x.reshape(
-            [
-                self.Atools.detectors_y,
-                self.Atools.recon_size,
-                self.Atools.recon_size,
-            ]
-        )
+        x = x.reshape(
+                    [
+                        self.Atools.detectors_y,
+                        self.Atools.recon_size,
+                        self.Atools.recon_size,
+                    ]
+                )
+
+        if self.objsize_user_given is not None:
+            return perform_recon_crop(x, self.objsize_user_given)
+
+        return check_kwargs(x, **additional_args)
+    
+

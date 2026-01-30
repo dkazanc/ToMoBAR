@@ -38,6 +38,35 @@ def test_Landweber_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
+def test_Landweber_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=1,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+
+    _algorithm_ = {"iterations": 10}
+    Iter_rec = RecTools.Landweber(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), -0.00026702078, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.016753351, rtol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
 
 def test_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]

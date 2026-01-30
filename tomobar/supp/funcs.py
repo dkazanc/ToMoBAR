@@ -107,7 +107,7 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
 
     if len(data_axes_labels) != len(required_labels_order):
         raise ValueError(
-            "Warning: The mismatch between provided labels and data dimensions."
+            "Warning: The mismatch in length between provided labels and data dimensions."
         )
     swap_tuple2 = None
     # check if the labels names are the accepted ones
@@ -159,10 +159,11 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
                 data = tuple(data)
             elif cupy_enabled:
                 xpp = xp.get_array_module(data)
-                return xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
+                data = xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
             else:
-                return np.swapaxes(data, swap_tuple[0], swap_tuple[1])
-        return data
+                data = np.swapaxes(data, swap_tuple[0], swap_tuple[1])
+    
+    return data
 
 
 def _parse_device_argument(device_int_or_string) -> Tuple:

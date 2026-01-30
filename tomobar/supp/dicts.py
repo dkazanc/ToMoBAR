@@ -41,10 +41,7 @@ def dicts_check(
         _algorithm_['initialise'] (ndarray): Initialisation for the solution. An array of the expected output size must be provided.
         _algorithm_['lipschitz_const'] (float): Lipschitz constant for the FISTA algorithm. If not provided, it will be calculated for each method call.
         _algorithm_['ADMM_rho_const'] (float): Augmented Lagrangian parameter for the ADMM algorithm.
-        _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm.
-        _algorithm_['ADMM_solver"] (str): Iterative methods for linear equation systems, choose from cgs, cg, gmres and minres. Defaults to cgs
-        _algorithm_['ADMM_solver_iterations']  (int): The number of iterations for the inner iterative solver. Defaults to 15
-        _algorithm_['ADMM_solver_tolerance'] (float): The tolerance for the inner iterative solver. Defaults to 1e-05
+        _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm. Values withing 1.5-18 range work well.
         _algorithm_['tolerance'] (float): Tolerance to terminate reconstruction algorithm iterations earlier. Defaults to 0.0.
         _algorithm_['verbose'] (bool): Switch on printing of iterations number and other messages. Defaults to False.
 
@@ -169,19 +166,10 @@ def dicts_check(
     if method_run == "ADMM":
         # ADMM -algorithm  augmented Lagrangian parameter
         if "ADMM_rho_const" not in _algorithm_:
-            _algorithm_["ADMM_rho_const"] = 1000.0
+            _algorithm_["ADMM_rho_const"] = 1.0
         # ADMM over-relaxation parameter to accelerate convergence
         if "ADMM_relax_par" not in _algorithm_:
-            _algorithm_["ADMM_relax_par"] = 1.0
-        # Iterative methods for linear equation systems
-        if "ADMM_solver" not in _algorithm_:
-            _algorithm_["ADMM_solver"] = "cgs"
-        # The number of iterations for the inner iterative solver
-        if "ADMM_solver_iterations" not in _algorithm_:
-            _algorithm_["ADMM_solver_iterations"] = 15
-        # The tolerance for the inner iterative solver
-        if "ADMM_solver_tolerance" not in _algorithm_:
-            _algorithm_["ADMM_solver_tolerance"] = 1e-05
+            _algorithm_["ADMM_relax_par"] = 1.6
     # initialise an algorithm with an array
     if "initialise" not in _algorithm_:
         _algorithm_["initialise"] = None

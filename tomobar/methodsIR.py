@@ -25,7 +25,7 @@ except ImportError:
 
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 
-from tomobar.supp.suppTools import apply_circular_mask
+from tomobar.supp.suppTools import apply_circular_mask, check_kwargs, perform_recon_crop,_apply_horiz_detector_padding
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
 
 from tomobar.regularisers import prox_regul
@@ -65,6 +65,15 @@ class RecToolsIR:
     ):
         self.datafidelity = datafidelity
         self.cupyrun = cupyrun
+
+        if DetectorsDimH_pad == 0:
+            self.objsize_user_given = None
+        else:
+            self.objsize_user_given = ObjSize
+
+        if DetectorsDimH_pad > 0:
+            # when we pad horizontal detector we might need to reconstruct on a larger grid as well to avoid artifacts
+            ObjSize = DetectorsDimH + 2 * DetectorsDimH_pad                  
 
         device_projector, GPUdevice_index = _parse_device_argument(device_projector)
 
@@ -109,6 +118,14 @@ class RecToolsIR:
     @cupyrun.setter
     def cupyrun(self, cupyrun_val):
         self._cupyrun = cupyrun_val
+
+    @property
+    def objsize_user_given(self) -> int:
+        return self._objsize_user_given
+
+    @objsize_user_given.setter
+    def objsize_user_given(self, objsize_user_given_val):
+        self._objsize_user_given = objsize_user_given_val        
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> xp.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
@@ -690,6 +707,15 @@ class RecToolsIR:
             self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
         ######################################################################
+        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_norm_data"],
+            self.Atools.detectors_x_pad,
+            cupyrun=False,
+        )
+        additional_args = {
+            "cupyrun": False,
+            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
+        }        
 
         def _Ax(self, x):
             geom_size = astra.geom_size(self.Atools.vol_geom)
@@ -711,16 +737,21 @@ class RecToolsIR:
                 cp.reshape(b, geom_size), os_index=sub_ind
             ).ravel()
 
-        rec_dim = xp.prod(astra.geom_size(self.Atools.vol_geom))
-        # initialisation of the solution
-        if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
-            x0 = _algorithm_upd_["initialise"].ravel()
-        else:
-            x0 = xp.zeros(rec_dim, "float32").ravel()
-
         use_os = _data_upd_["OS_number"] > 1
         if use_os:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+
+        rec_dim = xp.prod(astra.geom_size(self.Atools.vol_geom))
+        # initialisation of the solution (warm-start)
+        if _algorithm_upd_["initialise"] is not None:
+            if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
+                x0 = _algorithm_upd_["initialise"].ravel()
+            else:
+                print(f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used.")
+                x0 = xp.zeros(rec_dim, "float32").ravel()
+        else:
+            x0 = xp.zeros(rec_dim, "float32").ravel()
+
         # ADMM variables
         x = x0.copy()
         z = x0.copy()
@@ -822,15 +853,18 @@ class RecToolsIR:
                 print("ADMM stopped at iteration (", iter_no + 1, ")")
 
         if self.geom == "2D":
-            return x.reshape([self.Atools.recon_size, self.Atools.recon_size])
+            x = x.reshape([self.Atools.recon_size, self.Atools.recon_size])
         if self.geom == "3D":
-            return x.reshape(
+            x = x.reshape(
                 [
                     self.Atools.detectors_y,
                     self.Atools.recon_size,
                     self.Atools.recon_size,
                 ]
             )
-        return x
+        if self.objsize_user_given is not None:
+            return perform_recon_crop(x, self.objsize_user_given)
+
+        return check_kwargs(x, **additional_args)
 
     # *****************************ADMM ends here*********************************#

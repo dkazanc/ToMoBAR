@@ -29,7 +29,7 @@ darks = datadict["darks_ar"]
 data_norm = normaliser(
     dataRaw, flats[:, np.newaxis, :], darks[:, np.newaxis, :], axis=1
 )
-data_norm_cupy = cp.asarray(data_norm[:, :, 5:10])
+data_norm_cupy = cp.asarray(data_norm[:, :, 5:10],order='C')
 
 detectorHoriz = cp.size(data_norm_cupy, 0)
 detectorVert = cp.size(data_norm_cupy, 2)
@@ -37,42 +37,66 @@ data_labels3D = ["detX", "angles", "detY"]  # set the input data labels
 
 N_size = 1000
 angles_rad = np.linspace(0, np.pi, 360)
-
-
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%Reconstructing with Log-Polar Fourier method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-
-
 RecToolsCP = RecToolsDIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=200,  # Padding size of horizontal detector
+    DetectorsDimH_pad=100,  # Padding size of horizontal detector
     DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",
+    device_projector=0,
 )
 
-
 FourierLP_cupy = RecToolsCP.FOURIER_INV(
-    cp.asarray(data_norm[:, :, 5:10]),
+    data_norm_cupy,
     filter_freq_cutoff=0.35,
     recon_mask_radius=2.0,
     data_axes_labels_order=data_labels3D,
 )
 
+FBPrec_cupy = RecToolsCP.FBP(
+    data_norm_cupy,
+    recon_mask_radius=2.0,
+    data_axes_labels_order=data_labels3D,
+    cutoff_freq=0.3,
+)
+
 fig = plt.figure()
+plt.subplot(121)
 plt.imshow(cp.asnumpy(FourierLP_cupy[3, :, :]), vmin=0, vmax=0.008, cmap="gray")
 plt.title("Log-Polar Fourier reconstruction")
+plt.subplot(122)
+plt.imshow(cp.asnumpy(FBPrec_cupy[3, :, :]), vmin=0, vmax=0.008, cmap="gray")
+plt.title("FBP reconstruction")
 # fig.savefig('dendr_LogPolar.png', dpi=200)
 # %%
+padding_value = 100
+RecToolsCP = RecToolsDIRCuPy(
+    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
+    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Centre of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=detectorHoriz + 2*padding_value,  # Reconstructed object dimensions (scalar)
+    device_projector=0,
+)
+
+FBPrec_cupy_pad = RecToolsCP.FBP(
+    data_norm_cupy,
+    recon_mask_radius=2.0,
+    data_axes_labels_order=data_labels3D,
+    cutoff_freq=0.3,
+)
+
 # Initialise the IR class once here
 # Set scanning geometry parameters and initiate a class object
 RectoolsCuPy = RecToolsIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=200,  # Padding size of horizontal detector
+    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
     DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
@@ -80,14 +104,15 @@ RectoolsCuPy = RecToolsIRCuPy(
     datafidelity="LS",  # Data fidelity
     device_projector=0,
 )
-# %%
+
+#%%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with CGLS method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": cp.asarray(
-        data_norm[:, :, 5:10]
+        data_norm_cupy
     ),  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
@@ -113,7 +138,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": cp.asarray(
-        data_norm[:, :, 5:10]
+        data_norm_cupy
     ),  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
@@ -137,19 +162,29 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
+RectoolsCuPy = RecToolsIRCuPy(
+    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=100,  # Padding size of horizontal detector
+    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="LS",  # Data fidelity
+    device_projector=0,
+)
+
 _data_ = {
     "projection_norm_data": cp.asarray(
-        data_norm[:, :, 5:10]
+        data_norm_cupy
     ),  # Normalised projection data
     "OS_number": 6,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
-
+tic = timeit.default_timer()
 lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
-
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 15,
+    "iterations": 25,
     "lipschitz_const": lc.get(),
     "recon_mask_radius": 2.0,
 }  # The number of iterations
@@ -164,7 +199,6 @@ _regularisation_ = {
 
 
 # RUN THE FISTA METHOD:
-tic = timeit.default_timer()
 RecFISTA_os_tv = RectoolsCuPy.FISTA(_data_, _algorithm_, _regularisation_)
 toc = timeit.default_timer()
 Run_time = toc - tic
@@ -177,112 +211,43 @@ plt.title("FISTA OS-TV (PD) reconstruction")
 plt.show()
 # fig.savefig('dendr_PWLS.png', dpi=200)
 # %%
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with FISTA OS-TV (ROF) method %%%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "projection_norm_data": cp.asarray(
-        data_norm[:, :, 5:10]
-    ),  # Normalised projection data
-    "OS_number": 6,  # The number of subsets
-    "data_axes_labels_order": data_labels3D,
-}
-
-lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
-
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "iterations": 25,
-    "lipschitz_const": lc.get(),
-    "recon_mask_radius": 0.95,
-}  # The number of iterations
-
-##### creating regularisation dictionary  #####
-_regularisation_ = {
-    "method": "ROF_TV",  # Selected regularisation method
-    "regul_param": 0.000005,  # Regularisation parameter
-    "iterations": 100,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-
-# RUN THE FISTA METHOD:
-RecFISTA_os_tv = RectoolsCuPy.FISTA(_data_, _algorithm_, _regularisation_)
-
-fig = plt.figure()
-plt.imshow(cp.asnumpy((RecFISTA_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
-plt.title("FISTA OS-TV (ROF_TV) reconstruction")
-plt.show()
-# fig.savefig('dendr_PWLS.png', dpi=200)
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with ADMM - TV method %%%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "projection_norm_data": cp.asarray(
-        data_norm[:, :, 5:10]
-    ),  # Normalised projection data
-    "data_axes_labels_order": data_labels3D,
-}
-
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "iterations": 15,
-    "recon_mask_radius": 2.0,
-    "ADMM_rho_const": 1000,
-    "ADMM_solver": "cgs",
-    "ADMM_solver_iterations": 15,
-    "ADMM_solver_tolerance": 1e-06,
-}
-
-_regularisation_ = {
-    "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.001,  # Regularisation parameter
-    "iterations": 120,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-# RUN THE ADMM METHOD:
-tic = timeit.default_timer()
-RecADMM = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
-toc = timeit.default_timer()
-Run_time = toc - tic
-print("ADMM-TV reconstruction done in {} seconds".format(Run_time))
-
-fig = plt.figure()
-plt.imshow(cp.asnumpy((RecADMM[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
-plt.title("ADMM (CuPy) reconstruction")
-plt.show()
-# %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# FBP recon needed for warm start. Note that with padding enabled it needs to be the padded size
+
+RectoolsCuPy = RecToolsIRCuPy(
+    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
+    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="LS",  # Data fidelity
+    device_projector=0,
+)
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": cp.asarray(
-        data_norm[:, :, 5:10]
+        data_norm_cupy
     ),  # Normalised projection data
-    "OS_number": 6,  # The number of subsets
+    "OS_number": 24,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
-####################### Creating the algorithm dictionary: #######################
+#################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 5,
+    "initialise": FBPrec_cupy_pad, # needs to be the padded size detectorHoriz + 2*padding_value
+    "iterations": 2,
+    "ADMM_rho_const": 0.9,
+    "ADMM_relax_par": 1.7,
     "recon_mask_radius": 2.0,
-    "ADMM_rho_const": 1000.0,
-    "ADMM_solver": "cgs",
-    "ADMM_solver_iterations": 10,
-    "ADMM_solver_tolerance": 1e-06,
 }  # The number of iterations
 
 ##### creating regularisation dictionary: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.00001,  # Regularisation parameter
-    "iterations": 40,  # The number of regularisation iterations
+    "regul_param": 0.0035,  # Regularisation parameter
+    "iterations": 50,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
 
@@ -297,49 +262,5 @@ fig = plt.figure()
 plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
 plt.title("ADMM OS-TV (PD) reconstruction")
 plt.show()
-
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with ADMM OS-TV (ROF) method %%%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "projection_norm_data": cp.asarray(
-        data_norm[:, :, 5:10]
-    ),  # Normalised projection data
-    "OS_number": 6,  # The number of subsets
-    "data_axes_labels_order": data_labels3D,
-}
-
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "iterations": 10,
-    "recon_mask_radius": 2.0,
-    "ADMM_rho_const": 8000.0,
-    "ADMM_solver": "cgs",
-    "ADMM_solver_iterations": 10,
-    "ADMM_solver_tolerance": 1e-06,
-}  # The number of iterations
-
-##### creating regularisation dictionary  #####
-_regularisation_ = {
-    "method": "ROF_TV",  # Selected regularisation method
-    "regul_param": 0.00003,  # Regularisation parameter
-    "iterations": 100,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-
-# RUN THE ADMM METHOD:
-tic = timeit.default_timer()
-RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
-toc = timeit.default_timer()
-Run_time = toc - tic
-print("ADMM-OS-TV-ROF reconstruction done in {} seconds".format(Run_time))
-
-fig = plt.figure()
-plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
-plt.title("ADMM OS-TV (ROF_TV) reconstruction")
-plt.show()
-# fig.savefig('dendr_PWLS.png', dpi=200)
-# %%
+# fig.savefig('dendr_ADMM.png', dpi=200)
+#%%
