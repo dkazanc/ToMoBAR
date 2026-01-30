@@ -407,7 +407,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
 
             mem_stack.free(np.prod((nz // 2, 2 * n, 2 * n)) * cp.complex64().itemsize)
-            return mem_stack.highwater * 1.35
+            return mem_stack.highwater * 1.4
 
         recon_up = self.unpad_reconstructed_data(
             fde,
