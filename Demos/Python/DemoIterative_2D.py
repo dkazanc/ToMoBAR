@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Script to generate 2D analytical phantoms and their sinograms with added noise
-and then reconstruct using the regularised FISTA algorithm.
+"""Demo where generated 2D analytical phantoms and their sinograms
+reconstructed iteratively.
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,7 +46,7 @@ from tomophantom.artefacts import artefacts_mix
 # forming dictionaries with artifact types
 _noise_ = {
     "noise_type": "Poisson",
-    "noise_amplitude": 10000,
+    "noise_sigma": 8000,  # noise amplitude
     "noise_seed": 0,
 }
 
@@ -103,7 +103,7 @@ Rectools = RecToolsIR(
 
 # prepare dictionaries with parameters:
 _data_ = {"projection_norm_data": noisy_sino}  # data dictionary
-_algorithm_ = {"iterations": 300}
+_algorithm_ = {"iterations": 600}
 
 RecSIRT = Rectools.SIRT(_data_, _algorithm_)  # SIRT reconstruction
 
@@ -145,7 +145,7 @@ plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
     "method": "PD_TV",
-    "regul_param": 0.0005,
+    "regul_param": 0.00025,
     "iterations": 150,
     "device_regulariser": "gpu",
 }
@@ -189,19 +189,23 @@ Rectools = RecToolsIR(
 )
 
 # prepare dictionaries with parameters:
-_data_ = {"projection_norm_data": noisy_sino, "OS_number": 10}  # data dictionary
+_data_ = {
+    "projection_norm_data": noisy_sino,
+    "OS_number": 10,
+    "initialise": FBPrec,
+}  # data dictionary
 lc = Rectools.powermethod(
     _data_
 )  # calculate Lipschitz constant (run once to initialise)
 
 # Run FISTA-OS reconstrucion algorithm without regularisation
-_algorithm_ = {"iterations": 30, "lipschitz_const": lc}
+_algorithm_ = {"iterations": 20, "lipschitz_const": lc}
 RecFISTA_os = Rectools.FISTA(_data_, _algorithm_)
 #
 # adding regularisation
 _regularisation_ = {
     "method": "PD_TV",
-    "regul_param": 0.0005,
+    "regul_param": 0.00025,
     "iterations": 80,
     "device_regulariser": "gpu",
 }
@@ -227,4 +231,105 @@ Qtools = QualityTools(phantom_2D[indicesROI], RecFISTA_os_reg[indicesROI])
 RMSE_FISTA_os_reg = Qtools.rmse()
 print("RMSE for FISTA-OS is {}".format(RMSE_FISTA_os))
 print("RMSE for regularised FISTA-OS is {}".format(RMSE_FISTA_os_reg))
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM method (ASTRA used for projection)")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+
+# set parameters and initiate a class object
+Rectools = RecToolsIR(
+    DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
+    DetectorsDimV=None,  # Vertical detector dimension
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
+    device_projector="gpu",
+)
+
+# prepare dictionaries with parameters:
+_data_ = {"projection_norm_data": noisy_sino}  # data dictionary
+_algorithm_ = {
+    "initialise": FBPrec,
+    "iterations": 200,
+    "ADMM_rho_const": 0.1,
+    "ADMM_relax_par": 1.6,
+}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {
+    "method": "PD_TV",
+    "regul_param": 1.15,
+    "iterations": 150,
+    "device_regulariser": "gpu",
+}
+
+# Run ADMM reconstrucion algorithm with regularisation
+RecADMM_reg = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
+
+plt.figure()
+plt.imshow(RecADMM_reg, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
+plt.title("ADMM reconstruction")
+plt.show()
+
+# calculate errors
+Qtools = QualityTools(phantom_2D, RecADMM_reg)
+RMSE_ADMM = Qtools.rmse()
+print("RMSE for regularised ADMM is {}".format(RMSE_ADMM))
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM-OS method")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+from tomobar.methodsIR import RecToolsIR
+
+# set parameters and initiate a class object
+Rectools = RecToolsIR(
+    DetectorsDimH=P,  # Horizontal detector dimension
+    DetectorsDimH_pad=0,  # Padding size of horizontal detector
+    DetectorsDimV=None,  # Vertical detector dimension
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
+    device_projector="gpu",
+)
+
+# prepare dictionaries with parameters:
+_data_ = {
+    "projection_norm_data": noisy_sino,
+    "OS_number": 12,  # The number of subsets
+}  # data dictionary
+
+_algorithm_ = {
+    "initialise": FBPrec,
+    "iterations": 10,
+    "ADMM_rho_const": 1.0,
+    "ADMM_relax_par": 1.6,
+}
+
+# adding regularisation using the CCPi regularisation toolkit
+_regularisation_ = {
+    "method": "PD_TV",
+    "regul_param": 0.6,
+    "iterations": 50,
+    "device_regulariser": "gpu",
+}
+
+
+# Run ADMM reconstrucion algorithm with regularisation
+RecADMM_OS_reg = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
+
+plt.figure()
+plt.imshow(RecADMM_OS_reg, vmin=0, vmax=1, cmap="gray")
+plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
+plt.title("ADMM-OS-TV reconstruction")
+plt.show()
+
+# calculate errors
+Qtools = QualityTools(phantom_2D, RecADMM_OS_reg)
+RMSE_ADMM_OS = Qtools.rmse()
+print("RMSE for regularised ADMM-OS is {}".format(RMSE_ADMM_OS))
 # %%

@@ -234,7 +234,7 @@ def test_Fourier3D_inv(data_cupy, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
 
     Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
@@ -266,7 +266,7 @@ def test_Fourier3D_inv_vert_blocks(data_cupy, angles, blocks):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=detX,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     for block_index in range(0, detY // block_size):
         proj_data_block = data_cupy[:, index_start:index_end, :]
@@ -303,7 +303,7 @@ def test_Fourier3D_inv_vert_blocks_last_odd(data_cupy, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=detX,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     lprec_block_recon1 = RecToolsCP.FOURIER_INV(
         data_cupy[:, 0 : detY - odd_block_size_last, :],
@@ -318,7 +318,7 @@ def test_Fourier3D_inv_vert_blocks_last_odd(data_cupy, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=detX,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     lprec_block_recon2 = RecToolsCP.FOURIER_INV(
         data_cupy[:, detY - odd_block_size_last : :, :],
@@ -354,7 +354,7 @@ def test_Fourier3D_Y_odd_to_even(ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     recon = RecToolsCP.FOURIER_INV(
         data, data_axes_labels_order=["angles", "detY", "detX"]
@@ -380,7 +380,7 @@ def test_Fourier3D_Y_even_to_odd(ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     recon = RecToolsCP.FOURIER_INV(
         data, data_axes_labels_order=["angles", "detY", "detX"]
@@ -406,7 +406,7 @@ def test_Fourier3D_Y_even_to_even(ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     recon = RecToolsCP.FOURIER_INV(
         data, data_axes_labels_order=["angles", "detY", "detX"]
@@ -459,7 +459,7 @@ def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=detX,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     recon = RecToolsCP.FOURIER_INV(
         data, data_axes_labels_order=["angles", "detY", "detX"]
@@ -551,7 +551,7 @@ def test_FBP3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     FBPrec_cupy = RecToolsCP.FBP(
         data_cupy,
@@ -576,7 +576,7 @@ def test_FBP3D_pad(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     FBPrec_cupy = RecToolsCP.FBP(
         data_cupy,
@@ -589,6 +589,31 @@ def test_FBP3D_pad(data_cupy, angles, ensure_clean_memory):
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
+def test_FBP3D_swaped_axis_pad(data_cupy, angles, ensure_clean_memory):
+    data_cupy = cp.swapaxes(data_cupy, 0, 1)
+    data_cupy = cp.swapaxes(data_cupy, 0, 2)
+    detX = cp.shape(data_cupy)[0]
+    detY = cp.shape(data_cupy)[2]
+    N_size = detX
+    axis_labels = ["detX", "angles", "detY"]
+    RecToolsCP = RecToolsDIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=45,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,
+    )
+    FBPrec_cupy = RecToolsCP.FBP(
+        data_cupy,
+        data_axes_labels_order=axis_labels,
+        cutoff_freq=1.1,
+    )
+    recon_data = FBPrec_cupy.get()
+    assert_allclose(np.mean(recon_data), 0.001496, atol=1e-04)
+    assert recon_data.dtype == np.float32
+    assert recon_data.shape == (128, 160, 160)
 
 # @pytest.mark.parametrize("projections", [1801, 3601])
 # @pytest.mark.parametrize("slices", [3, 5, 7, 11])
@@ -626,7 +651,7 @@ def test_FBP3D_mask(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     FBPrec_cupy = RecToolsCP.FBP(
         data_cupy,
@@ -654,7 +679,7 @@ def test_forwproj3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,
         AnglesVec=angles,
         ObjSize=N_size,
-        device_projector="gpu",
+        device_projector=0,
     )
 
     frw_proj = RecToolsCP.FORWPROJ(
@@ -678,7 +703,7 @@ def test_backproj3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        device_projector=0,
     )
     rec_cupy = RecToolsCP.BACKPROJ(
         data=data_cupy, data_axes_labels_order=["angles", "detY", "detX"]

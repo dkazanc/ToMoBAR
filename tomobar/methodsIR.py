@@ -7,7 +7,7 @@
 
 import numpy as xp
 from numpy import linalg
-from typing import Union
+from typing import Union, Optional
 
 try:
     import cupy as cp
@@ -25,7 +25,7 @@ except ImportError:
 
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 
-from tomobar.supp.suppTools import apply_circular_mask
+from tomobar.supp.suppTools import apply_circular_mask, check_kwargs, perform_recon_crop,_apply_horiz_detector_padding
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
 
 from tomobar.regularisers import prox_regul
@@ -65,6 +65,15 @@ class RecToolsIR:
     ):
         self.datafidelity = datafidelity
         self.cupyrun = cupyrun
+
+        if DetectorsDimH_pad == 0:
+            self.objsize_user_given = None
+        else:
+            self.objsize_user_given = ObjSize
+
+        if DetectorsDimH_pad > 0:
+            # when we pad horizontal detector we might need to reconstruct on a larger grid as well to avoid artifacts
+            ObjSize = DetectorsDimH + 2 * DetectorsDimH_pad                  
 
         device_projector, GPUdevice_index = _parse_device_argument(device_projector)
 
@@ -109,6 +118,14 @@ class RecToolsIR:
     @cupyrun.setter
     def cupyrun(self, cupyrun_val):
         self._cupyrun = cupyrun_val
+
+    @property
+    def objsize_user_given(self) -> int:
+        return self._objsize_user_given
+
+    @objsize_user_given.setter
+    def objsize_user_given(self, objsize_user_given_val):
+        self._objsize_user_given = objsize_user_given_val        
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> xp.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
@@ -664,14 +681,15 @@ class RecToolsIR:
     # # *****************************FISTA ends here*********************************#
 
     # **********************************ADMM***************************************#
+
     def ADMM(
         self,
         _data_: dict,
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
     ) -> xp.ndarray:
-        """Alternating Directions Method of Multipliers with various types of regularisation and
-        data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
+        """Linearised and Relaxed Alternating Directions Method of Multipliers with various types
+        of regularisation and data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -681,12 +699,6 @@ class RecToolsIR:
         Returns:
             xp.ndarray: ADMM-reconstructed numpy array
         """
-        try:
-            import scipy.sparse.linalg
-        except ImportError:
-            print(
-                "____! Scipy toolbox package is missing, please install for ADMM !____"
-            )
         if not self.cupyrun:
             import numpy as xp
         ######################################################################
@@ -695,75 +707,137 @@ class RecToolsIR:
             self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
         ######################################################################
+        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_norm_data"],
+            self.Atools.detectors_x_pad,
+            cupyrun=False,
+        )
+        additional_args = {
+            "cupyrun": False,
+            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
+        }        
 
-        def ADMM_Ax(x):
-            data_upd = self.Atools.A_optomo(x)
-            x_temp = self.Atools.A_optomo.transposeOpTomo(data_upd)
-            x_upd = x_temp + _algorithm_upd_["ADMM_rho_const"] * x
-            return x_upd
+        def _Ax(self, x):
+            geom_size = astra.geom_size(self.Atools.vol_geom)
+            return self.Atools._forwproj(cp.reshape(x, geom_size)).ravel()
 
-        def ADMM_Atb(b):
-            b = self.Atools.A_optomo.transposeOpTomo(b)
-            return b
+        def _Atb(self, b):
+            geom_size = astra.geom_size(self.Atools.proj_geom)
+            return self.Atools._backproj(cp.reshape(b, geom_size)).ravel()
 
-        (data_dim, rec_dim) = xp.shape(self.Atools.A_optomo)
+        def _Ax_OS(self, x, sub_ind: int):
+            geom_size = astra.geom_size(self.Atools.vol_geom)
+            return self.Atools._forwprojOS(
+                cp.reshape(x, geom_size), os_index=sub_ind
+            ).ravel()
 
-        # initialise the solution and other ADMM variables
-        if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
-            # the object has been initialised with an array
-            X = _algorithm_upd_["initialise"].ravel()
+        def _Atb_OS(self, b, sub_ind: int):
+            geom_size = astra.geom_size(self.Atools.proj_geom_OS[sub_ind])
+            return self.Atools._backprojOS(
+                cp.reshape(b, geom_size), os_index=sub_ind
+            ).ravel()
+
+        use_os = _data_upd_["OS_number"] > 1
+        if use_os:
+            _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+
+        rec_dim = xp.prod(astra.geom_size(self.Atools.vol_geom))
+        # initialisation of the solution (warm-start)
+        if _algorithm_upd_["initialise"] is not None:
+            if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
+                x0 = _algorithm_upd_["initialise"].ravel()
+            else:
+                print(f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used.")
+                x0 = xp.zeros(rec_dim, "float32").ravel()
         else:
-            X = xp.zeros(rec_dim, "float32")
+            x0 = xp.zeros(rec_dim, "float32").ravel()
 
-        info_vec = (0, 2)
-        denomN = 1.0 / xp.size(X)
-        z = xp.zeros(rec_dim, "float32")
-        u = xp.zeros(rec_dim, "float32")
-        b_to_solver_const = self.Atools.A_optomo.transposeOpTomo(
-            _data_upd_["projection_norm_data"].ravel()
+        # ADMM variables
+        x = x0.copy()
+        z = x0.copy()
+        u = xp.zeros_like(x0)
+        tau = 0.9 / (
+            _algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"]
+        )
+        _regularisation_upd_["regul_param"] = (
+            _regularisation_upd_["regul_param"] / _algorithm_upd_["ADMM_rho_const"]
         )
 
         # Outer ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
-            X_old = X
-            # solving quadratic problem using linalg solver
-            A_to_solver = scipy.sparse.linalg.LinearOperator(
-                (rec_dim, rec_dim), matvec=ADMM_Ax, rmatvec=ADMM_Atb
-            )
-            b_to_solver = b_to_solver_const + _algorithm_upd_["ADMM_rho_const"] * (
-                z - u
-            )
-            outputSolver = scipy.sparse.linalg.gmres(
-                A_to_solver, b_to_solver, atol=1e-05, maxiter=15
-            )
-            X = xp.float32(outputSolver[0])  # get gmres solution
-            if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                X[X < 0.0] = 0.0
-            # z-update with relaxation
-            zold = z.copy()
-            x_hat = (
-                _algorithm_upd_["ADMM_relax_par"] * X
-                + (1.0 - _algorithm_upd_["ADMM_relax_par"]) * zold
-            )
-            if self.geom == "2D":
-                x_prox_reg = (x_hat + u).reshape(
-                    [self.Atools.recon_size, self.Atools.recon_size]
-                )
-            if self.geom == "3D":
-                x_prox_reg = (x_hat + u).reshape(
-                    [
-                        self.Atools.detectors_y,
-                        self.Atools.recon_size,
-                        self.Atools.recon_size,
-                    ]
-                )
-            # Apply regularisation using CCPi-RGL toolkit. The proximal operator of the chosen regulariser
-            if _regularisation_upd_["method"] is not None:
-                # The proximal operator of the chosen regulariser
-                (z, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
-            z = z.ravel()
-            # update u variable
-            u = u + (x_hat - z)
+            for sub_ind in range(_data_upd_["OS_number"]):
+                if use_os:
+                    # select a specific set of indeces for the subset (OS)
+                    indVec = self.Atools.newInd_Vec[sub_ind, :]
+                    if indVec[self.Atools.NumbProjBins - 1] == 0:
+                        indVec = indVec[:-1]  # shrink vector size
+                    if self.geom == "2D":
+                        proj_data = _data_upd_["projection_norm_data"][
+                            indVec, :
+                        ].ravel()
+                    else:
+                        proj_data = _data_upd_["projection_norm_data"][
+                            :, indVec, :
+                        ].ravel()
+
+                # ---- z-update (linearized data term) ----
+                if self.datafidelity == "KL":
+                    if use_os:
+                        grad_data = _Atb_OS(
+                            self,
+                            1 - proj_data / (_Ax_OS(self, z, sub_ind) + 1e-8),
+                            sub_ind,
+                        )  # KL term
+                    else:
+                        grad_data = _Atb(
+                            self,
+                            1
+                            - _data_upd_["projection_norm_data"].ravel()
+                            / (_Ax(self, z) + 1e-8),
+                        )  # KL term
+                else:
+                    if use_os:
+                        grad_data = _Atb_OS(
+                            self, _Ax_OS(self, z, sub_ind) - proj_data, sub_ind
+                        )  # LS term
+                    else:
+                        grad_data = _Atb(
+                            self,
+                            _Ax(self, z) - _data_upd_["projection_norm_data"].ravel(),
+                        )  # LS term
+
+                grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
+                z = z - tau * (grad_data + grad_admm)
+
+                if _algorithm_upd_["nonnegativity"] == "ENABLE":
+                    z[z < 0.0] = 0.0
+                # z-update with relaxation
+                if iter_no > 1:
+                    z = (
+                        1.0 - _algorithm_upd_["ADMM_relax_par"]
+                    ) * z_old + _algorithm_upd_["ADMM_relax_par"] * z
+                z_old = z.copy()
+
+                if self.geom == "2D":
+                    x_prox_reg = (z + u).reshape(
+                        [self.Atools.recon_size, self.Atools.recon_size]
+                    )
+                if self.geom == "3D":
+                    x_prox_reg = (z + u).reshape(
+                        [
+                            self.Atools.detectors_y,
+                            self.Atools.recon_size,
+                            self.Atools.recon_size,
+                        ]
+                    )
+                # X-update (proximal regularization)
+                if _regularisation_upd_["method"] is not None:
+                    (x, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
+                x = x.ravel()
+
+            # update u variable (dual update)
+            u = u + (z - x)
+
             if _algorithm_upd_["verbose"]:
                 if xp.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
                     print(
@@ -778,23 +852,19 @@ class RecToolsIR:
             if iter_no == _algorithm_upd_["iterations"] - 1:
                 print("ADMM stopped at iteration (", iter_no + 1, ")")
 
-            # stopping criteria (checked after reasonable number of iterations)
-            if iter_no > 5:
-                nrm = xp.linalg.norm(X - X_old) * denomN
-                if nrm < _algorithm_upd_["tolerance"]:
-                    print("ADMM stopped at iteration (", iter_no, ")")
-                    break
         if self.geom == "2D":
-            return X.reshape([self.Atools.recon_size, self.Atools.recon_size])
+            x = x.reshape([self.Atools.recon_size, self.Atools.recon_size])
         if self.geom == "3D":
-            return X.reshape(
+            x = x.reshape(
                 [
                     self.Atools.detectors_y,
                     self.Atools.recon_size,
                     self.Atools.recon_size,
                 ]
             )
-        return X
+        if self.objsize_user_given is not None:
+            return perform_recon_crop(x, self.objsize_user_given)
 
+        return check_kwargs(x, **additional_args)
 
-# *****************************ADMM ends here*********************************#
+    # *****************************ADMM ends here*********************************#

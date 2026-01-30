@@ -17,7 +17,7 @@ Where it is used:
 =================
 
 ToMoBAR is currently used in production at `Diamond Light Source <https://www.diamond.ac.uk/Home.html>`_, which is
-the United Kingdom's national synchrotron science facility. ToMoBAR is exposed through the
+the United Kingdom's national synchrotron science facility. ToMoBAR's API is exploited through the
 `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ library which is the backend for the
 `HTTomo <https://diamondlightsource.github.io/httomo/>`_'s framework for big-data processing and
 reconstruction.
