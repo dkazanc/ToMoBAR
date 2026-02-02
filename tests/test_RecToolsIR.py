@@ -3,6 +3,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsDIR import RecToolsDIR
 from tomobar.supp.suppTools import normaliser
 
 eps = 1e-05
@@ -538,7 +539,36 @@ def test_FISTA_PWLS_OS_reg2_2D(angles, raw_data, flats, darks):
     assert Iter_rec.shape == (160, 160)
 
 
-def test_ADMM2D(data, angles):
+regularisation_pd_tv = {
+    "method": "PD_TV",
+    "regul_param": 0.6,
+    "iterations": 50,
+    "device_regulariser": "gpu",
+}
+
+regularisation_fgp_tv = {
+    "method": "FGP_TV",
+    "regul_param": 0.0005,
+    "iterations": 10,
+    "device_regulariser": 0,
+}
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        # OS, iters, datafidelity, regulariser, expected min, expected max
+        (1, 100, "LS", None, -0.005746, 0.028090434),
+        (5, 20, "LS", None, -0.005651, 0.028015165),
+        (1, 100, "KL", None, 0, 454719.2),
+        (1, 100, "LS", regularisation_pd_tv, -0.013257453, 0.023631878),
+        (5, 20, "LS", regularisation_fgp_tv, -0.0056131384, 0.028117815),
+    ],
+)
+def test_ADMM2D(data, angles, test_case):
+    OS_number, iters, datafidelity, regularisation, expected_min, expected_max = (
+        test_case
+    )
     detX = np.shape(data)[2]
     detY = 0
     data2D = data[:, 60, :]
@@ -550,28 +580,56 @@ def test_ADMM2D(data, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
-        device_projector=0,  # define the device
+        datafidelity=datafidelity,
+        device_projector="gpu",  # define the device
     )
     _data_ = {
         "projection_norm_data": data2D,
+        "OS_number": OS_number,
         "data_axes_labels_order": ["angles", "detX"],
     }
 
-    _algorithm_ = {"iterations": 5, "ADMM_rho_const": 4000.0}
+    _algorithm_ = {
+        "iterations": iters,
+        "ADMM_rho_const": 0.1,
+        "ADMM_relax_par": 1.6,
+    }
 
-    Iter_rec = RecTools.ADMM(_data_, _algorithm_)
-    assert_allclose(np.min(Iter_rec), 0.00047048455, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.0020609223, rtol=eps)
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularisation)
+    assert_allclose(np.min(Iter_rec), expected_min, rtol=eps)
+    assert_allclose(np.max(Iter_rec), expected_max, rtol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 
 
-def test_ADMM2D_test(data, angles):
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        # OS, iters, datafidelity, regulariser, expected min, expected max
+        (1, 10, "LS", None, -0.00827849, 0.02996399),
+        (5, 20, "LS", None, -0.00957337, 0.03188838),
+        (1, 100, "KL", None, -2.40752935, 0),
+        (1, 100, "LS", regularisation_pd_tv, -0.02096782, 0.02789431),
+        (5, 20, "LS", regularisation_fgp_tv, -0.00926687, 0.03217214),
+    ],
+)
+def test_ADMM2D_initialised(data, angles, test_case):
+    OS_number, iters, datafidelity, regularisation, expected_min, expected_max = (
+        test_case
+    )
     detX = np.shape(data)[2]
     detY = 0
     data2D = data[:, 60, :]
     N_size = detX
+    RecToolsDirect = RecToolsDIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",  # define the device
+    )
     RecTools = RecToolsIR(
         DetectorsDimH=detX,  # Horizontal detector dimension
         DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
@@ -579,20 +637,27 @@ def test_ADMM2D_test(data, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
-        device_projector=0,  # define the device
+        datafidelity=datafidelity,
+        device_projector="gpu",  # define the device
     )
     _data_ = {
         "projection_norm_data": data2D,
+        "OS_number": OS_number,
         "data_axes_labels_order": ["angles", "detX"],
-        "OS_number": 6,  # The number of subsets
     }
 
-    _algorithm_ = {"iterations": 5, "ADMM_rho_const": 0.1}
+    fbp_rec = RecToolsDirect.FBP(data2D)
 
-    Iter_rec = RecTools.ADMM_test(_data_, _algorithm_)
-    assert_allclose(np.min(Iter_rec), 0.00047048455, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.0020609223, rtol=eps)
+    _algorithm_ = {
+        "initialise": fbp_rec,
+        "iterations": iters,
+        "ADMM_rho_const": 0.1,
+        "ADMM_relax_par": 1.6,
+    }
+
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularisation)
+    assert_allclose(np.min(Iter_rec), expected_min, rtol=eps)
+    assert_allclose(np.max(Iter_rec), expected_max, rtol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 
