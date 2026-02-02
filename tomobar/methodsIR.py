@@ -25,7 +25,12 @@ except ImportError:
 
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 
-from tomobar.supp.suppTools import apply_circular_mask, check_kwargs, perform_recon_crop,_apply_horiz_detector_padding
+from tomobar.supp.suppTools import (
+    apply_circular_mask,
+    check_kwargs,
+    perform_recon_crop,
+    _apply_horiz_detector_padding,
+)
 from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
 
 from tomobar.regularisers import prox_regul
@@ -73,7 +78,7 @@ class RecToolsIR:
 
         if DetectorsDimH_pad > 0:
             # when we pad horizontal detector we might need to reconstruct on a larger grid as well to avoid artifacts
-            ObjSize = DetectorsDimH + 2 * DetectorsDimH_pad                  
+            ObjSize = DetectorsDimH + 2 * DetectorsDimH_pad
 
         device_projector, GPUdevice_index = _parse_device_argument(device_projector)
 
@@ -125,7 +130,7 @@ class RecToolsIR:
 
     @objsize_user_given.setter
     def objsize_user_given(self, objsize_user_given_val):
-        self._objsize_user_given = objsize_user_given_val        
+        self._objsize_user_given = objsize_user_given_val
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> xp.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
@@ -715,7 +720,7 @@ class RecToolsIR:
         additional_args = {
             "cupyrun": False,
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
-        }        
+        }
 
         def _Ax(self, x):
             geom_size = astra.geom_size(self.Atools.vol_geom)
@@ -747,7 +752,9 @@ class RecToolsIR:
             if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
                 x0 = _algorithm_upd_["initialise"].ravel()
             else:
-                print(f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used.")
+                print(
+                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
+                )
                 x0 = xp.zeros(rec_dim, "float32").ravel()
         else:
             x0 = xp.zeros(rec_dim, "float32").ravel()
@@ -833,6 +840,8 @@ class RecToolsIR:
                 # X-update (proximal regularization)
                 if _regularisation_upd_["method"] is not None:
                     (x, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
+                else:
+                    x = x_prox_reg
                 x = x.ravel()
 
             # update u variable (dual update)
