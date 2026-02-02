@@ -3,6 +3,7 @@
 """Demo where generated 2D analytical phantoms and their sinograms
 reconstructed iteratively.
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 from tomophantom import TomoP2D

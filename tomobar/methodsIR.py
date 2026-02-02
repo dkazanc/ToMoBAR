@@ -144,7 +144,7 @@ class RecToolsIR:
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
         ######################################################################
@@ -165,7 +165,7 @@ class RecToolsIR:
         """
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         ######################################################################
@@ -323,7 +323,7 @@ class RecToolsIR:
                 import cupy as xp
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
         if _data_upd_["OS_number"] > 1:
@@ -647,7 +647,7 @@ class RecToolsIR:
                     )  # applying a circular mask
                 if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####
-                    (X, info_vec) = prox_regul(self, X, _regularisation_upd_)
+                    X, info_vec = prox_regul(self, X, _regularisation_upd_)
                     ###########################################################
                 # updating t variable
                 t = (1.0 + xp.sqrt(1.0 + 4.0 * t**2)) * 0.5
@@ -708,7 +708,7 @@ class RecToolsIR:
             import numpy as xp
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
         ######################################################################
@@ -839,7 +839,7 @@ class RecToolsIR:
                     )
                 # X-update (proximal regularization)
                 if _regularisation_upd_["method"] is not None:
-                    (x, info_vec) = prox_regul(self, x_prox_reg, _regularisation_upd_)
+                    x, info_vec = prox_regul(self, x_prox_reg, _regularisation_upd_)
                 else:
                     x = x_prox_reg
                 x = x.ravel()

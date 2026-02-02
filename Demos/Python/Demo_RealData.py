@@ -8,6 +8,7 @@ D. Kazantsev et al. 2017. Model-based iterative reconstruction using
 higher-order regularization of dynamic synchrotron data.
 Measurement Science and Technology, 28(9), p.094004.
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io
@@ -267,7 +268,7 @@ _data_ = {
 _algorithm_ = {
     "initialise": FBPrec_pad,
     "iterations": 2,
-    "ADMM_rho_const": 0.95,    
+    "ADMM_rho_const": 0.95,
     "ADMM_relax_par": 1.7,
     "recon_mask_radius": 2.0,
 }
@@ -335,4 +336,3 @@ plt.title("FISTA KL-OS-TV reconstruction")
 plt.show()
 # fig.savefig('dendr_KL_OS_GH_TV.png', dpi=200)
 # %%
-

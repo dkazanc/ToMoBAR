@@ -15,6 +15,7 @@ or install from https://github.com/dkazanc/tomobar
 This demo demonstrates frequent inaccuracies which are accosiated with X-ray imaging:
 zingers, rings and noise
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 from tomophantom import TomoP2D

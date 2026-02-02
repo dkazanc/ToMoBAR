@@ -87,7 +87,7 @@ def ROF_TV_cupy(
     ]
     module = load_cuda_module("rudin_osher_fatemi_total_variation", name_expressions)
 
-    (dz, dy, dx) = data.shape + (0,) * (3 - data.ndim)
+    dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
     block_x = 128
     block_dims = (block_x, 1)
     grid_x = (dx + block_x - 1) // block_x
@@ -231,7 +231,7 @@ def PD_TV_cupy(
     ]
     module = load_cuda_module("primal_dual_for_total_variation", name_expressions)
 
-    (dz, dy, dx) = data.shape + (0,) * (3 - data.ndim)
+    dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
     block_x = 128
     block_dims = (block_x, 1)
     grid_x = (dx + block_x - 1) // block_x

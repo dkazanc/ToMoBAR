@@ -128,7 +128,7 @@ def prox_regul(self, X: np.ndarray, _regularisation_: dict) -> Union[np.ndarray,
         )
     if "Diff4th" in _regularisation_["method"]:
         # Anisotropic diffusion of higher order
-        (X, info_vec) = Diff4th(
+        X, info_vec = Diff4th(
             X,
             _regularisation_["regul_param"],
             _regularisation_["edge_threhsold"],

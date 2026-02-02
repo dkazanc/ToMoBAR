@@ -589,6 +589,7 @@ def test_FBP3D_pad(data_cupy, angles, ensure_clean_memory):
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
+
 def test_FBP3D_swaped_axis_pad(data_cupy, angles, ensure_clean_memory):
     data_cupy = cp.swapaxes(data_cupy, 0, 1)
     data_cupy = cp.swapaxes(data_cupy, 0, 2)
@@ -614,6 +615,7 @@ def test_FBP3D_swaped_axis_pad(data_cupy, angles, ensure_clean_memory):
     assert_allclose(np.mean(recon_data), 0.001496, atol=1e-04)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
+
 
 # @pytest.mark.parametrize("projections", [1801, 3601])
 # @pytest.mark.parametrize("slices", [3, 5, 7, 11])

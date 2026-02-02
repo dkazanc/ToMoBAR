@@ -162,7 +162,7 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
                 data = xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
             else:
                 data = np.swapaxes(data, swap_tuple[0], swap_tuple[1])
-    
+
     return data
 
 

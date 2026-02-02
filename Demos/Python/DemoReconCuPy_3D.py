@@ -5,6 +5,7 @@ A script to generate 3D analytical phantoms and their projection data with added
 noise and then reconstruct using direct and iterative method implemented using CuPy API.
 
 """
+
 import timeit
 import os
 import matplotlib.pyplot as plt
@@ -158,8 +159,8 @@ Fourier_cupy = RecToolsCP.FOURIER_INV(
     projData3D_analyt_cupy,
     recon_mask_radius=0.95,
     data_axes_labels_order=input_data_labels,
-    filter_type = 'shepp',
-    cutoff_freq = 1.0,
+    filter_type="shepp",
+    cutoff_freq=1.0,
 )
 toc = timeit.default_timer()
 Run_time = toc - tic
@@ -287,7 +288,7 @@ _algorithm_ = {
     "initialise": FBPrec_cupy,
     "iterations": 10,
     "ADMM_rho_const": 1.0,
-    "ADMM_relax_par": 1.7,    
+    "ADMM_relax_par": 1.7,
     "recon_mask_radius": 2.0,
 }  # The number of iterations
 

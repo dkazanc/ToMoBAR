@@ -128,7 +128,7 @@ def _DFFC(data, flats, darks, downsample, nrPArepetions):
     # =============================================================================
 
     def cost_func(x, *args):
-        (projections, meanFF, FF, DF) = args
+        projections, meanFF, FF, DF = args
         FF_eff = np.zeros((FF.shape[1], FF.shape[2]))
         for i in range(len(FF)):
             FF_eff = FF_eff + x[i] * FF[i]
@@ -246,9 +246,9 @@ def normaliser(
         )
     if method != "dynamic":
         denom = flats - darks
-        denom[(np.where(denom <= 0.0))] = (
-            1.0  # remove zeros/negatives in the denominator if any
-        )
+        denom[
+            (np.where(denom <= 0.0))
+        ] = 1.0  # remove zeros/negatives in the denominator if any
         if axis == 1:
             denom = denom[:, np.newaxis, :]
             darks = darks[:, np.newaxis, :]
@@ -415,9 +415,12 @@ def perform_recon_crop(data, croped_size):
     crop_limit_stop = croped_size + crop_limit_start
 
     if len(data.shape) == 3:
-        return data[:, crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop]
+        return data[
+            :, crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop
+        ]
     else:
         return data[crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop]
+
 
 def _apply_horiz_detector_padding(data, detector_width_pad, cupyrun):
     """extending the size of the horizontal detector, here

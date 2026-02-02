@@ -3,6 +3,7 @@ from tomobar.astra_wrappers.astra_base import AstraBase
 import numpy as np
 from typing import Union
 
+
 ###########Child class############
 class AstraTools2D(AstraBase):
     """2D parallel beam projection/backprojection child class.
@@ -91,7 +92,9 @@ class AstraTools2D(AstraBase):
         # TODO: CuPy 2D backprojection is not implemented yet
         return super()._runAstraBackproj2D(sinogram, "BP_CUDA", 1, None)
 
-    def _backprojOS(self, sinogram: np.ndarray, os_index: Union[int, None]) -> np.ndarray:
+    def _backprojOS(
+        self, sinogram: np.ndarray, os_index: Union[int, None]
+    ) -> np.ndarray:
         astra_method = "BP_CUDA"  # 2D back projection
         if self.processing_arch == "cpu":
             astra_method = "BP"

@@ -8,6 +8,7 @@ D. Kazantsev et al. 2017. Model-based iterative reconstruction using
 higher-order regularization of dynamic synchrotron data.
 Measurement Science and Technology, 28(9), p.094004.
 """
+
 import timeit
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,7 +30,7 @@ darks = datadict["darks_ar"]
 data_norm = normaliser(
     dataRaw, flats[:, np.newaxis, :], darks[:, np.newaxis, :], axis=1
 )
-data_norm_cupy = cp.asarray(data_norm[:, :, 5:10],order='C')
+data_norm_cupy = cp.asarray(data_norm[:, :, 5:10], order="C")
 
 detectorHoriz = cp.size(data_norm_cupy, 0)
 detectorVert = cp.size(data_norm_cupy, 2)
@@ -81,7 +82,8 @@ RecToolsCP = RecToolsDIRCuPy(
     DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=detectorHoriz + 2*padding_value,  # Reconstructed object dimensions (scalar)
+    ObjSize=detectorHoriz
+    + 2 * padding_value,  # Reconstructed object dimensions (scalar)
     device_projector=0,
 )
 
@@ -105,15 +107,13 @@ RectoolsCuPy = RecToolsIRCuPy(
     device_projector=0,
 )
 
-#%%
+# %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with CGLS method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(
-        data_norm_cupy
-    ),  # Normalised projection data
+    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
 
@@ -137,9 +137,7 @@ print("%%%%%%%%%%%%Reconstructing with SIRT method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(
-        data_norm_cupy
-    ),  # Normalised projection data
+    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
 
@@ -174,9 +172,7 @@ RectoolsCuPy = RecToolsIRCuPy(
 )
 
 _data_ = {
-    "projection_norm_data": cp.asarray(
-        data_norm_cupy
-    ),  # Normalised projection data
+    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
     "OS_number": 6,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
@@ -228,15 +224,13 @@ RectoolsCuPy = RecToolsIRCuPy(
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(
-        data_norm_cupy
-    ),  # Normalised projection data
+    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
     "OS_number": 24,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
 #################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "initialise": FBPrec_cupy_pad, # needs to be the padded size detectorHoriz + 2*padding_value
+    "initialise": FBPrec_cupy_pad,  # needs to be the padded size detectorHoriz + 2*padding_value
     "iterations": 2,
     "ADMM_rho_const": 0.9,
     "ADMM_relax_par": 1.7,
@@ -263,4 +257,4 @@ plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray"
 plt.title("ADMM OS-TV (PD) reconstruction")
 plt.show()
 # fig.savefig('dendr_ADMM.png', dpi=200)
-#%%
+# %%

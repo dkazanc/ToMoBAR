@@ -11,7 +11,6 @@ from typing import Union
 
 try:
     import cupy as cp
-    import cupyx.scipy.sparse.linalg as linalg
 except ImportError:
     print(
         "Cupy library is a required dependency for this part of the code, please install"
@@ -30,7 +29,6 @@ from tomobar.supp.suppTools import (
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
-from tomobar.supp.memory_estimator_helpers import _DeviceMemStack
 
 
 class RecToolsIRCuPy:
@@ -136,7 +134,7 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, method_run="Landweber"
         )
         del _data_, _algorithm_
@@ -194,7 +192,7 @@ class RecToolsIRCuPy:
         ######################################################################
         cp._default_memory_pool.free_all_blocks()
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
         _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
@@ -255,7 +253,7 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         del _data_, _algorithm_
@@ -442,7 +440,7 @@ class RecToolsIRCuPy:
             # 2D reconstruction
             raise ValueError("2D CuPy reconstruction is not yet supported")
 
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
         del _data_, _algorithm_, _regularisation_
@@ -471,9 +469,9 @@ class RecToolsIRCuPy:
                 print(
                     f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
                 )
-                X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32").ravel()
+                X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32")
         else:
-            X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32").ravel()
+            X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32")
 
         L_const_inv = cp.float32(
             1.0 / _algorithm_upd_["lipschitz_const"]
@@ -563,7 +561,7 @@ class RecToolsIRCuPy:
 
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
         ######################################################################
