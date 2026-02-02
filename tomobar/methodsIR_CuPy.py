@@ -153,6 +153,7 @@ class RecToolsIRCuPy:
         }
         ######################################################################
         import timeit
+
         tic = timeit.default_timer()
         x_rec = cp.zeros(
             astra.geom_size(self.Atools.vol_geom), dtype=cp.float32
@@ -440,7 +441,6 @@ class RecToolsIRCuPy:
         if self.geom == "2D":
             # 2D reconstruction
             raise ValueError("2D CuPy reconstruction is not yet supported")
-        
 
         (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
@@ -463,13 +463,17 @@ class RecToolsIRCuPy:
 
         # initialisation of the solution (warm-start)
         if _algorithm_upd_["initialise"] is not None:
-            if cp.size(_algorithm_upd_["initialise"]) == np.prod(astra.geom_size(self.Atools.vol_geom)):
+            if cp.size(_algorithm_upd_["initialise"]) == np.prod(
+                astra.geom_size(self.Atools.vol_geom)
+            ):
                 X = _algorithm_upd_["initialise"]
             else:
-                print(f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used.")
+                print(
+                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
+                )
                 X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32").ravel()
         else:
-            X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32").ravel()   
+            X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32").ravel()
 
         L_const_inv = cp.float32(
             1.0 / _algorithm_upd_["lipschitz_const"]
@@ -599,7 +603,9 @@ class RecToolsIRCuPy:
             if cp.size(_algorithm_upd_["initialise"]) == rec_dim:
                 x0 = _algorithm_upd_["initialise"].ravel()
             else:
-                print(f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used.")
+                print(
+                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
+                )
                 x0 = cp.zeros(rec_dim, "float32").ravel()
         else:
             x0 = cp.zeros(rec_dim, "float32").ravel()
@@ -674,6 +680,8 @@ class RecToolsIRCuPy:
                 # X-update (proximal regularization)
                 if _regularisation_upd_["method"] is not None:
                     x = prox_regul(self, x_prox_reg, _regularisation_upd_)
+                else:
+                    x = x_prox_reg
                 x = x.ravel()
 
             # update u variable (dual update)
@@ -692,16 +700,14 @@ class RecToolsIRCuPy:
                 print("ADMM stopped at iteration (", iter_no + 1, ")")
 
         x = x.reshape(
-                    [
-                        self.Atools.detectors_y,
-                        self.Atools.recon_size,
-                        self.Atools.recon_size,
-                    ]
-                )
+            [
+                self.Atools.detectors_y,
+                self.Atools.recon_size,
+                self.Atools.recon_size,
+            ]
+        )
 
         if self.objsize_user_given is not None:
             return perform_recon_crop(x, self.objsize_user_given)
 
         return check_kwargs(x, **additional_args)
-    
-
