@@ -553,7 +553,7 @@ class RecToolsIRCuPy:
             _regularisation_ (dict, optional): Regularisation dictionary.
 
         Returns:
-            xp.ndarray: ADMM-reconstructed numpy array
+            xp.ndarray: ADMM-reconstructed CuPy array
         """
         cp._default_memory_pool.free_all_blocks()
 
@@ -681,8 +681,6 @@ class RecToolsIRCuPy:
                         _regularisation_upd_["method"],
                         "regularisation",
                     )
-            if iter_no == _algorithm_upd_["iterations"] - 1:
-                print("ADMM stopped at iteration (", iter_no + 1, ")")
 
         if self.objsize_user_given is not None:
             return perform_recon_crop(x, self.objsize_user_given)
