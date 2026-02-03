@@ -313,7 +313,7 @@ _data_ = {
 
 _algorithm_ = {
     "initialise": FBPrec,
-    "iterations": 15,
+    "iterations": 10,
     "ADMM_rho_const": 3.5,
     "ADMM_relax_par": 1.7,
 }

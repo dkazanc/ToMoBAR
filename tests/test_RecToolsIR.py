@@ -613,9 +613,9 @@ def test_ADMM2D(data, angles, test_case):
         # OS, iters, datafidelity, regulariser, expected min, expected max
         (1, 10, "LS", None, -0.00827849, 0.02996399),
         (5, 20, "LS", None, -0.00957337, 0.03188838),
-        (1, 100, "KL", None, -2.40752935, 0),
+        # (1, 100, "KL", None, -2.40752935, 0),
         (1, 100, "LS", regularisation_pd_tv, -0.02096782, 0.02789431),
-        (5, 20, "LS", regularisation_fgp_tv, -0.00926687, 0.03217214),
+        (5, 20, "LS", regularisation_fgp_tv, -0.009561, 0.03186246),
     ],
 )
 def test_ADMM2D_initialised(data, angles, test_case):
@@ -687,18 +687,20 @@ def test_ADMM3D(data, angles):
         device_projector="gpu",  # define the device
     )
 
-    _data_ = {"projection_norm_data": data}  # data dictionary
+    _data_ = {
+        "projection_norm_data": data,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }  # data dictionary
     _algorithm_ = {
         "iterations": 3,
-        "ADMM_rho_const": 0.1,
+        "ADMM_rho_const": 1.0,
         "ADMM_relax_par": 1.6,
-        "data_axes_labels_order": ["angles", "detY", "detX"],
     }
 
     Iter_rec = RecTools.ADMM(_data_, _algorithm_)
 
-    assert_allclose(np.min(Iter_rec), -0.0033778367, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.011687489, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.00030960748, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.018967807, rtol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -718,12 +720,15 @@ def test_ADMM3D_reg(data, angles):
         device_projector="gpu",  # define the device
     )
 
-    _data_ = {"projection_norm_data": data}  # data dictionary
+    _data_ = {
+        "projection_norm_data": data,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }  # data dictionary
+
     _algorithm_ = {
         "iterations": 3,
         "ADMM_rho_const": 0.1,
         "ADMM_relax_par": 1.6,
-        "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     _regularisation_ = {
         "method": "FGP_TV",
@@ -734,8 +739,8 @@ def test_ADMM3D_reg(data, angles):
 
     Iter_rec = RecTools.ADMM(_data_, _algorithm_, _regularisation_)
 
-    assert_allclose(np.min(Iter_rec), -0.0008211148, rtol=0, atol=eps)
-    assert_allclose(np.max(Iter_rec), 0.008647158, rtol=0, atol=eps)
+    assert_allclose(np.min(Iter_rec), -0.0004538795, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.018875256, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 

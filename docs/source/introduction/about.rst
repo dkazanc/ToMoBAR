@@ -30,14 +30,17 @@ ToMoBAR can operate in GPU device-to-device fashion on CuPy arrays therefore ens
 efficiency. With the GPU device controlling :ref:`ref_api` exposed it can also support multi-GPU parallel computing [CT2020]_ .
 
 * Reconstruct parallel-beam projection data in 2D and 3D using GPU-accelerated routines from ASTRA-toolbox [VanAarle2015]_.
-* Employ fast GPU-accelerated direct methods, such as FBP method in :mod:`tomobar.methodsDIR` and CuPy accelerated Fourier
+* Access to fast GPU-accelerated direct methods, such as FBP method in :mod:`tomobar.methodsDIR` and very fast CuPy-accelerated Fourier
   reconstruction :func:`FOURIER_INV` [NIKITIN2017]_ in :mod:`tomobar.methodsDIR_CuPy`.
 * Use advanced model-based regularised iterative schemes such as FISTA and ADMM proximal splitting algorithms in :mod:`tomobar.methodsIR` or
-  even faster implementations with CuPy in :mod:`tomobar.methodsIR_CuPy`.
-* The FISTA algorithm [BT2009]_, [Xu2016]_ offers various modifications: convergence acceleration with ordered-subsets,
+  even faster implementations with CuPy in :mod:`tomobar.methodsIR_CuPy`. It is possible to construct different combinations of the objective function.
+* The FISTA iterative algorithm [BT2009]_, [Xu2016]_ offers various modifications: convergence acceleration with ordered-subsets,
   different data fidelities: PWLS, Huber, Group-Huber [PM2015]_, Students't [KAZ1_2017]_, and SWLS [HOA2017]_
   to deal with noise and various imaging artefacts, such as, rings, streaks.
-* Combine FISTA and ADMM methods with regularisers from the CCPi-Regularisation Toolkit [KAZ2019]_. It is possible to construct different combinations of the objective function.
+* The ADMM iterative algorithm [Boyd2011]_ offers various modifications: relaxation, warm start, and ordered-subsets. The CuPy accelerated version
+  is very fast and with enabled OS can converge in 2-3 iterations.
+* With FISTA and ADMM methods one can use regularisers from the CCPi-Regularisation Toolkit [KAZ2019]_. Or use some available CuPy versions directly from ToMoBAR,
+  which are faster (e.g. PD_TV, ROF_TV).
 
 .. figure::  ../_static/TomoRec_surf2.jpg
     :scale: 30 %

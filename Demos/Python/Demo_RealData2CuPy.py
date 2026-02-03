@@ -14,10 +14,7 @@ from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 # Load the downloaded dataset
-# data = np.load("/path/to/geant4_dataset1.npz")
-data = np.load(
-    "/home/algol/Documents/DEV/httomolibgpu/zenodo-tests/large_data_archive/geant4_dataset1.npz"
-)
+data = np.load("/path/to/geant4_dataset1.npz")
 
 projdata = data["projdata"]
 angles = data["angles"]
@@ -77,7 +74,7 @@ RectoolsCuPy = RecToolsIRCuPy(
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
+    "projection_norm_data": data_norm_cupy,  # Normalised projection data
     "OS_number": 24,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }

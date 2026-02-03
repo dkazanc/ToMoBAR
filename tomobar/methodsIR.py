@@ -7,7 +7,7 @@
 
 import numpy as xp
 from numpy import linalg
-from typing import Union, Optional
+from typing import Union
 
 try:
     import cupy as cp
@@ -723,41 +723,33 @@ class RecToolsIR:
         }
 
         def _Ax(self, x):
-            geom_size = astra.geom_size(self.Atools.vol_geom)
-            return self.Atools._forwproj(cp.reshape(x, geom_size)).ravel()
+            return self.Atools._forwproj(x)
 
         def _Atb(self, b):
-            geom_size = astra.geom_size(self.Atools.proj_geom)
-            return self.Atools._backproj(cp.reshape(b, geom_size)).ravel()
+            return self.Atools._backproj(b)
 
         def _Ax_OS(self, x, sub_ind: int):
-            geom_size = astra.geom_size(self.Atools.vol_geom)
-            return self.Atools._forwprojOS(
-                cp.reshape(x, geom_size), os_index=sub_ind
-            ).ravel()
+            return self.Atools._forwprojOS(x, os_index=sub_ind)
 
         def _Atb_OS(self, b, sub_ind: int):
-            geom_size = astra.geom_size(self.Atools.proj_geom_OS[sub_ind])
-            return self.Atools._backprojOS(
-                cp.reshape(b, geom_size), os_index=sub_ind
-            ).ravel()
+            return self.Atools._backprojOS(b, os_index=sub_ind)
 
         use_os = _data_upd_["OS_number"] > 1
         if use_os:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
 
-        rec_dim = xp.prod(astra.geom_size(self.Atools.vol_geom))
+        rec_dim = astra.geom_size(self.Atools.vol_geom)
         # initialisation of the solution (warm-start)
         if _algorithm_upd_["initialise"] is not None:
-            if xp.size(_algorithm_upd_["initialise"]) == rec_dim:
-                x0 = _algorithm_upd_["initialise"].ravel()
+            if _algorithm_upd_["initialise"].shape == rec_dim:
+                x0 = _algorithm_upd_["initialise"]
             else:
                 print(
                     f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
                 )
-                x0 = xp.zeros(rec_dim, "float32").ravel()
+                x0 = xp.zeros(rec_dim, "float32")
         else:
-            x0 = xp.zeros(rec_dim, "float32").ravel()
+            x0 = xp.zeros(rec_dim, "float32")
 
         # ADMM variables
         x = x0.copy()
@@ -779,13 +771,9 @@ class RecToolsIR:
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
                         indVec = indVec[:-1]  # shrink vector size
                     if self.geom == "2D":
-                        proj_data = _data_upd_["projection_norm_data"][
-                            indVec, :
-                        ].ravel()
+                        proj_data = _data_upd_["projection_norm_data"][indVec, :]
                     else:
-                        proj_data = _data_upd_["projection_norm_data"][
-                            :, indVec, :
-                        ].ravel()
+                        proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
 
                 # ---- z-update (linearized data term) ----
                 if self.datafidelity == "KL":
@@ -799,7 +787,7 @@ class RecToolsIR:
                         grad_data = _Atb(
                             self,
                             1
-                            - _data_upd_["projection_norm_data"].ravel()
+                            - _data_upd_["projection_norm_data"]
                             / (_Ax(self, z) + 1e-8),
                         )  # KL term
                 else:
@@ -810,7 +798,7 @@ class RecToolsIR:
                     else:
                         grad_data = _Atb(
                             self,
-                            _Ax(self, z) - _data_upd_["projection_norm_data"].ravel(),
+                            _Ax(self, z) - _data_upd_["projection_norm_data"],
                         )  # LS term
 
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
@@ -825,24 +813,13 @@ class RecToolsIR:
                     ) * z_old + _algorithm_upd_["ADMM_relax_par"] * z
                 z_old = z.copy()
 
-                if self.geom == "2D":
-                    x_prox_reg = (z + u).reshape(
-                        [self.Atools.recon_size, self.Atools.recon_size]
-                    )
-                if self.geom == "3D":
-                    x_prox_reg = (z + u).reshape(
-                        [
-                            self.Atools.detectors_y,
-                            self.Atools.recon_size,
-                            self.Atools.recon_size,
-                        ]
-                    )
+                x_prox_reg = z + u
+
                 # X-update (proximal regularization)
                 if _regularisation_upd_["method"] is not None:
                     x, info_vec = prox_regul(self, x_prox_reg, _regularisation_upd_)
                 else:
                     x = x_prox_reg
-                x = x.ravel()
 
             # update u variable (dual update)
             u = u + (z - x)
@@ -861,16 +838,6 @@ class RecToolsIR:
             if iter_no == _algorithm_upd_["iterations"] - 1:
                 print("ADMM stopped at iteration (", iter_no + 1, ")")
 
-        if self.geom == "2D":
-            x = x.reshape([self.Atools.recon_size, self.Atools.recon_size])
-        if self.geom == "3D":
-            x = x.reshape(
-                [
-                    self.Atools.detectors_y,
-                    self.Atools.recon_size,
-                    self.Atools.recon_size,
-                ]
-            )
         if self.objsize_user_given is not None:
             return perform_recon_crop(x, self.objsize_user_given)
 

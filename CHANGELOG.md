@@ -6,6 +6,9 @@ The ADMM implementation has been replaced with a new linearised variant that avo
 
 Rewriting ADMM in this linearised form also enabled further acceleration through the use of CuPy and ordered subsets. When warm-started with an FBP reconstruction and combined with ADMM-OS and regularisation, the reconstruction can be performed very efficiently, often requiring only a small number of iterations.
 
+<div align="center">
+  <img src="docs/source/_static/ADMM_rec_cupy.png" width="1000">
+</div>
 
 ## v.2026.1.0.0
 
