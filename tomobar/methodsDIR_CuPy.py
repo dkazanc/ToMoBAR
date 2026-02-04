@@ -5,6 +5,7 @@
 * :func:`RecToolsDIRCuPy.FOURIER_INV` - Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method [NIKITIN2017]_.
 """
 
+from typing import Tuple
 import numpy as np
 import math
 import cupy as cp
@@ -139,7 +140,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
         reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
         return check_kwargs(reconstruction, **kwargs)
 
-    def FOURIER_INV(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
+    def FOURIER_INV(
+        self, data: cp.ndarray | Tuple[int, int, int], **kwargs
+    ) -> cp.ndarray:
         """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input, see more in
         [NIKITIN2017]_. This implementation is originated from V. Nikitin's CUDA-C implementation:
         https://github.com/nikitinvv/radonusfft and TomoCuPy package.
@@ -238,7 +241,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpadding_mul_phi = module.get_function("unpadding_mul_phi")
 
         # initialisation
-        [nz, nproj, data_n] = data.shape
+        mem_stack = DeviceMemStack().instance()
+        if mem_stack:
+            mem_stack.malloc(np.prod(data) * kwargs["data_dtype"].itemsize)
+            [nz, nproj, data_n] = data
+        else:
+            [nz, nproj, data_n] = data.shape
+
         recon_size = self.Atools.recon_size
         if recon_size > data_n:
             raise ValueError(
@@ -246,10 +255,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     recon_size, data_n
                 )
             )
-
-        mem_stack = DeviceMemStack().instance()
-        if mem_stack:
-            mem_stack.malloc(np.prod(data.shape) * data.dtype.itemsize)
 
         odd_horiz = bool(data_n % 2)
         odd_vert = bool(nz % 2)
