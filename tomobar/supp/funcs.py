@@ -138,8 +138,12 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
 
     return [swap_tuple1, swap_tuple2]
 
+def swap_tuple_elements(tup: Tuple[int, int, int], idx1: int, idx2: int):
+    items = list(tup)
+    items[idx1], items[idx2] = items[idx2], items[idx1]
+    return tuple(items)
 
-def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
+def _data_swap(data: xp.ndarray | Tuple[int, int, int], data_swap_list: list) -> xp.ndarray:
     """Swap data labels based on the provided list of tuples
 
     Args:
@@ -151,11 +155,14 @@ def _data_swap(data: xp.ndarray, data_swap_list: list) -> xp.ndarray:
     """
     for swap_tuple in data_swap_list:
         if swap_tuple is not None:
-            if cupy_enabled:
-                xpp = xp.get_array_module(data)
-                return xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
+            if isinstance(data, tuple):
+                swap_tuple_elements(data, swap_tuple[0], swap_tuple[1])
             else:
-                return np.swapaxes(data, swap_tuple[0], swap_tuple[1])
+                if cupy_enabled:
+                    xpp = xp.get_array_module(data)
+                    return xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
+                else:
+                    return np.swapaxes(data, swap_tuple[0], swap_tuple[1])
         return data
 
 
