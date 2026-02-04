@@ -156,7 +156,7 @@ def _data_swap(data: xp.ndarray | Tuple[int, int, int], data_swap_list: list) ->
     for swap_tuple in data_swap_list:
         if swap_tuple is not None:
             if isinstance(data, tuple):
-                swap_tuple_elements(data, swap_tuple[0], swap_tuple[1])
+                data = swap_tuple_elements(data, swap_tuple[0], swap_tuple[1])
             else:
                 if cupy_enabled:
                     xpp = xp.get_array_module(data)
