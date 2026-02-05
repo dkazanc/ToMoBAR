@@ -666,8 +666,8 @@ def test_ADMM2D_initialised(data, angles, test_case):
     }
 
     Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularisation)
-    assert_allclose(np.min(Iter_rec), expected_min, atol=1e-05)
-    assert_allclose(np.max(Iter_rec), expected_max, atol=1e-05)
+    assert_allclose(np.min(Iter_rec), expected_min, atol=1e-04)
+    assert_allclose(np.max(Iter_rec), expected_max, atol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 

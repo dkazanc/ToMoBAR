@@ -14,7 +14,10 @@ from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 # Load the downloaded dataset
-data = np.load("/path/to/geant4_dataset1.npz")
+# data = np.load("/path/to/geant4_dataset1.npz")
+data = np.load(
+    "/home/algol/Documents/DEV/httomolibgpu/zenodo-tests/large_data_archive/geant4_dataset1.npz"
+)
 
 projdata = data["projdata"]
 angles = data["angles"]
@@ -85,13 +88,14 @@ _algorithm_ = {
     "ADMM_rho_const": 0.9,
     "ADMM_relax_par": 1.7,
     "recon_mask_radius": 2.0,
+    "nonnegativity": True,
 }  # The number of iterations
 
 ##### creating regularisation dictionary: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.004,  # Regularisation parameter
-    "iterations": 50,  # The number of regularisation iterations
+    "regul_param": 0.0025,  # Regularisation parameter
+    "iterations": 40,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
 

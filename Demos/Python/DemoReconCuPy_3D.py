@@ -220,7 +220,7 @@ lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
 
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 15,
+    "iterations": 25,
     "lipschitz_const": lc.get(),
     "recon_mask_radius": 2.0,
 }  # The number of iterations
@@ -228,7 +228,7 @@ _algorithm_ = {
 ##### creating regularisation dictionary: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.0001,  # Regularisation parameter
+    "regul_param": 0.0003,  # Regularisation parameter
     "iterations": 50,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
@@ -279,7 +279,7 @@ RectoolsCuPy = RecToolsIRCuPy(
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": projData3D_analyt_cupy,  # Normalised projection data
-    "OS_number": 24,  # The number of subsets
+    "OS_number": 36,  # The number of subsets
     "data_axes_labels_order": input_data_labels,
 }
 
@@ -295,7 +295,7 @@ _algorithm_ = {
 ##### creating regularisation dictionary: #####
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.12,  # Regularisation parameter
+    "regul_param": 0.13,  # Regularisation parameter
     "iterations": 30,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }

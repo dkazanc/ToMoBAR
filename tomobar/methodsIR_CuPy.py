@@ -167,7 +167,7 @@ class RecToolsIRCuPy:
                 residual
             )
             if _algorithm_upd_["nonnegativity"]:
-                x_rec[x_rec < 0.0] = 0.0
+                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
         toc = timeit.default_timer()
         Run_time = toc - tic
@@ -234,7 +234,7 @@ class RecToolsIRCuPy:
                 )
             )
             if _algorithm_upd_["nonnegativity"]:
-                x_rec[x_rec < 0.0] = 0.0
+                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
         if self.objsize_user_given is not None:
             return perform_recon_crop(x_rec, self.objsize_user_given)
@@ -305,7 +305,7 @@ class RecToolsIRCuPy:
             normr2 = normr2_new.copy()
             d = s + beta * d
             if _algorithm_upd_["nonnegativity"]:
-                x_rec[x_rec < 0.0] = 0.0
+                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
         del d, s, beta, r, alpha, Ad, normr2_new, normr2
 
@@ -524,7 +524,7 @@ class RecToolsIRCuPy:
                 del X_t, grad_fidelity
 
                 if _algorithm_upd_["nonnegativity"]:
-                    X[X < 0.0] = 0.0
+                    cp.maximum(X, 0, out=X)  # non-negativity projection
 
                 if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####
@@ -652,8 +652,8 @@ class RecToolsIRCuPy:
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
                 z = z - tau * (grad_data + grad_admm)
 
-                if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                    z[z < 0.0] = 0.0
+                if _algorithm_upd_["nonnegativity"]:
+                    cp.maximum(z, 0, out=z)  # non-negativity projection
                 # z-update with relaxation
                 if iter_no > 1:
                     z = (

@@ -241,7 +241,7 @@ _algorithm_ = {
 _regularisation_ = {
     "method": "PD_TV",  # Selected regularisation method
     "regul_param": 0.0035,  # Regularisation parameter
-    "iterations": 50,  # The number of regularisation iterations
+    "iterations": 40,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
 

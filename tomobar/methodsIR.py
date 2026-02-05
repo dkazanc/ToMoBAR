@@ -804,8 +804,9 @@ class RecToolsIR:
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
                 z = z - tau * (grad_data + grad_admm)
 
-                if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                    z[z < 0.0] = 0.0
+                if _algorithm_upd_["nonnegativity"]:
+                    xp.maximum(z, 0, out=z)  # non-negativity projection
+
                 # z-update with relaxation
                 if iter_no > 1:
                     z = (
