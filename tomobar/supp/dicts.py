@@ -91,12 +91,12 @@ def dicts_check(
                     _data_["data_axes_labels_order"],
                     ["angles", "detX"],
                 )
-                # if self.datafidelity in ["PWLS", "SWLS"]:
-                #     _data_["projection_raw_data"] = _data_dims_swapper(
-                #         _data_["projection_raw_data"],
-                #         _data_["data_axes_labels_order"],
-                #         ["angles", "detX"],
-                #     )
+                if self.datafidelity in ["PWLS", "SWLS"]:
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["angles", "detX"],
+                    )
             else:
                 _data_["projection_norm_data"] = _data_dims_swapper(
                     _data_["projection_norm_data"],

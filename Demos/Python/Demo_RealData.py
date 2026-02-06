@@ -198,8 +198,6 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA SWLS-OS-TV method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-
 # Set scanning geometry parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
@@ -254,7 +252,7 @@ Rectools = RecToolsIR(
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
+    datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
 )
 

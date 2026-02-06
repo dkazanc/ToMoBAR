@@ -630,9 +630,9 @@ class RecToolsIR:
         Returns:
             np.ndarray: ADMM-reconstructed numpy array
         """
-        if self.datafidelity not in ["LS", "PWLS", "KL"]:
+        if self.datafidelity not in ["LS", "PWLS", "SWLS", "KL"]:
             raise ValueError(
-                "Unknown data fidelity type, please select: LS, PWLS, or KL"
+                "Unknown data fidelity type, please select: LS, PWLS, SWLS or KL"
             )
 
         ######################################################################
@@ -686,7 +686,7 @@ class RecToolsIR:
         z_old = 0
         u = np.zeros_like(x0)
 
-        if self.datafidelity == "PWLS":
+        if self.datafidelity in ["PWLS", "SWLS"]:
             w = np.asarray(_data_upd_["projection_norm_data"])  # weights for PWLS model
             w = np.maximum(w, 1e-6)
             w /= w.max()
@@ -701,6 +701,7 @@ class RecToolsIR:
         # Outer ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
             for sub_ind in range(_data_upd_["OS_number"]):
+                # ---- z-update (linearized data term) ----
                 if use_os:
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
@@ -711,35 +712,36 @@ class RecToolsIR:
                     else:
                         proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
 
-                # ---- z-update (linearized data term) ----
-                if self.datafidelity == "KL":
-                    if use_os:
-                        grad_data = _Atb_OS(
-                            self,
-                            1 - proj_data / (_Ax_OS(self, z, sub_ind) + 1e-8),
-                            sub_ind,
-                        )  # KL term
-                    else:
-                        grad_data = _Atb(
-                            self,
-                            1
-                            - _data_upd_["projection_norm_data"]
-                            / (_Ax(self, z) + 1e-8),
-                        )  # KL term
-                else:
-                    if use_os:
+                    if self.datafidelity in ["PWLS", "LS", "SWLS"]:
                         grad_data = _Ax_OS(self, z, sub_ind) - proj_data
                         if self.datafidelity == "PWLS":
                             if self.geom == "2D":
                                 np.multiply(grad_data, w[indVec, :], out=grad_data)
                             else:
-                                grad_data = w[:, indVec, :] * grad_data
-                        grad_data = _Atb_OS(self, grad_data, sub_ind)  # LS/PWLS term
-                    else:
+                                np.multiply(grad_data, w[:, indVec, :], out=grad_data)
+                    elif self.datafidelity == "KL":
+                        grad_data = 1.0 - proj_data / (_Ax_OS(self, z, sub_ind) + 1e-8)
+                    grad_data = _Atb_OS(self, grad_data, sub_ind)
+                else:
+                    if self.datafidelity in ["PWLS", "LS", "SWLS"]:
                         grad_data = _Ax(self, z) - _data_upd_["projection_norm_data"]
                         if self.datafidelity == "PWLS":
-                            grad_data *= w
-                        grad_data = _Atb(self, grad_data)  # LS/PWLS term
+                            np.multiply(grad_data, w, out=grad_data)
+                        elif self.datafidelity == "SWLS":
+                            for det_index in range(self.Atools.detectors_x):
+                                wk = _data_upd_["projection_raw_data"][:, det_index]
+                                grad_data[:, det_index] = (
+                                    np.multiply(wk, grad_data[:, det_index])
+                                    - 1.0
+                                    / (np.sum(wk) + 100)
+                                    * (wk.dot(grad_data[:, det_index]))
+                                    * wk
+                                )
+                    elif self.datafidelity == "KL":
+                        grad_data = 1.0 - _data_upd_["projection_norm_data"] / (
+                            _Ax(self, z) + 1e-8
+                        )
+                    grad_data = _Atb(self, grad_data)
 
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
                 z = z - tau * (grad_data + grad_admm)
@@ -755,8 +757,7 @@ class RecToolsIR:
                 z_old = z.copy()
 
                 x_prox_reg = z + u
-
-                # X-update (proximal regularization)
+                # x-update (proximal regularization)
                 if _regularisation_upd_["method"] is not None:
                     x, info_vec = prox_regul(self, x_prox_reg, _regularisation_upd_)
                 else:
