@@ -136,7 +136,7 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="Landweber"
         )
         del _data_, _algorithm_
@@ -194,7 +194,7 @@ class RecToolsIRCuPy:
         ######################################################################
         cp._default_memory_pool.free_all_blocks()
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
         _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
@@ -255,7 +255,7 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         del _data_, _algorithm_
@@ -609,6 +609,7 @@ class RecToolsIRCuPy:
         # ADMM variables
         x = x0.copy()
         z = x0.copy()
+        z_old = 0
         u = cp.zeros_like(x0)
         tau = 0.9 / (
             _algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"]

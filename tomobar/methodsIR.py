@@ -754,6 +754,7 @@ class RecToolsIR:
         # ADMM variables
         x = x0.copy()
         z = x0.copy()
+        z_old = 0
         u = xp.zeros_like(x0)
         tau = 0.9 / (
             _algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"]

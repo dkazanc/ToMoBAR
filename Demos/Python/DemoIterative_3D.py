@@ -291,8 +291,6 @@ print("RMSE for regularised FISTA-OS is {}".format(RMSE_FISTA_os_reg))
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM-OS method")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-
 # set parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
