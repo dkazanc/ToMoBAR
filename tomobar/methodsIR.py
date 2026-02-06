@@ -5,18 +5,9 @@
 * :func:`RecToolsIR.SIRT` and :func:`RecToolsIR.CGLS` algorithms are wrapped directly from the ASTRA package.
 """
 
-import numpy as xp
+import numpy as np
 from numpy import linalg
 from typing import Union
-
-try:
-    import cupy as cp
-
-    cupy_imported = True
-except ImportError:
-    import numpy as xp
-
-    cupy_imported = False
 
 try:
     import astra
@@ -132,7 +123,7 @@ class RecToolsIR:
     def objsize_user_given(self, objsize_user_given_val):
         self._objsize_user_given = objsize_user_given_val
 
-    def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> xp.ndarray:
+    def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> np.ndarray:
         """Simultaneous Iterations Reconstruction Technique from ASTRA toolbox.
 
         Args:
@@ -140,11 +131,11 @@ class RecToolsIR:
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
 
         Returns:
-            xp.ndarray: SIRT-reconstructed numpy array
+            np.ndarray: SIRT-reconstructed numpy array
         """
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
         ######################################################################
@@ -153,7 +144,7 @@ class RecToolsIR:
             _data_upd_["projection_norm_data"], _algorithm_upd_["iterations"]
         )
 
-    def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> xp.ndarray:
+    def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> np.ndarray:
         """Conjugate Gradient Least Squares from ASTRA toolbox.
 
         Args:
@@ -161,7 +152,7 @@ class RecToolsIR:
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
 
         Returns:
-            xp.ndarray: CGLS-reconstructed numpy array
+            np.ndarray: CGLS-reconstructed numpy array
         """
         ######################################################################
         # parameters check and initialisation
@@ -184,20 +175,15 @@ class RecToolsIR:
         Returns:
             float: the Lipschitz constant
         """
-        if not self.cupyrun:
-            import numpy as xp
-        else:
-            if cupy_imported:
-                import cupy as xp
         if "data_axes_labels_order" not in _data_:
             _data_["data_axes_labels_order"] = None
-        if (
-            self.datafidelity in ["PWLS", "SWLS"]
-            and "projection_raw_data" not in _data_
-        ):
-            raise ValueError("Please provide projection_raw_data for this model")
-        if self.datafidelity in ["PWLS", "SWLS"]:
-            sqweight = _data_["projection_raw_data"]
+        # if (
+        #     self.datafidelity in ["PWLS", "SWLS"]
+        #     and "projection_raw_data" not in _data_
+        # ):
+        #     raise ValueError("Please provide projection_raw_data for this model")
+        # if self.datafidelity in ["PWLS", "SWLS"]:
+        #     sqweight = _data_["projection_raw_data"]
 
         if _data_["data_axes_labels_order"] is not None:
             if self.geom == "2D":
@@ -206,27 +192,12 @@ class RecToolsIR:
                     _data_["data_axes_labels_order"],
                     ["angles", "detX"],
                 )
-                if self.datafidelity in ["PWLS", "SWLS"]:
-                    _data_["projection_raw_data"] = _data_dims_swapper(
-                        _data_["projection_raw_data"],
-                        _data_["data_axes_labels_order"],
-                        ["angles", "detX"],
-                    )
-                    sqweight = _data_["projection_raw_data"]
             else:
                 _data_["projection_norm_data"] = _data_dims_swapper(
                     _data_["projection_norm_data"],
                     _data_["data_axes_labels_order"],
                     ["detY", "angles", "detX"],
                 )
-                if self.datafidelity in ["PWLS", "SWLS"]:
-                    _data_["projection_raw_data"] = _data_dims_swapper(
-                        _data_["projection_raw_data"],
-                        _data_["data_axes_labels_order"],
-                        ["detY", "angles", "detX"],
-                    )
-                    sqweight = _data_["projection_raw_data"]
-                    # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
             _data_["data_axes_labels_order"] = None
 
         if _data_.get("OS_number") is None:
@@ -237,65 +208,24 @@ class RecToolsIR:
         power_iterations = 15
         s = 1.0
         proj_geom = astra.geom_size(self.Atools.vol_geom)
-        if cupy_imported and self.cupyrun:
-            x1 = cp.random.randn(*proj_geom, dtype=cp.float32)
-        else:
-            x1 = xp.float32(xp.random.randn(*proj_geom))
+        x1 = np.array(np.random.randn(*proj_geom), dtype=np.float32, order="C")
 
         if _data_["OS_number"] == 1:
             # non-OS approach
-            if cupy_imported and self.cupyrun:
-                y = self.Atools._forwprojCuPy(x1)
-            else:
-                y = self.Atools._forwproj(x1)
-            if self.datafidelity == "PWLS":
-                y = xp.multiply(sqweight, y)
-            for iterations in range(power_iterations):
-                if cupy_imported and self.cupyrun:
-                    x1 = self.Atools._backprojCuPy(y)
-                else:
-                    x1 = self.Atools._backproj(y)
-                if cupy_imported and self.cupyrun:
-                    s = cp.linalg.norm(cp.ravel(x1), axis=0)
-                else:
-                    s = xp.linalg.norm(xp.ravel(x1), axis=0)
+            y = self.Atools._forwproj(x1)
+            for _ in range(power_iterations):
+                x1 = self.Atools._backproj(y)
+                s = np.linalg.norm(np.ravel(x1), axis=0)
                 x1 = x1 / s
-                if cupy_imported and self.cupyrun:
-                    y = self.Atools._forwprojCuPy(x1)
-                else:
-                    y = self.Atools._forwproj(x1)
-                if self.datafidelity == "PWLS":
-                    y = xp.multiply(sqweight, y)
+                y = self.Atools._forwproj(x1)
         else:
             # OS approach
-            if cupy_imported and self.cupyrun:
-                y = self.Atools._forwprojOSCuPy(x1, 0)
-            else:
-                y = self.Atools._forwprojOS(x1, 0)
-            if self.datafidelity == "PWLS":
-                if self.geom == "2D":
-                    y = xp.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
-                else:
-                    y = xp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
+            y = self.Atools._forwprojOS(x1, 0)
             for _ in range(power_iterations):
-                if cupy_imported and self.cupyrun:
-                    x1 = self.Atools._backprojOSCuPy(y, 0)
-                else:
-                    x1 = self.Atools._backprojOS(y, 0)
-                if cupy_imported and self.cupyrun:
-                    s = cp.linalg.norm(cp.ravel(x1), axis=0)
-                else:
-                    s = xp.linalg.norm(xp.ravel(x1), axis=0)
+                x1 = self.Atools._backprojOS(y, 0)
+                s = np.linalg.norm(np.ravel(x1), axis=0)
                 x1 = x1 / s
-                if cupy_imported and self.cupyrun:
-                    y = self.Atools._forwprojOSCuPy(x1, 0)
-                else:
-                    y = self.Atools._forwprojOS(x1, 0)
-                if self.datafidelity == "PWLS":
-                    if self.geom == "2D":
-                        y = xp.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
-                    else:
-                        y = xp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
+                y = self.Atools._forwprojOS(x1, 0)
         return s
 
     def FISTA(
@@ -303,7 +233,7 @@ class RecToolsIR:
         _data_: dict,
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
-    ) -> xp.ndarray:
+    ) -> np.ndarray:
         """A Fast Iterative Shrinkage-Thresholding Algorithm with various types of regularisation and
         data fidelity terms provided in three dictionaries.
         See :mod:`tomobar.supp.dicts` for all parameters to the dictionaries bellow.
@@ -316,11 +246,6 @@ class RecToolsIR:
         Returns:
             np.ndarray: FISTA-reconstructed numpy array
         """
-        if not self.cupyrun:
-            import numpy as xp
-        else:
-            if cupy_imported:
-                import cupy as xp
         ######################################################################
         # parameters check and initialisation
         _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
@@ -336,23 +261,23 @@ class RecToolsIR:
         if self.geom == "2D":
             # 2D reconstruction
             # initialise the solution
-            if xp.size(_algorithm_upd_["initialise"]) == self.Atools.recon_size**2:
+            if np.size(_algorithm_upd_["initialise"]) == self.Atools.recon_size**2:
                 # the object has been initialised with an array
                 X = _algorithm_upd_["initialise"]
             else:
-                X = xp.zeros(
+                X = np.zeros(
                     (self.Atools.recon_size, self.Atools.recon_size), "float32"
                 )  # initialise with zeros
-            r = xp.zeros(
+            r = np.zeros(
                 (self.Atools.detectors_x, 1), "float32"
             )  # 1D array of sparse "ring" variables (GH)
         if self.geom == "3D":
             # initialise the solution
-            if xp.size(_algorithm_upd_["initialise"]) == self.Atools.recon_size**3:
+            if np.size(_algorithm_upd_["initialise"]) == self.Atools.recon_size**3:
                 # the object has been initialised with an array
                 X = _algorithm_upd_["initialise"]
             else:
-                X = xp.zeros(
+                X = np.zeros(
                     (
                         self.Atools.detectors_y,
                         self.Atools.recon_size,
@@ -360,15 +285,15 @@ class RecToolsIR:
                     ),
                     "float32",
                 )  # initialise with zeros
-            r = xp.zeros(
+            r = np.zeros(
                 (self.Atools.detectors_y, self.Atools.detectors_x), "float32"
             )  # 2D array of sparse "ring" variables (GH)
         info_vec = (0, 1)
         # ****************************************************************************#
         # FISTA (model-based modification) algorithm begins here:
         t = 1.0
-        denomN = 1.0 / xp.size(X)
-        X_t = xp.copy(X)
+        denomN = 1.0 / np.size(X)
+        X_t = np.copy(X)
         r_x = r.copy()
         # Outer FISTA iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
@@ -380,9 +305,9 @@ class RecToolsIR:
                 and (iter_no > 0)
             ):
                 if self.geom == "2D":
-                    vec = xp.zeros((self.Atools.detectors_x))
+                    vec = np.zeros((self.Atools.detectors_x))
                 else:
-                    vec = xp.zeros((self.Atools.detectors_y, self.Atools.detectors_x))
+                    vec = np.zeros((self.Atools.detectors_y, self.Atools.detectors_x))
                 for sub_ind in range(_data_upd_["OS_number"]):
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
@@ -409,9 +334,9 @@ class RecToolsIR:
                             )
                         vec = res.sum(axis=1)
                 if self.geom == "2D":
-                    r[:, 0] = r_x[:, 0] - xp.multiply(L_const_inv, vec)
+                    r[:, 0] = r_x[:, 0] - np.multiply(L_const_inv, vec)
                 else:
-                    r = r_x - xp.multiply(L_const_inv, vec)
+                    r = r_x - np.multiply(L_const_inv, vec)
 
             # loop over subsets (OS)
             for sub_ind in range(_data_upd_["OS_number"]):
@@ -432,7 +357,7 @@ class RecToolsIR:
                             )
                         if self.datafidelity == "PWLS":
                             # 2D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
-                            res = xp.multiply(
+                            res = np.multiply(
                                 _data_upd_["projection_raw_data"][indVec, :],
                                 (
                                     self.Atools._forwprojOS(X_t, sub_ind)
@@ -450,16 +375,16 @@ class RecToolsIR:
                                     indVec, det_index
                                 ]
                                 res[:, det_index] = (
-                                    xp.multiply(wk, res[:, det_index])
+                                    np.multiply(wk, res[:, det_index])
                                     - 1.0
-                                    / (xp.sum(wk) + _data_upd_["beta_SWLS"][det_index])
+                                    / (np.sum(wk) + _data_upd_["beta_SWLS"][det_index])
                                     * (wk.dot(res[:, det_index]))
                                     * wk
                                 )
                         if self.datafidelity == "KL":
                             # 2D Kullback-Leibler (KL) data fidelity - OS
                             tmp = self.Atools._forwprojOS(X_t, sub_ind)
-                            res = xp.divide(
+                            res = np.divide(
                                 tmp - _data_upd_["projection_norm_data"][indVec, :],
                                 tmp + 1.0,
                             )
@@ -478,7 +403,7 @@ class RecToolsIR:
                             )
                         if self.datafidelity == "PWLS":
                             # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
-                            res = xp.multiply(
+                            res = np.multiply(
                                 _data_upd_["projection_raw_data"][:, indVec, :],
                                 (
                                     self.Atools._forwprojOS(X_t, sub_ind)
@@ -497,12 +422,12 @@ class RecToolsIR:
                                         detVert_index, indVec, detHorz_index
                                     ]
                                     res[detVert_index, :, detHorz_index] = (
-                                        xp.multiply(
+                                        np.multiply(
                                             wk, res[detVert_index, :, detHorz_index]
                                         )
                                         - 1.0
                                         / (
-                                            xp.sum(wk)
+                                            np.sum(wk)
                                             + _data_upd_["beta_SWLS"][detHorz_index]
                                         )
                                         * (wk.dot(res[detVert_index, :, detHorz_index]))
@@ -511,7 +436,7 @@ class RecToolsIR:
                         if self.datafidelity == "KL":
                             # 3D Kullback-Leibler (KL) data fidelity - OS
                             tmp = self.Atools._forwprojOS(X_t, sub_ind)
-                            res = xp.divide(
+                            res = np.divide(
                                 tmp - _data_upd_["projection_norm_data"][:, indVec, :],
                                 tmp + 1.0,
                             )
@@ -531,7 +456,7 @@ class RecToolsIR:
                         )
                     if self.datafidelity == "PWLS":
                         # full gradient for the PWLS fidelity
-                        res = xp.multiply(
+                        res = np.multiply(
                             _data_upd_["projection_raw_data"],
                             (
                                 self.Atools._forwproj(X_t)
@@ -541,7 +466,7 @@ class RecToolsIR:
                     if self.datafidelity == "KL":
                         # Kullback-Leibler (KL) data fidelity
                         tmp = self.Atools._forwproj(X_t)
-                        res = xp.divide(
+                        res = np.divide(
                             tmp - _data_upd_["projection_norm_data"], tmp + 1.0
                         )
                     if (_data_upd_["ringGH_lambda"] is not None) and (iter_no > 0):
@@ -551,7 +476,7 @@ class RecToolsIR:
                                 + _data_upd_["ringGH_accelerate"] * r_x[:, 0]
                             )
                             vec = res.sum(axis=0)
-                            r[:, 0] = r_x[:, 0] - xp.multiply(L_const_inv, vec)
+                            r[:, 0] = r_x[:, 0] - np.multiply(L_const_inv, vec)
                         else:  # 3D case
                             for ang_index in range(len(self.Atools.angles_vec)):
                                 res[:, ang_index, :] = (
@@ -559,7 +484,7 @@ class RecToolsIR:
                                     + _data_upd_["ringGH_accelerate"] * r_x
                                 )
                                 vec = res.sum(axis=1)
-                                r = r_x - xp.multiply(L_const_inv, vec)
+                                r = r_x - np.multiply(L_const_inv, vec)
                     if self.datafidelity == "SWLS":
                         res = (
                             self.Atools._forwproj(X_t)
@@ -569,9 +494,9 @@ class RecToolsIR:
                             for det_index in range(self.Atools.detectors_x):
                                 wk = _data_upd_["projection_raw_data"][:, det_index]
                                 res[:, det_index] = (
-                                    xp.multiply(wk, res[:, det_index])
+                                    np.multiply(wk, res[:, det_index])
                                     - 1.0
-                                    / (xp.sum(wk) + _data_upd_["beta_SWLS"][det_index])
+                                    / (np.sum(wk) + _data_upd_["beta_SWLS"][det_index])
                                     * (wk.dot(res[:, det_index]))
                                     * wk
                                 )
@@ -582,12 +507,12 @@ class RecToolsIR:
                                         detVert_index, :, detHorz_index
                                     ]
                                     res[detVert_index, :, detHorz_index] = (
-                                        xp.multiply(
+                                        np.multiply(
                                             wk, res[detVert_index, :, detHorz_index]
                                         )
                                         - 1.0
                                         / (
-                                            xp.sum(wk)
+                                            np.sum(wk)
                                             + _data_upd_["beta_SWLS"][detHorz_index]
                                         )
                                         * (wk.dot(res[detVert_index, :, detHorz_index]))
@@ -595,40 +520,40 @@ class RecToolsIR:
                                     )
                 if _data_upd_["huber_threshold"] is not None:
                     # apply Huber penalty
-                    multHuber = xp.ones(xp.shape(res))
+                    multHuber = np.ones(np.shape(res))
                     multHuber[
-                        (xp.where(xp.abs(res) > _data_upd_["huber_threshold"]))
-                    ] = xp.divide(
+                        (np.where(np.abs(res) > _data_upd_["huber_threshold"]))
+                    ] = np.divide(
                         _data_upd_["huber_threshold"],
-                        xp.abs(
-                            res[(xp.where(xp.abs(res) > _data_upd_["huber_threshold"]))]
+                        np.abs(
+                            res[(np.where(np.abs(res) > _data_upd_["huber_threshold"]))]
                         ),
                     )
                     if _data_upd_["OS_number"] != 1:
                         # OS-Huber-gradient
                         grad_fidelity = self.Atools._backprojOS(
-                            xp.multiply(multHuber, res), sub_ind
+                            np.multiply(multHuber, res), sub_ind
                         )
                     else:
                         # full Huber gradient
                         grad_fidelity = self.Atools._backproj(
-                            xp.multiply(multHuber, res)
+                            np.multiply(multHuber, res)
                         )
                 elif _data_upd_["studentst_threshold"] is not None:
                     # apply Students't penalty
-                    multStudent = xp.ones(xp.shape(res))
-                    multStudent = xp.divide(
+                    multStudent = np.ones(np.shape(res))
+                    multStudent = np.divide(
                         2.0, _data_upd_["studentst_threshold"] ** 2 + res**2
                     )
                     if _data_upd_["OS_number"] != 1:
                         # OS-Students't-gradient
                         grad_fidelity = self.Atools._backprojOS(
-                            xp.multiply(multStudent, res), sub_ind
+                            np.multiply(multStudent, res), sub_ind
                         )
                     else:
                         # full Students't gradient
                         grad_fidelity = self.Atools._backproj(
-                            xp.multiply(multStudent, res)
+                            np.multiply(multStudent, res)
                         )
                 else:
                     if _data_upd_["OS_number"] != 1:
@@ -639,8 +564,9 @@ class RecToolsIR:
                         grad_fidelity = self.Atools._backproj(res)
 
                 X = X_t - L_const_inv * grad_fidelity
-                if _algorithm_upd_["nonnegativity"] == "ENABLE":
-                    X[X < 0.0] = 0.0
+                if _algorithm_upd_["nonnegativity"]:
+                    np.maximum(X, 0, out=X)  # non-negativity projection
+
                 if _algorithm_upd_["recon_mask_radius"] is not None:
                     X = apply_circular_mask(
                         X, _algorithm_upd_["recon_mask_radius"], False
@@ -650,17 +576,17 @@ class RecToolsIR:
                     X, info_vec = prox_regul(self, X, _regularisation_upd_)
                     ###########################################################
                 # updating t variable
-                t = (1.0 + xp.sqrt(1.0 + 4.0 * t**2)) * 0.5
+                t = (1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5
                 X_t = X + ((t_old - 1.0) / t) * (X - X_old)  # updating X
             if (_data_upd_["ringGH_lambda"] is not None) and (iter_no > 0):
-                r = xp.maximum(
-                    (xp.abs(r) - _data_upd_["ringGH_lambda"]), 0.0
-                ) * xp.sign(
+                r = np.maximum(
+                    (np.abs(r) - _data_upd_["ringGH_lambda"]), 0.0
+                ) * np.sign(
                     r
                 )  # soft-thresholding operator for ring vector
                 r_x = r + ((t_old - 1.0) / t) * (r - r_old)  # updating r
             if _algorithm_upd_["verbose"]:
-                if xp.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
+                if np.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
                     print(
                         "FISTA iteration (",
                         iter_no + 1,
@@ -692,7 +618,7 @@ class RecToolsIR:
         _data_: dict,
         _algorithm_: Union[dict, None] = None,
         _regularisation_: Union[dict, None] = None,
-    ) -> xp.ndarray:
+    ) -> np.ndarray:
         """Linearised and Relaxed Alternating Directions Method of Multipliers with various types
         of regularisation and data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
 
@@ -702,10 +628,13 @@ class RecToolsIR:
             _regularisation_ (dict, optional): Regularisation dictionary.
 
         Returns:
-            xp.ndarray: ADMM-reconstructed numpy array
+            np.ndarray: ADMM-reconstructed numpy array
         """
-        if not self.cupyrun:
-            import numpy as xp
+        if self.datafidelity not in ["LS", "PWLS", "KL"]:
+            raise ValueError(
+                "Unknown data fidelity type, please select: LS, PWLS, or KL"
+            )
+
         ######################################################################
         # parameters check and initialisation
         _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
@@ -747,15 +676,21 @@ class RecToolsIR:
                 print(
                     f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
                 )
-                x0 = xp.zeros(rec_dim, "float32")
+                x0 = np.zeros(rec_dim, "float32")
         else:
-            x0 = xp.zeros(rec_dim, "float32")
+            x0 = np.zeros(rec_dim, "float32")
 
         # ADMM variables
         x = x0.copy()
         z = x0.copy()
         z_old = 0
-        u = xp.zeros_like(x0)
+        u = np.zeros_like(x0)
+
+        if self.datafidelity == "PWLS":
+            w = np.asarray(_data_upd_["projection_norm_data"])  # weights for PWLS model
+            w = np.maximum(w, 1e-6)
+            w /= w.max()
+
         tau = 0.9 / (
             _algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"]
         )
@@ -793,20 +728,24 @@ class RecToolsIR:
                         )  # KL term
                 else:
                     if use_os:
-                        grad_data = _Atb_OS(
-                            self, _Ax_OS(self, z, sub_ind) - proj_data, sub_ind
-                        )  # LS term
+                        grad_data = _Ax_OS(self, z, sub_ind) - proj_data
+                        if self.datafidelity == "PWLS":
+                            if self.geom == "2D":
+                                np.multiply(grad_data, w[indVec, :], out=grad_data)
+                            else:
+                                grad_data = w[:, indVec, :] * grad_data
+                        grad_data = _Atb_OS(self, grad_data, sub_ind)  # LS/PWLS term
                     else:
-                        grad_data = _Atb(
-                            self,
-                            _Ax(self, z) - _data_upd_["projection_norm_data"],
-                        )  # LS term
+                        grad_data = _Ax(self, z) - _data_upd_["projection_norm_data"]
+                        if self.datafidelity == "PWLS":
+                            grad_data *= w
+                        grad_data = _Atb(self, grad_data)  # LS/PWLS term
 
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
                 z = z - tau * (grad_data + grad_admm)
 
                 if _algorithm_upd_["nonnegativity"]:
-                    xp.maximum(z, 0, out=z)  # non-negativity projection
+                    np.maximum(z, 0, out=z)  # non-negativity projection
 
                 # z-update with relaxation
                 if iter_no > 1:
@@ -827,7 +766,7 @@ class RecToolsIR:
             u = u + (z - x)
 
             if _algorithm_upd_["verbose"]:
-                if xp.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
+                if np.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
                     print(
                         "ADMM iteration (",
                         iter_no + 1,
