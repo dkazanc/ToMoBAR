@@ -230,8 +230,6 @@ class AstraBase:
             self.angles_vec,
         )
         self.proj_id = astra.create_projector("line", self.proj_geom, self.vol_geom)
-        # optomo operator is used for ADMM algorithm only
-        self.A_optomo = astra.OpTomo(self.proj_id)
 
     def _set_gpu_projection2d_parallel_geometry(self):
         """the classical projection geometry (gpu)"""
@@ -242,8 +240,6 @@ class AstraBase:
         self.proj_id = astra.create_projector(
             "cuda", self.proj_geom, self.vol_geom
         )  # for GPU
-        # optomo operator is used for ADMM algorithm only
-        self.A_optomo = astra.OpTomo(self.proj_id)
 
     def _set_gpu_projection3d_parallel_geometry(self):
         """the classical 3D parallel-beam projection geometry"""
@@ -254,11 +250,9 @@ class AstraBase:
             self.detectors_x + 2 * self.detectors_x_pad,
             vectors,
         )
-        # optomo operator is used for ADMM algorithm only
         self.proj_id = astra.create_projector(
             "cuda3d", self.proj_geom, self.vol_geom
         )  # for GPU
-        self.A_optomo = astra.OpTomo(self.proj_id)
 
     def _set_projection2d_OS_parallel_geometry(self):
         """organising 2d OS projection geometry CPU/GPU"""

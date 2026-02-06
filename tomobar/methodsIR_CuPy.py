@@ -8,9 +8,11 @@
 
 import numpy as np
 from typing import Union
+from numpy import float32
 
 try:
     import cupy as cp
+
 except ImportError:
     print(
         "Cupy library is a required dependency for this part of the code, please install"
@@ -134,7 +136,7 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="Landweber"
         )
         del _data_, _algorithm_
@@ -150,7 +152,9 @@ class RecToolsIRCuPy:
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
         ######################################################################
+        import timeit
 
+        tic = timeit.default_timer()
         x_rec = cp.zeros(
             astra.geom_size(self.Atools.vol_geom), dtype=cp.float32
         )  # initialisation
@@ -163,7 +167,11 @@ class RecToolsIRCuPy:
                 residual
             )
             if _algorithm_upd_["nonnegativity"]:
-                x_rec[x_rec < 0.0] = 0.0
+                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
+
+        toc = timeit.default_timer()
+        Run_time = toc - tic
+        print("Landweber iterations {}".format(Run_time))
 
         if self.objsize_user_given is not None:
             return perform_recon_crop(x_rec, self.objsize_user_given)
@@ -186,7 +194,7 @@ class RecToolsIRCuPy:
         ######################################################################
         cp._default_memory_pool.free_all_blocks()
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
         _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
@@ -226,7 +234,7 @@ class RecToolsIRCuPy:
                 )
             )
             if _algorithm_upd_["nonnegativity"]:
-                x_rec[x_rec < 0.0] = 0.0
+                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
         if self.objsize_user_given is not None:
             return perform_recon_crop(x_rec, self.objsize_user_given)
@@ -247,7 +255,7 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         del _data_, _algorithm_
@@ -297,7 +305,7 @@ class RecToolsIRCuPy:
             normr2 = normr2_new.copy()
             d = s + beta * d
             if _algorithm_upd_["nonnegativity"]:
-                x_rec[x_rec < 0.0] = 0.0
+                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
         del d, s, beta, r, alpha, Ad, normr2_new, normr2
 
@@ -433,10 +441,8 @@ class RecToolsIRCuPy:
         if self.geom == "2D":
             # 2D reconstruction
             raise ValueError("2D CuPy reconstruction is not yet supported")
-        # initialise the solution
-        X = cp.zeros(astra.geom_size(self.Atools.vol_geom), dtype=cp.float32)
 
-        (_data_upd_, _algorithm_upd_, _regularisation_upd_) = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
         del _data_, _algorithm_, _regularisation_
@@ -454,6 +460,20 @@ class RecToolsIRCuPy:
 
         if _data_upd_["OS_number"] > 1:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+
+        # initialisation of the solution (warm-start)
+        if _algorithm_upd_["initialise"] is not None:
+            if cp.size(_algorithm_upd_["initialise"]) == np.prod(
+                astra.geom_size(self.Atools.vol_geom)
+            ):
+                X = _algorithm_upd_["initialise"]
+            else:
+                print(
+                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
+                )
+                X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32")
+        else:
+            X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32")
 
         L_const_inv = cp.float32(
             1.0 / _algorithm_upd_["lipschitz_const"]
@@ -504,7 +524,7 @@ class RecToolsIRCuPy:
                 del X_t, grad_fidelity
 
                 if _algorithm_upd_["nonnegativity"]:
-                    X[X < 0.0] = 0.0
+                    cp.maximum(X, 0, out=X)  # non-negativity projection
 
                 if _regularisation_upd_["method"] is not None:
                     ##### The proximal operator of the chosen regulariser #####
@@ -517,3 +537,153 @@ class RecToolsIRCuPy:
             return perform_recon_crop(X, self.objsize_user_given)
 
         return check_kwargs(X, **additional_args)
+
+    def ADMM(
+        self,
+        _data_: dict,
+        _algorithm_: Union[dict, None] = None,
+        _regularisation_: Union[dict, None] = None,
+    ) -> cp.ndarray:
+        """Linearised and Relaxed Alternating Directions Method of Multipliers with various types
+        of regularisation and data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
+
+        Args:
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
+            _regularisation_ (dict, optional): Regularisation dictionary.
+
+        Returns:
+            xp.ndarray: ADMM-reconstructed CuPy array
+        """
+        cp._default_memory_pool.free_all_blocks()
+
+        if self.geom == "2D":
+            # 2D reconstruction
+            raise ValueError("2D CuPy reconstruction is not yet supported")
+
+        ######################################################################
+        # parameters check and initialisation
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
+            self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
+        )
+        ######################################################################
+        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_norm_data"],
+            self.Atools.detectors_x_pad,
+            cupyrun=True,
+        )
+        additional_args = {
+            "cupyrun": True,
+            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
+        }
+
+        def _Ax(x):
+            return self.Atools._forwprojCuPy(x)
+
+        def _Atb(b):
+            return self.Atools._backprojCuPy(b)
+
+        def _Ax_OS(x, sub_ind: int):
+            return self.Atools._forwprojOSCuPy(x, os_index=sub_ind)
+
+        def _Atb_OS(b, sub_ind: int):
+            return self.Atools._backprojOSCuPy(b, os_index=sub_ind)
+
+        rec_dim = astra.geom_size(self.Atools.vol_geom)
+        # initialisation of the solution (warm-start)
+        if _algorithm_upd_["initialise"] is not None:
+            if _algorithm_upd_["initialise"].shape == rec_dim:
+                x0 = _algorithm_upd_["initialise"]
+            else:
+                print(
+                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
+                )
+                x0 = cp.zeros(rec_dim, dtype=float32, order="C")
+        else:
+            x0 = cp.zeros(rec_dim, dtype=float32, order="C")
+
+        use_os = _data_upd_["OS_number"] > 1
+        if use_os:
+            _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+
+        # ADMM variables
+        x = x0.copy()
+        z = x0.copy()
+        z_old = 0
+        u = cp.zeros_like(x0)
+        tau = 0.9 / (
+            _algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"]
+        )
+        _regularisation_upd_["regul_param"] = (
+            _regularisation_upd_["regul_param"] / _algorithm_upd_["ADMM_rho_const"]
+        )
+
+        # Outer ADMM iterations
+        for iter_no in range(_algorithm_upd_["iterations"]):
+            for sub_ind in range(_data_upd_["OS_number"]):
+                if use_os:
+                    # select a specific set of indeces for the subset (OS)
+                    indVec = self.Atools.newInd_Vec[sub_ind, :]
+                    if indVec[self.Atools.NumbProjBins - 1] == 0:
+                        indVec = indVec[:-1]  # shrink vector size
+                    proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
+
+                # ---- z-update (linearized data term) ----
+                if self.datafidelity == "KL":
+                    if use_os:
+                        grad_data = _Atb_OS(
+                            1 - proj_data / (_Ax_OS(z, sub_ind) + 1e-8),
+                            sub_ind,
+                        )  # KL term
+                    else:
+                        grad_data = _Atb(
+                            1 - _data_upd_["projection_norm_data"] / (_Ax(z) + 1e-8),
+                        )  # KL term
+                else:
+                    if use_os:
+                        grad_data = _Atb_OS(
+                            _Ax_OS(z, sub_ind) - proj_data,
+                            sub_ind,
+                        )  # LS term
+                    else:
+                        grad_data = _Atb(
+                            _Ax(z) - _data_upd_["projection_norm_data"],
+                        )  # LS term
+
+                grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
+                z = z - tau * (grad_data + grad_admm)
+
+                if _algorithm_upd_["nonnegativity"]:
+                    cp.maximum(z, 0, out=z)  # non-negativity projection
+                # z-update with relaxation
+                if iter_no > 1:
+                    z = (
+                        1.0 - _algorithm_upd_["ADMM_relax_par"]
+                    ) * z_old + _algorithm_upd_["ADMM_relax_par"] * z
+                z_old = z.copy()
+
+                x_prox_reg = z + u
+
+                # X-update (proximal regularization)
+                if _regularisation_upd_["method"] is not None:
+                    x = prox_regul(self, x_prox_reg, _regularisation_upd_)
+                else:
+                    x = x_prox_reg
+
+            # update u variable (dual update)
+            u = u + (z - x)
+
+            if _algorithm_upd_["verbose"]:
+                if np.mod(iter_no, (round)(_algorithm_upd_["iterations"] / 5) + 1) == 0:
+                    print(
+                        "ADMM iteration (",
+                        iter_no + 1,
+                        ") using",
+                        _regularisation_upd_["method"],
+                        "regularisation",
+                    )
+
+        if self.objsize_user_given is not None:
+            return perform_recon_crop(x, self.objsize_user_given)
+
+        return check_kwargs(x, **additional_args)

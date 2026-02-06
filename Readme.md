@@ -16,24 +16,27 @@
 |--------|-------------------|
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
-### Updates:
-* $\sf\color{red}!$ To better communicate breaking changes, ToMoBAR is moving from calendar versioning to semantic versioning. The 2026.1.0.0 release is based on the 2025.12 version. We keep the year in order to make the sorting work, so we'd have the following structure: year.major.minor.patch.
-* There are $\sf\color{red}BREAKING$ $\sf\color{red}CHANGES$ from ToMoBAR $\sf\color{red}v.2025.08$, see [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.
+## Updates:
+* $\sf\color{red}!$ To better communicate breaking changes, ToMoBAR is moving from calendar versioning to semantic versioning. The 2026.1.0.0 release is based on the 2025.12 version. We keep the year in order to make the PyPi/Anaconda sorting work, so we'd have the following structure: year.major.minor.patch.
+* There are $\sf\color{red}BREAKING$ $\sf\color{red}CHANGES$ from ToMoBAR $\sf\color{red}v.2025.08$.
 
-## ToMoBAR highlights:
+### CHANGELOG:
+See [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.
+
+### ToMoBAR highlights:
 Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do). Please also see [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
 ToMoBAR
 
-## Installation
+### Installation
 Please check the detailed [installation](https://dkazanc.github.io/ToMoBAR/howto/installation.html) guide where all [software dependencies](https://dkazanc.github.io/ToMoBAR/introduction/dependencies.html) are listed.
 
 ### Software includes:
  * Wrappers around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods available in ASTRA-Toolbox
  * Optimised CUDA/CuPy implementation of the fast [Log-Polar]( https://epubs.siam.org/doi/10.1137/15M1023762) (Fourier-based) direct reconstruction method.
  * Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities
- * Regularised iterative [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm
+ * Regularised iterative ordered-subsets [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm for 3D parallel beam data, also accelerated with CuPy. Very fast, especially with warm start, relaxation and ordered-subsets enabled.
  * CuPy driven [forward/backward projectors](https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/Demo_CuPy_3D.py) to enable faster device-to-device operations and all-in-GPU memory prototyping of algorithms.
- * [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos) to reconstruct synthetic and also real data [4-6]
+ * [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos) to reconstruct synthetic and also real data
 
 <div align="center">
   <img src="docs/source/_static/recsFISTA_stud.png" width="550">
@@ -42,5 +45,5 @@ Please check the detailed [installation](https://dkazanc.github.io/ToMoBAR/howto
   <img src="docs/source/_static/TomoRec_surf2.jpg" width="600">
 </div>
 
-### To cite software please use:
+### To cite this software please use:
  [D. Kazantsev and N. Wadeson 2020. TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software for high resolution synchrotron X-ray tomography. CT Meeting 2020](https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf)

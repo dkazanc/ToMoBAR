@@ -1,5 +1,6 @@
 import cupy as cp
 import numpy as np
+import pytest
 from numpy.testing import assert_allclose
 
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
@@ -34,6 +35,35 @@ def test_Landweber_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.00026702078, rtol=eps)
     assert_allclose(np.max(Iter_rec), 0.016753351, rtol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_Landweber_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=1,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+
+    _algorithm_ = {"iterations": 5}
+    Iter_rec = RecTools.Landweber(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.mean(Iter_rec), 0.0015990591, atol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -215,6 +245,35 @@ def test_power_cp_OS_3D(data_cupy, angles, ensure_clean_memory):
     lc = RecTools.powermethod(_data_)
     lc = lc.get()
     assert_allclose(lc, 5510.867, rtol=1e-05)
+
+
+def test_FISTA_cp_lc_known_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }  # data dictionary
+    _algorithm_ = {"iterations": 10, "lipschitz_const": 27550.463}
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), -0.00214, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.024637, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
 
 
 def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
@@ -621,5 +680,127 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
 
     assert 4000 <= lc <= 5000
     assert_allclose(np.max(Iter_rec), 0.027676212, rtol=1e-03)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
+ADMM_TEST_CASES = [
+    None,
+    {
+        "method": "ROF_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "time_marching_step": 0.001,
+        "device_regulariser": 0,
+    },
+    {
+        "method": "PD_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "device_regulariser": 0,
+    },
+]
+ADMM_TEST_IDS = ["no-regularization", "ROF_TV", "PD_TV"]
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    zip(
+        ADMM_TEST_CASES,
+        [
+            -0.00019439,
+            -0.0001876,
+            -0.00014054,
+        ],
+        [
+            0.01522996,
+            0.01522454,
+            0.0150647,
+        ],
+    ),
+    ids=ADMM_TEST_IDS,
+)
+def test_ADMM_cp_3D(data_cupy, test_case, angles):
+    regularization, expected_min, expected_max = test_case
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    _algorithm_ = {
+        "iterations": 2,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.6,
+    }
+
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularization)
+
+    assert_allclose(cp.min(Iter_rec).get(), expected_min, rtol=0, atol=eps)
+    assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    zip(
+        ADMM_TEST_CASES,
+        [
+            -0.00033778,
+            -0.0003317,
+            -0.00019503,
+        ],
+        [
+            0.01923883,
+            0.01923325,
+            0.01889719,
+        ],
+    ),
+    ids=ADMM_TEST_IDS,
+)
+def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
+    regularization, expected_min, expected_max = test_case
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data_cupy,
+        "OS_number": 2,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    _algorithm_ = {
+        "iterations": 2,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.6,
+    }
+
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularization)
+
+    assert_allclose(cp.min(Iter_rec).get(), expected_min, rtol=0, atol=eps)
+    assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)

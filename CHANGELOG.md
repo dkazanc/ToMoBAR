@@ -1,9 +1,18 @@
 # Change Log
-All notable changes in ToMoBAR project will be documented in this file.
 
-## v.1.0
+## v.2026.2.0.0
 
-To better communicate breaking changes, ToMoBAR is moving from calendar versioning to semantic versioning. The initial `1.0` release is based on the `2025.12` version.
+The ADMM implementation has been replaced with a new linearised variant that avoids the use of SciPy linear algebra solvers and instead relies directly on gradient-descent–type iterations. With appropriate parameter selection, this approach converges quickly and exhibits improved numerical stability.
+
+Rewriting ADMM in this linearised form also enabled further acceleration through the use of CuPy and ordered subsets. When warm-started with an FBP reconstruction and combined with ADMM-OS and regularisation, the reconstruction can be performed very efficiently, often requiring only a few iterations (e.g., the reconstruction bellow is done with 24 subsets and 2 iterations of the method).
+
+<div align="center">
+  <img src="docs/source/_static/ADMM_rec_cupy.png" width="1000">
+</div>
+
+## v.2026.1.0.0
+
+To better communicate breaking changes, ToMoBAR is moving from calendar versioning to semantic versioning (mixed). The initial `2026.1.0.0` release is based on the `2025.12` version.
 
 ## v.2025.10
 

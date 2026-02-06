@@ -49,9 +49,9 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
 * Now we have an access to all methods of this particular reconstructor.
   There are two advanced model-based reconstruction methods available:
-  FISTA and ADMM. The former one is significantly more flexible than the latter,
-  so we recommend it. FISTA has been also accelerated with Ordered-Subsets and
-  requires less memory than ADMM to solve the sub-problem for the data-fidelity term.
+  FISTA and ADMM. Both have been accelerated with Ordered-Subsets and
+  fast in convergence. Further speed-up can be obtained by using the CuPy
+  versions of those methods.
 
   **Please note that the dictionaries needed for all iterative methods with exact
   keyword arguments defined in** :mod:`tomobar.supp.dicts`.

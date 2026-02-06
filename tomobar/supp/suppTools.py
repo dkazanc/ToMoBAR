@@ -128,7 +128,7 @@ def _DFFC(data, flats, darks, downsample, nrPArepetions):
     # =============================================================================
 
     def cost_func(x, *args):
-        (projections, meanFF, FF, DF) = args
+        projections, meanFF, FF, DF = args
         FF_eff = np.zeros((FF.shape[1], FF.shape[2]))
         for i in range(len(FF)):
             FF_eff = FF_eff + x[i] * FF[i]
@@ -246,9 +246,9 @@ def normaliser(
         )
     if method != "dynamic":
         denom = flats - darks
-        denom[(np.where(denom <= 0.0))] = (
-            1.0  # remove zeros/negatives in the denominator if any
-        )
+        denom[
+            (np.where(denom <= 0.0))
+        ] = 1.0  # remove zeros/negatives in the denominator if any
         if axis == 1:
             denom = denom[:, np.newaxis, :]
             darks = darks[:, np.newaxis, :]
@@ -400,19 +400,26 @@ def perform_recon_crop(data, croped_size):
     """Perform croipping of the larger 3D data array (reconstruction) to a smaller one defined by croped_size
 
     Args:
-        data (cp.ndarray): 3D CuPy array [vertical, reconX, reconY] to crop
+        data (xp.ndarray): 3D array [vertical, reconX, reconY] or 2D array [reconX, reconY] to crop
         croped_size (int): the size of the array after cropping
 
     Returns:
-        cp.ndarry: cropped CuPy 3D array [vertical, reconX_new_size, reconY_new_size]
+        xp.ndarry: cropped 3D array [vertical, reconX_new_size, reconY_new_size]
     """
-
-    axis = 2  # or 1
+    if len(data.shape) == 3:
+        axis = 2  # or 1
+    else:
+        axis = 0
     original_recon_size = data.shape[axis]
     crop_limit_start = (original_recon_size - croped_size) // 2
     crop_limit_stop = croped_size + crop_limit_start
 
-    return data[:, crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop]
+    if len(data.shape) == 3:
+        return data[
+            :, crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop
+        ]
+    else:
+        return data[crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop]
 
 
 def _apply_horiz_detector_padding(data, detector_width_pad, cupyrun):

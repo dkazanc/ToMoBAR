@@ -6,6 +6,7 @@ Synthetic flat fields are also genererated and noise incorporated into data
 together with normalisation errors. This simulates more challeneging data for
 the reconstruction.
 """
+
 import timeit
 import os
 import matplotlib.pyplot as plt

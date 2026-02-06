@@ -5,6 +5,7 @@ and then reconstruct using Non-local Total variation (NLTV) regularised FISTA al
 NLTV method is quite different to the generic structure of other regularisers, hence
 a separate implementation
 """
+
 import numpy as np
 import timeit
 import matplotlib.pyplot as plt

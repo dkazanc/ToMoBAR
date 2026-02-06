@@ -3,6 +3,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsDIR import RecToolsDIR
 from tomobar.supp.suppTools import normaliser
 
 eps = 1e-05
@@ -538,7 +539,41 @@ def test_FISTA_PWLS_OS_reg2_2D(angles, raw_data, flats, darks):
     assert Iter_rec.shape == (160, 160)
 
 
-def test_ADMM2D(data, angles):
+regularisation_pd_tv = {
+    "method": "PD_TV",
+    "regul_param": 0.6,
+    "iterations": 50,
+    "device_regulariser": "gpu",
+}
+
+regularisation_fgp_tv = {
+    "method": "FGP_TV",
+    "regul_param": 0.0005,
+    "iterations": 10,
+    "device_regulariser": 0,
+}
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        # OS, iters, datafidelity, regulariser, expected min, expected max
+        (1, 100, "LS", None, -0.005746, 0.028090434),
+        (5, 20, "LS", None, -0.005651, 0.028015165),
+        (1, 100, "KL", None, 0, 454719.2),
+        (1, 100, "LS", regularisation_pd_tv, -0.013257453, 0.023631878),
+        (5, 20, "LS", regularisation_fgp_tv, -0.0056131384, 0.028117815),
+    ],
+)
+def test_ADMM2D(data, angles, test_case):
+    (
+        OS_number,
+        iters,
+        datafidelity,
+        regularisation,
+        expected_min,
+        expected_max,
+    ) = test_case
     detX = np.shape(data)[2]
     detY = 0
     data2D = data[:, 60, :]
@@ -550,19 +585,89 @@ def test_ADMM2D(data, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
-        device_projector=0,  # define the device
+        datafidelity=datafidelity,
+        device_projector="gpu",  # define the device
     )
     _data_ = {
         "projection_norm_data": data2D,
+        "OS_number": OS_number,
         "data_axes_labels_order": ["angles", "detX"],
     }
 
-    _algorithm_ = {"iterations": 5, "ADMM_rho_const": 4000.0}
+    _algorithm_ = {
+        "iterations": iters,
+        "ADMM_rho_const": 0.1,
+        "ADMM_relax_par": 1.6,
+    }
 
-    Iter_rec = RecTools.ADMM(_data_, _algorithm_)
-    assert_allclose(np.min(Iter_rec), 0.00047048455, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.0020609223, rtol=eps)
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularisation)
+    assert_allclose(np.min(Iter_rec), expected_min, rtol=eps)
+    assert_allclose(np.max(Iter_rec), expected_max, rtol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (160, 160)
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        # OS, iters, datafidelity, regulariser, expected min, expected max
+        (1, 10, "LS", None, -0.008278487, 0.029963981),
+        (5, 20, "LS", None, -0.00957317, 0.031888045),
+        # (1, 100, "KL", None, -2.40752935, 0),
+        (1, 100, "LS", regularisation_pd_tv, -0.0042592688, 0.026253),
+        (5, 20, "LS", regularisation_fgp_tv, -0.00954935, 0.031859834),
+    ],
+)
+def test_ADMM2D_initialised(data, angles, test_case):
+    (
+        OS_number,
+        iters,
+        datafidelity,
+        regularisation,
+        expected_min,
+        expected_max,
+    ) = test_case
+    detX = np.shape(data)[2]
+    detY = 0
+    data2D = data[:, 60, :]
+    N_size = detX
+    RecToolsDirect = RecToolsDIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector="gpu",  # define the device
+    )
+    RecTools = RecToolsIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity=datafidelity,
+        device_projector="gpu",  # define the device
+    )
+    _data_ = {
+        "projection_norm_data": data2D,
+        "OS_number": OS_number,
+        "data_axes_labels_order": ["angles", "detX"],
+    }
+
+    fbp_rec = RecToolsDirect.FBP(data2D)
+
+    _algorithm_ = {
+        "initialise": fbp_rec,
+        "iterations": iters,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.6,
+    }
+
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularisation)
+    assert_allclose(np.min(Iter_rec), expected_min, atol=1e-04)
+    assert_allclose(np.max(Iter_rec), expected_max, atol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (160, 160)
 
@@ -579,20 +684,23 @@ def test_ADMM3D(data, angles):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         datafidelity="LS",
-        device_projector=0,  # define the device
+        device_projector="gpu",  # define the device
     )
 
-    _data_ = {"projection_norm_data": data}  # data dictionary
-    _algorithm_ = {
-        "iterations": 2,
-        "ADMM_rho_const": 4000.0,
+    _data_ = {
+        "projection_norm_data": data,
         "data_axes_labels_order": ["angles", "detY", "detX"],
+    }  # data dictionary
+    _algorithm_ = {
+        "iterations": 3,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.6,
     }
 
     Iter_rec = RecTools.ADMM(_data_, _algorithm_)
 
-    assert_allclose(np.min(Iter_rec), -0.0018831016, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.0071009593, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.00030960748, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.018967807, rtol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -609,14 +717,18 @@ def test_ADMM3D_reg(data, angles):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         datafidelity="LS",
-        device_projector=0,  # define the device
+        device_projector="gpu",  # define the device
     )
 
-    _data_ = {"projection_norm_data": data}  # data dictionary
-    _algorithm_ = {
-        "iterations": 2,
-        "ADMM_rho_const": 4000.0,
+    _data_ = {
+        "projection_norm_data": data,
         "data_axes_labels_order": ["angles", "detY", "detX"],
+    }  # data dictionary
+
+    _algorithm_ = {
+        "iterations": 3,
+        "ADMM_rho_const": 0.1,
+        "ADMM_relax_par": 1.6,
     }
     _regularisation_ = {
         "method": "FGP_TV",
@@ -627,8 +739,48 @@ def test_ADMM3D_reg(data, angles):
 
     Iter_rec = RecTools.ADMM(_data_, _algorithm_, _regularisation_)
 
-    assert_allclose(np.min(Iter_rec), -0.008855395, rtol=0, atol=eps)
-    assert_allclose(np.max(Iter_rec), 0.020371437, rtol=0, atol=eps)
+    assert_allclose(np.min(Iter_rec), -0.0004538795, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.018875256, rtol=0, atol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_ADMM3D_OS_reg(data, angles):
+    detX = np.shape(data)[2]
+    detY = np.shape(data)[1]
+    N_size = detX
+    RecTools = RecToolsIR(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        datafidelity="LS",
+        device_projector="gpu",  # define the device
+    )
+
+    _data_ = {
+        "projection_norm_data": data,
+        "OS_number": 6,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }  # data dictionary
+    _algorithm_ = {
+        "iterations": 3,
+        "ADMM_rho_const": 0.1,
+        "ADMM_relax_par": 1.6,
+    }
+    _regularisation_ = {
+        "method": "FGP_TV",
+        "regul_param": 0.0005,
+        "iterations": 10,
+        "device_regulariser": 0,
+    }
+
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, _regularisation_)
+
+    assert_allclose(np.min(Iter_rec), -0.0007136679, rtol=0, atol=eps)
+    assert_allclose(np.max(Iter_rec), 0.022714065, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 

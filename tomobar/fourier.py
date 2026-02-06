@@ -36,7 +36,7 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray, cutoff: float = 0.6) -> xp.ndar
         xp.ndarray
             The filtered projectiond data as a CuPy array.
     """
-    (projectionsNum, DetectorsLengthV, DetectorsLengthH) = xp.shape(projection3D)
+    projectionsNum, DetectorsLengthV, DetectorsLengthH = xp.shape(projection3D)
 
     # prepearing a ramp-like filter to apply to every projection
     module = load_cuda_module("generate_filtersync")
