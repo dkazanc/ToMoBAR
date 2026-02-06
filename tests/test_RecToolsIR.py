@@ -611,11 +611,11 @@ def test_ADMM2D(data, angles, test_case):
     "test_case",
     [
         # OS, iters, datafidelity, regulariser, expected min, expected max
-        (1, 10, "LS", None, -0.00827849, 0.02996399),
-        (5, 20, "LS", None, -0.00957337, 0.03188838),
+        (1, 10, "LS", None, -0.008278487, 0.029963981),
+        (5, 20, "LS", None, -0.00957317, 0.031888045),
         # (1, 100, "KL", None, -2.40752935, 0),
-        (1, 100, "LS", regularisation_pd_tv, -0.02096782, 0.02789431),
-        (5, 20, "LS", regularisation_fgp_tv, -0.009561, 0.03186246),
+        (1, 100, "LS", regularisation_pd_tv, -0.0042592688, 0.026253),
+        (5, 20, "LS", regularisation_fgp_tv, -0.00954935, 0.031859834),
     ],
 )
 def test_ADMM2D_initialised(data, angles, test_case):
@@ -661,7 +661,7 @@ def test_ADMM2D_initialised(data, angles, test_case):
     _algorithm_ = {
         "initialise": fbp_rec,
         "iterations": iters,
-        "ADMM_rho_const": 0.1,
+        "ADMM_rho_const": 1.0,
         "ADMM_relax_par": 1.6,
     }
 
