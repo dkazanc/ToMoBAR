@@ -1,6 +1,7 @@
 """Reconstruction class for regularised iterative methods using CuPy library.
 
 * :func:`RecToolsIRCuPy.FISTA` iterative regularised algorithm [BT2009]_, [Xu2016]_. Implemented with the help of ASTRA's DirectLink experimental feature.
+* :func:`RecToolsIRCuPy.ADMM` iterative regularised algorithm [Boyd2011]_.
 * :func:`RecToolsIRCuPy.Landweber` algorithm.
 * :func:`RecToolsIRCuPy.SIRT` algorithm.
 * :func:`RecToolsIRCuPy.CGLS` algorithm.
@@ -31,6 +32,7 @@ from tomobar.supp.suppTools import (
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+from tomobar.data_fidelities import grad_data_term
 
 
 class RecToolsIRCuPy:
@@ -120,6 +122,18 @@ class RecToolsIRCuPy:
     @objsize_user_given.setter
     def objsize_user_given(self, objsize_user_given_val):
         self._objsize_user_given = objsize_user_given_val
+
+    def _Ax(self, x, sub_ind: int = 1, os: bool = False):
+        if not os:
+            return self.Atools._forwprojCuPy(x)
+        else:
+            return self.Atools._forwprojOSCuPy(x, os_index=sub_ind)
+
+    def _Atb(self, b, sub_ind: int = 1, os: bool = False):
+        if not os:
+            return self.Atools._backprojCuPy(b)
+        else:
+            return self.Atools._backprojOSCuPy(b, os_index=sub_ind)
 
     def Landweber(
         self, _data_: dict, _algorithm_: Union[dict, None] = None
@@ -321,7 +335,6 @@ class RecToolsIRCuPy:
 
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
-        projection_raw_data is required for the PWLS fidelity, otherwise will be ignored.
 
         Args:
             _data_ (dict): Data dictionary, where input data is provided.
@@ -332,42 +345,19 @@ class RecToolsIRCuPy:
 
         if "data_axes_labels_order" not in _data_:
             _data_["data_axes_labels_order"] = None
-        if (
-            self.datafidelity in ["PWLS", "SWLS"]
-            and "projection_raw_data" not in _data_
-        ):
-            raise ValueError("Please provide projection_raw_data for this model")
+
         if self.datafidelity in ["PWLS", "SWLS"]:
-            sqweight = _data_["projection_raw_data"]
+            w = cp.asarray(_data_["projection_norm_data"])
+            w = cp.maximum(w, 1e-6)
+            w /= w.max()
 
         if _data_["data_axes_labels_order"] is not None:
-            if self.geom == "2D":
-                _data_["projection_norm_data"] = _data_dims_swapper(
-                    _data_["projection_norm_data"],
-                    _data_["data_axes_labels_order"],
-                    ["angles", "detX"],
-                )
-                if self.datafidelity in ["PWLS", "SWLS"]:
-                    _data_["projection_raw_data"] = _data_dims_swapper(
-                        _data_["projection_raw_data"],
-                        _data_["data_axes_labels_order"],
-                        ["angles", "detX"],
-                    )
-                    sqweight = _data_["projection_raw_data"]
-            else:
-                _data_["projection_norm_data"] = _data_dims_swapper(
-                    _data_["projection_norm_data"],
-                    _data_["data_axes_labels_order"],
-                    ["detY", "angles", "detX"],
-                )
-                if self.datafidelity in ["PWLS", "SWLS"]:
-                    _data_["projection_raw_data"] = _data_dims_swapper(
-                        _data_["projection_raw_data"],
-                        _data_["data_axes_labels_order"],
-                        ["detY", "angles", "detX"],
-                    )
-                    sqweight = _data_["projection_raw_data"]
-                    # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
+            _data_["projection_norm_data"] = _data_dims_swapper(
+                _data_["projection_norm_data"],
+                _data_["data_axes_labels_order"],
+                ["detY", "angles", "detX"],
+            )
+            # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
             _data_["data_axes_labels_order"] = None
 
         if _data_.get("OS_number") is None:
@@ -384,32 +374,26 @@ class RecToolsIRCuPy:
             # non-OS approach
             y = self.Atools._forwprojCuPy(x1)
             if self.datafidelity == "PWLS":
-                y = cp.multiply(sqweight, y)
+                y = cp.multiply(w, y)
             for _ in range(power_iterations):
                 x1 = self.Atools._backprojCuPy(y)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
                 y = self.Atools._forwprojCuPy(x1)
                 if self.datafidelity == "PWLS":
-                    y = cp.multiply(sqweight, y)
+                    y = cp.multiply(w, y)
         else:
             # OS approach
             y = self.Atools._forwprojOSCuPy(x1, 0)
             if self.datafidelity == "PWLS":
-                if self.geom == "2D":
-                    y = cp.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
-                else:
-                    y = cp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
+                y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
             for _ in range(power_iterations):
                 x1 = self.Atools._backprojOSCuPy(y, 0)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
                 y = self.Atools._forwprojOSCuPy(x1, 0)
                 if self.datafidelity == "PWLS":
-                    if self.geom == "2D":
-                        y = cp.multiply(sqweight[self.Atools.newInd_Vec[0, :], :], y)
-                    else:
-                        y = cp.multiply(sqweight[:, self.Atools.newInd_Vec[0, :], :], y)
+                    y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
         return s
 
     def FISTA(
@@ -577,17 +561,8 @@ class RecToolsIRCuPy:
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
 
-        def _Ax(x):
-            return self.Atools._forwprojCuPy(x)
-
-        def _Atb(b):
-            return self.Atools._backprojCuPy(b)
-
-        def _Ax_OS(x, sub_ind: int):
-            return self.Atools._forwprojOSCuPy(x, os_index=sub_ind)
-
-        def _Atb_OS(b, sub_ind: int):
-            return self.Atools._backprojOSCuPy(b, os_index=sub_ind)
+        if _algorithm_upd_.get("lipschitz_const") is None:
+            _algorithm_upd_["lipschitz_const"] = self.powermethod(_data_upd_)
 
         rec_dim = astra.geom_size(self.Atools.vol_geom)
         # initialisation of the solution (warm-start)
@@ -605,12 +580,23 @@ class RecToolsIRCuPy:
         use_os = _data_upd_["OS_number"] > 1
         if use_os:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+        else:
+            proj_data = _data_upd_["projection_norm_data"]
+            indVec = None
 
         # ADMM variables
         x = x0.copy()
         z = x0.copy()
         z_old = 0
         u = cp.zeros_like(x0)
+
+        if self.datafidelity in ["PWLS"]:
+            w = cp.asarray(_data_upd_["projection_norm_data"])  # weights for PWLS model
+            w = cp.maximum(w, 1e-6)
+            w /= w.max()
+        else:
+            w = None
+
         tau = 0.9 / (
             _algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"]
         )
@@ -629,26 +615,9 @@ class RecToolsIRCuPy:
                     proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
 
                 # ---- z-update (linearized data term) ----
-                if self.datafidelity == "KL":
-                    if use_os:
-                        grad_data = _Atb_OS(
-                            1 - proj_data / (_Ax_OS(z, sub_ind) + 1e-8),
-                            sub_ind,
-                        )  # KL term
-                    else:
-                        grad_data = _Atb(
-                            1 - _data_upd_["projection_norm_data"] / (_Ax(z) + 1e-8),
-                        )  # KL term
-                else:
-                    if use_os:
-                        grad_data = _Atb_OS(
-                            _Ax_OS(z, sub_ind) - proj_data,
-                            sub_ind,
-                        )  # LS term
-                    else:
-                        grad_data = _Atb(
-                            _Ax(z) - _data_upd_["projection_norm_data"],
-                        )  # LS term
+                grad_data = grad_data_term(
+                    self, z, proj_data, use_os, sub_ind, indVec, w
+                )
 
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
                 z = z - tau * (grad_data + grad_admm)

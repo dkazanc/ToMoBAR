@@ -113,7 +113,7 @@ print("%%%%%%%%%%%%Reconstructing with CGLS method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
+    "projection_norm_data": data_norm_cupy,  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
 
@@ -137,7 +137,7 @@ print("%%%%%%%%%%%%Reconstructing with SIRT method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
+    "projection_norm_data": data_norm_cupy,  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
 
@@ -172,7 +172,7 @@ RectoolsCuPy = RecToolsIRCuPy(
 )
 
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
+    "projection_norm_data": data_norm_cupy,  # Normalised projection data
     "OS_number": 6,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
@@ -224,10 +224,11 @@ RectoolsCuPy = RecToolsIRCuPy(
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
+    "projection_norm_data": data_norm_cupy,  # Normalised projection data
     "OS_number": 24,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
+
 #################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
     "initialise": FBPrec_cupy_pad,  # needs to be the padded size detectorHoriz + 2*padding_value

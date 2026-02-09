@@ -686,7 +686,7 @@ class RecToolsIR:
         z_old = 0
         u = np.zeros_like(x0)
 
-        if self.datafidelity in ["PWLS", "SWLS"]:
+        if self.datafidelity in ["PWLS"]:
             w = np.asarray(_data_upd_["projection_norm_data"])  # weights for PWLS model
             w = np.maximum(w, 1e-6)
             w /= w.max()
@@ -712,7 +712,10 @@ class RecToolsIR:
                     else:
                         proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
 
-                    if self.datafidelity in ["PWLS", "LS", "SWLS"]:
+                    if self.datafidelity in [
+                        "PWLS",
+                        "LS",
+                    ]:
                         grad_data = _Ax_OS(self, z, sub_ind) - proj_data
                         if self.datafidelity == "PWLS":
                             if self.geom == "2D":
@@ -723,20 +726,10 @@ class RecToolsIR:
                         grad_data = 1.0 - proj_data / (_Ax_OS(self, z, sub_ind) + 1e-8)
                     grad_data = _Atb_OS(self, grad_data, sub_ind)
                 else:
-                    if self.datafidelity in ["PWLS", "LS", "SWLS"]:
+                    if self.datafidelity in ["PWLS", "LS"]:
                         grad_data = _Ax(self, z) - _data_upd_["projection_norm_data"]
                         if self.datafidelity == "PWLS":
                             np.multiply(grad_data, w, out=grad_data)
-                        elif self.datafidelity == "SWLS":
-                            for det_index in range(self.Atools.detectors_x):
-                                wk = _data_upd_["projection_raw_data"][:, det_index]
-                                grad_data[:, det_index] = (
-                                    np.multiply(wk, grad_data[:, det_index])
-                                    - 1.0
-                                    / (np.sum(wk) + 100)
-                                    * (wk.dot(grad_data[:, det_index]))
-                                    * wk
-                                )
                     elif self.datafidelity == "KL":
                         grad_data = 1.0 - _data_upd_["projection_norm_data"] / (
                             _Ax(self, z) + 1e-8
