@@ -335,7 +335,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 min_mem_usage_filter,
             )
 
-            mem_stack.free(np.prod((nz, nproj, data_n)) * cp.float32().itemsize)
+            if odd_horiz or odd_vert:
+                mem_stack.free(np.prod((nz, nproj, data_n)) * cp.float32().itemsize)
         else:
             tmp_p = self._fbp_filtering(
                 data,
@@ -407,26 +408,32 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # Unpadded recon output size
         if mem_stack:
-            self.unpad_reconstructed_data_estimator(
+            recon_up_shape = self.unpad_reconstructed_data_estimator(
                 n, nz, odd_horiz, odd_vert, recon_size
             )
 
             mem_stack.free(np.prod((nz // 2, 2 * n, 2 * n)) * cp.complex64().itemsize)
-            return mem_stack.highwater * 1.4
+        else:
+            recon_up = self.unpad_reconstructed_data(
+                fde,
+                n,
+                nproj,
+                nz,
+                odd_horiz,
+                odd_vert,
+                recon_size,
+                mu,
+                unpadding_mul_phi,
+            )
 
-        recon_up = self.unpad_reconstructed_data(
-            fde,
-            n,
-            nproj,
-            nz,
-            odd_horiz,
-            odd_vert,
-            recon_size,
-            mu,
-            unpadding_mul_phi,
-        )
+            del fde
 
-        del fde
+        if mem_stack:
+            mem_stack.malloc(np.prod(recon_up_shape[1:]) * cp.float32().itemsize)
+            mem_stack.malloc(np.prod(recon_up_shape) * cp.float32().itemsize)
+            mem_stack.free(np.prod(recon_up_shape) * cp.float32().itemsize)
+            mem_stack.free(np.prod(recon_up_shape[1:]) * cp.float32().itemsize)
+            return recon_up_shape
 
         return check_kwargs(
             recon_up,
@@ -477,7 +484,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
         if min_mem_usage_filter:
             filter_vol_chunk_count = detector_height
 
-        slice_count_per_chunk = np.ceil(detector_height / filter_vol_chunk_count)
+        slice_count_per_chunk = int(np.ceil(detector_height / filter_vol_chunk_count))
+        projection_count_per_projection_chunk = int(
+            np.ceil(projection_count / filter_proj_chunk_count)
+        )
         # Loop over the chunks
         for chunk_index in range(0, filter_vol_chunk_count):
             slice_start_index = min(
@@ -491,9 +501,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
             # processing by chunks over the second dimension
             # to avoid increased data sizes due to oversampling
-            projection_count_per_projection_chunk = np.ceil(
-                projection_count / filter_proj_chunk_count
-            )
             for projection_chunk_index in range(filter_proj_chunk_count):
                 projection_start_index = min(
                     projection_chunk_index * projection_count_per_projection_chunk,
@@ -542,7 +549,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         filter_vol_chunk_count: int,
         filter_proj_chunk_count: int,
         min_mem_usage_filter: bool,
-    ) -> cp.ndarray:
+    ):
         # init filter
         if power_of_2_oversampling:
             oversampled_detector_width = 2 ** math.ceil(
@@ -554,12 +561,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
             oversampled_detector_width = int(oversampling_level * raw_detector_width)
             oversampled_detector_width = max(oversampled_detector_width, detector_width)
 
-        padding_m = oversampled_detector_width // 2 - raw_detector_width // 2
-
         mem_stack = DeviceMemStack.instance()
         mem_stack.malloc((oversampled_detector_width // 2 + 1) * np.float32().itemsize)
         mem_stack.malloc((oversampled_detector_width // 2 + 1) * np.float32().itemsize)
-        mem_stack.malloc((oversampled_detector_width // 2 + 1) * np.float32().itemsize)
+        mem_stack.malloc(
+            (oversampled_detector_width // 2 + 1) * np.complex64().itemsize
+        )
 
         # FBP filtering output
         mem_stack.malloc(
@@ -570,86 +577,63 @@ class RecToolsDIRCuPy(RecToolsDIR):
         if min_mem_usage_filter:
             filter_vol_chunk_count = detector_height
 
-        slice_count_per_chunk = np.ceil(detector_height / filter_vol_chunk_count)
+        slice_count_per_chunk = int(np.ceil(detector_height / filter_vol_chunk_count))
+        projection_count_per_projection_chunk = int(
+            np.ceil(projection_count / filter_proj_chunk_count)
+        )
         # Loop over the chunks
-        for chunk_index in range(0, filter_vol_chunk_count):
-            slice_start_index = min(
-                chunk_index * slice_count_per_chunk, detector_height
+        rfft_input = cp.empty(
+            (
+                slice_count_per_chunk,
+                projection_count_per_projection_chunk,
+                oversampled_detector_width,
+            ),
+            cp.float32,
+        )
+        rfft_input_nbytes = rfft_input.nbytes
+        mem_stack.malloc(rfft_input_nbytes)
+
+        rfft_plan = get_fft_plan(rfft_input, axes=(2), value_type="R2C")
+        rfft_plan_work_area_mem_size = rfft_plan.work_area.mem.size
+        del rfft_input, rfft_plan
+        mem_stack.malloc(rfft_plan_work_area_mem_size)
+
+        rfft_output = cp.empty(
+            (
+                slice_count_per_chunk,
+                projection_count_per_projection_chunk,
+                oversampled_detector_width // 2 + 1,
+            ),
+            cp.complex64,
+        )
+        rfft_output_nbytes = rfft_output.nbytes
+        mem_stack.malloc(rfft_output_nbytes)
+        mem_stack.free(rfft_output_nbytes)
+
+        irfft_plan = get_fft_plan(rfft_output, axes=(2), value_type="C2R")
+        irfft_plan_work_area_mem_size = irfft_plan.work_area.mem.size
+        del rfft_output, irfft_plan
+        mem_stack.malloc(irfft_plan_work_area_mem_size)
+
+        irfft_output_size = (
+            np.prod(
+                (
+                    slice_count_per_chunk,
+                    projection_count_per_projection_chunk,
+                    oversampled_detector_width,
+                )
             )
-            slice_end_index = min(
-                (chunk_index + 1) * slice_count_per_chunk, detector_height
-            )
-            if slice_start_index >= slice_end_index:
-                break
+            * cp.float32().itemsize
+        )
 
-            # processing by chunks over the second dimension
-            # to avoid increased data sizes due to oversampling
-            projection_count_per_projection_chunk = np.ceil(
-                projection_count / filter_proj_chunk_count
-            )
-            for projection_chunk_index in range(filter_proj_chunk_count):
-                projection_start_index = min(
-                    projection_chunk_index * projection_count_per_projection_chunk,
-                    projection_count,
-                )
-                projection_end_index = min(
-                    (projection_chunk_index + 1)
-                    * projection_count_per_projection_chunk,
-                    projection_count,
-                )
-                if projection_start_index >= projection_end_index:
-                    break
-
-                rfft_input = cp.empty(
-                    (
-                        int(slice_end_index - slice_start_index),
-                        int(projection_end_index - projection_start_index),
-                        int(raw_detector_width + padding_m * 2),
-                    ),
-                    cp.float32,
-                )
-                mem_stack.malloc(rfft_input.nbytes)
-
-                rfft_plan = get_fft_plan(rfft_input, axes=(2), value_type="R2C")
-                mem_stack.malloc(rfft_plan.work_area.mem.size)
-                mem_stack.free(rfft_plan.work_area.mem.size)
-
-                rfft_output_shape = (
-                    int(slice_end_index - slice_start_index),
-                    int(projection_end_index - projection_start_index),
-                    int(raw_detector_width + padding_m * 2) // 2 + 1,
-                )
-                rfft_output = cp.empty(
-                    rfft_output_shape,
-                    cp.complex64,
-                )
-
-                mem_stack.malloc(rfft_output.nbytes)
-                mem_stack.free(rfft_input.nbytes)
-
-                irfft_plan = get_fft_plan(rfft_output, axes=(2), value_type="C2R")
-                mem_stack.malloc(irfft_plan.work_area.mem.size)
-                mem_stack.free(irfft_plan.work_area.mem.size)
-
-                irfft_output_size = (
-                    np.prod(
-                        (
-                            slice_end_index - slice_start_index,
-                            projection_end_index - projection_start_index,
-                            (raw_detector_width + padding_m * 2),
-                        )
-                    )
-                    * cp.float32().itemsize
-                )
-
-                mem_stack.malloc(irfft_output_size)
-                mem_stack.free(rfft_output.nbytes)
-                mem_stack.free(irfft_output_size)
+        mem_stack.malloc(irfft_output_size)
+        mem_stack.free(irfft_output_size)
+        mem_stack.free(rfft_input_nbytes)
 
         # Memory clean up of filter data
         mem_stack.free((oversampled_detector_width // 2 + 1) * np.float32().itemsize)
         mem_stack.free((oversampled_detector_width // 2 + 1) * np.float32().itemsize)
-        mem_stack.free((oversampled_detector_width // 2 + 1) * np.float32().itemsize)
+        mem_stack.free((oversampled_detector_width // 2 + 1) * np.complex64().itemsize)
 
     def _setup_backprojection_input(
         self,
@@ -696,7 +680,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         detector_width: int,
         projection_count: int,
         detector_height: int,
-    ) -> tuple[cp.ndarray, cp.ndarray]:
+    ):
         mem_stack = DeviceMemStack.instance()
         mem_stack.malloc(
             np.prod((detector_height // 2, projection_count, detector_width))
@@ -853,9 +837,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
         fft_input = cp.empty(
             (detector_height // 2, projection_count, detector_width), cp.complex64
         )
+        mem_stack.malloc(fft_input.nbytes)
+
         fft_plan = get_fft_plan(fft_input, axes=(-1))
         mem_stack.malloc(fft_plan.work_area.mem.size)
         mem_stack.free(fft_plan.work_area.mem.size)
+        del fft_input, fft_plan
 
     def ifft_gathered_projections(
         self,
@@ -879,7 +866,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         if min_mem_usage_ifft2:
             chunk_count = detector_height // 2
 
-        slice_count_per_chunk = np.ceil(detector_height // 2 / chunk_count)
+        slice_count_per_chunk = int(np.ceil(detector_height // 2 / chunk_count))
         # Loop over the chunks
         for chunk_index in range(0, chunk_count):
             start_index = min(chunk_index * slice_count_per_chunk, detector_height // 2)
@@ -916,30 +903,21 @@ class RecToolsDIRCuPy(RecToolsDIR):
         if min_mem_usage_ifft2:
             chunk_count = detector_height // 2
 
-        slice_count_per_chunk = np.ceil(detector_height // 2 / chunk_count)
-        # Loop over the chunks
-        for chunk_index in range(0, chunk_count):
-            start_index = min(chunk_index * slice_count_per_chunk, detector_height // 2)
-            end_index = min(
-                (chunk_index + 1) * slice_count_per_chunk, detector_height // 2
-            )
-            if start_index >= end_index:
-                break
+        slice_count_per_chunk = int(np.ceil(detector_height // 2 / chunk_count))
+        ifft2_input = cp.empty(
+            (
+                slice_count_per_chunk,
+                2 * detector_width,
+                2 * detector_width,
+            ),
+            cp.complex64,
+        )
 
-            ifft2_input = cp.empty(
-                (
-                    int(end_index - start_index),
-                    int(2 * detector_width),
-                    int(2 * detector_width),
-                ),
-                cp.complex64,
-            )
-            mem_stack.malloc(ifft2_input.nbytes)
-
-            ifft2_plan = get_fft_plan(ifft2_input, axes=(-2, -1))
-            mem_stack.malloc(ifft2_plan.work_area.mem.size)
-            mem_stack.free(ifft2_plan.work_area.mem.size)
-            mem_stack.free(ifft2_input.nbytes)
+        ifft2_plan = get_fft_plan(ifft2_input, axes=(-2, -1))
+        mem_stack.malloc(ifft2_plan.work_area.mem.size)
+        mem_stack.malloc(ifft2_input.nbytes)
+        mem_stack.free(ifft2_input.nbytes)
+        del ifft2_input, ifft2_plan
 
     def unpad_reconstructed_data(
         self,
@@ -996,7 +974,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         odd_horiz: bool,
         odd_vert: bool,
         recon_size: int,
-    ) -> cp.ndarray:
+    ):
         odd_recon_size = bool(recon_size % 2)
         unpad_z = detector_height - odd_vert
         unpad_recon_m = (detector_width - odd_horiz) // 2 - recon_size // 2
@@ -1004,10 +982,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
             recon_size + odd_recon_size
         ) // 2
         unpad_recon_size = unpad_recon_p - unpad_recon_m
+        recon_up_shape = (unpad_z, unpad_recon_size, unpad_recon_size)
 
         # memory for recon
         mem_stack = DeviceMemStack.instance()
-        mem_stack.malloc(
-            np.prod((unpad_z, unpad_recon_size, unpad_recon_size))
-            * cp.float32().itemsize
-        )
+        mem_stack.malloc(np.prod(recon_up_shape) * cp.float32().itemsize)
+
+        return recon_up_shape
