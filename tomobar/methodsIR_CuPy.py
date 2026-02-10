@@ -166,9 +166,6 @@ class RecToolsIRCuPy:
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
         ######################################################################
-        import timeit
-
-        tic = timeit.default_timer()
         x_rec = cp.zeros(
             astra.geom_size(self.Atools.vol_geom), dtype=cp.float32
         )  # initialisation
@@ -182,10 +179,6 @@ class RecToolsIRCuPy:
             )
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
-
-        toc = timeit.default_timer()
-        Run_time = toc - tic
-        print("Landweber iterations {}".format(Run_time))
 
         if self.objsize_user_given is not None:
             return perform_recon_crop(x_rec, self.objsize_user_given)
@@ -396,6 +389,54 @@ class RecToolsIRCuPy:
                     y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
         return s
 
+    def __common_initialisation(
+        self, _data_, _algorithm_, _regularisation_, method_run
+    ):
+        if self.geom == "2D":
+            # 2D reconstruction
+            raise ValueError("2D CuPy reconstruction is not yet supported")
+
+        ######################################################################
+        # parameters check and initialisation
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
+            self, _data_, _algorithm_, _regularisation_, method_run=method_run
+        )
+        ######################################################################
+        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_norm_data"],
+            self.Atools.detectors_x_pad,
+            cupyrun=True,
+        )
+
+        if _algorithm_upd_.get("lipschitz_const") is None:
+            _algorithm_upd_["lipschitz_const"] = self.powermethod(_data_upd_)
+
+        rec_dim = astra.geom_size(self.Atools.vol_geom)
+        # initialisation of the solution (warm-start)
+        if _algorithm_upd_["initialise"] is not None:
+            if _algorithm_upd_["initialise"].shape == rec_dim:
+                x0 = _algorithm_upd_["initialise"]
+            else:
+                print(
+                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
+                )
+                x0 = cp.zeros(rec_dim, dtype=float32, order="C")
+        else:
+            x0 = cp.zeros(rec_dim, dtype=float32, order="C")
+
+        use_os = _data_upd_["OS_number"] > 1
+        if use_os:
+            _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+
+        if self.datafidelity in ["PWLS"]:
+            w = cp.asarray(_data_upd_["projection_norm_data"])  # weights for PWLS model
+            w = cp.maximum(w, 1e-6)
+            w /= w.max()
+        else:
+            w = None
+
+        return (_data_upd_, _algorithm_upd_, _regularisation_upd_, x0, w, use_os)
+
     def FISTA(
         self,
         _data_: dict,
@@ -422,90 +463,46 @@ class RecToolsIRCuPy:
         """
         cp._default_memory_pool.free_all_blocks()
 
-        if self.geom == "2D":
-            # 2D reconstruction
-            raise ValueError("2D CuPy reconstruction is not yet supported")
-
-        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
-            self, _data_, _algorithm_, _regularisation_, method_run="FISTA"
+        (
+            _data_upd_,
+            _algorithm_upd_,
+            _regularisation_upd_,
+            x0,
+            w,
+            use_os,
+        ) = self.__common_initialisation(
+            _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
-        del _data_, _algorithm_, _regularisation_
-
-        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_norm_data"],
-            self.Atools.detectors_x_pad,
-            cupyrun=True,
-        )
-
-        additional_args = {
-            "cupyrun": True,
-            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
-        }
-
-        if _data_upd_["OS_number"] > 1:
-            _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
-
-        # initialisation of the solution (warm-start)
-        if _algorithm_upd_["initialise"] is not None:
-            if cp.size(_algorithm_upd_["initialise"]) == np.prod(
-                astra.geom_size(self.Atools.vol_geom)
-            ):
-                X = _algorithm_upd_["initialise"]
-            else:
-                print(
-                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
-                )
-                X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32")
-        else:
-            X = cp.zeros(astra.geom_size(self.Atools.vol_geom), "float32")
-
         L_const_inv = cp.float32(
             1.0 / _algorithm_upd_["lipschitz_const"]
         )  # inverted Lipschitz constant
 
+        proj_data = _data_upd_["projection_norm_data"]
+        indVec = None
         t = cp.float32(1.0)
-        X_t = cp.copy(X)
+        X_t = cp.copy(x0)
+        X = cp.copy(x0)
+
         # FISTA iterations
         for _ in range(_algorithm_upd_["iterations"]):
             # loop over subsets (OS)
             for sub_ind in range(_data_upd_["OS_number"]):
                 X_old = X
                 t_old = t
-                if _data_upd_["OS_number"] > 1:
+                if use_os:
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
                         indVec = indVec[:-1]  # shrink vector size
-                    if self.datafidelity == "LS":
-                        # 3D Least-squares (LS) data fidelity - OS (linear)
-                        res = (
-                            self.Atools._forwprojOSCuPy(X_t, sub_ind)
-                            - _data_upd_["projection_norm_data"][:, indVec, :]
-                        )
-                    if self.datafidelity == "PWLS":
-                        # 3D Penalised Weighted Least-squares - OS data fidelity (approximately linear)
-                        res = np.multiply(
-                            _data_upd_["projection_raw_data"][:, indVec, :],
-                            (
-                                self.Atools._forwprojOSCuPy(X_t, sub_ind)
-                                - _data_upd_["projection_norm_data"][:, indVec, :]
-                            ),
-                        )
-                    # OS-reduced gradient
-                    grad_fidelity = self.Atools._backprojOSCuPy(res, sub_ind)
-                else:
-                    # full gradient
-                    res = (
-                        self.Atools._forwprojCuPy(X_t)
-                        - _data_upd_["projection_norm_data"]
-                    )
-                    grad_fidelity = self.Atools._backprojCuPy(res)
+                    proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
 
-                del res
+                grad_data = grad_data_term(
+                    self, X_t, proj_data, use_os, sub_ind, indVec, w
+                )
 
-                X = X_t - L_const_inv * grad_fidelity
+                X = X_t - L_const_inv * grad_data
 
-                del X_t, grad_fidelity
+                del X_t, grad_data
 
                 if _algorithm_upd_["nonnegativity"]:
                     cp.maximum(X, 0, out=X)  # non-negativity projection
@@ -520,6 +517,10 @@ class RecToolsIRCuPy:
         if self.objsize_user_given is not None:
             return perform_recon_crop(X, self.objsize_user_given)
 
+        additional_args = {
+            "cupyrun": True,
+            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
+        }
         return check_kwargs(X, **additional_args)
 
     def ADMM(
@@ -541,61 +542,22 @@ class RecToolsIRCuPy:
         """
         cp._default_memory_pool.free_all_blocks()
 
-        if self.geom == "2D":
-            # 2D reconstruction
-            raise ValueError("2D CuPy reconstruction is not yet supported")
-
-        ######################################################################
-        # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
-            self, _data_, _algorithm_, _regularisation_, method_run="ADMM"
+        (
+            _data_upd_,
+            _algorithm_upd_,
+            _regularisation_upd_,
+            x0,
+            w,
+            use_os,
+        ) = self.__common_initialisation(
+            _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
-        ######################################################################
-        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_norm_data"],
-            self.Atools.detectors_x_pad,
-            cupyrun=True,
-        )
-        additional_args = {
-            "cupyrun": True,
-            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
-        }
-
-        if _algorithm_upd_.get("lipschitz_const") is None:
-            _algorithm_upd_["lipschitz_const"] = self.powermethod(_data_upd_)
-
-        rec_dim = astra.geom_size(self.Atools.vol_geom)
-        # initialisation of the solution (warm-start)
-        if _algorithm_upd_["initialise"] is not None:
-            if _algorithm_upd_["initialise"].shape == rec_dim:
-                x0 = _algorithm_upd_["initialise"]
-            else:
-                print(
-                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
-                )
-                x0 = cp.zeros(rec_dim, dtype=float32, order="C")
-        else:
-            x0 = cp.zeros(rec_dim, dtype=float32, order="C")
-
-        use_os = _data_upd_["OS_number"] > 1
-        if use_os:
-            _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
-        else:
-            proj_data = _data_upd_["projection_norm_data"]
-            indVec = None
-
-        # ADMM variables
+        proj_data = _data_upd_["projection_norm_data"]
+        indVec = None
         x = x0.copy()
         z = x0.copy()
         z_old = 0
         u = cp.zeros_like(x0)
-
-        if self.datafidelity in ["PWLS"]:
-            w = cp.asarray(_data_upd_["projection_norm_data"])  # weights for PWLS model
-            w = cp.maximum(w, 1e-6)
-            w /= w.max()
-        else:
-            w = None
 
         tau = 0.9 / (
             _algorithm_upd_["lipschitz_const"] + _algorithm_upd_["ADMM_rho_const"]
@@ -604,7 +566,7 @@ class RecToolsIRCuPy:
             _regularisation_upd_["regul_param"] / _algorithm_upd_["ADMM_rho_const"]
         )
 
-        # Outer ADMM iterations
+        # ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
             for sub_ind in range(_data_upd_["OS_number"]):
                 if use_os:
@@ -655,4 +617,8 @@ class RecToolsIRCuPy:
         if self.objsize_user_given is not None:
             return perform_recon_crop(x, self.objsize_user_given)
 
+        additional_args = {
+            "cupyrun": True,
+            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
+        }
         return check_kwargs(x, **additional_args)

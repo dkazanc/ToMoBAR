@@ -1,5 +1,4 @@
-"""Data fidelities to be used inside the iterative methods such as FISTA, ADMM.
-"""
+"""Data fidelities to be used inside the iterative methods such as FISTA, ADMM."""
 
 import cupy as cp
 from typing import Optional
