@@ -473,8 +473,9 @@ class RecToolsIRCuPy:
         ) = self.__common_initialisation(
             _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
+
         L_const_inv = cp.float32(
-            1.0 / _algorithm_upd_["lipschitz_const"]
+            1.0 / _algorithm_upd_["lipschitz_const"].get()
         )  # inverted Lipschitz constant
 
         proj_data = _data_upd_["projection_norm_data"]

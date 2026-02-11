@@ -167,7 +167,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity
+    datafidelity="PWLS",  # Data fidelity
     device_projector=0,
 )
 
@@ -177,11 +177,11 @@ _data_ = {
     "data_axes_labels_order": data_labels3D,
 }
 tic = timeit.default_timer()
-lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
+# lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
     "iterations": 25,
-    "lipschitz_const": lc.get(),
+    # "lipschitz_const": lc.get(),
     "recon_mask_radius": 2.0,
 }  # The number of iterations
 
@@ -219,7 +219,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity
+    datafidelity="PWLS",  # Data fidelity
     device_projector=0,
 )
 ####################### Creating the data dictionary: #######################
