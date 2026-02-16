@@ -5,7 +5,7 @@
 * :func:`RecToolsDIRCuPy.FOURIER_INV` - Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method [NIKITIN2017]_.
 """
 
-from typing import Tuple
+from typing import Literal, Tuple
 import numpy as np
 import math
 import cupy as cp
@@ -44,8 +44,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
         CenterRotOffset,  # The Centre of Rotation scalar or a vector
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # Reconstructed object dimensions (scalar)
+        projector: Literal["fourier", "astra"] = "astra",
         device_projector=0,  # set an index (integer) of a specific GPU device
     ):
+        self.detectors_x_pad = DetectorsDimH_pad
+        self.centre_of_rotation = CenterRotOffset
+        self.angles_vec = AnglesVec
+        self.recon_size = ObjSize
+
         super().__init__(
             DetectorsDimH,
             DetectorsDimH_pad,
@@ -53,6 +59,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             CenterRotOffset,
             AnglesVec,
             ObjSize,
+            projector,
             device_projector,
         )
         # if DetectorsDimV == 0 or DetectorsDimV is None:
@@ -248,7 +255,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         else:
             [nz, nproj, data_n] = data.shape
 
-        recon_size = self.Atools.recon_size
+        recon_size = self.recon_size
         if recon_size > data_n:
             raise ValueError(
                 "The reconstruction size {} should not be larger than the size of the horizontal detector {}".format(
@@ -272,7 +279,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 data = data_p
                 del data_p
 
-        n = data_n + self.Atools.detectors_x_pad * 2 + padding * 2
+        n = data_n + self.detectors_x_pad * 2 + padding * 2
         if power_of_2_cropping:
             n_pow2 = 2 ** math.ceil(math.log2(n))
             if 0.9 < n / n_pow2:
@@ -282,20 +289,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
         center_size = min(center_size, n * 2)
 
         if mem_stack:
-            mem_stack.malloc(
-                np.prod(self.Atools.angles_vec.shape) * cp.float32().itemsize
-            )
+            mem_stack.malloc(np.prod(self.angles_vec.shape) * cp.float32().itemsize)
 
-        theta = cp.array(-self.Atools.angles_vec, dtype=cp.float32)
+        theta = cp.array(-self.angles_vec, dtype=cp.float32)
 
         if center_size >= _CENTER_SIZE_MIN:
             if mem_stack:
-                mem_stack.malloc(
-                    np.prod(self.Atools.angles_vec.shape) * np.int64().itemsize
-                )
-                mem_stack.malloc(
-                    np.prod(self.Atools.angles_vec.shape) * np.float32().itemsize
-                )
+                mem_stack.malloc(np.prod(self.angles_vec.shape) * np.int64().itemsize)
+                mem_stack.malloc(np.prod(self.angles_vec.shape) * np.float32().itemsize)
 
                 sorted_theta_cpu = cp.sort(theta).get()
             else:
@@ -473,7 +474,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_m = oversampled_detector_width // 2 - detector_width // 2
         unpad_p = oversampled_detector_width // 2 + detector_width // 2
 
-        rotation_axis = self.Atools.centre_of_rotation + 0.5
+        rotation_axis = self.centre_of_rotation + 0.5
 
         wfilter = calc_filter(oversampled_detector_width, filter_type, cutoff_freq)
         t = rfftfreq(oversampled_detector_width).astype(cp.float32)

@@ -160,10 +160,11 @@ def _data_swap(data: xp.ndarray | Tuple[int, int, int], data_swap_list: list) ->
             else:
                 if cupy_enabled:
                     xpp = xp.get_array_module(data)
-                    return xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
+                    data = xpp.swapaxes(data, swap_tuple[0], swap_tuple[1])
                 else:
-                    return np.swapaxes(data, swap_tuple[0], swap_tuple[1])
-        return data
+                    data = np.swapaxes(data, swap_tuple[0], swap_tuple[1])
+
+    return data
 
 
 def _parse_device_argument(device_int_or_string) -> Tuple:
