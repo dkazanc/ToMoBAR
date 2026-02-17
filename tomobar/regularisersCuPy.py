@@ -81,10 +81,10 @@ def ROF_TV_cupy(
     module = load_cuda_module("rudin_osher_fatemi_total_variation")
 
     divergence_kernel_name = (
-        f"divergence_kernel_{data.ndim}D_{"half" if half_precision else "float"}"
+        f"divergence_kernel_{data.ndim}D_{'half' if half_precision else 'float'}"
     )
     divergence_kernel = module.get_function(divergence_kernel_name)
-    TV_kernel_name = f"TV_kernel_{data.ndim}D_{"half" if half_precision else "float"}"
+    TV_kernel_name = f"TV_kernel_{data.ndim}D_{'half' if half_precision else 'float'}"
     TV_kernel = module.get_function(TV_kernel_name)
 
     dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
@@ -216,7 +216,7 @@ def PD_TV_cupy(
     P2_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
 
     # loading and compiling CUDA kernels:
-    kernel_name = f"primal_dual_for_total_variation_{"3D" if data.ndim == 3 else "2D"}_{"half" if half_precision else "float"}"
+    kernel_name = f"primal_dual_for_total_variation_{'3D' if data.ndim == 3 else '2D'}_{'half' if half_precision else 'float'}"
     if nonneg:
         kernel_name += "_nonneg"
     if methodTV:
