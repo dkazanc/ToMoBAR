@@ -162,7 +162,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 RectoolsCuPy = RecToolsIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=100,  # Padding size of horizontal detector
+    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
     DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians

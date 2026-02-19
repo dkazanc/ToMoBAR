@@ -18,10 +18,7 @@ except ImportError:
     print(
         "Cupy library is a required dependency for this part of the code, please install"
     )
-try:
-    import astra
-except ImportError:
-    print("____! Astra-toolbox package is missing, please install !____")
+import astra
 
 from tomobar.supp.funcs import _data_dims_swapper
 from tomobar.supp.suppTools import (
@@ -474,9 +471,7 @@ class RecToolsIRCuPy:
             _data_, _algorithm_, _regularisation_, method_run="FISTA"
         )
 
-        L_const_inv = cp.float32(
-            1.0 / _algorithm_upd_["lipschitz_const"].get()
-        )  # inverted Lipschitz constant
+        L_const_inv = 1.0 / _algorithm_upd_["lipschitz_const"]
 
         proj_data = _data_upd_["projection_norm_data"]
         indVec = None
