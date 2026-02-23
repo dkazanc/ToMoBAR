@@ -563,6 +563,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
                 del tmp
 
+        for v in fft_cache.values():
+            v.free()
+
+        del fft_cache
+
         # Memory clean up of filter data
         del t, wfilter, w
         return tmp_p
@@ -606,69 +611,98 @@ class RecToolsDIRCuPy(RecToolsDIR):
             filter_vol_chunk_count = detector_height
 
         slice_count_per_chunk = int(np.ceil(detector_height / filter_vol_chunk_count))
+        full_chunk_exists = (detector_height / slice_count_per_chunk) > 1
+        slice_count_for_last_chunk = detector_height % slice_count_per_chunk
+
         projection_count_per_projection_chunk = int(
             np.ceil(projection_count / filter_proj_chunk_count)
         )
-        # Loop over the chunks
-        rfft_input_nbytes = (
-            np.prod(
-                (
-                    slice_count_per_chunk,
-                    projection_count_per_projection_chunk,
-                    oversampled_detector_width,
+        full_projection_chunk_exists = (
+            projection_count / projection_count_per_projection_chunk
+        ) > 1
+        projection_count_for_last_projection_chunk = (
+            projection_count % projection_count_per_projection_chunk
+        )
+
+        fft_plan_sizes = []
+
+        slice_counts = []
+        if full_chunk_exists:
+            slice_counts.append(slice_count_per_chunk)
+        if slice_count_for_last_chunk:
+            slice_counts.append(slice_count_for_last_chunk)
+
+        proj_counts = []
+        if full_projection_chunk_exists:
+            proj_counts.append(projection_count_per_projection_chunk)
+        if projection_count_for_last_projection_chunk:
+            proj_counts.append(projection_count_for_last_projection_chunk)
+
+        for slice_count in slice_counts:
+            for proj_count in proj_counts:
+                # Loop over the chunks
+                rfft_input_nbytes = (
+                    np.prod(
+                        (
+                            slice_count,
+                            proj_count,
+                            oversampled_detector_width,
+                        )
+                    )
+                    * cp.float32().itemsize
                 )
-            )
-            * cp.float32().itemsize
-        )
-        mem_stack.malloc(rfft_input_nbytes)
+                mem_stack.malloc(rfft_input_nbytes)
 
-        rfft_plan_work_area_mem_size = (
-            nvmath.bindings.cufft.estimate1d(
-                nx=oversampled_detector_width,
-                type=nvmath.bindings.cufft.Type.R2C,
-                batch=projection_count_per_projection_chunk,
-            )
-            * slice_count_per_chunk
-        )
-        mem_stack.malloc(rfft_plan_work_area_mem_size)
+                rfft_plan_work_area_mem_size = (
+                    nvmath.bindings.cufft.estimate1d(
+                        nx=oversampled_detector_width,
+                        type=nvmath.bindings.cufft.Type.R2C,
+                        batch=proj_count,
+                    )
+                ) * slice_count
+                mem_stack.malloc(rfft_plan_work_area_mem_size)
+                fft_plan_sizes.append(rfft_plan_work_area_mem_size)
 
-        rfft_output_nbytes = (
-            np.prod(
-                (
-                    slice_count_per_chunk,
-                    projection_count_per_projection_chunk,
-                    oversampled_detector_width // 2 + 1,
+                rfft_output_nbytes = (
+                    np.prod(
+                        (
+                            slice_count,
+                            proj_count,
+                            oversampled_detector_width // 2 + 1,
+                        )
+                    )
+                    * cp.complex64().itemsize
                 )
-            )
-            * cp.complex64().itemsize
-        )
-        mem_stack.malloc(rfft_output_nbytes)
-        mem_stack.free(rfft_output_nbytes)
+                mem_stack.malloc(rfft_output_nbytes)
+                mem_stack.free(rfft_output_nbytes)
 
-        irfft_plan_work_area_mem_size = (
-            nvmath.bindings.cufft.estimate1d(
-                nx=oversampled_detector_width,
-                type=nvmath.bindings.cufft.Type.C2R,
-                batch=projection_count_per_projection_chunk,
-            )
-            * slice_count_per_chunk
-        )
-        mem_stack.malloc(irfft_plan_work_area_mem_size)
+                irfft_plan_work_area_mem_size = (
+                    nvmath.bindings.cufft.estimate1d(
+                        nx=oversampled_detector_width,
+                        type=nvmath.bindings.cufft.Type.C2R,
+                        batch=proj_count,
+                    )
+                ) * slice_count
+                mem_stack.malloc(irfft_plan_work_area_mem_size)
+                fft_plan_sizes.append(irfft_plan_work_area_mem_size)
 
-        irfft_output_size = (
-            np.prod(
-                (
-                    slice_count_per_chunk,
-                    projection_count_per_projection_chunk,
-                    oversampled_detector_width,
+                irfft_output_size = (
+                    np.prod(
+                        (
+                            slice_count,
+                            proj_count,
+                            oversampled_detector_width,
+                        )
+                    )
+                    * cp.float32().itemsize
                 )
-            )
-            * cp.float32().itemsize
-        )
 
-        mem_stack.malloc(irfft_output_size)
-        mem_stack.free(irfft_output_size)
-        mem_stack.free(rfft_input_nbytes)
+                mem_stack.malloc(irfft_output_size)
+                mem_stack.free(irfft_output_size)
+                mem_stack.free(rfft_input_nbytes)
+
+        for fft_plan_size in fft_plan_sizes:
+            mem_stack.free(fft_plan_size)
 
         # Memory clean up of filter data
         mem_stack.free((oversampled_detector_width // 2 + 1) * np.float32().itemsize)
@@ -945,6 +979,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
             fde[start_index:end_index, :, :] = tmp
             del tmp
 
+        for v in fft_cache.values():
+            v.free()
+
+        del fft_cache
+
         c2dfftshift(
             (
                 int(np.ceil((2 * detector_width) / 32)),
@@ -968,17 +1007,35 @@ class RecToolsDIRCuPy(RecToolsDIR):
             chunk_count = detector_height // 2
 
         slice_count_per_chunk = int(np.ceil(detector_height // 2 / chunk_count))
-        (fde_shape, fde_dtype) = fde
-        ifft2_input_nbytes = (
-            np.prod((slice_count_per_chunk, *fde_shape[1:])) * fde_dtype.itemsize
-        )
+        full_chunk_exists = (detector_height / slice_count_per_chunk) > 1
+        slice_count_for_last_chunk = detector_height % slice_count_per_chunk
 
-        ifft2_plan_work_area_mem_size = nvmath.bindings.cufft.estimate2d(
-            nx=fde_shape[2], ny=fde_shape[1], type=nvmath.bindings.cufft.Type.C2C
-        )
-        mem_stack.malloc(ifft2_plan_work_area_mem_size)
-        mem_stack.malloc(ifft2_input_nbytes)
-        mem_stack.free(ifft2_input_nbytes)
+        fft_plan_sizes = []
+
+        slice_counts = []
+        if full_chunk_exists:
+            slice_counts.append(slice_count_per_chunk)
+        if slice_count_for_last_chunk:
+            slice_counts.append(slice_count_for_last_chunk)
+
+        for slice_count in slice_counts:
+            (fde_shape, fde_dtype) = fde
+            ifft2_input_nbytes = (
+                np.prod((slice_count, *fde_shape[1:])) * fde_dtype.itemsize
+            )
+
+            ifft2_plan_work_area_mem_size = nvmath.bindings.cufft.estimate2d(
+                nx=fde_shape[2], ny=fde_shape[1], type=nvmath.bindings.cufft.Type.C2C
+            )
+            mem_stack.malloc(ifft2_plan_work_area_mem_size)
+            if len(fft_plan_sizes) == 0:
+                fft_plan_sizes.append(ifft2_plan_work_area_mem_size)
+
+            mem_stack.malloc(ifft2_input_nbytes)
+            mem_stack.free(ifft2_input_nbytes)
+
+        for fft_plan_size in fft_plan_sizes:
+            mem_stack.free(fft_plan_size)
 
     def unpad_reconstructed_data(
         self,
