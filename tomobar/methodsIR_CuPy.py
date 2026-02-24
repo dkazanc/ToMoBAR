@@ -26,7 +26,7 @@ from tomobar.supp.suppTools import (
     perform_recon_crop,
     _apply_horiz_detector_padding,
 )
-from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
+from tomobar.supp.dicts import dicts_check_cupy, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.data_fidelities import grad_data_term
@@ -147,13 +147,13 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _ = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check_cupy(
             self, _data_, _algorithm_, method_run="Landweber"
         )
         del _data_, _algorithm_
 
-        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_norm_data"],
+        _data_upd_["projection_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_data"],
             self.Atools.detectors_x_pad,
             cupyrun=True,
         )
@@ -169,7 +169,7 @@ class RecToolsIRCuPy:
 
         for _ in range(_algorithm_upd_["iterations"]):
             residual = (
-                self.Atools._forwprojCuPy(x_rec) - _data_upd_["projection_norm_data"]
+                self.Atools._forwprojCuPy(x_rec) - _data_upd_["projection_data"]
             )  # Ax - b term
             x_rec -= _algorithm_upd_["tau_step_lanweber"] * self.Atools._backprojCuPy(
                 residual
@@ -198,11 +198,11 @@ class RecToolsIRCuPy:
         ######################################################################
         cp._default_memory_pool.free_all_blocks()
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _ = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check_cupy(
             self, _data_, _algorithm_, method_run="SIRT"
         )
-        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_norm_data"],
+        _data_upd_["projection_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_data"],
             self.Atools.detectors_x_pad,
             cupyrun=True,
         )
@@ -231,11 +231,7 @@ class RecToolsIRCuPy:
         # perform SIRT iterations
         for _ in range(_algorithm_upd_["iterations"]):
             x_rec += C * self.Atools._backprojCuPy(
-                R
-                * (
-                    _data_upd_["projection_norm_data"]
-                    - self.Atools._forwprojCuPy(x_rec)
-                )
+                R * (_data_upd_["projection_data"] - self.Atools._forwprojCuPy(x_rec))
             )
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
@@ -259,12 +255,12 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _ = dicts_check(
+        _data_upd_, _algorithm_upd_, _ = dicts_check_cupy(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         del _data_, _algorithm_
-        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_norm_data"],
+        _data_upd_["projection_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_data"],
             self.Atools.detectors_x_pad,
             cupyrun=True,
         )
@@ -274,7 +270,7 @@ class RecToolsIRCuPy:
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
         ######################################################################
-        data_shape_3d = cp.shape(_data_upd_["projection_norm_data"])
+        data_shape_3d = cp.shape(_data_upd_["projection_data"])
 
         # Prepare for CG iterations.
         x_rec = cp.zeros(
@@ -282,10 +278,10 @@ class RecToolsIRCuPy:
         )  # initialisation
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
-        d = self.Atools._backprojCuPy(_data_upd_["projection_norm_data"])
+        d = self.Atools._backprojCuPy(_data_upd_["projection_data"])
         d = cp.ravel(d, order="C")
         normr2 = cp.inner(d, d)
-        r = cp.ravel(_data_upd_["projection_norm_data"], order="C")
+        r = cp.ravel(_data_upd_["projection_data"], order="C")
 
         del _data_upd_
 
@@ -337,13 +333,13 @@ class RecToolsIRCuPy:
             _data_["data_axes_labels_order"] = None
 
         if self.datafidelity in ["PWLS", "SWLS"]:
-            w = cp.asarray(_data_["projection_norm_data"])
+            w = cp.asarray(_data_["projection_data"])
             w = cp.maximum(w, 1e-6)
             w /= w.max()
 
         if _data_["data_axes_labels_order"] is not None:
-            _data_["projection_norm_data"] = _data_dims_swapper(
-                _data_["projection_norm_data"],
+            _data_["projection_data"] = _data_dims_swapper(
+                _data_["projection_data"],
                 _data_["data_axes_labels_order"],
                 ["detY", "angles", "detX"],
             )
@@ -395,12 +391,12 @@ class RecToolsIRCuPy:
 
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check_cupy(
             self, _data_, _algorithm_, _regularisation_, method_run=method_run
         )
         ######################################################################
-        _data_upd_["projection_norm_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_norm_data"],
+        _data_upd_["projection_data"] = _apply_horiz_detector_padding(
+            _data_upd_["projection_data"],
             self.Atools.detectors_x_pad,
             cupyrun=True,
         )
@@ -426,7 +422,7 @@ class RecToolsIRCuPy:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
 
         if self.datafidelity in ["PWLS"]:
-            w = cp.asarray(_data_upd_["projection_norm_data"])  # weights for PWLS model
+            w = cp.asarray(_data_upd_["projection_data"])  # weights for PWLS model
             w = cp.maximum(w, 1e-6)
             w /= w.max()
         else:
@@ -473,7 +469,7 @@ class RecToolsIRCuPy:
 
         L_const_inv = 1.0 / _algorithm_upd_["lipschitz_const"]
 
-        proj_data = _data_upd_["projection_norm_data"]
+        proj_data = _data_upd_["projection_data"]
         indVec = None
         t = cp.float32(1.0)
         X_t = cp.copy(x0)
@@ -490,7 +486,7 @@ class RecToolsIRCuPy:
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
                         indVec = indVec[:-1]  # shrink vector size
-                    proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
+                    proj_data = _data_upd_["projection_data"][:, indVec, :]
 
                 grad_data = grad_data_term(
                     self, X_t, proj_data, use_os, sub_ind, indVec, w
@@ -548,7 +544,7 @@ class RecToolsIRCuPy:
         ) = self.__common_initialisation(
             _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
-        proj_data = _data_upd_["projection_norm_data"]
+        proj_data = _data_upd_["projection_data"]
         indVec = None
         x = x0.copy()
         z = x0.copy()
@@ -570,7 +566,7 @@ class RecToolsIRCuPy:
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
                     if indVec[self.Atools.NumbProjBins - 1] == 0:
                         indVec = indVec[:-1]  # shrink vector size
-                    proj_data = _data_upd_["projection_norm_data"][:, indVec, :]
+                    proj_data = _data_upd_["projection_data"][:, indVec, :]
 
                 # ---- z-update (linearized data term) ----
                 grad_data = grad_data_term(
