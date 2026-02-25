@@ -273,30 +273,21 @@ def dicts_check_cupy(
         _data_['projection_data'] (ndarray): Can be either projection data after negative log or raw data given as a 3D CuPy array.
         _data_['data_axes_labels_order'] (list, None).  The order of the axes labels for the input data. The default data labels are: ["detY", "angles", "detX"].
         _data_['OS_number'] (int): The number of the ordered subsets. If None or 1 is used then the classical (full data) algorithm executed. Defaults to 1.
-        _data_['huber_threshold'] (float): Parameter for the Huber data fidelity (to suppress outliers) [KAZ1_2017]_.
-        _data_['studentst_threshold] (float):  Parameter for Students't data fidelity (to suppress outliers) [KAZ1_2017]_.
-        _data_['ringGH_lambda'] (float):  Parameter for Group-Huber data model [PM2015]_ to suppress the full rings of the uniform intensity.
-        _data_['ringGH_accelerate'] (float): Group-Huber data model acceleration factor (can lead to divergence for higher values). Defaults to 50.
-        _data_['beta_SWLS'] (float): Regularisation parameter for stripe-weighted data model [HOA2017]_ for ring artefacts removal. Defaults to 0.1.
 
         _algorithm_['iterations'] (int): The number of iterations for the reconstruction algorithm.
         _algorithm_['nonnegativity'] (bool): Enable nonnegativity for the solution. Defaults to False.
         _algorithm_['recon_mask_radius'] (float): Enables the circular mask cutoff in the reconstructed image. Defaults to 1.0.
         _algorithm_['initialise'] (ndarray): Initialisation for the solution. An array of the expected output size must be provided.
-        _algorithm_['lipschitz_const'] (float): Lipschitz constant for the FISTA algorithm. If not provided, it will be calculated for each method call.
+        _algorithm_['lipschitz_const'] (float): Lipschitz constant for the FISTA and ADMM algorithms. If not provided, it will be calculated for each method call.
         _algorithm_['ADMM_rho_const'] (float): Augmented Lagrangian parameter for the ADMM algorithm.
-        _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm. Values withing 1.5-18 range work well.
+        _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm. Values within 1.5-1.8 range work well.
         _algorithm_['tolerance'] (float): Tolerance to terminate reconstruction algorithm iterations earlier. Defaults to 0.0.
         _algorithm_['verbose'] (bool): Switch on printing of iterations number and other messages. Defaults to False.
 
-        _regularisation_['method'] (str): Select the regularisation method from the CCPi-regularisation toolkit [KAZ2019]_. The supported
-                methods listed: ROF_TV, FGP_TV, PD_TV, SB_TV, LLT_ROF, TGV, NDF, Diff4th, NLTV.
-                If the `pypwt` package is installed for Wavelets, then one can do WAVELET regularisation by adding WAVELETS string to any method's name above.
-                For instance, ROF_TV_WAVELETS would enable dual regularisation with ROF_TV and wavelets. See `regul_param2` to control wavelets smoothing.
+        _regularisation_['method'] (str): Select the regularisation method for noise supression. The supported methods are: ROF_TV, PD_TV.
         _regularisation_['regul_param'] (float): The main regularisation parameter for regularisers to control the amount of smoothing. Defaults to 0.001.
         _regularisation_['iterations'] (int): The number of iterations for regularisers (INNER iterations). Defaults to 150.
         _regularisation_['device_regulariser'] (int): A GPU device index to perform operation on. Defaults to 0.
-        _regularisation_['tolerance'] (float): Tolerance to stop inner regularisation iterations prematurely.
         _regularisation_['time_marching_step'] (float): Time step parameter for convergence of gradient-based methods: ROF_TV.
         _regularisation_['PD_LipschitzConstant'] (float): The Primal-Dual (PD) penalty related parameter for convergence (PD_TV specific).
         _regularisation_['methodTV'] (int): 0/1 - TV specific isotropic/anisotropic choice.
@@ -325,6 +316,14 @@ def dicts_check_cupy(
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # classical approach (default)
         self.OS_number = _data_["OS_number"]
+        if _data_.get("data_fidelity") is None:
+            _data_["data_fidelity"] = "LS"
+        if _data_["data_fidelity"] not in {"LS", "PWLS", "KL"}:
+            raise ValueError(
+                "_data_['data_fidelity'] should be provided as 'LS', 'PWLS', 'KL'."
+            )
+        else:
+            self.data_fidelity = _data_["data_fidelity"]
 
     # ----------  dealing with _algorithm_  --------------
     if _algorithm_ is None:
@@ -336,7 +335,7 @@ def dicts_check_cupy(
                 _algorithm_["iterations"] = 200
             if method_run == "CGLS":
                 _algorithm_["iterations"] = 30
-            if method_run in {"power", "ADMM"}:
+            if method_run in {"power"}:
                 _algorithm_["iterations"] = 15
             if method_run == "Landweber":
                 _algorithm_["iterations"] = 1500
@@ -351,6 +350,11 @@ def dicts_check_cupy(
                 _algorithm_["iterations"] = 400  # Classical
     if method_run == "ADMM":
         # ADMM -algorithm  augmented Lagrangian parameter
+        if _algorithm_.get("iterations") is None:
+            if _data_["OS_number"] > 1:
+                _algorithm_["iterations"] = 10  # Ordered - Subsets
+            else:
+                _algorithm_["iterations"] = 400  # Classical
         if "ADMM_rho_const" not in _algorithm_:
             _algorithm_["ADMM_rho_const"] = 1.0
         # ADMM over-relaxation parameter to accelerate convergence
@@ -362,6 +366,8 @@ def dicts_check_cupy(
     # ENABLE or DISABLE the nonnegativity for algorithm
     if "nonnegativity" not in _algorithm_:
         _algorithm_["nonnegativity"] = False
+    if _algorithm_["nonnegativity"] not in [True, False]:
+        raise ValueError("_algorithm_['nonnegativity'] should be set to True or False.")
     if _algorithm_["nonnegativity"]:
         self.nonneg_regul = 1  # enable nonnegativity for regularisers
     else:
@@ -382,9 +388,6 @@ def dicts_check_cupy(
         # regularisation parameter  (main)
         if "regul_param" not in _regularisation_:
             _regularisation_["regul_param"] = 0.001
-        # regularisation parameter second (LLT_ROF)
-        if "regul_param2" not in _regularisation_:
-            _regularisation_["regul_param2"] = 0.001
         # set the number of inner (regularisation) iterations
         if "iterations" not in _regularisation_:
             _regularisation_["iterations"] = 150
@@ -394,46 +397,14 @@ def dicts_check_cupy(
         # time marching step to ensure convergence for gradient based methods: ROF_TV, LLT_ROF,  NDF, Diff4th
         if "time_marching_step" not in _regularisation_:
             _regularisation_["time_marching_step"] = 0.005
-        #  TGV specific parameter for the 1st order term
-        if "TGV_alpha1" not in _regularisation_:
-            _regularisation_["TGV_alpha1"] = 1.0
-        #  TGV specific parameter for the 2тв order term
-        if "TGV_alpha2" not in _regularisation_:
-            _regularisation_["TGV_alpha2"] = 2.0
         # Primal-dual parameter for convergence (TGV specific)
         if "PD_LipschitzConstant" not in _regularisation_:
             _regularisation_["PD_LipschitzConstant"] = 12.0
-        # edge (noise) threshold parameter for NDF and DIFF4th models
-        if "edge_threhsold" not in _regularisation_:
-            _regularisation_["edge_threhsold"] = 0.001
-        # NDF specific penalty type: Huber (default), Perona, Tukey
-        if "NDF_penalty" not in _regularisation_:
-            _regularisation_["NDF_penalty"] = "Huber"
-            self.NDF_method = 1
-        else:
-            if _regularisation_["NDF_penalty"] == "Huber":
-                self.NDF_method = 1
-            elif _regularisation_["NDF_penalty"] == "Perona":
-                self.NDF_method = 2
-            elif _regularisation_["NDF_penalty"] == "Tukey":
-                self.NDF_method = 3
-            else:
-                raise NameError("For NDF_penalty choose Huber, Perona or Tukey")
-        # NLTV penalty related weights, , the array of i-related indices
-        if "NLTV_H_i" not in _regularisation_:
-            _regularisation_["NLTV_H_i"] = 0
-        # NLTV penalty related weights, , the array of i-related indices
-        if "NLTV_H_j" not in _regularisation_:
-            _regularisation_["NLTV_H_j"] = 0
-        # NLTV-specific penalty type, the array of Weights
-        if "NLTV_Weights" not in _regularisation_:
-            _regularisation_["NLTV_Weights"] = 0
-        # 0/1 - TV specific isotropic/anisotropic choice
         if "methodTV" not in _regularisation_:
             _regularisation_["methodTV"] = 0
         # choose the type of the device for the regulariser
         if "device_regulariser" not in _regularisation_:
-            _regularisation_["device_regulariser"] = "gpu"
+            _regularisation_["device_regulariser"] = 0
     return (_data_, _algorithm_, _regularisation_)
 
 

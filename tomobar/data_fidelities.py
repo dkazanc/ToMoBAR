@@ -25,7 +25,7 @@ def grad_data_term(
     Returns:
         cp.ndarray: gradient of the data fidelity as a 3D CuPy array.
     """
-    if self.datafidelity in ["LS", "PWLS"]:
+    if self.data_fidelity in ["LS", "PWLS"]:
         # Least-Squares (LS)
         res = self._Ax(x, sub_ind, use_os) - b
         if w is not None:
@@ -34,7 +34,7 @@ def grad_data_term(
                 cp.multiply(res, w[:, indVec, :], out=res)
             else:
                 cp.multiply(res, w, out=res)
-    elif self.datafidelity == "KL":
+    elif self.data_fidelity == "KL":
         # Kullback-Leibler term. Note that b in that case should be given as pre-log data (raw)
         res = 1 - b / (self._Ax(x, sub_ind, use_os) + 1e-8)
     return self._Atb(res, sub_ind, use_os)

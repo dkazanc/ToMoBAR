@@ -48,7 +48,6 @@ class RecToolsIRCuPy:
         CenterRotOffset (float): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): The size of the reconstructed object (a slice) defined as [recon_size, recon_size].
-        datafidelity (str, optional): Data fidelity, choose from LS and PWLS. Defaults to LS.
         device_projector (int, optional): Provide a GPU index of a specific GPU device. Defaults to 0.
         cupyrun (bool, optional): instantiate CuPy modules.
     """
@@ -61,11 +60,9 @@ class RecToolsIRCuPy:
         CenterRotOffset,  # The Centre of Rotation scalar or a vector
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # The size of the reconstructed object (a slice)
-        datafidelity="LS",  # Data fidelity, choose from LS and PWLS
         device_projector=0,  # provide a GPU index (integer) of a specific device
         cupyrun=True,
     ):
-        self.datafidelity = datafidelity
         self.cupyrun = cupyrun
 
         if DetectorsDimH_pad == 0:
@@ -93,16 +90,6 @@ class RecToolsIRCuPy:
                 "gpu",
                 device_projector,
             )
-
-    @property
-    def datafidelity(self) -> int:
-        return self._datafidelity
-
-    @datafidelity.setter
-    def datafidelity(self, datafidelity_val):
-        if datafidelity_val not in ["LS", "PWLS", "SWLS", "KL"]:
-            raise ValueError("Unknown data fidelity type, select: LS, PWLS, SWLS or KL")
-        self._datafidelity = datafidelity_val
 
     @property
     def cupyrun(self) -> int:
@@ -328,11 +315,10 @@ class RecToolsIRCuPy:
         Returns:
             float: the Lipschitz constant
         """
-
         if "data_axes_labels_order" not in _data_:
             _data_["data_axes_labels_order"] = None
 
-        if self.datafidelity in ["PWLS", "SWLS"]:
+        if _data_["data_fidelity"] in ["PWLS", "SWLS"]:
             w = cp.asarray(_data_["projection_data"])
             w = cp.maximum(w, 1e-6)
             w /= w.max()
@@ -359,26 +345,26 @@ class RecToolsIRCuPy:
         if _data_["OS_number"] == 1:
             # non-OS approach
             y = self.Atools._forwprojCuPy(x1)
-            if self.datafidelity == "PWLS":
+            if _data_["data_fidelity"] == "PWLS":
                 y = cp.multiply(w, y)
             for _ in range(power_iterations):
                 x1 = self.Atools._backprojCuPy(y)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
                 y = self.Atools._forwprojCuPy(x1)
-                if self.datafidelity == "PWLS":
+                if _data_["data_fidelity"] == "PWLS":
                     y = cp.multiply(w, y)
         else:
             # OS approach
             y = self.Atools._forwprojOSCuPy(x1, 0)
-            if self.datafidelity == "PWLS":
+            if _data_["data_fidelity"] == "PWLS":
                 y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
             for _ in range(power_iterations):
                 x1 = self.Atools._backprojOSCuPy(y, 0)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
                 y = self.Atools._forwprojOSCuPy(x1, 0)
-                if self.datafidelity == "PWLS":
+                if _data_["data_fidelity"] == "PWLS":
                     y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
         return s
 
@@ -421,7 +407,7 @@ class RecToolsIRCuPy:
         if use_os:
             _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
 
-        if self.datafidelity in ["PWLS"]:
+        if _data_["data_fidelity"] in ["PWLS"]:
             w = cp.asarray(_data_upd_["projection_data"])  # weights for PWLS model
             w = cp.maximum(w, 1e-6)
             w /= w.max()

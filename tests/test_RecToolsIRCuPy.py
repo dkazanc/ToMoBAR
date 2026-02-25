@@ -287,12 +287,12 @@ def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "data_fidelity": "LS",
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }  # data dictionary
     # calculate Lipschitz constant
