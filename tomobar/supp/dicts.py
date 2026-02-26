@@ -181,7 +181,7 @@ def dicts_check(
     else:
         self.nonneg_regul = 0  # disable nonnegativity for regularisers
     if "recon_mask_radius" not in _algorithm_:
-        _algorithm_["recon_mask_radius"] = 1.0
+        _algorithm_["recon_mask_radius"] = 2.0
     # tolerance to stop OUTER algorithm iterations earlier
     if "tolerance" not in _algorithm_:
         _algorithm_["tolerance"] = 0.0
