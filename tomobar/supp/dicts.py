@@ -83,8 +83,8 @@ def dicts_check(
     # ----------  dealing with _algorithm_  --------------
     if _algorithm_ is None:
         _algorithm_ = {}
-    if method_run in {"SIRT", "CGLS", "power", "Landweber"}:
-        _algorithm_["lipschitz_const"] = 0  # bypass Lipshitz const calculation bellow
+    if method_run in {"SIRT", "CGLS", "power", "Landweber", "OSEM"}:
+        _algorithm_["lipschitz_const"] = 0  # bypass Lipshitz const calculation
         if _algorithm_.get("iterations") is None:
             if method_run == "SIRT":
                 _algorithm_["iterations"] = 200
@@ -96,6 +96,12 @@ def dicts_check(
                 _algorithm_["iterations"] = 1500
         if _algorithm_.get("tau_step_lanweber") is None:
             _algorithm_["tau_step_lanweber"] = 1e-05
+    if method_run == "OSEM":
+        if _algorithm_.get("iterations") is None:
+            if _data_["OS_number"] > 1:
+                _algorithm_["iterations"] = 15  # Ordered - Subsets
+            else:
+                _algorithm_["iterations"] = 300  # Classical
     if method_run == "FISTA":
         # default iterations number for FISTA reconstruction algorithm
         if _algorithm_.get("iterations") is None:
@@ -139,7 +145,7 @@ def dicts_check(
         _regularisation_ = {}
     if bool(_regularisation_) is False:
         _regularisation_["method"] = None
-    if method_run in {"FISTA", "ADMM"}:
+    if method_run in {"FISTA", "ADMM", "OSEM"}:
         # regularisation parameter  (main)
         if "regul_param" not in _regularisation_:
             _regularisation_["regul_param"] = 0.001

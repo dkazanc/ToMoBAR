@@ -17,7 +17,7 @@
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
 ## Anouncements:
-*  $\sf\color{red}!$ Starting from the version 2026.3.0.0, iterative reconstruction methods will no longer be accessible through the `RecToolsIR` class, as only `RecToolsIRCuPy` is available. Please see more information in [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
+*  $\sf\color{red}!$ Starting from version 2026.3.0.0, iterative reconstruction methods will no longer be accessible through the `RecToolsIR` class as `RecToolsIRCuPy` is provided instead. Please see more information in [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
 
 ### CHANGELOG:
 See [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.

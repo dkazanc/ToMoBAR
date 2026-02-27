@@ -94,6 +94,12 @@ def test_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), -0.0011388711, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.020178854, rtol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
 
 def test_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]

@@ -38,9 +38,6 @@ class RecToolsIRCuPy:
     :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`
     function of ToMoBAR's :ref:`ref_api` for all parameters explained.
 
-    This implementation is typically several times faster than the one in :func:`RecToolsIR.FISTA` of
-    :mod:`tomobar.methodsIR`, but not all functionality is supported yet.
-
     Args:
         DetectorsDimH (int): Horizontal detector dimension size.
         DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
@@ -56,7 +53,7 @@ class RecToolsIRCuPy:
         self,
         DetectorsDimH,  # Horizontal detector dimension size.
         DetectorsDimH_pad,  # The amount of padding for the horizontal detector.
-        DetectorsDimV,  # Vertical detector dimension (3D case), 0 or None for 2D case
+        DetectorsDimV,  # Vertical detector dimension (3D case supported)
         CenterRotOffset,  # The Centre of Rotation scalar or a vector
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # The size of the reconstructed object (a slice)
@@ -76,7 +73,7 @@ class RecToolsIRCuPy:
 
         if DetectorsDimV == 0 or DetectorsDimV is None:
             raise ValueError(
-                "2D CuPy iterative reconstruction is not supported, only 3D reconstruction is supported"
+                "2D iterative reconstruction is not currently supported, please use 3D data"
             )
         else:
             self.geom = "3D"
@@ -376,7 +373,7 @@ class RecToolsIRCuPy:
     ):
         if self.geom == "2D":
             # 2D reconstruction
-            raise ValueError("2D CuPy reconstruction is not yet supported")
+            raise ValueError("2D iterative reconstruction is not yet supported")
 
         ######################################################################
         # parameters check and initialisation
@@ -404,7 +401,10 @@ class RecToolsIRCuPy:
                 )
                 x0 = cp.zeros(rec_dim, dtype=float32, order="C")
         else:
-            x0 = cp.zeros(rec_dim, dtype=float32, order="C")
+            if method_run == "OSEM":
+                x0 = cp.ones(rec_dim, dtype=float32, order="C")
+            else:
+                x0 = cp.zeros(rec_dim, dtype=float32, order="C")
 
         use_os = _data_upd_["OS_number"] > 1
         if use_os:
@@ -514,7 +514,7 @@ class RecToolsIRCuPy:
         of regularisation and data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
 
         Args:
-            _data_ (dict): Data dictionary, where input data is provided.
+            _data_ (dict): Data dictionary, where input data (raw counts) is provided.
             _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
             _regularisation_ (dict, optional): Regularisation dictionary.
 
@@ -534,6 +534,7 @@ class RecToolsIRCuPy:
             _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
         proj_data = _data_upd_["projection_data"]
+
         indVec = None
         x = x0.copy()
         z = x0.copy()
@@ -576,7 +577,7 @@ class RecToolsIRCuPy:
 
                 x_prox_reg = z + u
 
-                # X-update (proximal regularization)
+                # X-update (proximal regularisation)
                 if _regularisation_upd_["method"] is not None:
                     x = prox_regul(self, x_prox_reg, _regularisation_upd_)
                 else:
@@ -594,6 +595,88 @@ class RecToolsIRCuPy:
                         _regularisation_upd_["method"],
                         "regularisation",
                     )
+
+        if self.objsize_user_given is not None:
+            return perform_recon_crop(x, self.objsize_user_given)
+
+        additional_args = {
+            "cupyrun": True,
+            "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
+        }
+        return check_kwargs(x, **additional_args)
+
+    def OSEM(
+        self,
+        _data_: dict,
+        _algorithm_: Union[dict, None] = None,
+        _regularisation_: Union[dict, None] = None,
+    ) -> cp.ndarray:
+        """Ordered Subsets Expectation Maximization (OSEM) or MLEM when OS_number=1 for emission data with various types
+        of regularisation and data fidelity terms provided in three dictionaries, see :mod:`tomobar.supp.dicts`
+
+        Args:
+            _data_ (dict): Data dictionary, where input data is provided.
+            _algorithm_ (dict, optional): Algorithm dictionary where algorithm parameters are provided.
+            _regularisation_ (dict, optional): Regularisation dictionary.
+
+        Returns:
+            xp.ndarray: OSEM-reconstructed CuPy array
+        """
+        cp._default_memory_pool.free_all_blocks()
+        ######################################################################
+        (
+            _data_upd_,
+            _algorithm_upd_,
+            _regularisation_upd_,
+            x,
+            w,
+            use_os,
+        ) = self.__common_initialisation(
+            _data_, _algorithm_, _regularisation_, method_run="OSEM"
+        )
+        ######################################################################
+
+        eps = 1e-8
+        proj_data = _data_upd_["projection_data"]
+        if not use_os:
+            normalisation = self._Atb(
+                cp.ones_like(proj_data, dtype=cp.float32, order="C")
+            )
+            normalisation = cp.clip(normalisation, eps, None)
+            normalisation /= 1
+        else:
+            indVec = self.Atools.newInd_Vec[0, :]
+            if indVec[self.Atools.NumbProjBins - 1] == 0:
+                indVec = indVec[:-1]  # shrink vector size
+            normalisation = self._Atb(
+                cp.ones_like(proj_data[:, indVec, :], dtype=cp.float32, order="C"),
+                0,
+                use_os,
+            )
+            normalisation = cp.clip(normalisation, eps, None)
+            normalisation /= 1
+
+        # OSEM/MLEM iterations
+        for iter_no in range(_algorithm_upd_["iterations"]):
+            for sub_ind in range(_data_upd_["OS_number"]):
+                if use_os:
+                    # select a specific set of indeces for the subset (OS)
+                    indVec = self.Atools.newInd_Vec[sub_ind, :]
+                    if indVec[self.Atools.NumbProjBins - 1] == 0:
+                        indVec = indVec[:-1]  # shrink vector size
+                    proj_data = _data_upd_["projection_data"][:, indVec, :]
+
+                Ax = self._Ax(x, sub_ind, use_os)
+                Ax = cp.clip(Ax, eps, None)
+                ratio = proj_data / Ax
+                backproj = self._Atb(ratio, sub_ind, use_os)
+
+                # multiplicative update
+                x *= backproj * normalisation
+
+                # proximal regularisation
+                if _regularisation_upd_["method"] is not None:
+                    x = prox_regul(self, x, _regularisation_upd_)
 
         if self.objsize_user_given is not None:
             return perform_recon_crop(x, self.objsize_user_given)

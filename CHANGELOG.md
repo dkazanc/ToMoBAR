@@ -16,6 +16,7 @@ Changes:
 * `RecToolsIR` class and all associated tests being removed. The old demos are still available in `methods_IR_legacy`.
 * Dependency on [Regularisation Toolkit](https://github.com/TomographicImaging/CCPi-Regularisation-Toolk) is dropped.
 * Significant refactoring of `RecToolsIRCuPy` and the breaking change that removes `datafidelity` from the class and one can control fidelities from the `_data_` dictionary given as `_data_["data_fidelity"]`.
+* Ordered Subsets Expectation Maximization (OSEM) and MLEM added in `RecToolsIRCuPy` for emission-type data.
 * Upgrade of dependencies to CuPy 14.* and numpy 2.4.
 
 
