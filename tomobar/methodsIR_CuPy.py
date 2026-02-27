@@ -1,14 +1,15 @@
 """Reconstruction class for regularised iterative methods using CuPy library.
 
-* :func:`RecToolsIRCuPy.FISTA` iterative regularised algorithm [BT2009]_, [Xu2016]_. Implemented with the help of ASTRA's DirectLink experimental feature.
+* :func:`RecToolsIRCuPy.FISTA` iterative regularised algorithm [BT2009]_, [Xu2016]_.
 * :func:`RecToolsIRCuPy.ADMM` iterative regularised algorithm [Boyd2011]_.
 * :func:`RecToolsIRCuPy.Landweber` algorithm.
 * :func:`RecToolsIRCuPy.SIRT` algorithm.
 * :func:`RecToolsIRCuPy.CGLS` algorithm.
+* :func:`RecToolsIRCuPy.OSEM` algorithm.
 """
 
 import numpy as np
-from typing import Union
+from typing import Union, Optional
 from numpy import float32
 
 try:
@@ -26,7 +27,7 @@ from tomobar.supp.suppTools import (
     perform_recon_crop,
     _apply_horiz_detector_padding,
 )
-from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
+from tomobar.supp.dicts import dicts_check
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.data_fidelities import grad_data_term
@@ -42,25 +43,29 @@ class RecToolsIRCuPy:
         DetectorsDimH (int): Horizontal detector dimension size.
         DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
         DetectorsDimV (int): Vertical detector dimension size.
-        CenterRotOffset (float): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        CenterRotOffset (float, np.ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): The size of the reconstructed object (a slice) defined as [recon_size, recon_size].
         device_projector (int, optional): Provide a GPU index of a specific GPU device. Defaults to 0.
-        cupyrun (bool, optional): instantiate CuPy modules.
+        OS_number (int, optional): The number of ordered-subset, set to None for non-OS reconstruction
     """
 
     def __init__(
         self,
-        DetectorsDimH,  # Horizontal detector dimension size.
-        DetectorsDimH_pad,  # The amount of padding for the horizontal detector.
-        DetectorsDimV,  # Vertical detector dimension (3D case supported)
-        CenterRotOffset,  # The Centre of Rotation scalar or a vector
-        AnglesVec,  # Array of projection angles in radians
-        ObjSize,  # The size of the reconstructed object (a slice)
-        device_projector=0,  # provide a GPU index (integer) of a specific device
-        cupyrun=True,
+        DetectorsDimH: int,  # Horizontal detector dimension size.
+        DetectorsDimH_pad: int,  # The amount of padding for the horizontal detector.
+        DetectorsDimV: int,  # Vertical detector dimension (3D case supported)
+        CenterRotOffset: Union[
+            float, np.ndarray
+        ],  # The Centre of Rotation scalar or a vector
+        AnglesVec: np.ndarray,  # Array of projection angles in radians
+        ObjSize: int,  # The size of the reconstructed object (a slice)
+        device_projector: int = 0,  # provide a GPU index (integer) of a specific device
+        OS_number: Optional[
+            int
+        ] = None,  # The number of ordered-subset, set to None for non-OS reconstruction
     ):
-        self.cupyrun = cupyrun
+        self.OS_number = OS_number
 
         if DetectorsDimH_pad == 0:
             self.objsize_user_given = None
@@ -75,6 +80,17 @@ class RecToolsIRCuPy:
             raise ValueError(
                 "2D iterative reconstruction is not currently supported, please use 3D data"
             )
+            self.geom = "2D"
+            self.Atools = AstraTools2D(
+                sDetectorsDimH,
+                DetectorsDimH_pad,
+                AnglesVec,
+                CenterRotOffset,
+                ObjSize,
+                "gpu",
+                device_projector,
+                OS_number,
+            )
         else:
             self.geom = "3D"
             self.Atools = AstraTools3D(
@@ -86,15 +102,19 @@ class RecToolsIRCuPy:
                 ObjSize,
                 "gpu",
                 device_projector,
+                OS_number,
             )
 
     @property
-    def cupyrun(self) -> int:
-        return self._cupyrun
+    def OS_number(self) -> int:
+        return self._OS_number
 
-    @cupyrun.setter
-    def cupyrun(self, cupyrun_val):
-        self._cupyrun = cupyrun_val
+    @OS_number.setter
+    def OS_number(self, OS_number_val):
+        if OS_number_val is not None:
+            self._OS_number = OS_number_val
+        else:
+            self._OS_number = 1
 
     @property
     def objsize_user_given(self) -> int:
@@ -152,12 +172,8 @@ class RecToolsIRCuPy:
         )  # initialisation
 
         for _ in range(_algorithm_upd_["iterations"]):
-            residual = (
-                self.Atools._forwprojCuPy(x_rec) - _data_upd_["projection_data"]
-            )  # Ax - b term
-            x_rec -= _algorithm_upd_["tau_step_lanweber"] * self.Atools._backprojCuPy(
-                residual
-            )
+            residual = self._Ax(x_rec) - _data_upd_["projection_data"]  # Ax - b term
+            x_rec -= _algorithm_upd_["tau_step_lanweber"] * self._Atb(residual)
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
@@ -332,17 +348,12 @@ class RecToolsIRCuPy:
             w = cp.maximum(w, 1e-6)
             w /= w.max()
 
-        if _data_.get("OS_number") is None:
-            _data_["OS_number"] = 1  # the classical approach (default)
-        else:
-            _data_ = _reinitialise_atools_OS(self, _data_)
-
         power_iterations = 15
         s = 1.0
         proj_geom = astra.geom_size(self.Atools.vol_geom)
         x1 = cp.random.randn(*proj_geom, dtype=cp.float32)
 
-        if _data_["OS_number"] == 1:
+        if self.OS_number == 1:
             # non-OS approach
             y = self.Atools._forwprojCuPy(x1)
             if _data_["data_fidelity"] == "PWLS":
@@ -366,7 +377,7 @@ class RecToolsIRCuPy:
                 y = self.Atools._forwprojOSCuPy(x1, 0)
                 if _data_["data_fidelity"] == "PWLS":
                     y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
-        return s
+        return float(s)
 
     def __common_initialisation(
         self, _data_, _algorithm_, _regularisation_, method_run
@@ -406,9 +417,7 @@ class RecToolsIRCuPy:
             else:
                 x0 = cp.zeros(rec_dim, dtype=float32, order="C")
 
-        use_os = _data_upd_["OS_number"] > 1
-        if use_os:
-            _data_upd_ = _reinitialise_atools_OS(self, _data_upd_)
+        use_os = self.OS_number > 1
 
         if _data_["data_fidelity"] in ["PWLS"]:
             w = cp.asarray(_data_upd_["projection_data"])  # weights for PWLS model
@@ -467,7 +476,7 @@ class RecToolsIRCuPy:
         # FISTA iterations
         for _ in range(_algorithm_upd_["iterations"]):
             # loop over subsets (OS)
-            for sub_ind in range(_data_upd_["OS_number"]):
+            for sub_ind in range(self.OS_number):
                 X_old = X
                 t_old = t
                 if use_os:
@@ -550,7 +559,7 @@ class RecToolsIRCuPy:
 
         # ADMM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
-            for sub_ind in range(_data_upd_["OS_number"]):
+            for sub_ind in range(self.OS_number):
                 if use_os:
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]
@@ -658,7 +667,7 @@ class RecToolsIRCuPy:
 
         # OSEM/MLEM iterations
         for iter_no in range(_algorithm_upd_["iterations"]):
-            for sub_ind in range(_data_upd_["OS_number"]):
+            for sub_ind in range(self.OS_number):
                 if use_os:
                     # select a specific set of indeces for the subset (OS)
                     indVec = self.Atools.newInd_Vec[sub_ind, :]

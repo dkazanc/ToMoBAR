@@ -199,7 +199,7 @@ class AstraBase:
         )  # get the number of projections per bin (subset)
         self.newInd_Vec = np.zeros(
             [self.ordsub_number, self.NumbProjBins], dtype="int"
-        )  # 2D array of OS-sorted indeces
+        )  # 2D array of OS-sorted indices
         for sub_ind in range(self.ordsub_number):
             ind_sel = 0
             for proj_ind in range(self.NumbProjBins):

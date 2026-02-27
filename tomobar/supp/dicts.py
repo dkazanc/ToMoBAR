@@ -27,7 +27,7 @@ def dicts_check(
     Keyword Args:
         _data_['projection_data'] (ndarray): Can be either projection data after negative log or raw data given as a 3D CuPy array.
         _data_['data_axes_labels_order'] (list, None).  The order of the axes labels for the input data. The default data labels are: ["detY", "angles", "detX"].
-        _data_['OS_number'] (int): The number of the ordered subsets. If None or 1 is used then the classical (full data) algorithm executed. Defaults to 1.
+        _data_['data_fidelity'] (str). Data fidelity given as 'LS' (Least Squares), 'PWLS' (Penalised Weightes LS), 'KL' (Kullback Leilbler). Defaults to 'LS'.
 
         _algorithm_['iterations'] (int): The number of iterations for the reconstruction algorithm.
         _algorithm_['nonnegativity'] (bool): Enable nonnegativity for the solution. Defaults to False.
@@ -68,9 +68,6 @@ def dicts_check(
             # we need to reset the swap option here as the data already been modified so we don't swap it again in the method itself
             _data_["data_axes_labels_order"] = None
 
-        if _data_.get("OS_number") is None:
-            _data_["OS_number"] = 1  # classical approach (default)
-        self.OS_number = _data_["OS_number"]
         if _data_.get("data_fidelity") is None:
             _data_["data_fidelity"] = "LS"
         if _data_["data_fidelity"] not in {"LS", "PWLS", "KL"}:
@@ -79,6 +76,12 @@ def dicts_check(
             )
         else:
             self.data_fidelity = _data_["data_fidelity"]
+
+    if self.OS_number > 1:
+        if method_run in {"SIRT", "CGLS", "Landweber"}:
+            raise NameError(
+                "There is no ordered-subsets implementation for this reconstruction method, please set OS_number=None"
+            )
 
     # ----------  dealing with _algorithm_  --------------
     if _algorithm_ is None:
@@ -98,21 +101,21 @@ def dicts_check(
             _algorithm_["tau_step_lanweber"] = 1e-05
     if method_run == "OSEM":
         if _algorithm_.get("iterations") is None:
-            if _data_["OS_number"] > 1:
+            if self.OS_number > 1:
                 _algorithm_["iterations"] = 15  # Ordered - Subsets
             else:
                 _algorithm_["iterations"] = 300  # Classical
     if method_run == "FISTA":
         # default iterations number for FISTA reconstruction algorithm
         if _algorithm_.get("iterations") is None:
-            if _data_["OS_number"] > 1:
+            if self.OS_number > 1:
                 _algorithm_["iterations"] = 20  # Ordered - Subsets
             else:
                 _algorithm_["iterations"] = 400  # Classical
     if method_run == "ADMM":
         # ADMM -algorithm  augmented Lagrangian parameter
         if _algorithm_.get("iterations") is None:
-            if _data_["OS_number"] > 1:
+            if self.OS_number > 1:
                 _algorithm_["iterations"] = 10  # Ordered - Subsets
             else:
                 _algorithm_["iterations"] = 400  # Classical
@@ -167,38 +170,3 @@ def dicts_check(
         if "device_regulariser" not in _regularisation_:
             _regularisation_["device_regulariser"] = 0
     return (_data_, _algorithm_, _regularisation_)
-
-
-def _reinitialise_atools_OS(self, _data_: dict):
-    """reinitialises OS geometry by overwriting the existing Atools
-       Note: Not an ideal thing to do as it can lead to various problems,
-       worth considering moving the subsets definition to the class init.
-
-    Args:
-        _data_ (dict): data dictionary
-    """
-
-    if self.geom == "2D":
-        self.Atools = AstraTools2D(
-            self.Atools.detectors_x,
-            self.Atools.detectors_x_pad,
-            self.Atools.angles_vec,
-            self.Atools.centre_of_rotation,
-            self.Atools.recon_size,
-            self.Atools.processing_arch,
-            self.Atools.device_index,
-            _data_["OS_number"],
-        )  # initiate 2D ASTRA class OS object
-    else:
-        self.Atools = AstraTools3D(
-            self.Atools.detectors_x,
-            self.Atools.detectors_x_pad,
-            self.Atools.detectors_y,
-            self.Atools.angles_vec,
-            self.Atools.centre_of_rotation,
-            self.Atools.recon_size,
-            self.Atools.processing_arch,
-            self.Atools.device_index,
-            _data_["OS_number"],
-        )  # initiate 3D ASTRA class OS object
-    return _data_

@@ -21,6 +21,7 @@ def test_Landweber_cp_3D(data_cupy, angles, ensure_clean_memory):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector=0,  # define the device
+        OS_number=None,  # define the number of subsets
     )
 
     _data_ = {
@@ -87,12 +88,6 @@ def test_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
 
     _algorithm_ = {"iterations": 5}
     Iter_rec = RecTools.SIRT(_data_, _algorithm_)
-
-    Iter_rec = Iter_rec.get()
-    assert_allclose(np.min(Iter_rec), -0.0011388711, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.020178854, rtol=eps)
-    assert Iter_rec.dtype == np.float32
-    assert Iter_rec.shape == (128, 160, 160)
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.0011388711, rtol=eps)
@@ -431,16 +426,15 @@ def test_FISTA_OS_cp_3D(data_cupy, angles, ensure_clean_memory):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector=0,  # define the device
+        OS_number=5,  # define the number of subsets
     )
     # data dictionary
     _data_ = {
         "projection_data": data_cupy,
-        "OS_number": 5,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
 
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
@@ -769,11 +763,11 @@ def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector=0,  # define the device
+        OS_number=2,
     )
 
     _data_ = {
         "projection_data": data_cupy,
-        "OS_number": 2,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     _algorithm_ = {
@@ -803,6 +797,7 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(data_cupy, angles, ensure_clean_memory
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector=0,  # define the device
+        OS_number=24,
     )
     initialisation_dummy = cp.zeros(
         (detY, detX + 2 * pad_value, detX + 2 * pad_value), dtype=cp.float32, order="C"
@@ -811,7 +806,6 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(data_cupy, angles, ensure_clean_memory
     _data_ = {
         "data_fidelity": "PWLS",
         "projection_data": data_cupy,
-        "OS_number": 24,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     _algorithm_ = {
