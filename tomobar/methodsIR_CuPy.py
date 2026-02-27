@@ -26,7 +26,7 @@ from tomobar.supp.suppTools import (
     perform_recon_crop,
     _apply_horiz_detector_padding,
 )
-from tomobar.supp.dicts import dicts_check_cupy, _reinitialise_atools_OS
+from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.data_fidelities import grad_data_term
@@ -134,7 +134,7 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _ = dicts_check_cupy(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="Landweber"
         )
         del _data_, _algorithm_
@@ -185,7 +185,7 @@ class RecToolsIRCuPy:
         ######################################################################
         cp._default_memory_pool.free_all_blocks()
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _ = dicts_check_cupy(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
         _data_upd_["projection_data"] = _apply_horiz_detector_padding(
@@ -242,7 +242,7 @@ class RecToolsIRCuPy:
         cp._default_memory_pool.free_all_blocks()
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _ = dicts_check_cupy(
+        _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="CGLS"
         )
         del _data_, _algorithm_
@@ -318,11 +318,6 @@ class RecToolsIRCuPy:
         if "data_axes_labels_order" not in _data_:
             _data_["data_axes_labels_order"] = None
 
-        if _data_["data_fidelity"] in ["PWLS", "SWLS"]:
-            w = cp.asarray(_data_["projection_data"])
-            w = cp.maximum(w, 1e-6)
-            w /= w.max()
-
         if _data_["data_axes_labels_order"] is not None:
             _data_["projection_data"] = _data_dims_swapper(
                 _data_["projection_data"],
@@ -331,6 +326,14 @@ class RecToolsIRCuPy:
             )
             # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
             _data_["data_axes_labels_order"] = None
+
+        if _data_.get("data_fidelity") is None:
+            _data_["data_fidelity"] = "LS"
+
+        if _data_["data_fidelity"] in ["PWLS", "SWLS"]:
+            w = cp.asarray(_data_["projection_data"])
+            w = cp.maximum(w, 1e-6)
+            w /= w.max()
 
         if _data_.get("OS_number") is None:
             _data_["OS_number"] = 1  # the classical approach (default)
@@ -377,7 +380,7 @@ class RecToolsIRCuPy:
 
         ######################################################################
         # parameters check and initialisation
-        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check_cupy(
+        _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(
             self, _data_, _algorithm_, _regularisation_, method_run=method_run
         )
         ######################################################################
@@ -560,7 +563,7 @@ class RecToolsIRCuPy:
                 )
 
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)
-                z = z - tau * (grad_data + grad_admm)
+                z -= tau * (grad_data + grad_admm)
 
                 if _algorithm_upd_["nonnegativity"]:
                     cp.maximum(z, 0, out=z)  # non-negativity projection

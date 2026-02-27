@@ -36,5 +36,5 @@ def grad_data_term(
                 cp.multiply(res, w, out=res)
     elif self.data_fidelity == "KL":
         # Kullback-Leibler term. Note that b in that case should be given as pre-log data (raw)
-        res = 1 - b / (self._Ax(x, sub_ind, use_os) + 1e-8)
+        res = 1 - b / cp.clip(self._Ax(x, sub_ind, use_os), 1e-8, None)
     return self._Atb(res, sub_ind, use_os)
