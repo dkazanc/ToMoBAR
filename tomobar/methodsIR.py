@@ -177,13 +177,13 @@ class RecToolsIR:
         """
         if "data_axes_labels_order" not in _data_:
             _data_["data_axes_labels_order"] = None
-        # if (
-        #     self.datafidelity in ["PWLS", "SWLS"]
-        #     and "projection_raw_data" not in _data_
-        # ):
-        #     raise ValueError("Please provide projection_raw_data for this model")
-        # if self.datafidelity in ["PWLS", "SWLS"]:
-        #     sqweight = _data_["projection_raw_data"]
+        if (
+            self.datafidelity in ["PWLS", "SWLS"]
+            and "projection_raw_data" not in _data_
+        ):
+            raise ValueError("Please provide projection_raw_data for this model")
+        if self.datafidelity in ["PWLS", "SWLS"]:
+            sqweight = _data_["projection_raw_data"]
 
         if _data_["data_axes_labels_order"] is not None:
             if self.geom == "2D":

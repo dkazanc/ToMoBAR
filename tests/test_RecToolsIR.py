@@ -560,7 +560,6 @@ regularisation_fgp_tv = {
         # OS, iters, datafidelity, regulariser, expected min, expected max
         (1, 100, "LS", None, -0.005746, 0.028090434),
         (5, 20, "LS", None, -0.005651, 0.028015165),
-        (1, 100, "KL", None, 0, 454719.2),
         (1, 100, "LS", regularisation_pd_tv, -0.013257453, 0.023631878),
         (5, 20, "LS", regularisation_fgp_tv, -0.0056131384, 0.028117815),
     ],

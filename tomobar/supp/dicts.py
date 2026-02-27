@@ -75,11 +75,11 @@ def dicts_check(
         if _data_.get("projection_norm_data") is None:
             raise NameError("No input 'projection_norm_data' has been provided")
         # projection raw data for PWLS/SWLS type data models
-        # if _data_.get("projection_raw_data") is None:
-        #     if self.datafidelity in ["PWLS", "SWLS"]:
-        #         raise NameError(
-        #             "No input 'projection_raw_data' provided for PWLS or SWLS data fidelity"
-        #         )
+        if _data_.get("projection_raw_data") is None:
+            if self.datafidelity in ["PWLS", "SWLS"]:
+                raise NameError(
+                    "No input 'projection_raw_data' provided for PWLS or SWLS data fidelity"
+                )
 
         if "data_axes_labels_order" not in _data_:
             _data_["data_axes_labels_order"] = None
@@ -91,24 +91,24 @@ def dicts_check(
                     _data_["data_axes_labels_order"],
                     ["angles", "detX"],
                 )
-                # if self.datafidelity in ["PWLS", "SWLS"]:
-                #     _data_["projection_raw_data"] = _data_dims_swapper(
-                #         _data_["projection_raw_data"],
-                #         _data_["data_axes_labels_order"],
-                #         ["angles", "detX"],
-                #     )
+                if self.datafidelity in ["PWLS", "SWLS"]:
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["angles", "detX"],
+                    )
             else:
                 _data_["projection_norm_data"] = _data_dims_swapper(
                     _data_["projection_norm_data"],
                     _data_["data_axes_labels_order"],
                     ["detY", "angles", "detX"],
                 )
-                # if self.datafidelity in ["PWLS", "SWLS"]:
-                #     _data_["projection_raw_data"] = _data_dims_swapper(
-                #         _data_["projection_raw_data"],
-                #         _data_["data_axes_labels_order"],
-                #         ["detY", "angles", "detX"],
-                #     )
+                if self.datafidelity in ["PWLS", "SWLS"]:
+                    _data_["projection_raw_data"] = _data_dims_swapper(
+                        _data_["projection_raw_data"],
+                        _data_["data_axes_labels_order"],
+                        ["detY", "angles", "detX"],
+                    )
                 # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
             _data_["data_axes_labels_order"] = None
 
@@ -160,9 +160,9 @@ def dicts_check(
                 _algorithm_["iterations"] = 20  # Ordered - Subsets
             else:
                 _algorithm_["iterations"] = 400  # Classical
-    # if _algorithm_.get("lipschitz_const") is None:
-    #     # if not provided calculate Lipschitz constant automatically
-    #     _algorithm_["lipschitz_const"] = self.powermethod(_data_)
+    if _algorithm_.get("lipschitz_const") is None:
+        # if not provided calculate Lipschitz constant automatically
+        _algorithm_["lipschitz_const"] = self.powermethod(_data_)
     if method_run == "ADMM":
         # ADMM -algorithm  augmented Lagrangian parameter
         if "ADMM_rho_const" not in _algorithm_:
