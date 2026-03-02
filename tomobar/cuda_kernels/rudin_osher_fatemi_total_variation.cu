@@ -67,7 +67,7 @@ __device__ __forceinline__ long long calculate_index(long i, long j, int dimX)
 }
 
 template <typename T>
-__global__ void divergence_kernel_2D(float *Update_in, T *D1, T *D2, int dimX, int dimY)
+__device__ __forceinline__ void divergence_kernel_2D_impl(float *Update_in, T *D1, T *D2, int dimX, int dimY)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -103,8 +103,18 @@ __global__ void divergence_kernel_2D(float *Update_in, T *D1, T *D2, int dimX, i
     write_float<T>(D2, index, normalize_difference(NOMy_1, denom_x, NOMy_1_squared));
 }
 
+extern "C" __global__ void divergence_kernel_2D_half(float *Update_in, __half *D1, __half *D2, int dimX, int dimY)
+{
+    divergence_kernel_2D_impl(Update_in, D1, D2, dimX, dimY);
+}
+
+extern "C" __global__ void divergence_kernel_2D_float(float *Update_in, float *D1, float *D2, int dimX, int dimY)
+{
+    divergence_kernel_2D_impl(Update_in, D1, D2, dimX, dimY);
+}
+
 template <typename T>
-__global__ void TV_kernel2D(float *Update_in, float *Update_out, float *Input, T *D1, T *D2, float lambdaPar, float tau, int dimX, int dimY)
+__device__ __forceinline__ void TV_kernel_2D_impl(float *Update_in, float *Update_out, float *Input, T *D1, T *D2, float lambdaPar, float tau, int dimX, int dimY)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -127,6 +137,16 @@ __global__ void TV_kernel2D(float *Update_in, float *Update_out, float *Input, T
     Update_out[index] = U_in + tau * (lambdaPar * (dv1 + dv2) - (U_in - I));
 }
 
+extern "C" __global__ void TV_kernel_2D_half(float *Update_in, float *Update_out, float *Input, __half *D1, __half *D2, float lambdaPar, float tau, int dimX, int dimY)
+{
+    TV_kernel_2D_impl(Update_in, Update_out, Input, D1, D2, lambdaPar, tau, dimX, dimY);
+}
+
+extern "C" __global__ void TV_kernel_2D_float(float *Update_in, float *Update_out, float *Input, float *D1, float *D2, float lambdaPar, float tau, int dimX, int dimY)
+{
+    TV_kernel_2D_impl(Update_in, Update_out, Input, D1, D2, lambdaPar, tau, dimX, dimY);
+}
+
 /*********************3D case****************************/
 __device__ __forceinline__ long long calculate_index(long i, long j, long k, int dimX, int dimY)
 {
@@ -134,7 +154,7 @@ __device__ __forceinline__ long long calculate_index(long i, long j, long k, int
 }
 
 template <typename T>
-__global__ void divergence_kernel_3D(float *Update_in, T *D1, T *D2, T *D3, int dimX, int dimY, int dimZ)
+__device__ __forceinline__ void divergence_kernel_3D_impl(float *Update_in, T *D1, T *D2, T *D3, int dimX, int dimY, int dimZ)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -180,8 +200,18 @@ __global__ void divergence_kernel_3D(float *Update_in, T *D1, T *D2, T *D3, int 
     write_float<T>(D3, index, normalize_difference(NOMz_1, denom_x, denom_y, NOMz_1_squared));
 }
 
+extern "C" __global__ void divergence_kernel_3D_half(float *Update_in, __half *D1, __half *D2, __half *D3, int dimX, int dimY, int dimZ)
+{
+    divergence_kernel_3D_impl(Update_in, D1, D2, D3, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void divergence_kernel_3D_float(float *Update_in, float *D1, float *D2, float *D3, int dimX, int dimY, int dimZ)
+{
+    divergence_kernel_3D_impl(Update_in, D1, D2, D3, dimX, dimY, dimZ);
+}
+
 template <typename T>
-__global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, T *D1, T *D2, T *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
+__device__ __forceinline__ void TV_kernel_3D_impl(float *Update_in, float *Update_out, float *Input, T *D1, T *D2, T *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
 {
     const long i = blockDim.x * blockIdx.x + threadIdx.x;
     const long j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -205,4 +235,14 @@ __global__ void TV_kernel3D(float *Update_in, float *Update_out, float *Input, T
     float dv3 = read_as_float<T>(D3, index) - read_as_float<T>(D3, calculate_index(i, j, k2, dimX, dimY));
 
     Update_out[index] = U_in + tau * (lambdaPar * (dv1 + dv2 + dv3) - (U_in - I));
+}
+
+extern "C" __global__ void TV_kernel_3D_half(float *Update_in, float *Update_out, float *Input, __half *D1, __half *D2, __half *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
+{
+    TV_kernel_3D_impl<__half>(Update_in, Update_out, Input, D1, D2, D3, lambdaPar, tau, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void TV_kernel_3D_float(float *Update_in, float *Update_out, float *Input, float *D1, float *D2, float *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
+{
+    TV_kernel_3D_impl<float>(Update_in, Update_out, Input, D1, D2, D3, lambdaPar, tau, dimX, dimY, dimZ);
 }

@@ -123,7 +123,7 @@ __device__ float DivProj3D(float Input, float U_in, float P1, float P2, float P3
 }
 
 template <typename T, bool nonneg, bool methodTV>
-__global__ void primal_dual_for_total_variation_3D(float *Input, float *U_in, float *U_out, T *P1_in, T *P2_in, T *P3_in, T *P1_out, T *P2_out, T *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+__device__ __forceinline__ void primal_dual_for_total_variation_3D_impl(float *Input, float *U_in, float *U_out, T *P1_in, T *P2_in, T *P3_in, T *P1_out, T *P2_out, T *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
   // calculate each thread global index
   const long xIndex = blockIdx.x * blockDim.x + threadIdx.x;
@@ -260,6 +260,46 @@ __global__ void primal_dual_for_total_variation_3D(float *Input, float *U_in, fl
   write_float<T>(P3_out, index, P3);
 }
 
+extern "C" __global__ void primal_dual_for_total_variation_3D_half(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+{
+  primal_dual_for_total_variation_3D_impl<__half, false, false>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_3D_half_nonneg(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+{
+  primal_dual_for_total_variation_3D_impl<__half, true, false>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_3D_half_methodTV(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+{
+  primal_dual_for_total_variation_3D_impl<__half, false, true>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_3D_half_nonneg_methodTV(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+{
+  primal_dual_for_total_variation_3D_impl<__half, true, true>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_3D_float(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+{
+  primal_dual_for_total_variation_3D_impl<float, false, false>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_3D_float_nonneg(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+{
+  primal_dual_for_total_variation_3D_impl<float, true, false>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_3D_float_methodTV(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+{
+  primal_dual_for_total_variation_3D_impl<float, false, true>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_3D_float_nonneg_methodTV(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+{
+  primal_dual_for_total_variation_3D_impl<float, true, true>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+}
+
 /************************************************/
 /*****************2D modules*********************/
 /************************************************/
@@ -318,7 +358,7 @@ __device__ float DivProj2D(float Input, float U_in, float P1, float P2, float P1
 }
 
 template <typename T, bool nonneg, bool methodTV>
-__global__ void primal_dual_for_total_variation_2D(float *Input, float *U_in, float *U_out, T *P1_in, T *P2_in, T *P1_out, T *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+__device__ __forceinline__ void primal_dual_for_total_variation_2D_impl(float *Input, float *U_in, float *U_out, T *P1_in, T *P2_in, T *P1_out, T *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
   // calculate each thread global index
   const long xIndex = blockIdx.x * blockDim.x + threadIdx.x;
@@ -409,4 +449,44 @@ __global__ void primal_dual_for_total_variation_2D(float *Input, float *U_in, fl
 
   write_float<T>(P1_out, index, P1);
   write_float<T>(P2_out, index, P2);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_2D_half(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+{
+  primal_dual_for_total_variation_2D_impl<__half, false, false>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_2D_half_nonneg(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+{
+  primal_dual_for_total_variation_2D_impl<__half, true, false>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_2D_half_methodTV(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+{
+  primal_dual_for_total_variation_2D_impl<__half, false, true>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_2D_half_nonneg_methodTV(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+{
+  primal_dual_for_total_variation_2D_impl<__half, true, true>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_2D_float(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P1_out, float *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+{
+  primal_dual_for_total_variation_2D_impl<float, false, false>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_2D_float_nonneg(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P1_out, float *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+{
+  primal_dual_for_total_variation_2D_impl<float, true, false>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_2D_float_methodTV(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P1_out, float *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+{
+  primal_dual_for_total_variation_2D_impl<float, false, true>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
+}
+
+extern "C" __global__ void primal_dual_for_total_variation_2D_float_nonneg_methodTV(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P1_out, float *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
+{
+  primal_dual_for_total_variation_2D_impl<float, true, true>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
 }
