@@ -205,12 +205,12 @@ RectoolsCuPy = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector=0,
+    OS_number=6,  # The number of ordered subsets
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "data_fidelity": "LS",
     "projection_data": projData3D_analyt_cupy,  # Normalised projection data
-    "OS_number": 6,  # The number of subsets
     "data_axes_labels_order": input_data_labels,
 }
 
@@ -272,12 +272,12 @@ RectoolsCuPy = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector=0,
+    OS_number=36,  # The number of ordered subsets
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "data_fidelity": "LS",
     "projection_data": projData3D_analyt_cupy,  # Normalised projection data
-    "OS_number": 36,  # The number of subsets
     "data_axes_labels_order": input_data_labels,
 }
 

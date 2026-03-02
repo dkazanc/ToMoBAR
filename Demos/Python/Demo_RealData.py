@@ -142,7 +142,7 @@ _data_ = {
 
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 400,
+    "iterations": 300,
     "recon_mask_radius": 2.0,
 }  # The number of iterations
 
@@ -167,12 +167,12 @@ RectoolsCuPy = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector=0,
+    OS_number=6,  # The number of ordered subsets
 )
 
 _data_ = {
     "data_fidelity": "PWLS",
     "projection_data": data_norm_cupy,  # Normalised projection data
-    "OS_number": 6,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
 tic = timeit.default_timer()
@@ -189,7 +189,6 @@ _regularisation_ = {
     "iterations": 50,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
-
 
 # RUN THE FISTA METHOD:
 RecFISTA_os_tv = RectoolsCuPy.FISTA(_data_, _algorithm_, _regularisation_)
@@ -217,12 +216,12 @@ RectoolsCuPy = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector=0,
+    OS_number=24,  # The number of ordered subsets
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "data_fidelity": "PWLS",
     "projection_data": data_norm_cupy,  # Normalised projection data
-    "OS_number": 24,  # The number of subsets
     "data_axes_labels_order": data_labels3D,
 }
 
