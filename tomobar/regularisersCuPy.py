@@ -78,14 +78,14 @@ def ROF_TV_cupy(
     d_D1 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
     d_D2 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
 
-    type_of_P = "__half" if half_precision else "float"
-    name_expressions = [
-        f"divergence_kernel_2D<{type_of_P}>",
-        f"TV_kernel2D<{type_of_P}>",
-        f"divergence_kernel_3D<{type_of_P}>",
-        f"TV_kernel3D<{type_of_P}>",
-    ]
-    module = load_cuda_module("rudin_osher_fatemi_total_variation", name_expressions)
+    module = load_cuda_module("rudin_osher_fatemi_total_variation")
+
+    divergence_kernel_name = (
+        f"divergence_kernel_{data.ndim}D_{'half' if half_precision else 'float'}"
+    )
+    divergence_kernel = module.get_function(divergence_kernel_name)
+    TV_kernel_name = f"TV_kernel_{data.ndim}D_{'half' if half_precision else 'float'}"
+    TV_kernel = module.get_function(TV_kernel_name)
 
     dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
     block_x = 128
@@ -95,18 +95,12 @@ def ROF_TV_cupy(
     grid_dims = (grid_x, grid_y)
     data_dims = (dx, dy)
 
-    if data.ndim == 2:
-        divergence_kernel = module.get_function(name_expressions[0])
-        TV_kernel = module.get_function(name_expressions[1])
-    elif data.ndim == 3:
+    if data.ndim == 3:
         d_D3 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
 
         block_dims = block_dims + (1,)
         grid_dims = grid_dims + (dz,)
         data_dims = data_dims + (dz,)
-
-        divergence_kernel = module.get_function(name_expressions[2])
-        TV_kernel = module.get_function(name_expressions[3])
 
     # perform algorithm iterations
     input_index = 0
@@ -222,14 +216,14 @@ def PD_TV_cupy(
     P2_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
 
     # loading and compiling CUDA kernels:
-    type_of_P = "__half" if half_precision else "float"
-    nonneg_kernel_param = "true" if bool(nonneg) else "false"
-    methodTV_kernel_param = "true" if bool(methodTV) else "false"
-    name_expressions = [
-        f"primal_dual_for_total_variation_2D<{type_of_P}, {nonneg_kernel_param}, {methodTV_kernel_param}>",
-        f"primal_dual_for_total_variation_3D<{type_of_P}, {nonneg_kernel_param}, {methodTV_kernel_param}>",
-    ]
-    module = load_cuda_module("primal_dual_for_total_variation", name_expressions)
+    kernel_name = f"primal_dual_for_total_variation_{'3D' if data.ndim == 3 else '2D'}_{'half' if half_precision else 'float'}"
+    if nonneg:
+        kernel_name += "_nonneg"
+    if methodTV:
+        kernel_name += "_methodTV"
+
+    module = load_cuda_module("primal_dual_for_total_variation")
+    primal_dual_for_total_variation = module.get_function(kernel_name)
 
     dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
     block_x = 128
@@ -239,17 +233,13 @@ def PD_TV_cupy(
     grid_dims = (grid_x, grid_y)
     data_dims = (dx, dy)
 
-    if data.ndim == 2:
-        primal_dual_for_total_variation = module.get_function(name_expressions[0])
-    elif data.ndim == 3:
+    if data.ndim == 3:
         P3_arrays = [
             cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)
         ]
         block_dims = block_dims + (1,)
         grid_dims = grid_dims + (dz,)
         data_dims = data_dims + (dz,)
-
-        primal_dual_for_total_variation = module.get_function(name_expressions[1])
 
     # perform algorithm iterations
     input_index = 0
