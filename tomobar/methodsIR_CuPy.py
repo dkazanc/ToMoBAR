@@ -328,25 +328,8 @@ class RecToolsIRCuPy:
         Returns:
             float: the Lipschitz constant
         """
-        if "data_axes_labels_order" not in _data_:
-            _data_["data_axes_labels_order"] = None
-
-        if _data_["data_axes_labels_order"] is not None:
-            _data_["projection_data"] = _data_dims_swapper(
-                _data_["projection_data"],
-                _data_["data_axes_labels_order"],
-                ["detY", "angles", "detX"],
-            )
-            # we need to reset the swap option here as the data already been modified so we don't swap it again in the method
-            _data_["data_axes_labels_order"] = None
-
         if _data_.get("data_fidelity") is None:
             _data_["data_fidelity"] = "LS"
-
-        if _data_["data_fidelity"] in ["PWLS", "SWLS"]:
-            w = cp.asarray(_data_["projection_data"])
-            w = cp.maximum(w, 1e-6)
-            w /= w.max()
 
         power_iterations = 15
         s = 1.0
@@ -357,6 +340,7 @@ class RecToolsIRCuPy:
             # non-OS approach
             y = self.Atools._forwprojCuPy(x1)
             if _data_["data_fidelity"] == "PWLS":
+                w = cp.ones_like(y)
                 y = cp.multiply(w, y)
             for _ in range(power_iterations):
                 x1 = self.Atools._backprojCuPy(y)
@@ -369,6 +353,7 @@ class RecToolsIRCuPy:
             # OS approach
             y = self.Atools._forwprojOSCuPy(x1, 0)
             if _data_["data_fidelity"] == "PWLS":
+                w = cp.ones_like(y)
                 y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
             for _ in range(power_iterations):
                 x1 = self.Atools._backprojOSCuPy(y, 0)

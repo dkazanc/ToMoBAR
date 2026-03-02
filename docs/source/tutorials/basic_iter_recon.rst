@@ -17,28 +17,26 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
     data_norm = normaliser(dataRaw, flats, darks, log=True, method="mean", axis=1)
 
-* Instantiate the iterative reconstructor :mod:`tomobar.methodsIR`:
+* Instantiate the iterative reconstructor :mod:`tomobar.methodsIR_CuPy`:
 
 .. code-block:: python
 
-    from tomobar.methodsIR import RecToolsIR
+    import cupy as cp
+    from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
-    Rectools = RecToolsIR(
+    Rectools = RecToolsIRCuPy(
         DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
         DetectorsDimH_pad=0,  # Padding size of horizontal detector
         DetectorsDimV=detectorVert,  # Vertical detector dimension
         CenterRotOffset=0.0,  # Center of Rotation (needs to be found)
         AnglesVec=angles_rad,  # A vector of projection angles in radians
         ObjSize=detectorHoriz,  # The reconstructed object dimensions
-        datafidelity="LS",  # Least-Squares data fidelity for basic methods
-        device_projector="gpu",  # Device to perform reconstruction on
+        device_projector=0,  # Device to perform reconstruction on
     )
 
-* Now we have an access to all methods of this particular reconstructor.
-     The basic iterative algorithms are wrapped directly from ASTRA-Toolbox,
-     with an exception of CuPy-enabled ones. Let us use SIRT and CGLS reconstruction algorithms.
+* Now we have an access to all methods of this particular reconstructor. Let us use SIRT and CGLS reconstruction algorithms.
 
      **Please note that the dictionaries needed for all iterative methods with exact
      keyword arguments defined in** :mod:`tomobar.supp.dicts`.
@@ -46,15 +44,14 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 .. code-block:: python
 
     _data_ = {
-        "projection_norm_data": data_norm,
+        "projection_data": cp.asarray(data_norm),
         "data_axes_labels_order": ["detY", "angles", "detX"],
     }  # data dictionary
 
     _algorithm_ = {"iterations": 300, "nonnegativity": True}  # algorithm dict
 
     SIRT_Rec = Rectools.SIRT(_data_, _algorithm_)
+
+    _algorithm_ = {"iterations": 20, "nonnegativity": True}  # algorithm dict
+
     CGLS_Rec = Rectools.CGLS(_data_, _algorithm_)
-
-One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-For that one needs to use :mod:`tomobar.methodsIR_CuPy` class instead of :mod:`tomobar.methodsIR`. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
-
