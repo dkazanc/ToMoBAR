@@ -5,6 +5,7 @@
 * :func:`RecToolsDIR.FBP` Filtered Back Projection 2D/3D (ASTRA with the custom built filter).
 """
 
+from typing import Literal
 import numpy as np
 import scipy.fftpack
 
@@ -36,33 +37,36 @@ class RecToolsDIR:
         CenterRotOffset,  # Centre of Rotation (CoR) scalar or a vector
         AnglesVec,  # Array of angles in radians
         ObjSize,  # A scalar to define reconstructed object dimensions
+        projector: Literal["fourier", "astra"] = "astra",
         device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
     ):
         device_projector, GPUdevice_index = _parse_device_argument(device_projector)
 
         if DetectorsDimV == 0 or DetectorsDimV is None:
             self.geom = "2D"
-            self.Atools = AstraTools2D(
-                DetectorsDimH,
-                DetectorsDimH_pad,
-                AnglesVec,
-                CenterRotOffset,
-                ObjSize,
-                device_projector,
-                GPUdevice_index,
-            )
+            if projector == "astra":
+                self.Atools = AstraTools2D(
+                    DetectorsDimH,
+                    DetectorsDimH_pad,
+                    AnglesVec,
+                    CenterRotOffset,
+                    ObjSize,
+                    device_projector,
+                    GPUdevice_index,
+                )
         else:
             self.geom = "3D"
-            self.Atools = AstraTools3D(
-                DetectorsDimH,
-                DetectorsDimH_pad,
-                DetectorsDimV,
-                AnglesVec,
-                CenterRotOffset,
-                ObjSize,
-                device_projector,
-                GPUdevice_index,
-            )
+            if projector == "astra":
+                self.Atools = AstraTools3D(
+                    DetectorsDimH,
+                    DetectorsDimH_pad,
+                    DetectorsDimV,
+                    AnglesVec,
+                    CenterRotOffset,
+                    ObjSize,
+                    device_projector,
+                    GPUdevice_index,
+                )
 
     def FORWPROJ(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """Module to perform forward projection of 2d/3d data numpy array
