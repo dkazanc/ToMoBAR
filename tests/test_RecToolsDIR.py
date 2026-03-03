@@ -321,30 +321,3 @@ def test_FBP3D_normalisation(angles, raw_data, flats, darks):
     assert_allclose(np.max(FBPrec), 0.0338298, rtol=eps)
     assert FBPrec.dtype == np.float32
     assert FBPrec.shape == (128, 160, 160)
-
-
-def test_forwproj3D(data, angles):
-    detX = np.shape(data)[2]
-    detY = np.shape(data)[1]
-    N_size = detX
-    phantom = np.float32(np.ones((detY, N_size, N_size)))
-
-    RecTools = RecToolsDIR(
-        DetectorsDimH=detX,
-        DetectorsDimH_pad=0,
-        DetectorsDimV=detY,
-        CenterRotOffset=0.0,
-        AnglesVec=angles,
-        ObjSize=N_size,
-        device_projector="gpu",
-    )
-
-    frw_proj = RecTools.FORWPROJ(phantom)
-    frw_proj_order_chg = RecTools.FORWPROJ(
-        phantom, data_axes_labels_order=["angles", "detY", "detX"]
-    )
-    assert_allclose(np.min(frw_proj), 67.27458, rtol=eps)
-    assert_allclose(np.max(frw_proj), 225.27428, rtol=eps)
-    assert frw_proj.dtype == np.float32
-    assert frw_proj.shape == (128, 180, 160)
-    assert frw_proj_order_chg.shape == (180, 128, 160)

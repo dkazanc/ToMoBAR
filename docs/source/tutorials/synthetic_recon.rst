@@ -3,12 +3,14 @@
 Synthethic data reconstruction
 ******************************
 
+.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. The class `RecToolsIR` is retired starting from version 2026.3.0.1 in favor of `RecToolsIRCuPy`. This demo will be updated soon.
+
 .. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
 
 This tutorial covers a concrete example when the data is synthetically generated using
 `Tomophantom <https://github.com/dkazanc/TomoPhantom>`_ software and reconstructed using ToMoBAR.
 We recommend installing TomoPhantom (see :ref:`ref_dependencies`) as most of **Demos** use it.
-This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/DemoFISTA_real_artifacts3D.py>`_ demo.
+This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/methods_IR_legacy/DemoFISTA_real_artifacts3D.py>`_ demo.
 
 * Let us generate the 3D phantom first. For this we will use the model no.16 from the TomoPhantom's library of models.
 

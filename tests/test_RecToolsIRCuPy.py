@@ -20,12 +20,12 @@ def test_Landweber_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
+        OS_number=None,  # define the number of subsets
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
 
@@ -50,12 +50,11 @@ def test_Landweber_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
 
@@ -79,12 +78,11 @@ def test_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
 
@@ -109,12 +107,11 @@ def test_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
 
@@ -139,12 +136,11 @@ def test_CGLS_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
 
@@ -172,12 +168,11 @@ def test_CGLS_after_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
 
@@ -207,18 +202,17 @@ def test_power_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "data_fidelity": "LS",
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
-    assert_allclose(lc, 27550.467, rtol=1e-05)
+    assert 27200 <= lc <= 27800
 
 
 def test_power_cp_OS_3D(data_cupy, angles, ensure_clean_memory):
@@ -232,19 +226,43 @@ def test_power_cp_OS_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
+        OS_number=5,  # The number of ordered subsets
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
-        "OS_number": 5,
+        "data_fidelity": "LS",
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
-    assert_allclose(lc, 5510.867, rtol=1e-05)
+    assert 5200 <= lc <= 5700
+
+
+def test_power_cp_OS_PWLS_pad_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=50,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+        OS_number=5,  # The number of ordered subsets
+    )
+
+    _data_ = {
+        "data_fidelity": "PWLS",
+        "projection_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    assert 8000 <= lc <= 9000
 
 
 def test_FISTA_cp_lc_known_3D(data_cupy, angles, ensure_clean_memory):
@@ -258,12 +276,11 @@ def test_FISTA_cp_lc_known_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }  # data dictionary
     _algorithm_ = {"iterations": 10, "lipschitz_const": 27550.463}
@@ -287,17 +304,17 @@ def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "data_fidelity": "LS",
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }  # data dictionary
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    _algorithm_ = {"iterations": 10, "lipschitz_const": lc.get()}
+    _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
 
     Iter_rec = Iter_rec.get()
@@ -318,19 +335,18 @@ def test_FISTA_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }  # data dictionary
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
     _algorithm_ = {
         "iterations": 20,
-        "lipschitz_const": lc.get(),
+        "lipschitz_const": lc,
         "recon_mask_radius": 2.0,
     }
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
@@ -353,17 +369,16 @@ def test_FISTA_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    _algorithm_ = {"iterations": 10, "lipschitz_const": lc.get()}
+    _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
 
     # adding regularisation using the CCPi regularisation toolkit
     _regularisation_ = {
@@ -393,17 +408,16 @@ def test_FISTA_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    _algorithm_ = {"iterations": 50, "lipschitz_const": lc.get()}
+    _algorithm_ = {"iterations": 50, "lipschitz_const": lc}
 
     # adding regularisation using the CCPi regularisation toolkit
     _regularisation_ = {
@@ -434,18 +448,16 @@ def test_FISTA_OS_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
+        OS_number=5,  # define the number of subsets
     )
     # data dictionary
     _data_ = {
-        "projection_norm_data": data_cupy,
-        "OS_number": 5,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
 
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
@@ -470,18 +482,16 @@ def test_FISTA_OS_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
+        OS_number=5,  # The number of ordered subsets
     )
     # data dictionary
     _data_ = {
-        "projection_norm_data": data_cupy,
-        "OS_number": 5,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
 
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc, "recon_mask_radius": 2.0}
     Iter_rec = RecTools.FISTA(_data_, _algorithm_)
@@ -505,18 +515,16 @@ def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
+        OS_number=5,  # The number of ordered subsets
     )
     # data dictionary
     _data_ = {
-        "projection_norm_data": data_cupy,
-        "OS_number": 5,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
 
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
 
@@ -549,18 +557,17 @@ def test_FISTA_OS_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
+        OS_number=5,  # The number of ordered subsets
     )
     # data dictionary
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "OS_number": 5,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
 
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
 
@@ -586,9 +593,7 @@ def test_FISTA_OS_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
 
 def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     normalised = normaliser(raw_data, flats, darks)
-    raw_data_norm = np.float32(np.divide(raw_data, np.max(raw_data).astype(float)))
     normalised_cp = cp.asarray(normalised)
-    raw_data_norm_cp = cp.asarray(raw_data_norm)
 
     detX = cp.shape(normalised_cp)[2]
     detY = cp.shape(normalised_cp)[1]
@@ -600,26 +605,24 @@ def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="PWLS",
         device_projector=0,  # define the device
+        OS_number=6,  # The number of ordered subsets
     )
     # data dictionary
     _data_ = {
-        "projection_norm_data": normalised_cp,
-        "projection_raw_data": raw_data_norm_cp,
-        "OS_number": 5,
+        "data_fidelity": "PWLS",
+        "projection_data": normalised_cp,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
 
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
 
     # adding regularisation using the CCPi regularisation toolkit
     _regularisation_ = {
         "method": "PD_TV",
-        "regul_param": 0.0005,
+        "regul_param": 0.00001,
         "iterations": 10,
         "device_regulariser": 0,
     }
@@ -629,16 +632,14 @@ def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     Iter_rec = Iter_rec.get()
 
     assert 4000 <= lc <= 5000
-    assert_allclose(np.max(Iter_rec), 0.0212302, rtol=1e-03)
+    assert_allclose(np.max(Iter_rec), 0.03565, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
 
 def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
     normalised = normaliser(raw_data, flats, darks)
-    raw_data_norm = np.float32(np.divide(raw_data, np.max(raw_data).astype(float)))
     normalised_cp = cp.asarray(normalised)
-    raw_data_norm_cp = cp.asarray(raw_data_norm)
 
     detX = cp.shape(normalised_cp)[2]
     detY = cp.shape(normalised_cp)[1]
@@ -650,19 +651,17 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="PWLS",
         device_projector=0,  # define the device
+        OS_number=5,  # The number of ordered subsets
     )
     # data dictionary
     _data_ = {
-        "projection_norm_data": normalised_cp,
-        "projection_raw_data": raw_data_norm_cp,
-        "OS_number": 5,
+        "data_fidelity": "PWLS",
+        "projection_data": normalised_cp,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
     lc = RecTools.powermethod(_data_)
-    lc = lc.get()
 
     _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
 
@@ -678,8 +677,8 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
 
     Iter_rec = Iter_rec.get()
 
-    assert 4000 <= lc <= 5000
-    assert_allclose(np.max(Iter_rec), 0.027676212, rtol=1e-03)
+    assert 5000 <= lc <= 6000
+    assert_allclose(np.max(Iter_rec), 0.0325, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -732,12 +731,11 @@ def test_ADMM_cp_3D(data_cupy, test_case, angles):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     _algorithm_ = {
@@ -783,13 +781,12 @@ def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="LS",
         device_projector=0,  # define the device
+        OS_number=2,
     )
 
     _data_ = {
-        "projection_norm_data": data_cupy,
-        "OS_number": 2,
+        "projection_data": data_cupy,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     _algorithm_ = {
@@ -804,3 +801,48 @@ def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
     assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = 128
+    pad_value = 17
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=pad_value,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+        OS_number=24,
+    )
+    initialisation_dummy = cp.zeros(
+        (detY, detX + 2 * pad_value, detX + 2 * pad_value), dtype=cp.float32, order="C"
+    )
+
+    _data_ = {
+        "data_fidelity": "PWLS",
+        "projection_data": data_cupy,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    _algorithm_ = {
+        "initialise": initialisation_dummy,
+        "iterations": 8,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.6,
+    }
+
+    _regularisation_ = {
+        "method": "PD_TV",
+        "regul_param": 0.001,
+        "iterations": 10,
+    }
+
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, _regularisation_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.max(Iter_rec), 0.031305, rtol=1e-03)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 128, 128)

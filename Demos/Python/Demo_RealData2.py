@@ -1,189 +1,111 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-A script to reconstruct tomographic X-ray data (ice cream crystallisation process)
-obtained at Diamond Light Source (UK synchrotron), beamline I13
-
-
-<<<
-IF THE SHARED DATA IS USED FOR PUBLICATIONS/PRESENTATIONS etc., PLEASE CITE:
-E. Guo et al. 2018. Revealing the microstructural stability of a
-three-phase soft solid (ice cream) by 4D synchrotron X-ray tomography.
-Journal of Food Engineering, vol.237
->>>
-
+A script to reconstruct tomographic X-ray data that is simulated using Geant4
+Get the geant4_dataset1.npz file from https://zenodo.org/records/17252190
 """
 
-import h5py
+import timeit
 import numpy as np
 import matplotlib.pyplot as plt
-from tomobar.methodsIR import RecToolsIR
+import cupy as cp
+from tomobar.supp.suppTools import normaliser
+from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
-# loading data
-datapathfile = "../../data/data_icecream.h5"
-h5f = h5py.File(datapathfile, "r")
-data_norm = h5f["icecream_normalised"][:, :, 0]
-data_raw = h5f["icecream_raw"][:, :, 0]
-angles_rad = h5f["angles"][:]
-h5f.close()
+# Load the downloaded dataset
+data = np.load("/path/to/geant4_dataset1.npz")
 
-data_labels2D = ["detX", "angles"]  # set the input data labels
-detectorHoriz, angles_number = np.shape(data_norm)
+projdata = data["projdata"]
+angles = data["angles"]
+flats = data["flats"]
+darks = data["darks"]
 
-N_size = 2000
+# normalise the data
+data_norm = np.float32(normaliser(projdata, flats, darks, axis=0))
+angles_rad = np.deg2rad(angles)
+data_labels3D = ["angles", "detY", "detX"]
+
+data_norm_cupy = cp.asarray(data_norm[:, 100:300, 100:-100], order="C")
+detectorHoriz = cp.shape(data_norm_cupy)[2]
+detectorVert = cp.shape(data_norm_cupy)[1]
+
+plt.figure(0)
+plt.imshow(data_norm[:, 150, :], cmap="gray")
+plt.title("Sinogram")
+plt.show()
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsDIR import RecToolsDIR
-
-RectoolsDIR = RecToolsDIR(
+RectoolsDIR_cp = RecToolsDIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
     DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=None,  # Vertical detector dimension (3D case)
-    CenterRotOffset=92,  # Center of Rotation scalar
+    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
+    CenterRotOffset=0.0,  # Centre of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",
+    ObjSize=detectorHoriz,  # Reconstructed object dimensions (scalar)
+    device_projector=0,
 )
 
-FBPrec_nopad = RectoolsDIR.FBP(data_norm, data_axes_labels_order=data_labels2D)
+FBPrec_cupy = RectoolsDIR_cp.FBP(data_norm_cupy, data_axes_labels_order=data_labels3D)
 
-RectoolsDIR = RecToolsDIR(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=250,  # Padding size of horizontal detector
-    DetectorsDimV=None,  # Vertical detector dimension (3D case)
-    CenterRotOffset=92,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",
-)
-
-FBPrec_pad = RectoolsDIR.FBP(data_norm, data_axes_labels_order=data_labels2D)
+FBPrec_np = cp.asnumpy(FBPrec_cupy)
 
 fig = plt.figure()
-plt.subplot(121)
-plt.imshow(FBPrec_nopad, vmin=0, vmax=1, cmap="gray")
-plt.title("FBP reconstruction (no padding)")
-plt.subplot(122)
-plt.imshow(FBPrec_pad, vmin=0, vmax=1, cmap="gray")
-plt.title("FBP reconstruction (padding)")
+plt.imshow(FBPrec_np[150, :, :], cmap="gray")
+plt.title("FBP reconstruction")
 # fig.savefig('dendr_FPP.png', dpi=200)
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with FISTA PWLS-OS-TV method % %%%%%%%%%%%%%%")
+print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# FBP recon needed for warm start. Note that with padding enabled it needs to be the padded size
 
-# set parameters and initiate a class object
-Rectools = RecToolsIR(
+RectoolsCuPy = RecToolsIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
     DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=None,  # Vertical detector dimension (3D case)
-    CenterRotOffset=92,  # Center of Rotation scalar
+    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
+    ObjSize=detectorHoriz,  # Reconstructed object dimensions (scalar)
+    device_projector=0,
+    OS_number=24,  # The number of ordered subsets
 )
-
-# prepare dictionaries with parameters:
+####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": data_norm,
-    "projection_raw_data": data_raw,
-    "OS_number": 6,
-    "data_axes_labels_order": data_labels2D,
-}  # data dictionary
+    "data_fidelity": "PWLS",
+    "projection_data": data_norm_cupy,  # Normalised projection data
+    "data_axes_labels_order": data_labels3D,
+}
+#################### Creating the algorithm dictionary: #######################
+_algorithm_ = {
+    "initialise": FBPrec_cupy,
+    "iterations": 2,
+    "ADMM_rho_const": 0.9,
+    "ADMM_relax_par": 1.7,
+    "recon_mask_radius": 2.0,
+    "nonnegativity": True,
+}  # The number of iterations
 
-lc = Rectools.powermethod(
-    _data_
-)  # calculate Lipschitz constant (run once to initialise)
-
-_algorithm_ = {"iterations": 20, "lipschitz_const": lc}
-
-# adding regularisation
+##### creating regularisation dictionary: #####
 _regularisation_ = {
-    "method": "PD_TV",
-    "regul_param": 0.0012,
-    "iterations": 80,
-    "device_regulariser": "gpu",
+    "method": "PD_TV",  # Selected regularisation method
+    "regul_param": 0.0025,  # Regularisation parameter
+    "iterations": 40,  # The number of regularisation iterations
+    "half_precision": True,  # enabling half-precision calculation
 }
 
-RecFISTA_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+# RUN THE ADMM-OS-TV METHOD:
+tic = timeit.default_timer()
+RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
+toc = timeit.default_timer()
+Run_time = toc - tic
+print("ADMM-OS-TV (PD) reconstruction done in {} seconds".format(Run_time))
 
-plt.figure()
-plt.imshow(RecFISTA_TV, vmin=0, vmax=0.2, cmap="gray")
-plt.title("FISTA-PWLS-OS-TV reconstruction")
-plt.show()
-del Rectools
-# %%
-from ccpi.filters.regularisers import PatchSelect
-
-print("Pre-calculating weights for non-local patches...")
-
-pars = {
-    "algorithm": PatchSelect,
-    "input": RecFISTA_TV,
-    "searchwindow": 7,
-    "patchwindow": 2,
-    "neighbours": 13,
-    "edge_parameter": 0.8,
-}
-H_i, H_j, Weights = PatchSelect(
-    pars["input"],
-    pars["searchwindow"],
-    pars["patchwindow"],
-    pars["neighbours"],
-    pars["edge_parameter"],
-    "gpu",
-)
-
-plt.figure()
-plt.imshow(Weights[0, :, :], vmin=0, vmax=1, cmap="gray")
-plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with FISTA PWLS-OS-NLTV method %%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-Rectools = RecToolsIR(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=None,  # Vertical detector dimension (3D case)
-    CenterRotOffset=92,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS
-    device_projector="gpu",
-)
-
-# prepare dictionaries with parameters:
-_data_ = {
-    "projection_norm_data": data_norm,
-    "projection_raw_data": data_raw,
-    "OS_number": 6,
-    "data_axes_labels_order": data_labels2D,
-}  # data dictionary
-
-lc = Rectools.powermethod(
-    _data_
-)  # calculate Lipschitz constant (run once to initialise)
-
-_algorithm_ = {"iterations": 20, "lipschitz_const": lc}
-
-_regularisation_ = {
-    "method": "NLTV",
-    "regul_param": 0.0005,
-    "iterations": 5,
-    "NLTV_H_i": H_i,
-    "NLTV_H_j": H_j,
-    "NLTV_Weights": Weights,
-    "device_regulariser": "gpu",
-}
-
-RecFISTA_regNLTV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
 fig = plt.figure()
-plt.imshow(RecFISTA_regNLTV, vmin=0, vmax=0.2, cmap="gray")
-plt.title("FISTA PWLS-OS-NLTV reconstruction")
+plt.imshow(cp.asnumpy((RecADMM_os_tv[150, :, :])), vmin=0, vmax=0.003, cmap="gray")
+plt.title("ADMM OS-TV (PD) reconstruction")
 plt.show()
-del Rectools
-# fig.savefig('ice_NLTV.png', dpi=200)
+
 # %%

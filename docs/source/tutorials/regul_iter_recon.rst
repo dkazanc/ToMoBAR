@@ -3,8 +3,9 @@
 Regularised iterative reconstruction
 ************************************
 
-.. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
+.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. The class `RecToolsIR` is retired starting from version 2026.3.0.1 in favor of `RecToolsIRCuPy`. This demo will be updated soon.
 
+.. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
 
 This tutorial covers the main contribution of ToMoBAR - the advanced model-based
 iterative reconstruction with regularisation. It is the `plug-and-play` functionality
@@ -32,7 +33,6 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 .. code-block:: python
 
     from tomobar.methodsIR import RecToolsIR
-
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
