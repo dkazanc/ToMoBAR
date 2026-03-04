@@ -38,6 +38,7 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "cupy",
+    "nvmath-python",
     "astra-toolbox>=2.3.0",
     "scipy",
     "pillow",
