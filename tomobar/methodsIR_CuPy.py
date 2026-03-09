@@ -11,6 +11,7 @@
 import numpy as np
 from typing import Union, Optional
 from numpy import float32
+from matplotlib import pyplot as plt
 
 try:
     import cupy as cp
@@ -31,6 +32,10 @@ from tomobar.supp.dicts import dicts_check
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.data_fidelities import grad_data_term
+from tomobar.projectorsCuPy import FFTProjectorCuPy
+from matplotlib import pyplot as plt
+
+the_idx = 0
 
 
 class RecToolsIRCuPy:
@@ -104,6 +109,12 @@ class RecToolsIRCuPy:
                 device_projector,
                 OS_number,
             )
+        self.projector = FFTProjectorCuPy(
+            self.Atools.vol_geom["GridColCount"],
+            self.Atools.vol_geom["GridSliceCount"],
+            AnglesVec,
+            CenterRotOffset,
+        )
 
     @property
     def OS_number(self) -> int:
@@ -126,13 +137,42 @@ class RecToolsIRCuPy:
 
     def _Ax(self, x, sub_ind: int = 1, os: bool = False):
         if not os:
-            return self.Atools._forwprojCuPy(x)
+            fft_proj = self.projector.forwproj(x)
+            # astra_proj = self.Atools._forwprojCuPy(x)
+
+            # global the_idx
+            # fig = plt.figure()
+            # im = plt.imshow(fft_proj[fft_proj.shape[0] // 2, :, :].get())
+            # plt.colorbar(im)
+            # fig.savefig(f"fft_{the_idx}.png")
+            # plt.close()
+
+            # fig = plt.figure()
+            # im = plt.imshow(astra_proj[astra_proj.shape[0] // 2, :, :].get())
+            # plt.colorbar(im)
+            # fig.savefig(f"astra_{the_idx}.png")
+            # plt.close()
+
+            # fig = plt.figure()
+            # im = plt.imshow(
+            #     (
+            #         astra_proj[astra_proj.shape[0] // 2, :, :]
+            #         - fft_proj[astra_proj.shape[0] // 2, :, :]
+            #     ).get()
+            # )
+            # plt.colorbar(im)
+            # fig.savefig(f"diff_{the_idx}.png")
+            # plt.close()
+
+            # the_idx += 1
+            return fft_proj
         else:
             return self.Atools._forwprojOSCuPy(x, os_index=sub_ind)
 
     def _Atb(self, b, sub_ind: int = 1, os: bool = False):
         if not os:
-            return self.Atools._backprojCuPy(b)
+            # return self.Atools._backprojCuPy(b)
+            return self.projector.backproj(b)
         else:
             return self.Atools._backprojOSCuPy(b, os_index=sub_ind)
 
