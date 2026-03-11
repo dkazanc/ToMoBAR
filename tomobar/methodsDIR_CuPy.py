@@ -294,15 +294,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
         theta = cp.array(-self.angles_vec, dtype=cp.float32)
 
         if center_size >= _CENTER_SIZE_MIN:
+            sorted_theta_indices_cpu = np.argsort(-self.angles_vec)
+            sorted_theta_cpu = (-self.angles_vec)[sorted_theta_indices_cpu]
             if mem_stack:
                 mem_stack.malloc(np.prod(self.angles_vec.shape) * np.int64().itemsize)
                 mem_stack.malloc(np.prod(self.angles_vec.shape) * np.float32().itemsize)
-
-                sorted_theta_cpu = cp.sort(theta).get()
             else:
-                sorted_theta_indices = cp.argsort(theta)
+                sorted_theta_indices = cp.asarray(sorted_theta_indices_cpu)
                 sorted_theta = theta[sorted_theta_indices]
-                sorted_theta_cpu = sorted_theta.get()
 
             theta_full_range = abs(sorted_theta_cpu[nproj - 1] - sorted_theta_cpu[0])
             angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
