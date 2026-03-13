@@ -9,6 +9,7 @@ from typing import Literal, Tuple
 import numpy as np
 import math
 import nvmath
+import torch
 import cupy as cp
 from cupyx.scipy.fft import rfftfreq
 
@@ -187,6 +188,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         min_mem_usage_filter = True
         min_mem_usage_ifft2 = True
         padding = 0
+        half_precision = False
 
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
@@ -233,19 +235,38 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     print(f"Invalid chunk count: {value}. Set to 1")
                 else:
                     chunk_count = value
+            elif key == "half_precision" and value is not None:
+                if not isinstance(value, bool):
+                    print(f"Invalid half_precision flag: {value}. Set to false")
+                else:
+                    half_precision = value
 
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
-        gather_kernel = module.get_function("gather_kernel")
-        gather_kernel_partial = module.get_function("gather_kernel_partial")
+        gather_kernel = module.get_function(
+            f"gather_kernel_{'half' if half_precision else 'float'}"
+        )
+        gather_kernel_partial = module.get_function(
+            f"gather_kernel_partial_{'half' if half_precision else 'float'}"
+        )
         gather_kernel_center_angle_based_prune = module.get_function(
             "gather_kernel_center_angle_based_prune"
         )
-        gather_kernel_center = module.get_function("gather_kernel_center")
-        r2c_c1dfftshift = module.get_function("r2c_c1dfftshift")
-        c1dfftshift = module.get_function("c1dfftshift")
-        c2dfftshift = module.get_function("c2dfftshift")
-        unpadding_mul_phi = module.get_function("unpadding_mul_phi")
+        gather_kernel_center = module.get_function(
+            f"gather_kernel_center_{'half' if half_precision else 'float'}"
+        )
+        r2c_c1dfftshift = module.get_function(
+            f"r2c_c1dfftshift_{'half' if half_precision else 'float'}"
+        )
+        c1dfftshift = module.get_function(
+            f"c1dfftshift_{'half' if half_precision else 'float'}"
+        )
+        c2dfftshift = module.get_function(
+            f"c2dfftshift_{'half' if half_precision else 'float'}"
+        )
+        unpadding_mul_phi = module.get_function(
+            f"unpadding_mul_phi_{'half' if half_precision else 'float'}"
+        )
 
         # initialisation
         mem_stack = DeviceMemStack().instance()
@@ -271,18 +292,23 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         if odd_horiz or odd_vert:
             if mem_stack:
-                mem_stack.malloc(np.prod((nz, nproj, data_n)) * cp.float32().itemsize)
+                mem_stack.malloc(
+                    np.prod((nz, nproj, data_n)) * kwargs["data_dtype"].itemsize
+                )
             else:
-                data_p = cp.zeros((nz, nproj, data_n), dtype=cp.float32)
+                data_p = cp.zeros((nz, nproj, data_n), dtype=data.dtype if half_precision else cp.float32)
                 data_p[: nz - odd_vert, :, : data_n - odd_horiz] = data
                 data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
                 data = data_p
                 del data_p
 
         n = data_n + self.detectors_x_pad * 2 + padding * 2
+        if half_precision:
+            power_of_2_cropping = True
+
         if power_of_2_cropping:
             n_pow2 = 2 ** math.ceil(math.log2(n))
-            if 0.9 < n / n_pow2:
+            if half_precision or 0.9 < n / n_pow2:
                 n = n_pow2
 
         # Limit the center size parameter
@@ -352,6 +378,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 filter_vol_chunk_count,
                 filter_proj_chunk_count,
                 min_mem_usage_filter,
+                half_precision,
             )
 
             del data
@@ -363,7 +390,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
             mem_stack.free(np.prod(tmp_p_shape) * tmp_p_dtype.itemsize)
         else:
             (datac, fde) = self._setup_backprojection_input(
-                tmp_p, n, nproj, nz, center_size, r2c_c1dfftshift
+                tmp_p,
+                n,
+                nproj,
+                nz,
+                center_size,
+                r2c_c1dfftshift,
+                half_precision,
             )
 
             del tmp_p
@@ -395,6 +428,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 gather_kernel_center_angle_based_prune,
                 gather_kernel_center,
                 gather_kernel,
+                half_precision,
             )
 
             del datac
@@ -406,7 +440,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
             )
         else:
             self.ifft_gathered_projections(
-                fde, n, nz, chunk_count, min_mem_usage_ifft2, c2dfftshift
+                fde,
+                n,
+                nz,
+                chunk_count,
+                min_mem_usage_ifft2,
+                c2dfftshift,
+                half_precision,
             )
 
         # Unpadded recon output size
@@ -458,6 +498,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         filter_vol_chunk_count: int,
         filter_proj_chunk_count: int,
         min_mem_usage_filter: bool,
+        half_precision: bool,
     ) -> cp.ndarray:
         # init filter
         if power_of_2_oversampling:
@@ -474,6 +515,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_m = oversampled_detector_width // 2 - detector_width // 2
         unpad_p = oversampled_detector_width // 2 + detector_width // 2
 
+        print(f"fbp detector_width: {detector_width}")
         rotation_axis = self.centre_of_rotation + 0.5
 
         wfilter = calc_filter(oversampled_detector_width, filter_type, cutoff_freq)
@@ -482,7 +524,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         # FBP filtering output
         tmp_p = cp.empty(
-            (detector_height, projection_count, detector_width), dtype=cp.float32
+            (detector_height, projection_count, detector_width),
+            dtype=cp.float16 if half_precision else cp.float32,
         )
 
         if min_mem_usage_filter:
@@ -530,31 +573,91 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     mode="edge",
                 )
 
-                cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
-                if cache_key not in fft_cache:
-                    fft_cache[cache_key] = nvmath.fft.FFT(
-                        tmp, axes=[2], options={"fft_type": "R2C"}
+                if half_precision:
+                    cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
+                    tmp_tensor = torch.from_dlpack(tmp)
+                    if cache_key not in fft_cache:
+                        fft_cache[cache_key] = nvmath.fft.FFT(
+                            tmp_tensor, axes=[2], options={"fft_type": "R2C"}
+                        )
+
+                    nv_rfft = fft_cache[cache_key]
+                    nv_rfft.reset_operand(tmp_tensor)
+                    nv_rfft.plan(direction=nvmath.fft.FFTDirection.FORWARD)
+
+                    tmp = cp.from_dlpack(
+                        nv_rfft.execute(direction=nvmath.fft.FFTDirection.FORWARD).view(
+                            torch.float16
+                        )
                     )
 
-                nv_rfft = fft_cache[cache_key]
-                nv_rfft.reset_operand(tmp)
-                nv_rfft.plan(direction=nvmath.fft.FFTDirection.FORWARD)
+                    complex_chunk_shape = (*tmp.shape[:2], tmp.shape[2] // 2)
 
-                tmp = nv_rfft.execute(direction=nvmath.fft.FFTDirection.FORWARD)
-                tmp = w * tmp
+                    # >>>>>>>>>> REPLACE WITH CUSTOM KERNEL
+                    tmp_flat = tmp.reshape(-1)
+                    tmp_real = (
+                        tmp_flat[0::2].reshape(complex_chunk_shape).astype(cp.float32)
+                    )
+                    tmp_imag = (
+                        tmp_flat[1::2].reshape(complex_chunk_shape).astype(cp.float32)
+                    )
+                    tmp_complex = cp.empty(complex_chunk_shape, dtype=cp.complex64)
+                    tmp_complex.real = tmp_real
+                    tmp_complex.imag = tmp_imag
 
-                cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
-                if cache_key not in fft_cache:
-                    fft_cache[cache_key] = nvmath.fft.FFT(
-                        tmp, axes=[2], options={"fft_type": "C2R"}
+                    tmp_complex = w * tmp_complex
+                    # <<<<<<<<<<
+
+                    cache_key = (
+                        tmp_complex.shape,
+                        tmp_complex.dtype,
+                        tmp_complex.device.id,
                     )
 
-                nv_irfft = fft_cache[cache_key]
-                nv_irfft.reset_operand(tmp)
-                nv_irfft.plan(direction=nvmath.fft.FFTDirection.INVERSE)
+                    tmp_tensor = torch.complex(
+                        torch.from_dlpack(tmp_complex.real.astype(cp.float16)),
+                        torch.from_dlpack(tmp_complex.imag.astype(cp.float16)),
+                    ).to(dtype=torch.complex32)
 
-                tmp = nv_irfft.execute(direction=nvmath.fft.FFTDirection.INVERSE)
-                tmp /= tmp.shape[2]
+                    if cache_key not in fft_cache:
+                        fft_cache[cache_key] = nvmath.fft.FFT(
+                            tmp_tensor, axes=[2], options={"fft_type": "C2R"}
+                        )
+
+                    nv_irfft = fft_cache[cache_key]
+                    nv_irfft.reset_operand(tmp_tensor)
+                    nv_irfft.plan(direction=nvmath.fft.FFTDirection.INVERSE)
+
+                    tmp = nv_irfft.execute(direction=nvmath.fft.FFTDirection.INVERSE)
+                    tmp /= tmp.shape[2]
+                    tmp = cp.from_dlpack(tmp)
+                else:
+                    cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
+                    if cache_key not in fft_cache:
+                        fft_cache[cache_key] = nvmath.fft.FFT(
+                            tmp, axes=[2], options={"fft_type": "R2C"}
+                        )
+
+                    nv_rfft = fft_cache[cache_key]
+                    nv_rfft.reset_operand(tmp)
+                    nv_rfft.plan(direction=nvmath.fft.FFTDirection.FORWARD)
+
+                    tmp = nv_rfft.execute(direction=nvmath.fft.FFTDirection.FORWARD)
+                    tmp = w * tmp
+
+                    cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
+                    if cache_key not in fft_cache:
+                        fft_cache[cache_key] = nvmath.fft.FFT(
+                            tmp, axes=[2], options={"fft_type": "C2R"}
+                        )
+
+                    nv_irfft = fft_cache[cache_key]
+                    nv_irfft.reset_operand(tmp)
+                    nv_irfft.plan(direction=nvmath.fft.FFTDirection.INVERSE)
+
+                    tmp = nv_irfft.execute(direction=nvmath.fft.FFTDirection.INVERSE)
+                    tmp /= tmp.shape[2]
+
                 tmp_p[
                     slice_start_index:slice_end_index,
                     projection_start_index:projection_end_index,
@@ -719,23 +822,27 @@ class RecToolsDIRCuPy(RecToolsDIR):
         detector_height: int,
         center_size: int,
         r2c_c1dfftshift: cp.RawKernel,
+        half_precision: bool,
     ) -> tuple[cp.ndarray, cp.ndarray]:
         # input data
+        detector_width = detector_width * 2 if half_precision else detector_width
+        complex_dtype = cp.float16 if half_precision else cp.complex64
+
         datac = cp.empty(
             (detector_height // 2, projection_count, detector_width),
-            dtype=cp.complex64,
+            dtype=complex_dtype,
         )
 
         # fft, reusable by chunks
         if center_size >= _CENTER_SIZE_MIN:
             fde = cp.empty(
                 [detector_height // 2, 2 * detector_width, 2 * detector_width],
-                dtype=cp.complex64,
+                dtype=complex_dtype,
             )
         else:
             fde = cp.zeros(
                 [detector_height // 2, 2 * detector_width, 2 * detector_width],
-                dtype=cp.complex64,
+                dtype=complex_dtype,
             )
 
         # STEP1: fft 1d
@@ -789,11 +896,36 @@ class RecToolsDIRCuPy(RecToolsDIR):
         gather_kernel_center_angle_based_prune: cp.RawKernel,
         gather_kernel_center: cp.RawKernel,
         gather_kernel: cp.RawKernel,
+        half_precision: bool,
     ):
         # STEP1: fft 1d
-        nv_fft = nvmath.fft.FFT(datac, axes=[2], options={"fft_type": "C2C"})
-        nv_fft.plan(direction=nvmath.fft.FFTDirection.FORWARD)
-        datac = nv_fft.execute(direction=nvmath.fft.FFTDirection.FORWARD)
+        if half_precision:
+            complex_shape = (*datac.shape[:2], datac.shape[2] // 2)
+            print(f"detector_width: {detector_width}")
+            print(f"datac.shape: {datac.shape}")
+            print(f"complex_shape: {complex_shape}")
+            datac_flat = datac.reshape(-1)
+            datac_real = datac_flat[0::2].reshape(complex_shape)
+            datac_imag = datac_flat[1::2].reshape(complex_shape)
+            datac_tensor = torch.complex(
+                torch.from_dlpack(datac_real),
+                torch.from_dlpack(datac_imag),
+            ).to(dtype=torch.complex32)
+            print(f"complex_shape: {complex_shape}")
+            print(f"datac_tensor.shape: {datac_tensor.shape}")
+
+            nv_fft = nvmath.fft.FFT(datac_tensor, axes=[2], options={"fft_type": "C2C"})
+            nv_fft.plan(direction=nvmath.fft.FFTDirection.FORWARD)
+            datac = cp.from_dlpack(
+                nv_fft.execute(direction=nvmath.fft.FFTDirection.FORWARD).view(
+                    torch.float16
+                )
+            )
+            print(f"datac.shape: {datac.shape}")
+        else:
+            nv_fft = nvmath.fft.FFT(datac, axes=[2], options={"fft_type": "C2C"})
+            nv_fft.plan(direction=nvmath.fft.FFTDirection.FORWARD)
+            datac = nv_fft.execute(direction=nvmath.fft.FFTDirection.FORWARD)
 
         m = int(
             np.ceil(
@@ -934,6 +1066,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         chunk_count: int,
         min_mem_usage_ifft2: bool,
         c2dfftshift: cp.RawKernel,
+        half_precision: bool,
     ):
         c2dfftshift(
             (
@@ -961,21 +1094,51 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 break
 
             tmp = fde[start_index:end_index, :, :]
-
             cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
-            if cache_key not in fft_cache:
-                fft_cache[cache_key] = nvmath.fft.FFT(
-                    tmp,
-                    axes=(-2, -1),
-                    options={"fft_type": "C2C", "inplace": True},
+
+            if half_precision:
+                complex_shape = (
+                    end_index - start_index,
+                    fde.shape[1],
+                    fde.shape[2] // 2,
                 )
+                tmp_flat = tmp.reshape(-1)
+                tmp_real = tmp_flat[0::2].reshape(complex_shape)
+                tmp_imag = tmp_flat[1::2].reshape(complex_shape)
+                tmp_tensor = torch.complex(
+                    torch.from_dlpack(tmp_real),
+                    torch.from_dlpack(tmp_imag),
+                ).to(dtype=torch.complex32)
 
-            nv_ifft2 = fft_cache[cache_key]
-            nv_ifft2.reset_operand(tmp)
-            nv_ifft2.plan(direction=nvmath.fft.FFTDirection.INVERSE)
+                if cache_key not in fft_cache:
+                    fft_cache[cache_key] = nvmath.fft.FFT(
+                        tmp_tensor,
+                        axes=(-2, -1),
+                        options={"fft_type": "C2C", "inplace": True},
+                    )
 
-            tmp = nv_ifft2.execute(direction=nvmath.fft.FFTDirection.INVERSE)
-            tmp /= np.prod(tmp.shape[-2:])
+                nv_ifft2 = fft_cache[cache_key]
+                nv_ifft2.reset_operand(tmp_tensor)
+                nv_ifft2.plan(direction=nvmath.fft.FFTDirection.INVERSE)
+
+                tmp = nv_ifft2.execute(direction=nvmath.fft.FFTDirection.INVERSE)
+                tmp /= np.prod(tmp.shape[-2:])
+                tmp = cp.from_dlpack(tmp.view(torch.float16))
+            else:
+                if cache_key not in fft_cache:
+                    fft_cache[cache_key] = nvmath.fft.FFT(
+                        tmp,
+                        axes=(-2, -1),
+                        options={"fft_type": "C2C", "inplace": True},
+                    )
+
+                nv_ifft2 = fft_cache[cache_key]
+                nv_ifft2.reset_operand(tmp)
+                nv_ifft2.plan(direction=nvmath.fft.FFTDirection.INVERSE)
+
+                tmp = nv_ifft2.execute(direction=nvmath.fft.FFTDirection.INVERSE)
+                tmp /= np.prod(tmp.shape[-2:])
+
             fde[start_index:end_index, :, :] = tmp
             del tmp
 
