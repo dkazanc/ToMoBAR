@@ -825,23 +825,23 @@ class RecToolsDIRCuPy(RecToolsDIR):
         half_precision: bool,
     ) -> tuple[cp.ndarray, cp.ndarray]:
         # input data
-        detector_width = detector_width * 2 if half_precision else detector_width
+        complex_width = detector_width * 2 if half_precision else detector_width
         complex_dtype = cp.float16 if half_precision else cp.complex64
 
         datac = cp.empty(
-            (detector_height // 2, projection_count, detector_width),
+            (detector_height // 2, projection_count, complex_width),
             dtype=complex_dtype,
         )
 
         # fft, reusable by chunks
         if center_size >= _CENTER_SIZE_MIN:
             fde = cp.empty(
-                [detector_height // 2, 2 * detector_width, 2 * detector_width],
+                [detector_height // 2, 2 * detector_width, 2 * complex_width],
                 dtype=complex_dtype,
             )
         else:
             fde = cp.zeros(
-                [detector_height // 2, 2 * detector_width, 2 * detector_width],
+                [detector_height // 2, 2 * detector_width, 2 * complex_width],
                 dtype=complex_dtype,
             )
 
