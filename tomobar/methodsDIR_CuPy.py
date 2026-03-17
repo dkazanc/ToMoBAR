@@ -618,12 +618,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
                     tmp_flat = tmp.reshape(-1)
                     tmp_real = (
-                        tmp_flat[..., 0::2]
+                        tmp_flat[0::2]
                         .reshape(complex_chunk_shape)
                         .astype(cp.float32)
                     )
                     tmp_imag = (
-                        tmp_flat[..., 1::2]
+                        tmp_flat[1::2]
                         .reshape(complex_chunk_shape)
                         .astype(cp.float32)
                     )
@@ -915,8 +915,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         if half_precision:
             complex_shape = (*datac.shape[:2], datac.shape[2] // 2)
             datac_flat = datac.reshape(-1)
-            datac_real = datac_flat[..., 0::2].reshape(complex_shape)
-            datac_imag = datac_flat[..., 1::2].reshape(complex_shape)
+            datac_real = datac_flat[0::2].reshape(complex_shape)
+            datac_imag = datac_flat[1::2].reshape(complex_shape)
             datac_tensor = torch.complex(
                 torch.from_dlpack(datac_real),
                 torch.from_dlpack(datac_imag),
@@ -1110,8 +1110,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     fde.shape[2] // 2,
                 )
                 tmp_flat = tmp.reshape(-1)
-                tmp_real = tmp_flat[..., 0::2].reshape(complex_shape)
-                tmp_imag = tmp_flat[..., 1::2].reshape(complex_shape)
+                tmp_real = tmp_flat[0::2].reshape(complex_shape)
+                tmp_imag = tmp_flat[1::2].reshape(complex_shape)
                 tmp_tensor = torch.complex(
                     torch.from_dlpack(tmp_real),
                     torch.from_dlpack(tmp_imag),
