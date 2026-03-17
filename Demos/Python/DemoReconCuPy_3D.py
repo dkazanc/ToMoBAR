@@ -155,6 +155,7 @@ RecToolsCP = RecToolsDIRCuPy(
 )
 
 half_precision = True
+# half_precision = False
 tic = timeit.default_timer()
 Fourier_cupy = RecToolsCP.FOURIER_INV(
     projData3D_analyt_cupy.astype(cp.float16) if half_precision else projData3D_analyt_cupy,
@@ -173,28 +174,28 @@ Fourier_cupy = cp.asnumpy(Fourier_cupy)
 
 sliceSel = int(0.5 * N_size)
 max_val = 1
-plt.figure()
-plt.subplot(131)
-plt.imshow(Fourier_cupy[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, axial view")
+# plt.figure()
+# plt.subplot(131)
+# plt.imshow(Fourier_cupy[sliceSel, :, :], vmin=0, vmax=max_val)
+# plt.title("3D Fourier Reconstruction, axial view")
 
-plt.subplot(132)
-plt.imshow(Fourier_cupy[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, coronal view")
+# plt.subplot(132)
+# plt.imshow(Fourier_cupy[:, sliceSel, :], vmin=0, vmax=max_val)
+# plt.title("3D Fourier Reconstruction, coronal view")
 
-plt.subplot(133)
-plt.imshow(Fourier_cupy[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, sagittal view")
-plt.show()
+# plt.subplot(133)
+# plt.imshow(Fourier_cupy[:, :, sliceSel], vmin=0, vmax=max_val)
+# plt.title("3D Fourier Reconstruction, sagittal view")
+# plt.show()
 
-print(
-    "Min {} and Max {} of the volume".format(np.min(Fourier_cupy), np.max(Fourier_cupy))
-)
+# print(
+#     "Min {} and Max {} of the volume".format(np.min(Fourier_cupy), np.max(Fourier_cupy))
+# )
 
-# calculate errors
-Qtools = QualityTools(phantom_tm, Fourier_cupy)
-RMSE = Qtools.rmse()
-print("Root Mean Square Error is {} for Fourier inversion".format(RMSE))
+# # calculate errors
+# Qtools = QualityTools(phantom_tm, Fourier_cupy)
+# RMSE = Qtools.rmse()
+# print("Root Mean Square Error is {} for Fourier inversion".format(RMSE))
 # %%
 # print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")

@@ -87,9 +87,9 @@ __device__ void update_f_value(T *f, float2 g0t, float x0, float y0,
 
 template <>
 __device__ void update_f_value<__half2, false>(__half2 *f, float2 g0, float x0, float y0,
-                                      float coeff0, float coeff1,
-                                      int center_half_size, int ell0, int ell1,
-                                      int stride, int n)
+                                               float coeff0, float coeff1,
+                                               int center_half_size, int ell0, int ell1,
+                                               int stride, int n)
 {
   float w0 = ell0 / (float)(2 * n) - x0;
   float w1 = ell1 / (float)(2 * n) - y0;
@@ -102,9 +102,9 @@ __device__ void update_f_value<__half2, false>(__half2 *f, float2 g0, float x0, 
 
 template <>
 __device__ void update_f_value<__half2, true>(__half2 *f, float2 g0, float x0, float y0,
-                                     float coeff0, float coeff1,
-                                     int center_half_size, int ell0, int ell1,
-                                     int stride, int n)
+                                              float coeff0, float coeff1,
+                                              int center_half_size, int ell0, int ell1,
+                                              int stride, int n)
 {
   if (ell0 < -center_half_size || ell0 >= center_half_size ||
       ell1 < -center_half_size || ell1 >= center_half_size)
@@ -121,9 +121,9 @@ __device__ void update_f_value<__half2, true>(__half2 *f, float2 g0, float x0, f
 
 template <>
 __device__ void update_f_value<float2, false>(float2 *f, float2 g0, float x0, float y0,
-                                      float coeff0, float coeff1,
-                                      int center_half_size, int ell0, int ell1,
-                                      int stride, int n)
+                                              float coeff0, float coeff1,
+                                              int center_half_size, int ell0, int ell1,
+                                              int stride, int n)
 {
   float w0 = ell0 / (float)(2 * n) - x0;
   float w1 = ell1 / (float)(2 * n) - y0;
@@ -136,9 +136,9 @@ __device__ void update_f_value<float2, false>(float2 *f, float2 g0, float x0, fl
 
 template <>
 __device__ void update_f_value<float2, true>(float2 *f, float2 g0, float x0, float y0,
-                                     float coeff0, float coeff1,
-                                     int center_half_size, int ell0, int ell1,
-                                     int stride, int n)
+                                             float coeff0, float coeff1,
+                                             int center_half_size, int ell0, int ell1,
+                                             int stride, int n)
 {
   if (ell0 < -center_half_size || ell0 >= center_half_size ||
       ell1 < -center_half_size || ell1 >= center_half_size)
@@ -891,4 +891,27 @@ extern "C" __global__ void unpadding_mul_phi_float(
     int n, int nz)
 {
   unpadding_mul_phi<float2>(recon_up, f, mu, nproj, unpad_recon_p, unpad_z, unpad_recon_m, n, nz);
+}
+
+extern "C" __global__ void filter_complex_half(__half2 *data, float2 *filter, int n, int nproj, int nz)
+{
+  int tx = blockDim.x * blockIdx.x + threadIdx.x;
+  int ty = blockDim.y * blockIdx.y + threadIdx.y;
+  int tz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  if (tx >= n || ty >= nproj || tz >= nz)
+    return;
+
+  int x_stride = n;
+  int y_stride = x_stride * nproj;
+
+  // offset f by tz
+  data += (unsigned long long)tz * y_stride;
+  int data_index = tx + ty * x_stride;
+
+  float2 data_value = read_as_float2(data, data_index);
+  float2 filter_value = filter[tx];
+  float2 filtered_value = make_float2(data_value.x * filter_value.x - data_value.y * filter_value.y, data_value.x * filter_value.y + data_value.y * filter_value.x);
+
+  write_float2(data, data_index, filtered_value);
 }

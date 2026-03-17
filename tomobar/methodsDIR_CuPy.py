@@ -267,6 +267,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpadding_mul_phi = module.get_function(
             f"unpadding_mul_phi_{'half' if half_precision else 'float'}"
         )
+        filter_complex_half = module.get_function("filter_complex_half")
 
         # initialisation
         mem_stack = DeviceMemStack().instance()
@@ -296,7 +297,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     np.prod((nz, nproj, data_n)) * kwargs["data_dtype"].itemsize
                 )
             else:
-                data_p = cp.zeros((nz, nproj, data_n), dtype=data.dtype if half_precision else cp.float32)
+                data_p = cp.zeros(
+                    (nz, nproj, data_n),
+                    dtype=data.dtype if half_precision else cp.float32,
+                )
                 data_p[: nz - odd_vert, :, : data_n - odd_horiz] = data
                 data_p[: nz - odd_vert, :, -odd_horiz] = data[..., -odd_horiz]
                 data = data_p
@@ -379,6 +383,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 filter_proj_chunk_count,
                 min_mem_usage_filter,
                 half_precision,
+                filter_complex_half,
             )
 
             del data
@@ -499,6 +504,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         filter_proj_chunk_count: int,
         min_mem_usage_filter: bool,
         half_precision: bool,
+        filter_complex_half: cp.RawKernel,
     ) -> cp.ndarray:
         # init filter
         if power_of_2_oversampling:
@@ -515,7 +521,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_m = oversampled_detector_width // 2 - detector_width // 2
         unpad_p = oversampled_detector_width // 2 + detector_width // 2
 
-        print(f"fbp detector_width: {detector_width}")
         rotation_axis = self.centre_of_rotation + 0.5
 
         wfilter = calc_filter(oversampled_detector_width, filter_type, cutoff_freq)
@@ -593,30 +598,38 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
                     complex_chunk_shape = (*tmp.shape[:2], tmp.shape[2] // 2)
 
-                    # >>>>>>>>>> REPLACE WITH CUSTOM KERNEL
+                    filter_complex_half(
+                        (
+                            int(np.ceil((oversampled_detector_width // 2 + 1) / 32)),
+                            projection_end_index - projection_start_index,
+                            slice_end_index - slice_start_index,
+                        ),
+                        (32, 1, 1),
+                        (
+                            tmp,
+                            w,
+                            oversampled_detector_width // 2 + 1,
+                            projection_end_index - projection_start_index,
+                            slice_end_index - slice_start_index,
+                        ),
+                    )
+
+                    cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
+
                     tmp_flat = tmp.reshape(-1)
                     tmp_real = (
-                        tmp_flat[0::2].reshape(complex_chunk_shape).astype(cp.float32)
+                        tmp_flat[..., 0::2]
+                        .reshape(complex_chunk_shape)
+                        .astype(cp.float32)
                     )
                     tmp_imag = (
-                        tmp_flat[1::2].reshape(complex_chunk_shape).astype(cp.float32)
+                        tmp_flat[..., 1::2]
+                        .reshape(complex_chunk_shape)
+                        .astype(cp.float32)
                     )
-                    tmp_complex = cp.empty(complex_chunk_shape, dtype=cp.complex64)
-                    tmp_complex.real = tmp_real
-                    tmp_complex.imag = tmp_imag
-
-                    tmp_complex = w * tmp_complex
-                    # <<<<<<<<<<
-
-                    cache_key = (
-                        tmp_complex.shape,
-                        tmp_complex.dtype,
-                        tmp_complex.device.id,
-                    )
-
                     tmp_tensor = torch.complex(
-                        torch.from_dlpack(tmp_complex.real.astype(cp.float16)),
-                        torch.from_dlpack(tmp_complex.imag.astype(cp.float16)),
+                        torch.from_dlpack(tmp_real),
+                        torch.from_dlpack(tmp_imag),
                     ).to(dtype=torch.complex32)
 
                     if cache_key not in fft_cache:
@@ -901,18 +914,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # STEP1: fft 1d
         if half_precision:
             complex_shape = (*datac.shape[:2], datac.shape[2] // 2)
-            print(f"detector_width: {detector_width}")
-            print(f"datac.shape: {datac.shape}")
-            print(f"complex_shape: {complex_shape}")
             datac_flat = datac.reshape(-1)
-            datac_real = datac_flat[0::2].reshape(complex_shape)
-            datac_imag = datac_flat[1::2].reshape(complex_shape)
+            datac_real = datac_flat[..., 0::2].reshape(complex_shape)
+            datac_imag = datac_flat[..., 1::2].reshape(complex_shape)
             datac_tensor = torch.complex(
                 torch.from_dlpack(datac_real),
                 torch.from_dlpack(datac_imag),
             ).to(dtype=torch.complex32)
-            print(f"complex_shape: {complex_shape}")
-            print(f"datac_tensor.shape: {datac_tensor.shape}")
 
             nv_fft = nvmath.fft.FFT(datac_tensor, axes=[2], options={"fft_type": "C2C"})
             nv_fft.plan(direction=nvmath.fft.FFTDirection.FORWARD)
@@ -921,7 +929,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     torch.float16
                 )
             )
-            print(f"datac.shape: {datac.shape}")
         else:
             nv_fft = nvmath.fft.FFT(datac, axes=[2], options={"fft_type": "C2C"})
             nv_fft.plan(direction=nvmath.fft.FFTDirection.FORWARD)
@@ -1103,8 +1110,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
                     fde.shape[2] // 2,
                 )
                 tmp_flat = tmp.reshape(-1)
-                tmp_real = tmp_flat[0::2].reshape(complex_shape)
-                tmp_imag = tmp_flat[1::2].reshape(complex_shape)
+                tmp_real = tmp_flat[..., 0::2].reshape(complex_shape)
+                tmp_imag = tmp_flat[..., 1::2].reshape(complex_shape)
                 tmp_tensor = torch.complex(
                     torch.from_dlpack(tmp_real),
                     torch.from_dlpack(tmp_imag),
