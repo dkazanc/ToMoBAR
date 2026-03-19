@@ -307,13 +307,16 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 del data_p
 
         n = data_n + self.detectors_x_pad * 2 + padding * 2
+
         if half_precision:
             power_of_2_cropping = True
 
-        if power_of_2_cropping:
-            n_pow2 = 2 ** math.ceil(math.log2(n))
-            if half_precision or 0.9 < n / n_pow2:
-                n = n_pow2
+        # if power_of_2_cropping:
+        #     n_pow2 = 2 ** math.ceil(math.log2(n))
+        #     if half_precision or 0.9 < n / n_pow2:
+        #         n = n_pow2
+        n_pow2 = 2 ** math.ceil(math.log2(n))
+        n = n_pow2
 
         # Limit the center size parameter
         center_size = min(center_size, n * 2)
@@ -596,8 +599,6 @@ class RecToolsDIRCuPy(RecToolsDIR):
                         )
                     )
 
-                    complex_chunk_shape = (*tmp.shape[:2], tmp.shape[2] // 2)
-
                     filter_complex_half(
                         (
                             int(np.ceil((oversampled_detector_width // 2 + 1) / 32)),
@@ -616,20 +617,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
                     cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
 
-                    tmp_flat = tmp.reshape(-1)
-                    tmp_real = (
-                        tmp_flat[0::2]
-                        .reshape(complex_chunk_shape)
-                        .astype(cp.float32)
-                    )
-                    tmp_imag = (
-                        tmp_flat[1::2]
-                        .reshape(complex_chunk_shape)
-                        .astype(cp.float32)
-                    )
                     tmp_tensor = torch.complex(
-                        torch.from_dlpack(tmp_real),
-                        torch.from_dlpack(tmp_imag),
+                        torch.from_dlpack(tmp[..., 0::2]),
+                        torch.from_dlpack(tmp[..., 1::2]),
                     ).to(dtype=torch.complex32)
 
                     if cache_key not in fft_cache:
@@ -913,13 +903,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
     ):
         # STEP1: fft 1d
         if half_precision:
-            complex_shape = (*datac.shape[:2], datac.shape[2] // 2)
-            datac_flat = datac.reshape(-1)
-            datac_real = datac_flat[0::2].reshape(complex_shape)
-            datac_imag = datac_flat[1::2].reshape(complex_shape)
             datac_tensor = torch.complex(
-                torch.from_dlpack(datac_real),
-                torch.from_dlpack(datac_imag),
+                torch.from_dlpack(datac[..., 0::2]),
+                torch.from_dlpack(datac[..., 1::2]),
             ).to(dtype=torch.complex32)
 
             nv_fft = nvmath.fft.FFT(datac_tensor, axes=[2], options={"fft_type": "C2C"})
@@ -1104,17 +1090,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
             cache_key = (tmp.shape, tmp.dtype, tmp.device.id)
 
             if half_precision:
-                complex_shape = (
-                    end_index - start_index,
-                    fde.shape[1],
-                    fde.shape[2] // 2,
-                )
-                tmp_flat = tmp.reshape(-1)
-                tmp_real = tmp_flat[0::2].reshape(complex_shape)
-                tmp_imag = tmp_flat[1::2].reshape(complex_shape)
                 tmp_tensor = torch.complex(
-                    torch.from_dlpack(tmp_real),
-                    torch.from_dlpack(tmp_imag),
+                    torch.from_dlpack(tmp[..., 0::2]),
+                    torch.from_dlpack(tmp[..., 1::2]),
                 ).to(dtype=torch.complex32)
 
                 if cache_key not in fft_cache:
