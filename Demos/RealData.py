@@ -19,7 +19,7 @@ from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 # load dendritic data
-datadict = scipy.io.loadmat("../../data/DendrRawData.mat")
+datadict = scipy.io.loadmat("../data/DendrRawData.mat")
 # extract data (print(datadict.keys()))
 dataRaw = datadict["data_raw3D"]
 angles = datadict["angles"]

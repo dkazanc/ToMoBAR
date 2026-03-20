@@ -42,7 +42,7 @@ class RecToolsIRCuPy:
     Args:
         DetectorsDimH (int): Horizontal detector dimension size.
         DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
-        DetectorsDimV (int): Vertical detector dimension size.
+        DetectorsDimV (int, None): Vertical detector dimension size, 'None' for 2D or an integer for 3D
         CenterRotOffset (float, np.ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): The size of the reconstructed object (a slice) defined as [recon_size, recon_size].
@@ -54,7 +54,9 @@ class RecToolsIRCuPy:
         self,
         DetectorsDimH: int,  # Horizontal detector dimension size.
         DetectorsDimH_pad: int,  # The amount of padding for the horizontal detector.
-        DetectorsDimV: int,  # Vertical detector dimension (3D case supported)
+        DetectorsDimV: Union[
+            int, None
+        ],  # Vertical detector dimension, 'None' for 2D or an integer for 3D
         CenterRotOffset: Union[
             float, np.ndarray
         ],  # The Centre of Rotation scalar or a vector

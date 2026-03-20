@@ -164,7 +164,7 @@ RectoolsIR = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector=0,
-    OS_number=8,
+    OS_number=1,
 )
 
 # data dictionary
@@ -175,13 +175,13 @@ _data_ = {
 lc = RectoolsIR.powermethod(
     _data_
 )  # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {"iterations": 20, "mask_diameter": 1.3, "lipschitz_const": lc}
+_algorithm_ = {"iterations": 100, "mask_diameter": 1.3, "lipschitz_const": lc}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {
-    "method": "ROF_TV",
+    "method": "PD_TV",
     "regul_param": 0.002,
-    "iterations": 40,
+    "iterations": 80,
     "half_precision": True,  # enabling half-precision calculation
 }
 

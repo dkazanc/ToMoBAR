@@ -48,6 +48,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
         device_projector=0,  # set an index (integer) of a specific GPU device
     ):
         self.detectors_x_pad = DetectorsDimH_pad
+        if CenterRotOffset is None:
+            CenterRotOffset = 0.0
         self.centre_of_rotation = CenterRotOffset
         self.angles_vec = AnglesVec
         self.recon_size = ObjSize

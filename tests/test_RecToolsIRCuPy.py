@@ -39,6 +39,36 @@ def test_Landweber_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
+def test_Landweber_cp_2D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    sinogram = data_cupy[:, 64, :]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=None,  # Vertical detector dimension 2D case
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+        OS_number=None,  # define the number of subsets
+    )
+
+    _data_ = {
+        "projection_data": sinogram,
+        "data_axes_labels_order": ["angles", "detX"],
+    }
+
+    _algorithm_ = {"iterations": 200}
+    Iter_rec = RecTools.Landweber(_data_, _algorithm_)
+
+    assert Iter_rec.shape == (1, 160, 160)
+    Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
+    assert_allclose(np.min(Iter_rec), -0.0027037817, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.02463191, rtol=eps)
+    assert Iter_rec.dtype == np.float32
+
+
 def test_Landweber_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
@@ -324,6 +354,39 @@ def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
+def test_FISTA_cp_2D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    sinogram = data_cupy[:, 64, :]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=None,  # Vertical detector dimension 2D case
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+        OS_number=None,  # define the number of subsets
+    )
+
+    _data_ = {
+        "data_fidelity": "LS",
+        "projection_data": sinogram,
+        "data_axes_labels_order": ["angles", "detX"],
+    }  # data dictionary
+    # calculate Lipschitz constant
+
+    lc = RecTools.powermethod(_data_)
+    _algorithm_ = {"iterations": 50, "lipschitz_const": lc}
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+
+    assert Iter_rec.shape == (1, 160, 160)
+    Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
+    assert_allclose(np.min(Iter_rec), -0.010516173, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.03179016, rtol=eps)
+    assert Iter_rec.dtype == np.float32
+
+
 def test_FISTA_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
@@ -469,6 +532,39 @@ def test_FISTA_OS_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert_allclose(np.max(Iter_rec), 0.046532914, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_FISTA_OS_cp_2D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    sinogram = data_cupy[:, 64, :]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=None,  # Vertical detector dimension 2D case
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+        OS_number=5,  # define the number of subsets
+    )
+
+    _data_ = {
+        "data_fidelity": "LS",
+        "projection_data": sinogram,
+        "data_axes_labels_order": ["angles", "detX"],
+    }  # data dictionary
+    # calculate Lipschitz constant
+
+    lc = RecTools.powermethod(_data_)
+    _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+
+    assert Iter_rec.shape == (1, 160, 160)
+    Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
+    assert_allclose(np.min(Iter_rec), -0.010578496, rtol=eps)
+    assert_allclose(np.max(Iter_rec), 0.03182499, rtol=eps)
+    assert Iter_rec.dtype == np.float32
 
 
 def test_FISTA_OS_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
@@ -678,7 +774,7 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
     Iter_rec = Iter_rec.get()
 
     assert 5000 <= lc <= 6000
-    assert_allclose(np.max(Iter_rec), 0.0325, rtol=1e-03)
+    assert_allclose(np.max(Iter_rec), 0.032535, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 

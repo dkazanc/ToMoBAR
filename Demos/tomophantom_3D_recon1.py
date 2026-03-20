@@ -298,7 +298,7 @@ _regularisation_ = {
     "half_precision": True,  # enabling half-precision calculation
 }
 
-# RUN THE FISTA METHOD:
+# RUN THE ADMM METHOD:
 tic = timeit.default_timer()
 RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
 toc = timeit.default_timer()
