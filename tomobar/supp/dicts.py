@@ -1,8 +1,5 @@
-import numpy as np
-from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
-from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
-
 from typing import Union
+import cupy as cp
 from tomobar.supp.funcs import _data_dims_swapper
 
 
@@ -50,23 +47,38 @@ def dicts_check(
     Returns:
         tuple: A tuple with three populated dictionaries (_data_, _algorithm_, _regularisation_).
     """
+    correct_labels_order = ["detY", "angles", "detX"]
+    correct_labels_order2D = ["angles", "detX"]
+    data2dinput = False
+
     if _data_ is None:
         raise NameError("The data dictionary must be always provided")
     else:
         # -------- dealing with _data_ dictionary ------------
         if _data_.get("projection_data") is None:
-            raise NameError("No input 'projection_data' has been provided")
+            raise NameError("'projection_data' needs to be provided")
+        if _data_["projection_data"].ndim == 2:
+            data2dinput = True
+
         if "data_axes_labels_order" not in _data_:
             _data_["data_axes_labels_order"] = None
 
         if _data_["data_axes_labels_order"] is not None:
+            if data2dinput:
+                correct_labels_order = correct_labels_order2D
+
             _data_["projection_data"] = _data_dims_swapper(
                 _data_["projection_data"],
                 _data_["data_axes_labels_order"],
-                ["detY", "angles", "detX"],
+                correct_labels_order,
             )
             # we need to reset the swap option here as the data already been modified so we don't swap it again in the method itself
             _data_["data_axes_labels_order"] = None
+
+        if data2dinput:
+            _data_["projection_data"] = cp.expand_dims(
+                _data_["projection_data"], axis=0
+            )
 
         if _data_.get("data_fidelity") is None:
             _data_["data_fidelity"] = "LS"

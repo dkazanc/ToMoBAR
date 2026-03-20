@@ -77,33 +77,20 @@ class RecToolsIRCuPy:
             ObjSize = DetectorsDimH + 2 * DetectorsDimH_pad
 
         if DetectorsDimV == 0 or DetectorsDimV is None:
-            raise ValueError(
-                "2D iterative reconstruction is not currently supported, please use 3D data"
-            )
-            self.geom = "2D"
-            self.Atools = AstraTools2D(
-                sDetectorsDimH,
-                DetectorsDimH_pad,
-                AnglesVec,
-                CenterRotOffset,
-                ObjSize,
-                "gpu",
-                device_projector,
-                OS_number,
-            )
-        else:
-            self.geom = "3D"
-            self.Atools = AstraTools3D(
-                DetectorsDimH,
-                DetectorsDimH_pad,
-                DetectorsDimV,
-                AnglesVec,
-                CenterRotOffset,
-                ObjSize,
-                "gpu",
-                device_projector,
-                OS_number,
-            )
+            DetectorsDimV = 1
+
+        self.geom = "3D"
+        self.Atools = AstraTools3D(
+            DetectorsDimH,
+            DetectorsDimH_pad,
+            DetectorsDimV,
+            AnglesVec,
+            CenterRotOffset,
+            ObjSize,
+            "gpu",
+            device_projector,
+            OS_number,
+        )
 
     @property
     def OS_number(self) -> int:
@@ -367,10 +354,6 @@ class RecToolsIRCuPy:
     def __common_initialisation(
         self, _data_, _algorithm_, _regularisation_, method_run
     ):
-        if self.geom == "2D":
-            # 2D reconstruction
-            raise ValueError("2D iterative reconstruction is not yet supported")
-
         ######################################################################
         # parameters check and initialisation
         _data_upd_, _algorithm_upd_, _regularisation_upd_ = dicts_check(

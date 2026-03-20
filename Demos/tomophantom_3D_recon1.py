@@ -219,7 +219,7 @@ lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
     "iterations": 25,
-    "lipschitz_const": lc.get(),
+    "lipschitz_const": lc,
     "recon_mask_radius": 2.0,
 }  # The number of iterations
 

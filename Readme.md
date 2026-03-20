@@ -7,7 +7,7 @@
         </td>
         <td>
         <font size="5"><b> TOmographic MOdel-BAsed Reconstruction software <a href="https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf">PAPER (CT Meeting 2020)</a></b></font>
-        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a Python library of fast direct and model-based regularised iterative  algorithms with a plug-and-play capability for reconstruction of parallel-beam geometry data. ToMoBAR offers you a selection of various data models and regularisers resulting in complex objectives for tomographic reconstruction. ToMoBAR can handle multi-GPU parallel reconstruction in Python and also device-to-device methods operating on CuPy arrays. It is currently used in production at <a href="https://www.diamond.ac.uk/Home.html">Diamond Light Source</a> as a part of the <a href="https://diamondlightsource.github.io/httomo/">HTTomo</a> framework for big-data processing and reconstruction.</font></br>
+        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a Python library of fast direct and model-based regularised iterative  algorithms with a plug-and-play capability for reconstruction of parallel-beam geometry data. ToMoBAR offers you a selection of various data models and regularisers resulting in complex objectives for tomographic reconstruction. As ToMoBAR relies on device-to-device methods operating on CuPy arrays it offers significant speed-ups. It also can handle multi-GPU parallel reconstruction through the <a href="https://diamondlightsource.github.io/httomo/">HTTomo</a> framework for big-data processing and reconstruction. ToMoBAR is used in production at <a href="https://www.diamond.ac.uk/Home.html">Diamond Light Source</a>.</font></br>
         </td>
     </tr>
 </table>
@@ -17,7 +17,7 @@
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
 ## Anouncements:
-*  $\sf\color{red}!$ Starting from version 2026.3.0.0, iterative reconstruction methods will no longer be accessible through `RecToolsIR` and `RecToolsIRCuPy` is provided instead. The dependency on the Regularisation Toolkit is dropped in favour of internal CuPy routines. Please see more information in [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
+*  $\sf\color{red}!$ Starting from version 2026.3.0.0, iterative reconstruction methods will no longer be accessible through the `RecToolsIR` interface and `RecToolsIRCuPy` should be used instead. The dependency on the Regularisation Toolkit is dropped in favour of the internal CuPy routines. Please see more information in [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
 
 ### CHANGELOG:
 See [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.
