@@ -90,7 +90,7 @@ def ROF_TV_cupy(
     TV_kernel_name = f"TV_kernel_{data.ndim}D_{'half' if half_precision else 'float'}"
     TV_kernel = module.get_function(TV_kernel_name)
 
-    dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
+    dz, dy, dx = (0,) * (3 - data.ndim) + data.shape
     block_x = 128
     block_dims = (block_x, 1)
     grid_x = (dx + block_x - 1) // block_x
@@ -229,7 +229,7 @@ def PD_TV_cupy(
     module = load_cuda_module("primal_dual_for_total_variation")
     primal_dual_for_total_variation = module.get_function(kernel_name)
 
-    dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
+    dz, dy, dx = (0,) * (3 - data.ndim) + data.shape
     block_x = 128
     block_dims = (block_x, 1)
     grid_x = (dx + block_x - 1) // block_x
