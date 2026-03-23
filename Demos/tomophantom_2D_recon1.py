@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 from tomophantom import TomoP2D
 import os
 import tomophantom
-from tomophantom.qualitymetrics import QualityTools
+
+# from tomophantom.qualitymetrics import QualityTools
 
 model = 12  # select a model
 N_size = 512  # set dimension of the phantom
@@ -164,7 +165,7 @@ RectoolsIR = RecToolsIRCuPy(
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector=0,
-    OS_number=1,
+    OS_number=6,
 )
 
 # data dictionary
@@ -175,7 +176,7 @@ _data_ = {
 lc = RectoolsIR.powermethod(
     _data_
 )  # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {"iterations": 100, "mask_diameter": 1.3, "lipschitz_const": lc}
+_algorithm_ = {"iterations": 25, "mask_diameter": 1.3, "lipschitz_const": lc}
 
 # adding regularisation using the CCPi regularisation toolkit
 _regularisation_ = {

@@ -72,7 +72,7 @@ def ROF_TV_cupy(
     if input_type != "float32":
         raise ValueError("The input data should be float32 data type")
 
-    data, input_is_2d = __check_if_input_2d_or_3d(data)
+    data, input_is_2d, ind_axis = __check_if_input_2d_or_3d(data)
 
     dtype_of_D = cp.float16 if half_precision else cp.float32
 
@@ -161,7 +161,10 @@ def ROF_TV_cupy(
         input_index = 1 - input_index
         output_index = 1 - output_index
 
-    return out_arrays[input_index]
+    if input_is_2d:
+        return cp.expand_dims(out_arrays[input_index], axis=ind_axis)
+    else:
+        return out_arrays[input_index]
 
 
 def PD_TV_cupy(
@@ -204,7 +207,7 @@ def PD_TV_cupy(
     if input_type != "float32":
         raise ValueError("The input data should be float32 data type")
 
-    data, input_is_2d = __check_if_input_2d_or_3d(data)
+    data, input_is_2d, ind_axis = __check_if_input_2d_or_3d(data)
 
     dtype_of_P = cp.float16 if half_precision else cp.float32
 
@@ -287,14 +290,17 @@ def PD_TV_cupy(
 
         input_index = 1 - input_index
         output_index = 1 - output_index
+    if input_is_2d:
+        return cp.expand_dims(U_arrays[input_index], axis=ind_axis)
+    else:
+        return U_arrays[input_index]
 
-    return U_arrays[input_index]
 
-
-def __check_if_input_2d_or_3d(data: cp.ndarray) -> Tuple[cp.ndarray, bool]:
+def __check_if_input_2d_or_3d(data: cp.ndarray) -> Tuple[cp.ndarray, bool, int]:
     # return False if the data is 3D and its dimensions are larger 1.
+    ind = 0
     if data.ndim == 2:
-        return (data, True)
+        return (data, True, 0)
     elif data.ndim == 3:
         dim_is_one = False
         for i in range(3):
@@ -303,6 +309,7 @@ def __check_if_input_2d_or_3d(data: cp.ndarray) -> Tuple[cp.ndarray, bool]:
                 break
         if dim_is_one:
             data = cp.squeeze(data, axis=i)
-        return (data, dim_is_one)
+            ind = i
+        return (data, dim_is_one, ind)
     else:
         raise ValueError("2D or 3D arrays must be provided only")

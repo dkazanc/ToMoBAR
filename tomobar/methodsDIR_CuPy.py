@@ -361,10 +361,10 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # Memory clean up of interpolation extra arrays
         if mem_stack:
             datac, fde = self._setup_backprojection_input_estimator(n, nproj, nz)
-            (tmp_p_shape, tmp_p_dtype) = tmp_p
+            tmp_p_shape, tmp_p_dtype = tmp_p
             mem_stack.free(np.prod(tmp_p_shape) * tmp_p_dtype.itemsize)
         else:
-            (datac, fde) = self._setup_backprojection_input(
+            datac, fde = self._setup_backprojection_input(
                 tmp_p, n, nproj, nz, center_size, r2c_c1dfftshift
             )
 
@@ -373,7 +373,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # BACKPROJECTION
         if mem_stack:
             self._fft_and_interpolation_estimator(datac)
-            (datac_shape, datac_dtype) = datac
+            datac_shape, datac_dtype = datac
             mem_stack.free(np.prod(datac_shape) * datac_dtype.itemsize)
         else:
             self._fft_and_interpolation(
@@ -417,7 +417,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 n, nz, odd_horiz, odd_vert, recon_size
             )
 
-            (fde_shape, fde_dtype) = fde
+            fde_shape, fde_dtype = fde
             mem_stack.free(np.prod(fde_shape) * fde_dtype.itemsize)
         else:
             recon_up = self.unpad_reconstructed_data(
@@ -839,7 +839,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         datac: tuple,
     ):
         mem_stack = DeviceMemStack.instance()
-        (datac_shape, datac_dtype) = datac
+        datac_shape, datac_dtype = datac
         fft_input = cp.empty(datac_shape, datac_dtype)
         mem_stack.malloc(fft_input.nbytes)
 
@@ -908,7 +908,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             chunk_count = detector_height // 2
 
         slice_count_per_chunk = int(np.ceil(detector_height // 2 / chunk_count))
-        (fde_shape, fde_dtype) = fde
+        fde_shape, fde_dtype = fde
         ifft2_input = cp.empty((slice_count_per_chunk, *fde_shape[1:]), fde_dtype)
 
         ifft2_plan = get_fft_plan(ifft2_input, axes=(-2, -1))

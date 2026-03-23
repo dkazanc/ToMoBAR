@@ -49,7 +49,7 @@ SIRT CuPy algorithm has been fixed.
 
 ### New
 FISTA iterative method in `RecToolsIRCuPy` dropped its dependency on Regularisation Toolkit. Currently two regularisers
-available to use: `PD_TV` and `ROF_TV` and they were accelerated and optimised. Therefore FISTA with CuPy is up to 3 times faster compared
+available to use: `PD_TV` and `ROF_TV` and they were accelerated and optimised. Therefore, FISTA with CuPy is up to 3 times faster compared
 to the previous version and potentially a magnitude faster compared to FISTA in `RecToolsIR`.
 
 ## v.2025.08

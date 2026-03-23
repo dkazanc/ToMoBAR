@@ -460,6 +460,48 @@ def test_FISTA_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
+def test_FISTA_regul_PDTV_cp_2D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    sinogram = data_cupy[:, 64, :]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=None,  # Vertical detector dimension 2D case
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+        OS_number=None,  # define the number of subsets
+    )
+
+    _data_ = {
+        "data_fidelity": "LS",
+        "projection_data": sinogram,
+        "data_axes_labels_order": ["angles", "detX"],
+    }  # data dictionary
+
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    _algorithm_ = {"iterations": 100, "lipschitz_const": lc}
+
+    # adding regularisation using the CCPi regularisation toolkit
+    _regularisation_ = {
+        "method": "PD_TV",
+        "regul_param": 0.0005,
+        "iterations": 50,
+        "device_regulariser": 0,
+    }
+
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+
+    assert Iter_rec.shape == (1, 160, 160)
+    Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
+    assert_allclose(np.min(Iter_rec), -6.906301e-05, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.019546613, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+
+
 def test_FISTA_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
@@ -472,6 +514,7 @@ def test_FISTA_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
         AnglesVec=angles,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         device_projector=0,  # define the device
+        OS_number=None,  # define the number of subsets
     )
 
     _data_ = {
@@ -640,6 +683,49 @@ def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     assert_allclose(np.max(Iter_rec), 0.02189674, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_FISTA_OS_regul_PDTV_cp_2D(data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    sinogram = data_cupy[:, 64, :]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=None,  # Vertical detector dimension 2D case
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+        OS_number=6,  # define the number of subsets
+    )
+
+    _data_ = {
+        "data_fidelity": "LS",
+        "projection_data": sinogram,
+        "data_axes_labels_order": ["angles", "detX"],
+    }  # data dictionary
+
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+
+    _algorithm_ = {"iterations": 20, "lipschitz_const": lc}
+
+    _regularisation_ = {
+        "method": "PD_TV",
+        "regul_param": 0.0005,
+        "iterations": 30,
+        "device_regulariser": 0,
+    }
+
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+
+    assert Iter_rec.shape == (1, 160, 160)
+    Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
+
+    assert_allclose(np.min(Iter_rec), -9.581739e-05, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.019569699, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
 
 
 def test_FISTA_OS_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
