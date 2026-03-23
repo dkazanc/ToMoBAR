@@ -31,6 +31,7 @@ from tomobar.supp.suppTools import (
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+from tomobar.projectorsCuPy import ProjectorsCuPy
 
 
 class RecToolsIRCuPy:
@@ -94,6 +95,9 @@ class RecToolsIRCuPy:
                 "gpu",
                 device_projector,
             )
+        self.projector = ProjectorsCuPy(
+            n=ObjSize, theta=cp.asarray(AnglesVec), mask_r=4
+        )
 
     @property
     def datafidelity(self) -> int:
@@ -512,10 +516,10 @@ class RecToolsIRCuPy:
                 else:
                     # full gradient
                     res = (
-                        self.Atools._forwprojCuPy(X_t)
+                        self.projector.fwd_tomo(X_t)
                         - _data_upd_["projection_norm_data"]
                     )
-                    grad_fidelity = self.Atools._backprojCuPy(res)
+                    grad_fidelity = self.projector.adj_tomo(res)
 
                 del res
 
