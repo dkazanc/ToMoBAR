@@ -17,6 +17,7 @@ from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 from tomobar.supp.funcs import _data_dims_swapper
 from tomobar.fourier import _filtersinc3D_cupy, calc_filter
 from tomobar.cuda_kernels import load_cuda_module
+from tomobar.projectorsCuPy import AstraProjectorCuPy, FFTProjectorCuPy
 
 from tomobar.methodsDIR import RecToolsDIR
 
@@ -62,6 +63,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
             projector,
             device_projector,
         )
+
+        if projector == "astra":
+            self.projector = AstraProjectorCuPy(self.Atools)
+        elif projector == "fourier":
+            self.projector = FFTProjectorCuPy(
+                n=ObjSize,
+                theta=cp.asarray(AnglesVec),
+                mask_r=4,
+                detector_x=DetectorsDimH + 2 * DetectorsDimH_pad,
+            )
+        else:
+            raise ValueError("projector must be astra or fourier")
+
         # if DetectorsDimV == 0 or DetectorsDimV is None:
         #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
@@ -78,7 +92,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         Returns:
             cp.ndarray: Forward projected cupy array (projection data)
         """
-        projected = self.Atools._forwprojCuPy(data)
+        projected = self.projector.forwproj(data)
         for key, value in kwargs.items():
             if key == "data_axes_labels_order" and value is not None:
                 projected = _data_dims_swapper(
@@ -107,7 +121,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         data = _apply_horiz_detector_padding(
             data, self.Atools.detectors_x_pad, cupyrun=True
         )
-        return self.Atools._backprojCuPy(data)
+        return self.projector.backproj(data)
 
     def FBP(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
         """Filtered backprojection reconstruction on a CuPy array using a custom built SINC filter.

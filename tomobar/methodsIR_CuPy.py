@@ -7,7 +7,7 @@
 """
 
 import numpy as np
-from typing import Union
+from typing import Literal, Union
 from numpy import float32
 
 try:
@@ -31,7 +31,7 @@ from tomobar.supp.suppTools import (
 from tomobar.supp.dicts import dicts_check, _reinitialise_atools_OS
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
-from tomobar.projectorsCuPy import FFTProjectorCuPy
+from tomobar.projectorsCuPy import AstraProjectorCuPy, FFTProjectorCuPy
 
 
 class RecToolsIRCuPy:
@@ -51,6 +51,7 @@ class RecToolsIRCuPy:
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): The size of the reconstructed object (a slice) defined as [recon_size, recon_size].
         datafidelity (str, optional): Data fidelity, choose from LS and PWLS. Defaults to LS.
+        projector (str, optional): Projector implementation, choose from astra and usfft. Defaults to astra
         device_projector (int, optional): Provide a GPU index of a specific GPU device. Defaults to 0.
         cupyrun (bool, optional): instantiate CuPy modules.
     """
@@ -64,6 +65,7 @@ class RecToolsIRCuPy:
         AnglesVec,  # Array of projection angles in radians
         ObjSize,  # The size of the reconstructed object (a slice)
         datafidelity="LS",  # Data fidelity, choose from LS and PWLS
+        projector: Literal["fourier", "astra"] = "astra",
         device_projector=0,  # provide a GPU index (integer) of a specific device
         cupyrun=True,
     ):
@@ -95,12 +97,17 @@ class RecToolsIRCuPy:
                 "gpu",
                 device_projector,
             )
-        self.projector = FFTProjectorCuPy(
-            n=ObjSize,
-            theta=cp.asarray(AnglesVec),
-            mask_r=4,
-            detector_x=DetectorsDimH + 2 * DetectorsDimH_pad,
-        )
+        if projector == "astra":
+            self.projector = AstraProjectorCuPy(self.Atools)
+        elif projector == "fourier":
+            self.projector = FFTProjectorCuPy(
+                n=ObjSize,
+                theta=cp.asarray(AnglesVec),
+                mask_r=4,
+                detector_x=DetectorsDimH + 2 * DetectorsDimH_pad,
+            )
+        else:
+            raise ValueError("projector must be astra or fourier")
 
     @property
     def datafidelity(self) -> int:
@@ -168,9 +175,9 @@ class RecToolsIRCuPy:
 
         for _ in range(_algorithm_upd_["iterations"]):
             residual = (
-                self.Atools._forwprojCuPy(x_rec) - _data_upd_["projection_norm_data"]
+                self.projector.forwproj(x_rec) - _data_upd_["projection_norm_data"]
             )  # Ax - b term
-            x_rec -= _algorithm_upd_["tau_step_lanweber"] * self.Atools._backprojCuPy(
+            x_rec -= _algorithm_upd_["tau_step_lanweber"] * self.projector.backproj(
                 residual
             )
             if _algorithm_upd_["nonnegativity"]:
@@ -217,12 +224,12 @@ class RecToolsIRCuPy:
         }
         ######################################################################
 
-        R = 1.0 / self.Atools._forwprojCuPy(
+        R = 1.0 / self.projector.forwproj(
             cp.ones(astra.geom_size(self.Atools.vol_geom), dtype=np.float32)
         )
         R = cp.nan_to_num(R, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
 
-        C = 1.0 / self.Atools._backprojCuPy(
+        C = 1.0 / self.projector.backproj(
             cp.ones(astra.geom_size(self.Atools.proj_geom), dtype=np.float32)
         )
         C = cp.nan_to_num(C, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
@@ -233,12 +240,9 @@ class RecToolsIRCuPy:
 
         # perform SIRT iterations
         for _ in range(_algorithm_upd_["iterations"]):
-            x_rec += C * self.Atools._backprojCuPy(
+            x_rec += C * self.projector.backproj(
                 R
-                * (
-                    _data_upd_["projection_norm_data"]
-                    - self.Atools._forwprojCuPy(x_rec)
-                )
+                * (_data_upd_["projection_norm_data"] - self.projector.forwproj(x_rec))
             )
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
@@ -285,7 +289,7 @@ class RecToolsIRCuPy:
         )  # initialisation
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
-        d = self.Atools._backprojCuPy(_data_upd_["projection_norm_data"])
+        d = self.projector.backproj(_data_upd_["projection_norm_data"])
         d = cp.ravel(d, order="C")
         normr2 = cp.inner(d, d)
         r = cp.ravel(_data_upd_["projection_norm_data"], order="C")
@@ -295,14 +299,12 @@ class RecToolsIRCuPy:
         # perform CG iterations
         for _ in range(_algorithm_upd_["iterations"]):
             # Update x_rec and r vectors:
-            Ad = self.Atools._forwprojCuPy(
-                cp.reshape(d, newshape=x_shape_3d, order="C")
-            )
+            Ad = self.projector.forwproj(cp.reshape(d, newshape=x_shape_3d, order="C"))
             Ad = cp.ravel(Ad, order="C")
             alpha = normr2 / cp.inner(Ad, Ad)
             x_rec += alpha * d
             r -= alpha * Ad
-            s = self.Atools._backprojCuPy(
+            s = self.projector.backproj(
                 cp.reshape(r, newshape=data_shape_3d, order="C")
             )
             s = cp.ravel(s, order="C")
@@ -389,14 +391,14 @@ class RecToolsIRCuPy:
 
         if _data_["OS_number"] == 1:
             # non-OS approach
-            y = self.Atools._forwprojCuPy(x1)
+            y = self.projector.forwproj(x1)
             if self.datafidelity == "PWLS":
                 y = cp.multiply(sqweight, y)
             for _ in range(power_iterations):
-                x1 = self.Atools._backprojCuPy(y)
+                x1 = self.projector.backproj(y)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
-                y = self.Atools._forwprojCuPy(x1)
+                y = self.projector.forwproj(x1)
                 if self.datafidelity == "PWLS":
                     y = cp.multiply(sqweight, y)
         else:
@@ -585,10 +587,10 @@ class RecToolsIRCuPy:
         }
 
         def _Ax(x):
-            return self.Atools._forwprojCuPy(x)
+            return self.projector.forwproj(x)
 
         def _Atb(b):
-            return self.Atools._backprojCuPy(b)
+            return self.projector.backproj(b)
 
         def _Ax_OS(x, sub_ind: int):
             return self.Atools._forwprojOSCuPy(x, os_index=sub_ind)

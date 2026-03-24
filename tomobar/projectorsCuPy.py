@@ -1,10 +1,31 @@
+from abc import ABC, abstractmethod
 import cupy as cp
 import numpy as np
 import math
+from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.cuda_kernels import load_cuda_module
 
 
-class FFTProjectorCuPy:
+class ProjectorBase(ABC):
+    @abstractmethod
+    def forwproj(self, object3D: cp.ndarray) -> cp.ndarray: ...  # pragma: nocover
+
+    @abstractmethod
+    def backproj(self, proj_data: cp.ndarray) -> cp.ndarray: ...  # pragma: nocover
+
+
+class AstraProjectorCuPy(ProjectorBase):
+    def __init__(self, atools: AstraTools3D):
+        self.atools = atools
+
+    def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
+        return self.atools._forwprojCuPy(object3D)
+
+    def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
+        return self.atools._backprojCuPy(proj_data)
+
+
+class FFTProjectorCuPy(ProjectorBase):
     """USFFT-based forward and backward projection wrapper."""
 
     def __init__(

@@ -44,7 +44,7 @@ class RecToolsDIR:
 
         if DetectorsDimV == 0 or DetectorsDimV is None:
             self.geom = "2D"
-            if projector == "astra":
+            if True:  # projector == "astra":
                 self.Atools = AstraTools2D(
                     DetectorsDimH,
                     DetectorsDimH_pad,
@@ -56,7 +56,7 @@ class RecToolsDIR:
                 )
         else:
             self.geom = "3D"
-            if projector == "astra":
+            if True:  # projector == "astra":
                 self.Atools = AstraTools3D(
                     DetectorsDimH,
                     DetectorsDimH_pad,
