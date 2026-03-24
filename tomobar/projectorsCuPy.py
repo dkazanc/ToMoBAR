@@ -12,6 +12,7 @@ class FFTProjectorCuPy:
         n: int,
         theta: cp.ndarray,
         mask_r: float,
+        detector_x: int,
         raxis=None,
     ):
         """Usfft parameters
@@ -52,6 +53,9 @@ class FFTProjectorCuPy:
         self.mask = mask
         self.raxis = raxis
         self.pars = m, mu, phi, c1dfftshift, c2dfftshift
+        self.detector_x = detector_x
+        self.left_pad = (self.detector_x - self.n) // 2
+        self.right_pad = self.detector_x - self.n - self.left_pad
         usfft_kernel_module = load_cuda_module("fft_us_kernels")
         self.gather_kernel = usfft_kernel_module.get_function("gather_kernel")
         self.scatter_kernel = usfft_kernel_module.get_function("scatter_kernel")
@@ -90,6 +94,7 @@ class FFTProjectorCuPy:
     def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
         """Radon transform"""
         [nz, n, n] = object3D.shape
+        assert self.n == n
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
         sino = cp.zeros([nz, self.ntheta, n], dtype="complex64")
@@ -114,12 +119,21 @@ class FFTProjectorCuPy:
             w = cp.exp(2 * cp.pi * 1j * t * (-self.raxis + n / 2))
             sino = cp.fft.ifft(w * cp.fft.fft(sino))
         # return cp.flip(cp.flip(sino.real, axis=2), axis=1)
-        return sino.real
+        return cp.pad(
+            sino.real,
+            pad_width=[(0, 0), (0, 0), (self.left_pad, self.right_pad)],
+            mode="constant",
+            constant_values=0,
+        )
 
     def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
         """Adjoint Radon transform"""
 
+        assert proj_data.shape[1] == self.theta.size
+        if proj_data.shape[2] != self.n:
+            proj_data = proj_data[..., self.left_pad : -self.right_pad]
         [nz, ntheta, n] = proj_data.shape
+        assert self.n == n
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
 

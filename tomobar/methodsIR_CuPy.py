@@ -96,7 +96,10 @@ class RecToolsIRCuPy:
                 device_projector,
             )
         self.projector = FFTProjectorCuPy(
-            n=ObjSize, theta=cp.asarray(AnglesVec), mask_r=4
+            n=ObjSize,
+            theta=cp.asarray(AnglesVec),
+            mask_r=4,
+            detector_x=DetectorsDimH + 2 * DetectorsDimH_pad,
         )
 
     @property
