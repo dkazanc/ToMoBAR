@@ -1,10 +1,19 @@
 import cupy as cp
+import numpy as np
 import math
 from tomobar.cuda_kernels import load_cuda_module
 
 
-class ProjectorsCuPy:
-    def __init__(self, n: int, theta: cp.ndarray, mask_r: float, raxis=None):
+class FFTProjectorCuPy:
+    """USFFT-based forward and backward projection wrapper."""
+
+    def __init__(
+        self,
+        n: int,
+        theta: cp.ndarray,
+        mask_r: float,
+        raxis=None,
+    ):
         """Usfft parameters
         mask_r - circle radius"""
 
@@ -43,27 +52,58 @@ class ProjectorsCuPy:
         self.mask = mask
         self.raxis = raxis
         self.pars = m, mu, phi, c1dfftshift, c2dfftshift
-        self.gather_kernel = load_cuda_module("fft_us_kernels").get_function("gather")
+        usfft_kernel_module = load_cuda_module("fft_us_kernels")
+        self.gather_kernel = usfft_kernel_module.get_function("gather_kernel")
+        self.scatter_kernel = usfft_kernel_module.get_function("scatter_kernel")
+        self.gather_kernel_partial = usfft_kernel_module.get_function(
+            "gather_kernel_partial"
+        )
+        self.gather_kernel_center = usfft_kernel_module.get_function(
+            "gather_kernel_center"
+        )
+        self.gather_kernel_center_angle_based_prune = usfft_kernel_module.get_function(
+            "gather_kernel_center_angle_based_prune"
+        )
+        self.unpadding_mul_phi = usfft_kernel_module.get_function("unpadding_mul_phi")
+        self.center_size = max(n - 256, 0)
+        if self.center_size > 0:
+            theta_full_range = abs(self.theta[-1] - self.theta[0])
+            self.angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
+            self.angle_range = cp.zeros(
+                [self.center_size, self.center_size, 1 + self.angle_range_pi_count * 2],
+                dtype=cp.uint16,
+            )
+            self.gather_kernel_center_angle_based_prune(
+                (int(np.ceil(self.center_size / 256)), self.center_size, 1),
+                (256, 1, 1),
+                (
+                    self.angle_range,
+                    np.int32(self.angle_range_pi_count * 2 + 1),
+                    cp.asarray(self.theta),
+                    np.int32(m),
+                    np.int32(self.center_size),
+                    np.int32(n),
+                    np.int32(self.theta.size),
+                ),
+            )
 
-    def fwd_tomo(self, obj):
+    def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
         """Radon transform"""
-        [nz, n, n] = obj.shape
+        [nz, n, n] = object3D.shape
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
         sino = cp.zeros([nz, self.ntheta, n], dtype="complex64")
 
         # STEP0: multiplication by phi, padding
-        fde = obj * phi
+        fde = object3D * phi
         fde = cp.pad(fde, ((0, 0), (n // 2, n // 2), (n // 2, n // 2)))
         # STEP1: fft 2d
         fde = cp.fft.fft2(fde * c2dfftshift) * c2dfftshift
 
-        mua = cp.array([mu], dtype="float32")
-
-        self.gather_kernel(
+        self.scatter_kernel(
             (math.ceil(n / 32), math.ceil(self.ntheta / 32), nz),
             (32, 32, 1),
-            (sino, fde, self.theta, m, mua, n, self.ntheta, nz, 0),
+            (sino, fde, self.theta, m, cp.float32(mu), n, self.ntheta, nz),
         )
         # STEP3: ifft 1d
         sino = cp.fft.ifft(c1dfftshift * sino) * c1dfftshift
@@ -76,10 +116,10 @@ class ProjectorsCuPy:
         # return cp.flip(cp.flip(sino.real, axis=2), axis=1)
         return sino.real
 
-    def adj_tomo(self, data):
+    def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
         """Adjoint Radon transform"""
 
-        [nz, ntheta, n] = data.shape
+        [nz, ntheta, n] = proj_data.shape
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
 
@@ -87,20 +127,75 @@ class ProjectorsCuPy:
         if self.raxis is not None:
             t = cp.fft.fftfreq(n).astype("float32")
             w = cp.exp(-2 * cp.pi * 1j * t * (-self.raxis + n / 2))
-            data = cp.fft.ifft(w * cp.fft.fft(data))
+            proj_data = cp.fft.ifft(w * cp.fft.fft(proj_data))
 
         # STEP1: fft 1d
-        sino = cp.fft.fft(c1dfftshift * data) * c1dfftshift
+        sino = cp.fft.fft(c1dfftshift * proj_data) * c1dfftshift
 
         # STEP2: interpolation (gathering) in the frequency domain
-        mua = cp.array([mu], dtype="float32")
         fde = cp.zeros([nz, 2 * n, 2 * n], dtype="complex64")
-        self.gather_kernel(
-            (math.ceil(n / 32), math.ceil(self.ntheta / 32), nz),
-            (32, 32, 1),
-            (sino, fde, self.theta, m, mua, n, self.ntheta, nz, 1),
-        )
-        # STEP3: ifft 2d
+        if self.center_size > 0:
+            self.gather_kernel_partial(
+                (
+                    int(math.ceil(self.n / 32)),
+                    int(math.ceil(ntheta / 32)),
+                    nz,
+                ),
+                (32, 32, 1),
+                (
+                    sino,
+                    fde,
+                    self.theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(self.center_size),
+                    np.int32(self.n),
+                    np.int32(ntheta),
+                    np.int32(nz),
+                ),
+            )
+            sorted_theta_indices = cp.argsort(self.theta)
+            self.gather_kernel_center(
+                (
+                    math.ceil(self.n / 32),
+                    math.ceil(ntheta / 32),
+                    nz,
+                ),
+                (32, 32, 1),
+                (
+                    sino,
+                    fde,
+                    self.angle_range,
+                    np.int32(self.angle_range_pi_count * 2 + 1),
+                    self.theta,
+                    sorted_theta_indices,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(self.center_size),
+                    np.int32(self.n),
+                    np.int32(ntheta),
+                    np.int32(nz),
+                ),
+            )
+        else:
+            self.gather_kernel(
+                (
+                    int(math.ceil(self.n / 32)),
+                    int(math.ceil(ntheta / 32)),
+                    nz,
+                ),
+                (32, 32, 1),
+                (
+                    sino,
+                    fde,
+                    self.theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(self.n),
+                    np.int32(ntheta),
+                    np.int32(nz),
+                ),
+            )  # STEP3: ifft 2d
         fde = cp.fft.ifft2(fde * c2dfftshift) * c2dfftshift * self.n
 
         # STEP4: unpadding, multiplication by phi

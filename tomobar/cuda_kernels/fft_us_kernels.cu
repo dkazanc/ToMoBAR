@@ -656,8 +656,8 @@ extern "C" __global__ void unpadding_mul_phi(
     recon_up_imag[r_ind] = f_value.y * phi;
 }
 
-extern "C" __global__ void gather(float2* g, float2* f, float* theta, int m, float* mu,
-                                  int n, int ntheta, int nz, bool dir)
+extern "C" __global__ void scatter_kernel(float2* g, float2* f, float* theta, int m, float mu,
+                                          int n, int ntheta, int nz)
 {
     int tx = blockDim.x * blockIdx.x + threadIdx.x;
     int ty = blockDim.y * blockIdx.y + threadIdx.y;
@@ -665,7 +665,6 @@ extern "C" __global__ void gather(float2* g, float2* f, float* theta, int m, flo
 
     if (tx >= n || ty >= ntheta || tz >= nz) return;
 
-    // float M_PI = 3.141592653589793238f;
     float2 g0, g0t;
     float w, coeff0;
     float w0, w1, x0, y0, coeff1;
@@ -673,11 +672,10 @@ extern "C" __global__ void gather(float2* g, float2* f, float* theta, int m, flo
 
     g_ind = tx + ty * n + tz * n * ntheta;  
 
-    if (dir == 0) g0 = {};
-    else g0 = g[g_ind];
+    g0 = {};
 
-    coeff0 = M_PI / mu[0];
-    coeff1 = -M_PI * M_PI / mu[0];
+    coeff0 = M_PI / mu;
+    coeff1 = -M_PI * M_PI / mu;
 
     x0 = (tx - n / 2) / (float)n * __cosf(theta[ty]);
     y0 = -(tx - n / 2) / (float)n * __sinf(theta[ty]);
@@ -699,22 +697,11 @@ extern "C" __global__ void gather(float2* g, float2* f, float* theta, int m, flo
 
             f_ind = f_indx + (2 * n) * f_indy + tz * (2 * n) * (2 * n);
 
-            if (dir == 0)
-            {
-                g0.x += w * f[f_ind].x;
-                g0.y += w * f[f_ind].y;
-            }
-            else
-            {
-                atomicAdd(&(f[f_ind].x), w * g0.x);
-                atomicAdd(&(f[f_ind].y), w * g0.y);
-            }
+            g0.x += w * f[f_ind].x;
+            g0.y += w * f[f_ind].y;
         }
     }
 
-    if (dir == 0)
-    {
-        g[g_ind].x = g0.x;// / n;
-        g[g_ind].y = g0.y;// / n;
-    }
+    g[g_ind].x = g0.x;
+    g[g_ind].y = g0.y;
 }
