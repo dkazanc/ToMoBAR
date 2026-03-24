@@ -75,7 +75,7 @@ _zingers_ = {"zingers_percentage": 0.25, "zingers_modulus": 10}
 
 _stripes_ = {
     "stripes_percentage": 1.2,
-    "stripes_maxthickness": 3.0,
+    "stripes_maxthickness": 3,
     "stripes_intensity": 0.3,
     "stripes_type": "full",
 }

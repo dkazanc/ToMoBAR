@@ -1,13 +1,11 @@
 name: tomobar
 channels:
   - conda-forge
-  - httomo
 dependencies:
-  - httomo::ccpi-regulariser
   - conda-forge::astra-toolbox
-  - conda-forge::cupy
-  - conda-forge::numpy
-  - conda-forge::python
+  - conda-forge::cupy>=14.0.0
+  - conda-forge::numpy>=2.4
+  - conda-forge::python>=3.12
   - conda-forge::pytest
   - conda-forge::pytest-xdist
   - conda-forge::pytest-cov

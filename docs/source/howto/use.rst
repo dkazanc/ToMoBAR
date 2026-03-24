@@ -6,9 +6,8 @@ In :ref:`tutorials`, we provide few examples how to reconstruct synthetic and re
 
 The general recipe to perform reconstruction in Python with ToMoBAR is the following:
 
-* 1. Import a module related to the reconstruction task chosen, e.g., direct (:code:`DIR`) modules :mod:`tomobar.methodsDIR`, iterative (:code:`IR`) :mod:`tomobar.methodsIR`,
-  or `CuPy <https://cupy.dev/>`_-enabled modules :mod:`tomobar.methodsDIR_CuPy` and :mod:`tomobar.methodsIR_CuPy`.
-* 2. Instantiate a reconstructor class while providing parameters related to the parallel-beam 2D and 3D scanning geometries.
+* 1. Import a module related to the reconstruction task chosen, e.g., direct (:code:`DIR`) modules :mod:`tomobar.methodsDIR` or :mod:`tomobar.RecToolsDIRCuPy`, iterative (:code:`IR`) :mod:`tomobar.RecToolsIRCuPy`.
+* 2. Instantiate a reconstruction class while providing parameters related to the parallel-beam 2D and 3D scanning geometries.
 * 3. After instantiation you will get an access to different reconstruction methods of that class. Run selected reconstruction method providing data as an input and additional parameters.
   For all :code:`DIR` methods parameters are passed directly, while for :code:`IR` methods you will need to form dictionaries:
   :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts` for the list of parameters accepted.

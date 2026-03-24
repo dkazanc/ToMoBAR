@@ -12,6 +12,8 @@ try:
 except ImportError:
     import numpy as xp
 
+from typing import Union, Optional
+
 
 ###########Child class############
 class AstraTools3D(AstraBase):
@@ -23,16 +25,16 @@ class AstraTools3D(AstraBase):
 
     def __init__(
         self,
-        detectors_x,
-        detectors_x_pad,
-        detectors_y,
-        angles_vec,
-        centre_of_rotation,
-        recon_size,
-        processing_arch,
-        device_index,
-        ordsub_number=1,
-        verbosity=False,
+        detectors_x: int,
+        detectors_x_pad: int,
+        detectors_y: int,
+        angles_vec: np.ndarray,
+        centre_of_rotation: Union[float, np.ndarray],
+        recon_size: int,
+        processing_arch: str,
+        device_index: int,
+        ordsub_number: Optional[int] = None,
+        verbosity: bool = False,
     ):
         super().__init__(
             detectors_x,
@@ -73,12 +75,6 @@ class AstraTools3D(AstraBase):
                     )
                 )
 
-    def _forwproj(self, object3D: np.ndarray) -> np.ndarray:
-        return super().runAstraProj3D(object3D, None)
-
-    def _forwprojOS(self, object3D: np.ndarray, os_index: int) -> np.ndarray:
-        return super().runAstraProj3D(object3D, os_index)
-
     def _forwprojCuPy(self, object3D: xp.ndarray) -> xp.ndarray:
         return super().runAstraProj3DCuPy(
             object3D, None
@@ -103,11 +99,6 @@ class AstraTools3D(AstraBase):
             proj_data, "BP3D_CUDA", 1, None
         )  # NOTE: 3D FBP using ASTRA is not implemented by the third-part, we use the bespoke implementation here
 
-    def _backprojOS(self, proj_data: np.ndarray, os_index: int) -> np.ndarray:
-        return super().runAstraBackproj3D(
-            proj_data, "BP3D_CUDA", 1, os_index
-        )  # 3D OS backprojection
-
     def _backprojCuPy(self, proj_data: xp.ndarray) -> xp.ndarray:
         return super().runAstraBackproj3DCuPy(
             proj_data, "BP3D_CUDA", None
@@ -117,13 +108,3 @@ class AstraTools3D(AstraBase):
         return super().runAstraBackproj3DCuPy(
             proj_data, "BP3D_CUDA", os_index
         )  # 3d back-projection using CuPy array for a specific subset
-
-    def _sirt(self, proj_data: np.ndarray, iterations: int) -> np.ndarray:
-        return super().runAstraBackproj3D(
-            proj_data, "SIRT3D_CUDA", iterations, None
-        )  # 3D SIRT reconstruction
-
-    def _cgls(self, proj_data: np.ndarray, iterations: int) -> np.ndarray:
-        return super().runAstraBackproj3D(
-            proj_data, "CGLS3D_CUDA", iterations, None
-        )  # 3D CGLS reconstruction

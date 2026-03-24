@@ -19,7 +19,7 @@ from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 # load dendritic data
-datadict = scipy.io.loadmat("../../data/DendrRawData.mat")
+datadict = scipy.io.loadmat("../data/DendrRawData.mat")
 # extract data (print(datadict.keys()))
 dataRaw = datadict["data_raw3D"]
 angles = datadict["angles"]
@@ -103,7 +103,6 @@ RectoolsCuPy = RecToolsIRCuPy(
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity
     device_projector=0,
 )
 
@@ -113,7 +112,7 @@ print("%%%%%%%%%%%%Reconstructing with CGLS method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
+    "projection_data": data_norm_cupy,  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
 
@@ -137,13 +136,13 @@ print("%%%%%%%%%%%%Reconstructing with SIRT method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
+    "projection_data": data_norm_cupy,  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
 
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 400,
+    "iterations": 300,
     "recon_mask_radius": 2.0,
 }  # The number of iterations
 
@@ -157,31 +156,29 @@ plt.title("SIRT reconstruction")
 plt.show()
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
+print("Reconstructing with FISTA OS-PWLS-TV (PD) method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 RectoolsCuPy = RecToolsIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=100,  # Padding size of horizontal detector
+    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
     DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity
     device_projector=0,
+    OS_number=6,  # The number of ordered subsets
 )
 
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
-    "OS_number": 6,  # The number of subsets
+    "data_fidelity": "PWLS",
+    "projection_data": data_norm_cupy,  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
 tic = timeit.default_timer()
-lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
     "iterations": 25,
-    "lipschitz_const": lc.get(),
     "recon_mask_radius": 2.0,
 }  # The number of iterations
 
@@ -192,7 +189,6 @@ _regularisation_ = {
     "iterations": 50,  # The number of regularisation iterations
     "half_precision": True,  # enabling half-precision calculation
 }
-
 
 # RUN THE FISTA METHOD:
 RecFISTA_os_tv = RectoolsCuPy.FISTA(_data_, _algorithm_, _regularisation_)
@@ -208,7 +204,7 @@ plt.show()
 # fig.savefig('dendr_PWLS.png', dpi=200)
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM OS-PWLS-TV (PD) method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # FBP recon needed for warm start. Note that with padding enabled it needs to be the padded size
 
@@ -219,15 +215,16 @@ RectoolsCuPy = RecToolsIRCuPy(
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity
     device_projector=0,
+    OS_number=24,  # The number of ordered subsets
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": cp.asarray(data_norm_cupy),  # Normalised projection data
-    "OS_number": 24,  # The number of subsets
+    "data_fidelity": "PWLS",
+    "projection_data": data_norm_cupy,  # Normalised projection data
     "data_axes_labels_order": data_labels3D,
 }
+
 #################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
     "initialise": FBPrec_cupy_pad,  # needs to be the padded size detectorHoriz + 2*padding_value
