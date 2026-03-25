@@ -70,7 +70,7 @@ class FFTProjectorCuPy(ProjectorBase):
 
         self.n = n
         self.ntheta = len(theta)
-        self.theta = theta
+        self.theta = cp.sort(-1 * cp.asarray(theta, dtype="float32"))
         self.mask = mask
         self.raxis = raxis
         self.pars = m, mu, phi, c1dfftshift, c2dfftshift
