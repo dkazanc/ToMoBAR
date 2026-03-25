@@ -31,7 +31,7 @@ class FFTProjectorCuPy(ProjectorBase):
     def __init__(
         self,
         n: int,
-        theta: cp.ndarray,
+        theta: np.ndarray,
         mask_r: float,
         detector_x: int,
         CenterRotOffset: int,
@@ -69,8 +69,8 @@ class FFTProjectorCuPy(ProjectorBase):
         phi *= mask / (cp.float32(4 * n) * cp.sqrt(n * len(theta)))
 
         self.n = n
-        self.ntheta = len(theta)
-        self.theta = cp.sort(-1 * cp.asarray(theta, dtype="float32"))
+        self.ntheta = theta.size
+        self.theta = np.sort(-1 * theta)
         self.mask = mask
         self.raxis = n // 2 - CenterRotOffset
         self.pars = m, mu, phi, c1dfftshift, c2dfftshift
@@ -91,8 +91,9 @@ class FFTProjectorCuPy(ProjectorBase):
         )
         self.unpadding_mul_phi = usfft_kernel_module.get_function("unpadding_mul_phi")
         self.center_size = max(n - 256, 0)
+        theta_full_range = abs(self.theta[-1] - self.theta[0])
+        self.theta = cp.asarray(self.theta, dtype="float32")
         if self.center_size > 0:
-            theta_full_range = abs(self.theta[-1] - self.theta[0])
             self.angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
             self.angle_range = cp.zeros(
                 [self.center_size, self.center_size, 1 + self.angle_range_pi_count * 2],
@@ -104,11 +105,11 @@ class FFTProjectorCuPy(ProjectorBase):
                 (
                     self.angle_range,
                     np.int32(self.angle_range_pi_count * 2 + 1),
-                    cp.asarray(self.theta),
+                    self.theta,
                     np.int32(m),
                     np.int32(self.center_size),
                     np.int32(n),
-                    np.int32(self.theta.size),
+                    np.int32(self.ntheta),
                 ),
             )
 
@@ -150,7 +151,7 @@ class FFTProjectorCuPy(ProjectorBase):
     def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
         """Adjoint Radon transform"""
 
-        assert proj_data.shape[1] == self.theta.size
+        assert proj_data.shape[1] == self.ntheta
         if proj_data.shape[2] != self.n:
             proj_data = proj_data[..., self.left_pad : -self.right_pad]
         [nz, ntheta, n] = proj_data.shape

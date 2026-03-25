@@ -69,7 +69,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         elif projector == "fourier":
             self.projector = FFTProjectorCuPy(
                 n=ObjSize,
-                theta=cp.asarray(AnglesVec),
+                theta=AnglesVec,
                 mask_r=4,
                 detector_x=DetectorsDimH + 2 * DetectorsDimH_pad,
                 CenterRotOffset=CenterRotOffset,
