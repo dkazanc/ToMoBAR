@@ -505,7 +505,7 @@ class RecToolsIRCuPy:
                     if self.datafidelity == "LS":
                         # 3D Least-squares (LS) data fidelity - OS (linear)
                         res = (
-                            self.Atools._forwprojOSCuPy(X_t, sub_ind)
+                            self.projector.forwprojOS(X_t, sub_ind, indVec)
                             - _data_upd_["projection_norm_data"][:, indVec, :]
                         )
                     if self.datafidelity == "PWLS":
@@ -513,12 +513,12 @@ class RecToolsIRCuPy:
                         res = np.multiply(
                             _data_upd_["projection_raw_data"][:, indVec, :],
                             (
-                                self.Atools._forwprojOSCuPy(X_t, sub_ind)
+                                self.projector.forwprojOS(X_t, sub_ind, indVec)
                                 - _data_upd_["projection_norm_data"][:, indVec, :]
                             ),
                         )
                     # OS-reduced gradient
-                    grad_fidelity = self.Atools._backprojOSCuPy(res, sub_ind)
+                    grad_fidelity = self.projector.backprojOS(res, sub_ind, indVec)
                 else:
                     # full gradient
                     res = (
@@ -593,11 +593,11 @@ class RecToolsIRCuPy:
         def _Atb(b):
             return self.projector.backproj(b)
 
-        def _Ax_OS(x, sub_ind: int):
-            return self.Atools._forwprojOSCuPy(x, os_index=sub_ind)
+        def _Ax_OS(x, sub_ind: int, ind_vec: np.ndarray):
+            return self.projector.forwprojOS(x, sub_ind, ind_vec)
 
-        def _Atb_OS(b, sub_ind: int):
-            return self.Atools._backprojOSCuPy(b, os_index=sub_ind)
+        def _Atb_OS(b, sub_ind: int, ind_vec: np.ndarray):
+            return self.projector.backprojOS(b, sub_ind, ind_vec)
 
         rec_dim = astra.geom_size(self.Atools.vol_geom)
         # initialisation of the solution (warm-start)
@@ -642,8 +642,9 @@ class RecToolsIRCuPy:
                 if self.datafidelity == "KL":
                     if use_os:
                         grad_data = _Atb_OS(
-                            1 - proj_data / (_Ax_OS(z, sub_ind) + 1e-8),
+                            1 - proj_data / (_Ax_OS(z, sub_ind, indVec) + 1e-8),
                             sub_ind,
+                            indVec,
                         )  # KL term
                     else:
                         grad_data = _Atb(
@@ -652,8 +653,7 @@ class RecToolsIRCuPy:
                 else:
                     if use_os:
                         grad_data = _Atb_OS(
-                            _Ax_OS(z, sub_ind) - proj_data,
-                            sub_ind,
+                            _Ax_OS(z, sub_ind, indVec) - proj_data, sub_ind, indVec
                         )  # LS term
                     else:
                         grad_data = _Atb(

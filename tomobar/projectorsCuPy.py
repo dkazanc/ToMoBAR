@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 import cupy as cp
 import numpy as np
 import math
@@ -11,7 +12,17 @@ class ProjectorBase(ABC):
     def forwproj(self, object3D: cp.ndarray) -> cp.ndarray: ...  # pragma: nocover
 
     @abstractmethod
+    def forwprojOS(
+        self, object3D: cp.ndarray, sub_ind: int, ind_vec: np.ndarray
+    ) -> cp.ndarray: ...  # pragma: nocover
+
+    @abstractmethod
     def backproj(self, proj_data: cp.ndarray) -> cp.ndarray: ...  # pragma: nocover
+
+    @abstractmethod
+    def backprojOS(
+        self, proj_data: cp.ndarray, sub_ind: int, ind_vec: np.ndarray
+    ) -> cp.ndarray: ...  # pragma: nocover
 
 
 class AstraProjectorCuPy(ProjectorBase):
@@ -21,8 +32,18 @@ class AstraProjectorCuPy(ProjectorBase):
     def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
         return self.atools._forwprojCuPy(object3D)
 
+    def forwprojOS(
+        self, object3D: cp.ndarray, sub_ind: int, ind_vec: np.ndarray
+    ) -> cp.ndarray:
+        return self.atools._forwprojOSCuPy(object3D, sub_ind)
+
     def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
         return self.atools._backprojCuPy(proj_data)
+
+    def backprojOS(
+        self, proj_data: cp.ndarray, sub_ind: int, ind_vec: np.ndarray
+    ) -> cp.ndarray:
+        return self.atools._backprojOSCuPy(proj_data, sub_ind)
 
 
 class FFTProjectorCuPy(ProjectorBase):
@@ -91,35 +112,42 @@ class FFTProjectorCuPy(ProjectorBase):
         )
         self.unpadding_mul_phi = usfft_kernel_module.get_function("unpadding_mul_phi")
         self.center_size = max(n - 256, 0)
-        theta_full_range = abs(self.theta[-1] - self.theta[0])
         self.theta = cp.asarray(self.theta, dtype="float32")
         if self.center_size > 0:
-            self.angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
-            self.angle_range = cp.zeros(
-                [self.center_size, self.center_size, 1 + self.angle_range_pi_count * 2],
-                dtype=cp.uint16,
-            )
-            self.gather_kernel_center_angle_based_prune(
-                (int(np.ceil(self.center_size / 256)), self.center_size, 1),
-                (256, 1, 1),
-                (
-                    self.angle_range,
-                    np.int32(self.angle_range_pi_count * 2 + 1),
-                    self.theta,
-                    np.int32(m),
-                    np.int32(self.center_size),
-                    np.int32(n),
-                    np.int32(self.ntheta),
-                ),
-            )
+            self.angle_range = self._generate_angle_range(self.theta)
+        else:
+            self.angle_range = None
 
-    def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
+    def _generate_angle_range(self, theta: cp.ndarray) -> cp.ndarray:
+        theta_full_range = abs(theta[-1] - theta[0])
+        angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
+        angle_range = cp.zeros(
+            [self.center_size, self.center_size, 1 + angle_range_pi_count * 2],
+            dtype=cp.uint16,
+        )
+        m, mu, phi, c1dfftshift, c2dfftshift = self.pars
+        self.gather_kernel_center_angle_based_prune(
+            (int(np.ceil(self.center_size / 256)), self.center_size, 1),
+            (256, 1, 1),
+            (
+                angle_range,
+                np.int32(angle_range_pi_count * 2 + 1),
+                theta,
+                np.int32(m),
+                np.int32(self.center_size),
+                np.int32(self.n),
+                np.int32(theta.size),
+            ),
+        )
+        return angle_range
+
+    def _forwproj(self, object3D: cp.ndarray, theta: cp.ndarray) -> cp.ndarray:
         """Radon transform"""
         [nz, n, n] = object3D.shape
         assert self.n == n
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
-        sino = cp.zeros([nz, self.ntheta, n], dtype="complex64")
+        sino = cp.zeros([nz, theta.size, n], dtype="complex64")
 
         # STEP0: multiplication by phi, padding
         fde = object3D * phi
@@ -128,9 +156,9 @@ class FFTProjectorCuPy(ProjectorBase):
         fde = cp.fft.fft2(fde * c2dfftshift) * c2dfftshift
 
         self.scatter_kernel(
-            (math.ceil(n / 32), math.ceil(self.ntheta / 32), nz),
+            (math.ceil(n / 32), math.ceil(theta.size / 32), nz),
             (32, 32, 1),
-            (sino, fde, self.theta, m, cp.float32(mu), n, self.ntheta, nz),
+            (sino, fde, theta, m, cp.float32(mu), n, theta.size, nz),
         )
         # STEP3: ifft 1d
         sino = cp.fft.ifft(c1dfftshift * sino) * c1dfftshift
@@ -148,10 +176,23 @@ class FFTProjectorCuPy(ProjectorBase):
             constant_values=0,
         )
 
-    def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
+    def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
+        return self._forwproj(object3D, self.theta)
+
+    def forwprojOS(
+        self, object3D: cp.ndarray, sub_ind: int, ind_vec: np.ndarray
+    ) -> cp.ndarray:
+        return self._forwproj(object3D, self.theta[ind_vec])
+
+    def _backproj(
+        self,
+        proj_data: cp.ndarray,
+        theta: cp.ndarray,
+        angle_range: Optional[cp.ndarray],
+    ) -> cp.ndarray:
         """Adjoint Radon transform"""
 
-        assert proj_data.shape[1] == self.ntheta
+        assert proj_data.shape[1] == theta.size
         if proj_data.shape[2] != self.n:
             proj_data = proj_data[..., self.left_pad : -self.right_pad]
         [nz, ntheta, n] = proj_data.shape
@@ -181,7 +222,7 @@ class FFTProjectorCuPy(ProjectorBase):
                 (
                     sino,
                     fde,
-                    self.theta,
+                    theta,
                     np.int32(m),
                     np.float32(mu),
                     np.int32(self.center_size),
@@ -190,7 +231,7 @@ class FFTProjectorCuPy(ProjectorBase):
                     np.int32(nz),
                 ),
             )
-            sorted_theta_indices = cp.argsort(self.theta)
+            sorted_theta_indices = cp.argsort(theta)
             self.gather_kernel_center(
                 (
                     math.ceil(self.n / 32),
@@ -201,9 +242,9 @@ class FFTProjectorCuPy(ProjectorBase):
                 (
                     sino,
                     fde,
-                    self.angle_range,
-                    np.int32(self.angle_range_pi_count * 2 + 1),
-                    self.theta,
+                    angle_range,
+                    np.int32(angle_range.shape[2]),
+                    theta,
                     sorted_theta_indices,
                     np.int32(m),
                     np.float32(mu),
@@ -224,7 +265,7 @@ class FFTProjectorCuPy(ProjectorBase):
                 (
                     sino,
                     fde,
-                    self.theta,
+                    theta,
                     np.int32(m),
                     np.float32(mu),
                     np.int32(self.n),
@@ -239,3 +280,13 @@ class FFTProjectorCuPy(ProjectorBase):
 
         # return cp.flip(fde.real, axis=1)
         return fde.real
+
+    def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
+        return self._backproj(proj_data, self.theta, self.angle_range)
+
+    def backprojOS(
+        self, proj_data: cp.ndarray, sub_ind: int, ind_vec: np.ndarray
+    ) -> cp.ndarray:
+        theta = self.theta[ind_vec]
+        angle_range = self._generate_angle_range(theta)
+        return self._backproj(proj_data, theta, angle_range)

@@ -215,7 +215,7 @@ RectoolsCuPy = RecToolsIRCuPy(
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": projData3D_analyt_cupy,  # Normalised projection data
-    "OS_number": 1,  # The number of subsets
+    "OS_number": 6,  # The number of subsets
     "data_axes_labels_order": input_data_labels,
 }
 
@@ -283,7 +283,7 @@ RectoolsCuPy = RecToolsIRCuPy(
 ####################### Creating the data dictionary: #######################
 _data_ = {
     "projection_norm_data": projData3D_analyt_cupy,  # Normalised projection data
-    "OS_number": 1,  # The number of subsets
+    "OS_number": 6,  # The number of subsets
     "data_axes_labels_order": input_data_labels,
 }
 
