@@ -72,6 +72,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 theta=cp.asarray(AnglesVec),
                 mask_r=4,
                 detector_x=DetectorsDimH + 2 * DetectorsDimH_pad,
+                CenterRotOffset=CenterRotOffset,
             )
         else:
             raise ValueError("projector must be astra or fourier")
@@ -158,7 +159,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         cache = cp.fft.config.get_plan_cache()
         cache.clear()  # flush FFT cache here before backprojection
         cp._default_memory_pool.free_all_blocks()  # free everything related to the filtering before starting Astra
-        reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
+        reconstruction = self.projector.backproj(data)  # 3d backprojecting
         return check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(

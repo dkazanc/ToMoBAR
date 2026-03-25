@@ -34,7 +34,7 @@ class FFTProjectorCuPy(ProjectorBase):
         theta: cp.ndarray,
         mask_r: float,
         detector_x: int,
-        raxis=None,
+        CenterRotOffset: int,
     ):
         """Usfft parameters
         mask_r - circle radius"""
@@ -72,7 +72,7 @@ class FFTProjectorCuPy(ProjectorBase):
         self.ntheta = len(theta)
         self.theta = cp.sort(-1 * cp.asarray(theta, dtype="float32"))
         self.mask = mask
-        self.raxis = raxis
+        self.raxis = n // 2 - CenterRotOffset
         self.pars = m, mu, phi, c1dfftshift, c2dfftshift
         self.detector_x = detector_x
         self.left_pad = (self.detector_x - self.n) // 2

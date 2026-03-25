@@ -105,6 +105,7 @@ class RecToolsIRCuPy:
                 theta=cp.asarray(AnglesVec),
                 mask_r=4,
                 detector_x=DetectorsDimH + 2 * DetectorsDimH_pad,
+                CenterRotOffset=CenterRotOffset,
             )
         else:
             raise ValueError("projector must be astra or fourier")
