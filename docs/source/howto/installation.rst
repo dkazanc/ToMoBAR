@@ -42,16 +42,13 @@ and then **pip** install ToMoBAR into the environment.
 Install ToMoBAR from PyPi:
 ++++++++++++++++++++++++++
 
-One can install ToMoBAR from PyPi into `venv` or `conda`` environments. It is the quickest way when `CuPy <https://cupy.dev/>`_-enabled
-part of ToMoBAR (modules :mod:`tomobar.methodsDIR_CuPy` and :mod:`tomobar.methodsIR_CuPy`) is used.
+One can install ToMoBAR from PyPi into `venv` or `conda`` environments.
 
 .. code-block:: console
 
    $ python -m venv tomobar
-   $ source tomobar/bin/activate
-   $ pip install tomobar # one can also install into conda environment
-
-.. note:: `CuPy <https://cupy.dev/>`_-enabled ToMoBAR is currently actively developed.
+   $ source tomobar/bin/activate # or a conda environment
+   $ pip install tomobar
 
 
 Developers environment
@@ -64,7 +61,7 @@ This sets the development environment to work in-place on the code.
    $ conda env create --name tomobar --file conda-recipe/environment/environment.yml
    $ conda activate tomobar
    $ pip install -e .[dev] # the editable environment
-   $ pytest tests/ # you'll need CuPy to run those tests
+   $ pytest tests/
 
 Conda build
 +++++++++++
