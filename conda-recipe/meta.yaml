@@ -1,6 +1,6 @@
 package:
   name: tomobar
-  version: "2026.2.0.0"
+  version: "2026.3.0.0"
 
 source:
   path: ../
@@ -16,7 +16,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python>=3.9
+    - python>=3.12
     - numpy
     - setuptools
     - pillow

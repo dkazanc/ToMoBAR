@@ -204,15 +204,13 @@ RectoolsCuPy = RecToolsIRCuPy(
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector=0,
+    OS_number=6,  # The number of ordered subsets
 )
-
-
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": projData3D_analyt_cupy,  # Normalised projection data
-    "OS_number": 6,  # The number of subsets
+    "data_fidelity": "LS",
+    "projection_data": projData3D_analyt_cupy,  # Normalised projection data
     "data_axes_labels_order": input_data_labels,
 }
 
@@ -221,7 +219,7 @@ lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
     "iterations": 25,
-    "lipschitz_const": lc.get(),
+    "lipschitz_const": lc,
     "recon_mask_radius": 2.0,
 }  # The number of iterations
 
@@ -273,13 +271,13 @@ RectoolsCuPy = RecToolsIRCuPy(
     CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector=0,
+    OS_number=36,  # The number of ordered subsets
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
-    "projection_norm_data": projData3D_analyt_cupy,  # Normalised projection data
-    "OS_number": 36,  # The number of subsets
+    "data_fidelity": "LS",
+    "projection_data": projData3D_analyt_cupy,  # Normalised projection data
     "data_axes_labels_order": input_data_labels,
 }
 
@@ -300,7 +298,7 @@ _regularisation_ = {
     "half_precision": True,  # enabling half-precision calculation
 }
 
-# RUN THE FISTA METHOD:
+# RUN THE ADMM METHOD:
 tic = timeit.default_timer()
 RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
 toc = timeit.default_timer()

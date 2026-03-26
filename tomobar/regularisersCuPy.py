@@ -1,5 +1,6 @@
 import cupy as cp
 from tomobar.cuda_kernels import load_cuda_module
+from typing import Tuple
 
 
 def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
@@ -71,6 +72,8 @@ def ROF_TV_cupy(
     if input_type != "float32":
         raise ValueError("The input data should be float32 data type")
 
+    data, input_is_2d, ind_axis = __check_if_input_2d_or_3d(data)
+
     dtype_of_D = cp.float16 if half_precision else cp.float32
 
     # initialise CuPy arrays here
@@ -87,7 +90,7 @@ def ROF_TV_cupy(
     TV_kernel_name = f"TV_kernel_{data.ndim}D_{'half' if half_precision else 'float'}"
     TV_kernel = module.get_function(TV_kernel_name)
 
-    dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
+    dz, dy, dx = (0,) * (3 - data.ndim) + data.shape
     block_x = 128
     block_dims = (block_x, 1)
     grid_x = (dx + block_x - 1) // block_x
@@ -95,7 +98,7 @@ def ROF_TV_cupy(
     grid_dims = (grid_x, grid_y)
     data_dims = (dx, dy)
 
-    if data.ndim == 3:
+    if not input_is_2d:
         d_D3 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
 
         block_dims = block_dims + (1,)
@@ -107,7 +110,7 @@ def ROF_TV_cupy(
     output_index = 1
 
     for _ in range(iterations):
-        if data.ndim == 2:
+        if input_is_2d:
             params = (
                 out_arrays[input_index],
                 d_D1,
@@ -115,7 +118,7 @@ def ROF_TV_cupy(
                 dx,
                 dy,
             )
-        elif data.ndim == 3:
+        else:
             params = (
                 out_arrays[input_index],
                 d_D1,
@@ -127,7 +130,7 @@ def ROF_TV_cupy(
             )
         divergence_kernel(grid_dims, block_dims, params)
 
-        if data.ndim == 2:
+        if input_is_2d:
             params = (
                 out_arrays[input_index],
                 out_arrays[output_index],
@@ -139,7 +142,7 @@ def ROF_TV_cupy(
                 dx,
                 dy,
             )
-        elif data.ndim == 3:
+        else:
             params = (
                 out_arrays[input_index],
                 out_arrays[output_index],
@@ -158,7 +161,10 @@ def ROF_TV_cupy(
         input_index = 1 - input_index
         output_index = 1 - output_index
 
-    return out_arrays[input_index]
+    if input_is_2d:
+        return cp.expand_dims(out_arrays[input_index], axis=ind_axis)
+    else:
+        return out_arrays[input_index]
 
 
 def PD_TV_cupy(
@@ -198,9 +204,10 @@ def PD_TV_cupy(
     cp.get_default_memory_pool().free_all_blocks()
 
     input_type = data.dtype
-
     if input_type != "float32":
         raise ValueError("The input data should be float32 data type")
+
+    data, input_is_2d, ind_axis = __check_if_input_2d_or_3d(data)
 
     dtype_of_P = cp.float16 if half_precision else cp.float32
 
@@ -225,7 +232,7 @@ def PD_TV_cupy(
     module = load_cuda_module("primal_dual_for_total_variation")
     primal_dual_for_total_variation = module.get_function(kernel_name)
 
-    dz, dy, dx = data.shape + (0,) * (3 - data.ndim)
+    dz, dy, dx = (0,) * (3 - data.ndim) + data.shape
     block_x = 128
     block_dims = (block_x, 1)
     grid_x = (dx + block_x - 1) // block_x
@@ -233,7 +240,7 @@ def PD_TV_cupy(
     grid_dims = (grid_x, grid_y)
     data_dims = (dx, dy)
 
-    if data.ndim == 3:
+    if not input_is_2d:
         P3_arrays = [
             cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)
         ]
@@ -246,7 +253,7 @@ def PD_TV_cupy(
     output_index = 1
 
     for _ in range(iterations):
-        if data.ndim == 2:
+        if input_is_2d:
             params = (
                 data,
                 U_arrays[input_index],
@@ -261,7 +268,7 @@ def PD_TV_cupy(
                 theta,
                 *data_dims,
             )
-        elif data.ndim == 3:
+        else:
             params = (
                 data,
                 U_arrays[input_index],
@@ -283,5 +290,26 @@ def PD_TV_cupy(
 
         input_index = 1 - input_index
         output_index = 1 - output_index
+    if input_is_2d:
+        return cp.expand_dims(U_arrays[input_index], axis=ind_axis)
+    else:
+        return U_arrays[input_index]
 
-    return U_arrays[input_index]
+
+def __check_if_input_2d_or_3d(data: cp.ndarray) -> Tuple[cp.ndarray, bool, int]:
+    # return False if the data is 3D and its dimensions are larger 1.
+    ind = 0
+    if data.ndim == 2:
+        return (data, True, 0)
+    elif data.ndim == 3:
+        dim_is_one = False
+        for i in range(3):
+            if cp.shape(data)[i] == 1:
+                dim_is_one = True
+                break
+        if dim_is_one:
+            data = cp.squeeze(data, axis=i)
+            ind = i
+        return (data, dim_is_one, ind)
+    else:
+        raise ValueError("2D or 3D arrays must be provided only")

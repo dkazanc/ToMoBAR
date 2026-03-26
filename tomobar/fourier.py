@@ -100,9 +100,7 @@ def _wint(n, t):
     for j in range(N - n + 1):
         # Change coordinates, and constant and linear parts
         W = ((t[j + n - 1] - t[j]) ** 2) * W1 + (t[j + n - 1] - t[j]) * t[j] * W2
-
-        for k in range(n - 1):
-            w[j : j + n] = w[j : j + n] + p[j + k] * W[:, k]
+        w[j : j + n] += W @ p[j : j + n - 1]
 
     wn = w
     wn[-40:] = (w[-40]) / (N - 40) * np.arange(N - 40, N)

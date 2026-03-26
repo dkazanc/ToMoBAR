@@ -198,8 +198,6 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA SWLS-OS-TV method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR import RecToolsIR
-
 # Set scanning geometry parameters and initiate a class object
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
@@ -245,7 +243,7 @@ plt.title("FISTA SWLS-OS-TV reconstruction")
 plt.show()
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("%%%%%%Reconstructing with ADMM LS-TV method %%%%%%%%%%%%%%%%")
+print("%%%%%%Reconstructing with ADMM PWLS-TV method %%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 Rectools = RecToolsIR(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
@@ -254,7 +252,7 @@ Rectools = RecToolsIR(
     CenterRotOffset=None,  # Center of Rotation scalar
     AnglesVec=angles_rad,  # A vector of projection angles in radians
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS
+    datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS
     device_projector="gpu",
 )
 
@@ -268,7 +266,7 @@ _data_ = {
 _algorithm_ = {
     "initialise": FBPrec_pad,
     "iterations": 2,
-    "ADMM_rho_const": 0.95,
+    "ADMM_rho_const": 1,
     "ADMM_relax_par": 1.7,
     "recon_mask_radius": 2.0,
 }
@@ -287,9 +285,10 @@ RecADMM_LS_TV = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
 fig = plt.figure()
 plt.imshow(RecADMM_LS_TV, vmin=0, vmax=0.003, cmap="gray")
 plt.colorbar(ticks=[0, 0.5, 1], orientation="vertical")
-plt.title("ADMM LS-TV reconstruction")
+plt.title("ADMM PWLS-TV reconstruction")
 plt.show()
 # fig.savefig('dendr_TV.png', dpi=200)
+
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA KL-OS-TV method %%%%%%%%%%%%%%%%")

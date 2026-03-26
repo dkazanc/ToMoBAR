@@ -1,5 +1,28 @@
 # Change Log
 
+## v.2026.3.0.0
+
+We apologise for the abrupt change, but starting from this version, iterative reconstruction methods will no longer be accessible through the `RecToolsIR` class. Only `RecToolsIRCuPy` will be supported going forward.
+
+The primary reason for this decision is our intention to remove the dependency on the Regularisation Toolkit. Our goal is to move toward a fully CuPy-based solution that does not rely on pre-built external libraries, is quick to install, and remains effectively OS-agnostic. Maintaining compatibility with the pre-built Regularisation Toolkit, while simultaneously supporting two reconstruction classes — `RecToolsIR` (dependent on it) and `RecToolsIRCuPy` (independent of it) — has become increasingly time-consuming and difficult to justify. Especially as the software being in production where only methods from `RecToolsIRCuPy` are in use.
+
+Moreover, the practical benefit of continuing to maintain `RecToolsIR` is limited, as the corresponding methods implemented in `RecToolsIRCuPy are significantly faster and more efficient.
+
+We are actively developing `RecToolsIRCuPy, and further improvements are ongoing. Please note that additional breaking changes may occur in future releases as development progresses.
+
+We appreciate your understanding and patience during this transition. The access to `RecToolsIR` still possible from older versions.
+
+Changes:
+* `RecToolsIR` class and all associated tests were removed. The old demos are still available in `methods_IR_legacy`.
+* Dependency on [Regularisation Toolkit](https://github.com/TomographicImaging/CCPi-Regularisation-Toolk) is dropped.
+* Significant refactoring of the `RecToolsIRCuPy` class.
+* Breaking change that removes `datafidelity` from the class and one can control data fidelities from the `_data_` dictionary given as `_data_["data_fidelity"]`.
+* `OS_number` added to `RecToolsIRCuPy` class as it is a geometry related parameter.
+* Ordered Subsets Expectation Maximization (OSEM) and MLEM added in `RecToolsIRCuPy` for emission-type data.
+* Upgrade of dependencies to CuPy 14.* and numpy 2.4.
+
+
+
 ## v.2026.2.0.0
 
 The ADMM implementation has been replaced with a new linearised variant that avoids the use of SciPy linear algebra solvers and instead relies directly on gradient-descent–type iterations. With appropriate parameter selection, this approach converges quickly and exhibits improved numerical stability.
@@ -26,7 +49,7 @@ SIRT CuPy algorithm has been fixed.
 
 ### New
 FISTA iterative method in `RecToolsIRCuPy` dropped its dependency on Regularisation Toolkit. Currently two regularisers
-available to use: `PD_TV` and `ROF_TV` and they were accelerated and optimised. Therefore FISTA with CuPy is up to 3 times faster compared
+available to use: `PD_TV` and `ROF_TV` and they were accelerated and optimised. Therefore, FISTA with CuPy is up to 3 times faster compared
 to the previous version and potentially a magnitude faster compared to FISTA in `RecToolsIR`.
 
 ## v.2025.08
