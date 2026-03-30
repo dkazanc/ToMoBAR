@@ -206,6 +206,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector=0,
     OS_number=6,  # The number of ordered subsets
+    projector="fourier",
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
@@ -273,6 +274,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     ObjSize=N_size,  # Reconstructed object dimensions (scalar)
     device_projector=0,
     OS_number=36,  # The number of ordered subsets
+    projector="fourier",
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
