@@ -158,7 +158,9 @@ class FFTProjector(ProjectorBase):
 
         # STEP0: multiplication by phi, padding
         fde = object3D * phi
-        fde = cp.pad(fde, ((0, 0), (n // 2, n // 2), (n // 2, n // 2)))
+        fde = cp.pad(
+            fde, ((0, 0), (n // 2, math.ceil(n / 2)), (n // 2, math.ceil(n / 2)))
+        )
         # STEP1: fft 2d
         fde = cp.fft.fft2(fde * c2dfftshift) * c2dfftshift
 
