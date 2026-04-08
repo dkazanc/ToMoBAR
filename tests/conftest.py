@@ -95,14 +95,17 @@ def raw_data(data_raw_file):
 
 
 @pytest.fixture
+def raw_data_cupy(raw_data):
+    return cp.asarray(raw_data)
+
+
+@pytest.fixture
 def flats(data_raw_file):
     return np.float32(np.copy(data_raw_file["flats"]))
 
 
 @pytest.fixture
-def darks(
-    data_raw_file,
-):
+def darks(data_raw_file):
     return np.float32(np.copy(data_raw_file["darks"]))
 
 
