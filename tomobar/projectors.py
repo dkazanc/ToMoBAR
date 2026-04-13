@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 import cupy as cp
+from cupyx.scipy.fft import fft, ifft2
 import numpy as np
 import math
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
@@ -42,6 +43,9 @@ class AstraProjector(ProjectorBase):
         return self.atools._backprojOSCuPy(proj_data, sub_ind)
 
 
+_CENTER_SIZE_MIN = 192  # must be divisible by 8
+
+
 class FFTProjector(ProjectorBase):
     """USFFT-based forward and backward projection wrapper."""
 
@@ -51,6 +55,7 @@ class FFTProjector(ProjectorBase):
         theta: np.ndarray,
         mask_r: float,
         detector_x: int,
+        detector_x_pad: int,
         CenterRotOffset: Optional[float],
         indVec: Optional[np.ndarray],
     ):
@@ -95,8 +100,11 @@ class FFTProjector(ProjectorBase):
             self.raxis = self.raxis - CenterRotOffset
         self.pars = m, mu, phi, c1dfftshift, c2dfftshift
         self.detector_x = detector_x
-        self.left_pad = (self.detector_x - self.n) // 2
-        self.right_pad = self.detector_x - self.n - self.left_pad
+        self.detector_x_pad = detector_x_pad
+        self.left_pad = (self.detector_x + 2 * self.detector_x_pad - self.n) // 2
+        self.right_pad = (
+            self.detector_x + 2 * self.detector_x_pad - self.n - self.left_pad
+        )
         usfft_kernel_module = load_cuda_module("fft_us_kernels")
         self.gather_kernel = usfft_kernel_module.get_function("gather_kernel")
         self.scatter_kernel = usfft_kernel_module.get_function("scatter_kernel")
@@ -109,8 +117,11 @@ class FFTProjector(ProjectorBase):
         self.gather_kernel_center_angle_based_prune = usfft_kernel_module.get_function(
             "gather_kernel_center_angle_based_prune"
         )
-        self.unpadding_mul_phi = usfft_kernel_module.get_function("unpadding_mul_phi")
-        self.center_size = max(n - 256, 0)
+        self.c1dfftshift = usfft_kernel_module.get_function("c1dfftshift")
+        self.c2dfftshift = usfft_kernel_module.get_function("c2dfftshift")
+        self.unpadding_mul_phi = usfft_kernel_module.get_function("unpadding_mul_phi2")
+        self.r2c_c1dfftshift = usfft_kernel_module.get_function("r2c_c1dfftshift")
+        self.center_size = min(32768, 2 * n)
         self.theta = cp.asarray(self.theta, dtype="float32")
         if indVec is None and self.center_size > 0:
             self.angle_range = self._generate_angle_range(self.theta)
@@ -125,7 +136,7 @@ class FFTProjector(ProjectorBase):
             [self.center_size, self.center_size, 1 + angle_range_pi_count * 2],
             dtype=cp.uint16,
         )
-        m, mu, phi, c1dfftshift, c2dfftshift = self.pars
+        m, _, _, _, _ = self.pars
         self.gather_kernel_center_angle_based_prune(
             (int(np.ceil(self.center_size / 256)), self.center_size, 1),
             (256, 1, 1),
@@ -193,63 +204,125 @@ class FFTProjector(ProjectorBase):
         assert self.indVec is not None
         return self._forwproj(object3D, self.theta[self._get_indVec(sub_ind)])
 
-    def _backproj(
+    def _setup_backprojection_input(
         self,
-        proj_data: cp.ndarray,
-        theta: cp.ndarray,
-        angle_range: Optional[cp.ndarray],
-    ) -> cp.ndarray:
-        """Adjoint Radon transform"""
+        tmp_p: cp.ndarray,
+        detector_width: int,
+        projection_count: int,
+        detector_height: int,
+    ) -> tuple[cp.ndarray, cp.ndarray]:
+        # input data
+        datac = cp.empty(
+            (detector_height // 2, projection_count, detector_width),
+            dtype=cp.complex64,
+        )
 
-        assert proj_data.shape[1] == theta.size
-        if proj_data.shape[2] != self.n:
-            proj_data = proj_data[..., self.left_pad : -self.right_pad]
-        [nz, ntheta, n] = proj_data.shape
-        assert self.n == n
-
-        m, mu, phi, c1dfftshift, c2dfftshift = self.pars
-
-        # STEP0: Shift based on the rotation axis, not  needed if rotation_axis==n/2
-        if self.raxis is not None:
-            t = cp.fft.fftfreq(n).astype("float32")
-            w = cp.exp(-2 * cp.pi * 1j * t * (-self.raxis + n / 2))
-            proj_data = cp.fft.ifft(w * cp.fft.fft(proj_data))
+        # fft, reusable by chunks
+        if self.center_size >= _CENTER_SIZE_MIN:
+            fde = cp.empty(
+                [detector_height // 2, 2 * detector_width, 2 * detector_width],
+                dtype=cp.complex64,
+            )
+        else:
+            fde = cp.zeros(
+                [detector_height // 2, 2 * detector_width, 2 * detector_width],
+                dtype=cp.complex64,
+            )
 
         # STEP1: fft 1d
-        sino = cp.fft.fft(c1dfftshift * proj_data) * c1dfftshift
+        self.r2c_c1dfftshift(
+            (
+                int(np.ceil(detector_width / 32)),
+                int(np.ceil(projection_count / 32)),
+                np.int32(detector_height // 2),
+            ),
+            (32, 32, 1),
+            (tmp_p, datac, detector_width, projection_count, detector_height // 2),
+        )
+
+        return (datac, fde)
+
+    def _fft_and_interpolation(
+        self,
+        datac: cp.ndarray,
+        fde: cp.ndarray,
+        detector_width: int,
+        projection_count: int,
+        detector_height: int,
+        block_dim,
+        block_dim_center,
+        theta: cp.ndarray,
+        sorted_theta_indices: cp.ndarray | None,
+        angle_range: cp.ndarray | None,
+    ):
+        m, mu, _, _, _ = self.pars
+        # eps = 1e-4
+        # STEP1: fft 1d
+        datac = fft(datac)
+
+        # m = int(
+        #     np.ceil(
+        #         2
+        #         * detector_width
+        #         * 1
+        #         / np.pi
+        #         * np.sqrt(
+        #             -mu * np.log(eps)
+        #             + (mu * detector_width) * (mu * detector_width) / 4
+        #         )
+        #     )
+        # )
+
+        self.c1dfftshift(
+            (
+                int(np.ceil(detector_width / 32)),
+                int(np.ceil(projection_count / 32)),
+                np.int32(detector_height // 2),
+            ),
+            (32, 32, 1),
+            (
+                datac,
+                np.float32(4 / detector_width),
+                detector_width,
+                projection_count,
+                detector_height // 2,
+            ),
+        )
 
         # STEP2: interpolation (gathering) in the frequency domain
-        fde = cp.zeros([nz, 2 * n, 2 * n], dtype="complex64")
-        if self.center_size > 0:
-            self.gather_kernel_partial(
-                (
-                    int(math.ceil(self.n / 32)),
-                    int(math.ceil(ntheta / 32)),
-                    nz,
-                ),
-                (32, 32, 1),
-                (
-                    sino,
-                    fde,
-                    theta,
-                    np.int32(m),
-                    np.float32(mu),
-                    np.int32(self.center_size),
-                    np.int32(self.n),
-                    np.int32(ntheta),
-                    np.int32(nz),
-                ),
-            )
-            sorted_theta_indices = cp.argsort(theta)
+        # Use original kernel at low dimension.
+
+        if self.center_size >= _CENTER_SIZE_MIN:
+            if self.center_size != (detector_width * 2):
+                self.gather_kernel_partial(
+                    (
+                        int(np.ceil(detector_width / block_dim[0])),
+                        int(np.ceil(projection_count / block_dim[1])),
+                        detector_height // 2,
+                    ),
+                    (block_dim[0], block_dim[1], 1),
+                    (
+                        datac,
+                        fde,
+                        theta,
+                        np.int32(m),
+                        np.float32(mu),
+                        np.int32(self.center_size),
+                        np.int32(detector_width),
+                        np.int32(projection_count),
+                        np.int32(detector_height // 2),
+                    ),
+                )
+
             self.gather_kernel_center(
                 (
-                    math.ceil(self.n / 32),
-                    math.ceil(ntheta / 32),
-                    nz,
+                    int(np.ceil(self.center_size / block_dim_center[0])),
+                    int(np.ceil(self.center_size / block_dim_center[1])),
+                    detector_height // 2,
                 ),
-                (32, 32, 1),
+                (block_dim_center[0], block_dim_center[1], 1),
                 (
-                    sino,
+                    datac,
                     fde,
                     angle_range,
                     np.int32(angle_range.shape[2]),
@@ -258,37 +331,163 @@ class FFTProjector(ProjectorBase):
                     np.int32(m),
                     np.float32(mu),
                     np.int32(self.center_size),
-                    np.int32(self.n),
-                    np.int32(ntheta),
-                    np.int32(nz),
+                    np.int32(detector_width),
+                    np.int32(projection_count),
+                    np.int32(detector_height // 2),
                 ),
             )
         else:
             self.gather_kernel(
                 (
-                    int(math.ceil(self.n / 32)),
-                    int(math.ceil(ntheta / 32)),
-                    nz,
+                    int(np.ceil(detector_width / block_dim[0])),
+                    int(np.ceil(projection_count / block_dim[1])),
+                    detector_height // 2,
                 ),
-                (32, 32, 1),
+                (block_dim[0], block_dim[1], 1),
                 (
-                    sino,
+                    datac,
                     fde,
                     theta,
                     np.int32(m),
                     np.float32(mu),
-                    np.int32(self.n),
-                    np.int32(ntheta),
-                    np.int32(nz),
+                    np.int32(detector_width),
+                    np.int32(projection_count),
+                    np.int32(detector_height // 2),
                 ),
-            )  # STEP3: ifft 2d
-        fde = cp.fft.ifft2(fde * c2dfftshift) * c2dfftshift * self.n
+            )
 
-        # STEP4: unpadding, multiplication by phi
-        fde = fde[:, n // 2 : 3 * n // 2, n // 2 : 3 * n // 2] * (phi * 4)
+    def ifft_gathered_projections(
+        self,
+        fde: cp.ndarray,
+        detector_width: int,
+        detector_height: int,
+    ):
+        self.c2dfftshift(
+            (
+                int(np.ceil((2 * detector_width) / 32)),
+                int(np.ceil((2 * detector_width) / 8)),
+                np.int32(detector_height // 2),
+            ),
+            (32, 8, 1),
+            (fde, detector_width, detector_height // 2),
+        )
 
-        # return cp.flip(fde.real, axis=1)
-        return fde.real
+        fde = ifft2(fde, axes=(-2, -1), overwrite_x=True)
+
+        self.c2dfftshift(
+            (
+                int(np.ceil((2 * detector_width) / 32)),
+                int(np.ceil((2 * detector_width) / 8)),
+                np.int32(detector_height // 2),
+            ),
+            (32, 8, 1),
+            (fde, detector_width, detector_height // 2),
+        )
+
+    def unpad_reconstructed_data(
+        self,
+        fde: cp.ndarray,
+        detector_width: int,
+        projection_count: int,
+        detector_height: int,
+        odd_horiz: bool,
+        odd_vert: bool,
+        recon_size: int,
+    ) -> cp.ndarray:
+        _, mu, phi, _, _ = self.pars
+        odd_recon_size = bool(recon_size % 2)
+        unpad_z = detector_height - odd_vert
+        unpad_recon_m = (detector_width - odd_horiz) // 2 - recon_size // 2
+        unpad_recon_p = (detector_width - odd_horiz) // 2 + (
+            recon_size + odd_recon_size
+        ) // 2
+        unpad_recon_size = unpad_recon_p - unpad_recon_m
+
+        # memory for recon
+        recon_up = cp.empty(
+            [unpad_z, unpad_recon_size, unpad_recon_size], dtype=cp.float32
+        )
+
+        # STEP4: unpadding, multiplication by phi and restructure memory
+        self.unpadding_mul_phi(
+            (
+                int(np.ceil(unpad_recon_size / 32)),
+                int(np.ceil(unpad_recon_size / 32)),
+                np.int32(detector_height // 2),
+            ),
+            (32, 32, 1),
+            (
+                recon_up,
+                fde,
+                np.float32(mu),
+                projection_count,
+                unpad_recon_p,
+                unpad_z,
+                unpad_recon_m,
+                detector_width,
+                detector_height // 2,
+                phi,
+            ),
+        )
+
+        return recon_up
+
+    def _backproj(
+        self,
+        proj_data: cp.ndarray,
+        theta: cp.ndarray,
+        angle_range: Optional[cp.ndarray],
+    ) -> cp.ndarray:
+        """Adjoint Radon transform"""
+        [nz, nproj, data_n] = proj_data.shape
+        recon_size = self.n
+        odd_horiz = bool(data_n % 2)
+        odd_vert = bool(nz % 2)
+
+        data_n += odd_horiz
+        nz += odd_vert
+
+        if odd_horiz or odd_vert:
+            data_p = cp.zeros((nz, nproj, data_n), dtype=cp.float32)
+            data_p[: nz - odd_vert, :, : data_n - odd_horiz] = proj_data
+            data_p[: nz - odd_vert, :, -odd_horiz] = proj_data[..., -odd_horiz]
+            proj_data = data_p
+            del data_p
+        padding = 0
+        n = self.detector_x + self.detector_x_pad * 2 + padding * 2 + odd_horiz
+        assert n == data_n
+        block_dim = [16, 16]
+        block_dim_center = [32, 4]
+
+        datac, fde = self._setup_backprojection_input(proj_data, n, nproj, nz)
+        self._fft_and_interpolation(
+            datac,
+            fde,
+            n,
+            nproj,
+            nz,
+            block_dim,
+            block_dim_center,
+            theta,
+            cp.argsort(theta) if self.center_size >= _CENTER_SIZE_MIN else None,
+            angle_range if self.center_size >= _CENTER_SIZE_MIN else None,
+        )
+        del datac
+
+        self.ifft_gathered_projections(fde, n, nz)
+
+        recon_up = self.unpad_reconstructed_data(
+            fde,
+            n,
+            nproj,
+            nz,
+            odd_horiz,
+            odd_vert,
+            recon_size,
+        )
+
+        del fde
+        return cp.flip(recon_up, axis=2)
 
     def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
         assert self.indVec is None

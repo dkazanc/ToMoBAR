@@ -656,6 +656,52 @@ extern "C" __global__ void unpadding_mul_phi(
     recon_up_imag[r_ind] = f_value.y * phi;
 }
 
+extern "C" __global__ void unpadding_mul_phi2(
+  float* recon_up, float2 *f, const float mu,
+  int nproj,
+  int unpad_recon_p, int unpad_z, int unpad_recon_m,
+  int n, int nz, float* phi) {
+
+  int rx_unpad = blockDim.x * blockIdx.x + threadIdx.x;
+  int ry_unpad = blockDim.y * blockIdx.y + threadIdx.y;
+
+  int rx = unpad_recon_m + rx_unpad;
+  int ry = unpad_recon_m + ry_unpad;
+  int rz = blockDim.z * blockIdx.z + threadIdx.z;
+
+  int tx = n / 2 + rx;
+  int ty = n / 2 + ry;
+  int tz =             rz;
+
+  if (rx >= unpad_recon_p || ry >= unpad_recon_p || rz >= nz)
+    return;
+
+  int f_stride = 2*n;
+  int f_stride_2 = f_stride * f_stride;
+
+  int r_stride   = unpad_recon_p - unpad_recon_m;
+  int r_stride_2 = r_stride * r_stride;
+
+  // offset f by tz
+  f += (unsigned long long)tz * f_stride_2;
+  recon_up += (unsigned long long)rz * 2 * r_stride_2;
+
+  // recon restructure pointer
+  float* recon_up_imag = recon_up + (unsigned long long)r_stride_2;
+
+  int f_ind = tx       + ty       * f_stride;
+  int r_ind = rx_unpad + ry_unpad * r_stride;
+
+  float2 f_value = f[f_ind];
+
+  float dx = -0.5f + rx * 1.f / n;
+  float dy = -0.5f + ry * 1.f / n;
+
+  recon_up[r_ind]      = f_value.x * phi[r_ind];
+  if( rz + nz < unpad_z )
+    recon_up_imag[r_ind] = f_value.y * phi[r_ind];
+}
+
 extern "C" __global__ void scatter_kernel(float2* g, float2* f, float* theta, int m, float mu,
                                           int n, int ntheta, int nz)
 {

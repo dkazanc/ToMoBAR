@@ -106,7 +106,8 @@ class RecToolsIRCuPy:
                 n=ObjSize,
                 theta=AnglesVec,
                 mask_r=4,
-                detector_x=DetectorsDimH + 2 * DetectorsDimH_pad,
+                detector_x=DetectorsDimH,
+                detector_x_pad=DetectorsDimH_pad,
                 CenterRotOffset=CenterRotOffset,
                 indVec=indVec,
             )
@@ -286,8 +287,7 @@ class RecToolsIRCuPy:
         )  # initialisation
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
-        d0 = self.projector.backproj(_data_upd_["projection_data"])
-        d = self.Atools._backprojCuPy(_data_upd_["projection_data"])
+        d = self.projector.backproj(_data_upd_["projection_data"])
         d = cp.ravel(d, order="C")
         normr2 = cp.inner(d, d)
         r = cp.ravel(_data_upd_["projection_data"], order="C")
@@ -297,18 +297,12 @@ class RecToolsIRCuPy:
         # perform CG iterations
         for _ in range(_algorithm_upd_["iterations"]):
             # Update x_rec and r vectors:
-            Ad0 = self.projector.forwproj(cp.reshape(d, newshape=x_shape_3d, order="C"))
-            Ad = self.Atools._forwprojCuPy(
-                cp.reshape(d, newshape=x_shape_3d, order="C")
-            )
+            Ad = self.projector.forwproj(cp.reshape(d, newshape=x_shape_3d, order="C"))
             Ad = cp.ravel(Ad, order="C")
             alpha = normr2 / cp.inner(Ad, Ad)
             x_rec += alpha * d
             r -= alpha * Ad
-            s0 = self.projector.backproj(
-                cp.reshape(r, newshape=data_shape_3d, order="C")
-            )
-            s = self.Atools._backprojCuPy(
+            s = self.projector.backproj(
                 cp.reshape(r, newshape=data_shape_3d, order="C")
             )
             s = cp.ravel(s, order="C")
