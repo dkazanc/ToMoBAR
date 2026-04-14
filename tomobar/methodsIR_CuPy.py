@@ -9,7 +9,7 @@
 """
 
 import numpy as np
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 from numpy import float32
 
 try:
@@ -31,6 +31,7 @@ from tomobar.supp.dicts import dicts_check
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.data_fidelities import grad_data_term
+from tomobar.projectors import AstraProjector, FFTProjector
 
 
 class RecToolsIRCuPy:
@@ -48,6 +49,7 @@ class RecToolsIRCuPy:
         ObjSize (int): The size of the reconstructed object (a slice) defined as [recon_size, recon_size].
         device_projector (int, optional): Provide a GPU index of a specific GPU device. Defaults to 0.
         OS_number (int, optional): The number of ordered-subset, set to None for non-OS reconstruction
+        projector (str, optional): Projector implementation, choose from astra and usfft. Defaults to astra
     """
 
     def __init__(
@@ -66,6 +68,7 @@ class RecToolsIRCuPy:
         OS_number: Optional[
             int
         ] = None,  # The number of ordered-subset, set to None for non-OS reconstruction
+        projector: Literal["fourier", "astra"] = "astra",
     ):
         self.OS_number = OS_number
 
@@ -93,6 +96,23 @@ class RecToolsIRCuPy:
             device_projector,
             OS_number,
         )
+        if projector == "astra":
+            self.projector = AstraProjector(self.Atools)
+        elif projector == "fourier":
+            indVec = None
+            if OS_number is not None and OS_number > 1:
+                indVec = self.Atools.newInd_Vec
+            self.projector = FFTProjector(
+                n=ObjSize,
+                theta=AnglesVec,
+                mask_r=4,
+                detector_x=DetectorsDimH,
+                detector_x_pad=DetectorsDimH_pad,
+                CenterRotOffset=CenterRotOffset,
+                indVec=indVec,
+            )
+        else:
+            raise ValueError("projector must be astra or fourier")
 
     @property
     def OS_number(self) -> int:
@@ -115,15 +135,15 @@ class RecToolsIRCuPy:
 
     def _Ax(self, x, sub_ind: int = 1, os: bool = False):
         if not os:
-            return self.Atools._forwprojCuPy(x)
+            return self.projector.forwproj(x)
         else:
-            return self.Atools._forwprojOSCuPy(x, os_index=sub_ind)
+            return self.projector.forwprojOS(x, sub_ind)
 
     def _Atb(self, b, sub_ind: int = 1, os: bool = False):
         if not os:
-            return self.Atools._backprojCuPy(b)
+            return self.projector.backproj(b)
         else:
-            return self.Atools._backprojOSCuPy(b, os_index=sub_ind)
+            return self.projector.backprojOS(b, sub_ind)
 
     def Landweber(
         self, _data_: dict, _algorithm_: Union[dict, None] = None
@@ -203,12 +223,12 @@ class RecToolsIRCuPy:
         }
         ######################################################################
 
-        R = 1.0 / self.Atools._forwprojCuPy(
+        R = 1.0 / self.projector.forwproj(
             cp.ones(astra.geom_size(self.Atools.vol_geom), dtype=np.float32)
         )
         R = cp.nan_to_num(R, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
 
-        C = 1.0 / self.Atools._backprojCuPy(
+        C = 1.0 / self.projector.backproj(
             cp.ones(astra.geom_size(self.Atools.proj_geom), dtype=np.float32)
         )
         C = cp.nan_to_num(C, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
@@ -219,8 +239,8 @@ class RecToolsIRCuPy:
 
         # perform SIRT iterations
         for _ in range(_algorithm_upd_["iterations"]):
-            x_rec += C * self.Atools._backprojCuPy(
-                R * (_data_upd_["projection_data"] - self.Atools._forwprojCuPy(x_rec))
+            x_rec += C * self.projector.backproj(
+                R * (_data_upd_["projection_data"] - self.projector.forwproj(x_rec))
             )
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
@@ -267,7 +287,7 @@ class RecToolsIRCuPy:
         )  # initialisation
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
-        d = self.Atools._backprojCuPy(_data_upd_["projection_data"])
+        d = self.projector.backproj(_data_upd_["projection_data"])
         d = cp.ravel(d, order="C")
         normr2 = cp.inner(d, d)
         r = cp.ravel(_data_upd_["projection_data"], order="C")
@@ -277,14 +297,12 @@ class RecToolsIRCuPy:
         # perform CG iterations
         for _ in range(_algorithm_upd_["iterations"]):
             # Update x_rec and r vectors:
-            Ad = self.Atools._forwprojCuPy(
-                cp.reshape(d, newshape=x_shape_3d, order="C")
-            )
+            Ad = self.projector.forwproj(cp.reshape(d, newshape=x_shape_3d, order="C"))
             Ad = cp.ravel(Ad, order="C")
             alpha = normr2 / cp.inner(Ad, Ad)
             x_rec += alpha * d
             r -= alpha * Ad
-            s = self.Atools._backprojCuPy(
+            s = self.projector.backproj(
                 cp.reshape(r, newshape=data_shape_3d, order="C")
             )
             s = cp.ravel(s, order="C")
@@ -327,28 +345,28 @@ class RecToolsIRCuPy:
 
         if self.OS_number == 1:
             # non-OS approach
-            y = self.Atools._forwprojCuPy(x1)
+            y = self.projector.forwproj(x1)
             if _data_["data_fidelity"] == "PWLS":
                 w = cp.ones_like(y)
                 y = cp.multiply(w, y)
             for _ in range(power_iterations):
-                x1 = self.Atools._backprojCuPy(y)
+                x1 = self.projector.backproj(y)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
-                y = self.Atools._forwprojCuPy(x1)
+                y = self.projector.forwproj(x1)
                 if _data_["data_fidelity"] == "PWLS":
                     y = cp.multiply(w, y)
         else:
             # OS approach
-            y = self.Atools._forwprojOSCuPy(x1, 0)
+            y = self.projector.forwprojOS(x1, 0)
             if _data_["data_fidelity"] == "PWLS":
                 w = cp.ones_like(y)
                 y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
             for _ in range(power_iterations):
-                x1 = self.Atools._backprojOSCuPy(y, 0)
+                x1 = self.projector.backprojOS(y, 0)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
-                y = self.Atools._forwprojOSCuPy(x1, 0)
+                y = self.projector.forwprojOS(x1, 0)
                 if _data_["data_fidelity"] == "PWLS":
                     y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
         return float(s)
