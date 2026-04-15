@@ -338,6 +338,7 @@ def test_FISTA_SWLS_cp_3D(data_cupy, raw_data_cupy, angles, ensure_clean_memory)
     )
 
     _data_ = {
+        "SWLS_version": "old",
         "data_fidelity": "SWLS",
         "projection_data": data_cupy,
         "projection_raw_data": raw_data_cupy,

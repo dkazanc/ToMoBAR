@@ -460,6 +460,7 @@ class RecToolsIRCuPy:
         t = cp.float32(1.0)
         X_t = cp.copy(x0)
         X = cp.copy(x0)
+        SWLS_version = _data_["SWLS_version"]
 
         if use_os:
             proj_data = [None] * self.OS_number
@@ -505,6 +506,8 @@ class RecToolsIRCuPy:
                     sub_ind,
                     weight_subset,
                     weight_subset_sum,
+                    beta_SWLS,
+                    SWLS_version,
                 )
 
                 X = X_t - L_const_inv * grad_data
