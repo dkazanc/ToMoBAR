@@ -84,6 +84,10 @@ class RecToolsIRCuPy:
         if DetectorsDimV == 0 or DetectorsDimV is None:
             DetectorsDimV = 1
 
+        if projector == "fourier":
+            DetectorsDimH = ObjSize
+            DetectorsDimH_pad = 0
+
         self.geom = "3D"
         self.Atools = AstraTools3D(
             DetectorsDimH,
@@ -106,8 +110,6 @@ class RecToolsIRCuPy:
                 n=ObjSize,
                 theta=AnglesVec,
                 mask_r=4,
-                detector_x=DetectorsDimH,
-                detector_x_pad=DetectorsDimH_pad,
                 CenterRotOffset=CenterRotOffset,
                 indVec=indVec,
             )
@@ -210,10 +212,8 @@ class RecToolsIRCuPy:
         _data_upd_, _algorithm_upd_, _ = dicts_check(
             self, _data_, _algorithm_, method_run="SIRT"
         )
-        _data_upd_["projection_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_data"],
-            self.Atools.detectors_x_pad,
-            cupyrun=True,
+        _data_upd_["projection_data"] = self.projector.update_projection_width(
+            _data_upd_["projection_data"]
         )
         del _data_, _algorithm_
 
@@ -268,10 +268,8 @@ class RecToolsIRCuPy:
             self, _data_, _algorithm_, method_run="CGLS"
         )
         del _data_, _algorithm_
-        _data_upd_["projection_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_data"],
-            self.Atools.detectors_x_pad,
-            cupyrun=True,
+        _data_upd_["projection_data"] = self.projector.update_projection_width(
+            _data_upd_["projection_data"]
         )
 
         additional_args = {
@@ -380,10 +378,8 @@ class RecToolsIRCuPy:
             self, _data_, _algorithm_, _regularisation_, method_run=method_run
         )
         ######################################################################
-        _data_upd_["projection_data"] = _apply_horiz_detector_padding(
-            _data_upd_["projection_data"],
-            self.Atools.detectors_x_pad,
-            cupyrun=True,
+        _data_upd_["projection_data"] = self.projector.update_projection_width(
+            _data_upd_["projection_data"]
         )
 
         if _algorithm_upd_.get("lipschitz_const") is None:

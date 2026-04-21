@@ -6,6 +6,7 @@ import numpy as np
 import math
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.cuda_kernels import load_cuda_module
+from tomobar.supp.suppTools import _apply_horiz_detector_padding
 
 
 class ProjectorBase(ABC):
@@ -25,6 +26,11 @@ class ProjectorBase(ABC):
         self, proj_data: cp.ndarray, sub_ind: int
     ) -> cp.ndarray: ...  # pragma: nocover
 
+    @abstractmethod
+    def update_projection_width(
+        self, proj_data: cp.ndarray
+    ) -> cp.ndarray: ...  # pragma: nocover
+
 
 class AstraProjector(ProjectorBase):
     def __init__(self, atools: AstraTools3D):
@@ -42,11 +48,16 @@ class AstraProjector(ProjectorBase):
     def backprojOS(self, proj_data: cp.ndarray, sub_ind: int) -> cp.ndarray:
         return self.atools._backprojOSCuPy(proj_data, sub_ind)
 
+    def update_projection_width(self, proj_data: cp.ndarray) -> cp.ndarray:
+        return _apply_horiz_detector_padding(
+            proj_data, self.atools.detectors_x_pad, cupyrun=True
+        )
+
 
 gather_kernel = cp.RawKernel(
     r"""
 extern "C" __global__ void gather(float2* g, float2* f, float* theta, int m, float* mu,
-                                  int n, int ntheta, int nz)
+                                  int n, int ntheta, int nz, bool dir)
 {
     int tx = blockDim.x * blockIdx.x + threadIdx.x;
     int ty = blockDim.y * blockIdx.y + threadIdx.y;
@@ -61,7 +72,9 @@ extern "C" __global__ void gather(float2* g, float2* f, float* theta, int m, flo
     int ell0, ell1, g_ind, f_ind, f_indx, f_indy;
 
     g_ind = tx + ty * n + tz * n * ntheta;  
-    g0 = g[g_ind];
+
+    if (dir == 0) g0 = {};
+    else g0 = g[g_ind];
 
     coeff0 = M_PI / mu[0];
     coeff1 = -M_PI * M_PI / mu[0];
@@ -86,69 +99,27 @@ extern "C" __global__ void gather(float2* g, float2* f, float* theta, int m, flo
 
             f_ind = f_indx + (2 * n) * f_indy + tz * (2 * n) * (2 * n);
 
-            atomicAdd(&(f[f_ind].x), w * g0.x);
-            atomicAdd(&(f[f_ind].y), w * g0.y);
+            if (dir == 0)
+            {
+                g0.x += w * f[f_ind].x;
+                g0.y += w * f[f_ind].y;
+            }
+            else
+            {
+                atomicAdd(&(f[f_ind].x), w * g0.x);
+                atomicAdd(&(f[f_ind].y), w * g0.y);
+            }
         }
+    }
+
+    if (dir == 0)
+    {
+        g[g_ind].x = g0.x / n;
+        g[g_ind].y = g0.y / n;
     }
 }
 """,
     "gather",
-)
-
-scatter_kernel = cp.RawKernel(
-    r"""
-extern "C" __global__ void scatter(float2* g, float2* f, float* theta, int m, float* mu,
-                                   int n, int ntheta, int nz)
-{
-    int tx = blockDim.x * blockIdx.x + threadIdx.x;
-    int ty = blockDim.y * blockIdx.y + threadIdx.y;
-    int tz = blockDim.z * blockIdx.z + threadIdx.z;
-
-    if (tx >= n || ty >= ntheta || tz >= nz) return;
-
-    float M_PI = 3.141592653589793238f;
-    float2 g0, g0t;
-    float w, coeff0;
-    float w0, w1, x0, y0, coeff1;
-    int ell0, ell1, g_ind, f_ind, f_indx, f_indy;
-
-    g_ind = tx + ty * n + tz * n * ntheta;  
-
-    g0 = {};
-
-    coeff0 = M_PI / mu[0];
-    coeff1 = -M_PI * M_PI / mu[0];
-
-    x0 = (tx - n / 2) / (float)n * __cosf(theta[ty]);
-    y0 = -(tx - n / 2) / (float)n * __sinf(theta[ty]);
-
-    for (int i1 = 0; i1 < 2 * m + 1; i1++)
-    {
-        ell1 = floorf(2 * n * y0) - m + i1;
-        for (int i0 = 0; i0 < 2 * m + 1; i0++)
-        {
-            ell0 = floorf(2 * n * x0) - m + i0;
-
-            w0 = ell0 / (float)(2 * n) - x0;
-            w1 = ell1 / (float)(2 * n) - y0;
-
-            w = coeff0 * __expf(coeff1 * (w0 * w0 + w1 * w1));
-            
-            f_indx = (n + ell0 + 2 * n) % (2 * n);
-            f_indy = (n + ell1 + 2 * n) % (2 * n);
-
-            f_ind = f_indx + (2 * n) * f_indy + tz * (2 * n) * (2 * n);
-
-            g0.x += w * f[f_ind].x;
-            g0.y += w * f[f_ind].y;
-        }
-    }
-
-    g[g_ind].x = g0.x / n;
-    g[g_ind].y = g0.y / n;
-}
-""",
-    "scatter",
 )
 
 
@@ -160,78 +131,62 @@ class FFTProjector(ProjectorBase):
         n: int,
         theta: np.ndarray,
         mask_r: float,
-        detector_x: int,
-        detector_x_pad: int,
         CenterRotOffset: Optional[float],
         indVec: Optional[np.ndarray],
     ):
         """Usfft parameters
         mask_r - circle radius"""
-        self.recon_size = n
-        self.detector_x = detector_x
+        self.n = n
 
         eps = 1e-3  # accuracy of usfft
-        mu = -math.log(eps) / (2 * self.detector_x * self.detector_x)
+        mu = -math.log(eps) / (2 * n * n)
         m = math.ceil(
             2
-            * self.detector_x
+            * n
             * 1
             / math.pi
-            * math.sqrt(
-                -mu * math.log(eps)
-                + (mu * self.detector_x) * (mu * self.detector_x) / 4
-            )
+            * math.sqrt(-mu * math.log(eps) + (mu * n) * (mu * n) / 4)
         )
         # extra arrays
         # interpolation kernel
-        t = cp.linspace(-1 / 2, 1 / 2, self.recon_size, endpoint=False).astype(
-            "float32"
-        )
+        t = cp.linspace(-1 / 2, 1 / 2, n, endpoint=False).astype("float32")
         [dx, dy] = cp.meshgrid(t, t)
         phi = (
-            cp.exp(
-                (mu * (self.recon_size * self.recon_size) * (dx * dx + dy * dy)).astype(
-                    "float32"
-                )
-            )
-            * (1 - self.recon_size % 4)
-            * self.recon_size
+            cp.exp((mu * (n * n) * (dx * dx + dy * dy)).astype("float32"))
+            * (1 - n % 4)
+            * n
         )
 
         # (+1,-1) arrays for fftshift
-        c1dfftshift = (1 - 2 * ((cp.arange(1, self.detector_x + 1) % 2))).astype("int8")
-        c2dtmp = 1 - 2 * ((cp.arange(1, 2 * self.detector_x + 1) % 2)).astype("int8")
+        c1dfftshift = (1 - 2 * ((cp.arange(1, n + 1) % 2))).astype("int8")
+        c2dtmp = 1 - 2 * ((cp.arange(1, 2 * n + 1) % 2)).astype("int8")
         c2dfftshift = cp.outer(c2dtmp, c2dtmp)
 
         # create mask
-        x = cp.linspace(-1, 1, self.recon_size)
+        x = cp.linspace(-1, 1, n)
         [x, y] = cp.meshgrid(x, x)
         mask = (x**2 + y**2 < mask_r).astype("float32")
         # normalization, incorporate mask in phi for optimization
-        phi *= mask / (
-            cp.float32(4 * self.recon_size) * cp.sqrt(self.recon_size * len(theta))
-        )
+        phi *= mask / (cp.float32(4 * n) * cp.sqrt(n * len(theta)))
 
         self.ntheta = len(theta)
         self.theta = theta
         self.mask = mask
         self.raxis = (
-            self.detector_x // 2 - CenterRotOffset
-            if CenterRotOffset is not None
-            else None
+            self.n // 2 - CenterRotOffset if CenterRotOffset is not None else None
         )
         self.pars = m, mu, phi, c1dfftshift, c2dfftshift
-        self.left_pad = (2 * self.detector_x - self.recon_size) // 2
-        self.right_pad = 2 * self.detector_x - self.recon_size - self.left_pad
+        self.left_pad = n // 2
+        self.right_pad = n - self.left_pad
 
     def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
         """Radon transform"""
         [nz, ny, n] = object3D.shape
-        assert ny == self.recon_size
-        assert n == self.recon_size
+        assert ny == self.n
+        assert n == self.n
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
-        sino = cp.zeros([nz, self.ntheta, self.detector_x], dtype="complex64")
+        sino = cp.zeros([nz, self.ntheta, n], dtype="complex64")
 
         # STEP0: multiplication by phi, padding
         fde = object3D * phi
@@ -243,26 +198,17 @@ class FFTProjector(ProjectorBase):
                 (self.left_pad, self.right_pad),
             ),
         )
-        assert fde.shape[1] == 2 * self.detector_x
-        assert fde.shape[2] == 2 * self.detector_x
+        assert fde.shape[1] == 2 * n
+        assert fde.shape[2] == 2 * n
         # STEP1: fft 2d
         fde = cp.fft.fft2(fde[:, ::-1, :] * c2dfftshift) * c2dfftshift
 
         mua = cp.array([mu], dtype="float32")
 
-        scatter_kernel(
-            (math.ceil(self.detector_x / 32), math.ceil(self.ntheta / 32), nz),
+        gather_kernel(
+            (math.ceil(n / 32), math.ceil(self.ntheta / 32), nz),
             (32, 32, 1),
-            (
-                sino,
-                fde,
-                cp.asarray(self.theta),
-                m,
-                mua,
-                self.detector_x,
-                self.ntheta,
-                nz,
-            ),
+            (sino, fde, cp.asarray(self.theta), m, mua, n, self.ntheta, nz, 0),
         )
         # STEP3: ifft 1d
         sino = cp.fft.ifft(c1dfftshift * sino) * c1dfftshift
@@ -281,7 +227,7 @@ class FFTProjector(ProjectorBase):
         """Adjoint Radon transform"""
 
         [nz, ntheta, n] = proj_data.shape
-        assert n == self.detector_x
+        assert n == self.n
         assert ntheta == self.ntheta
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
@@ -301,7 +247,7 @@ class FFTProjector(ProjectorBase):
         gather_kernel(
             (math.ceil(n / 32), math.ceil(self.ntheta / 32), nz),
             (32, 32, 1),
-            (sino, fde, cp.asarray(self.theta), m, mua, n, self.ntheta, nz),
+            (sino, fde, cp.asarray(self.theta), m, mua, n, self.ntheta, nz, 1),
         )
         # STEP3: ifft 2d
         fde = cp.fft.ifft2(fde[:, ::-1, :] * c2dfftshift) * c2dfftshift
@@ -315,3 +261,11 @@ class FFTProjector(ProjectorBase):
 
     def backprojOS(self, proj_data: cp.ndarray, sub_ind: int) -> cp.ndarray:
         assert False
+
+    def update_projection_width(self, proj_data: cp.ndarray) -> cp.ndarray:
+        if proj_data.shape[2] == self.n:
+            return proj_data
+        assert proj_data.shape[2] > self.n
+        left_unpad = (proj_data.shape[2] - self.n) // 2
+        right_unpad = proj_data.shape[2] - self.n - left_unpad
+        return proj_data[..., left_unpad:-right_unpad]
