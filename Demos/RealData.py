@@ -37,7 +37,7 @@ detectorVert = cp.size(data_norm_cupy, 2)
 data_labels3D = ["detX", "angles", "detY"]  # set the input data labels
 
 N_size = detectorHoriz
-angles_rad = np.linspace(0, np.pi, 360)
+angles_rad = np.linspace(0, np.pi, 360, dtype="float32")
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%Reconstructing with Log-Polar Fourier method %%%%%%%%%%%")
