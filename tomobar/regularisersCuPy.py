@@ -218,7 +218,10 @@ def PD_TV_cupy(
     lt = cp.float32(tau / regularisation_parameter)
 
     # initialise CuPy arrays here:
-    U_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
+    U_arrays = [
+        cp.array(data, copy=True, dtype=dtype_of_P, order="C"),
+        cp.zeros(data.shape, dtype=dtype_of_P, order="C"),
+    ]
     P1_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
     P2_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
 
@@ -291,9 +294,11 @@ def PD_TV_cupy(
         input_index = 1 - input_index
         output_index = 1 - output_index
     if input_is_2d:
-        return cp.expand_dims(U_arrays[input_index], axis=ind_axis)
+        return cp.expand_dims(
+            cp.asarray(U_arrays[input_index], dtype=cp.float32), axis=ind_axis
+        )
     else:
-        return U_arrays[input_index]
+        return cp.asarray(U_arrays[input_index], dtype=cp.float32)
 
 
 def __check_if_input_2d_or_3d(data: cp.ndarray) -> Tuple[cp.ndarray, bool, int]:
