@@ -219,21 +219,33 @@ def PD_TV_cupy(
 
     # initialise CuPy arrays here:
     U_arrays = [
-        cp.array(data, copy=True, dtype=dtype_of_P, order="C"),
-        cp.zeros(data.shape, dtype=dtype_of_P, order="C"),
+        cp.copy(data),
+        cp.empty_like(data),
     ]
     P1_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
     P2_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
 
     # loading and compiling CUDA kernels:
-    kernel_name = f"primal_dual_for_total_variation_{'3D' if data.ndim == 3 else '2D'}_{'half' if half_precision else 'float'}"
-    if nonneg:
-        kernel_name += "_nonneg"
-    if methodTV:
-        kernel_name += "_methodTV"
+    intermediate_typename = "half" if half_precision else "float"
+    kernel_name_base = (
+        f"primal_dual_for_total_variation_{'3D' if data.ndim == 3 else '2D'}_"
+    )
+    kernel_names = [
+        kernel_name_base + f"{intermediate_typename}_float_{intermediate_typename}",
+        kernel_name_base
+        + f"{intermediate_typename}_{intermediate_typename}_{intermediate_typename}",
+        kernel_name_base + f"{intermediate_typename}_{intermediate_typename}_float",
+    ]
+    for kernel_name in kernel_names:
+        if nonneg:
+            kernel_name += "_nonneg"
+        if methodTV:
+            kernel_name += "_methodTV"
 
     module = load_cuda_module("primal_dual_for_total_variation")
-    primal_dual_for_total_variation = module.get_function(kernel_name)
+    first_kernel, middle_kernel, last_kernel = [
+        module.get_function(kernel_name) for kernel_name in kernel_names
+    ]
 
     dz, dy, dx = (0,) * (3 - data.ndim) + data.shape
     block_x = 128
@@ -255,7 +267,7 @@ def PD_TV_cupy(
     input_index = 0
     output_index = 1
 
-    for _ in range(iterations):
+    for i in range(iterations):
         if input_is_2d:
             params = (
                 data,
@@ -288,8 +300,14 @@ def PD_TV_cupy(
                 theta,
                 *data_dims,
             )
+        if i == 0:
+            current_kernel = first_kernel
+        elif i == iterations - 1:
+            current_kernel = last_kernel
+        else:
+            current_kernel = middle_kernel
 
-        primal_dual_for_total_variation(grid_dims, block_dims, params)
+        current_kernel(grid_dims, block_dims, params)
 
         input_index = 1 - input_index
         output_index = 1 - output_index
