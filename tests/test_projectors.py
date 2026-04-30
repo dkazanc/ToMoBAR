@@ -1,5 +1,3 @@
-import astra
-from numpy.testing import assert_allclose
 import numpy as np
 import cupy as cp
 import pytest
@@ -7,220 +5,121 @@ from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.projectors import AstraProjector, FFTProjector
 
 
-@pytest.mark.parametrize("DetectorsDimH_pad", [0, 1801, 2560, 3601])
-@pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-def test_astra_forwproj(data, angles, DetectorsDimH_pad, CenterRotOffset):
+def make_astra_proj(
+    detX, DetectorsDimH_pad, detY, angles_rad, rot_offset, OS_number
+) -> AstraProjector:
     atools = AstraTools3D(
-        data.shape[2],
+        detX,
         DetectorsDimH_pad,
-        data.shape[1],
-        angles,
-        CenterRotOffset,
-        data.shape[2],
+        detY,
+        angles_rad,
+        rot_offset,
+        detX,
         "gpu",
         0,
+        None if OS_number < 2 else OS_number,
+    )
+    return AstraProjector(atools)
+
+
+def make_fft_proj(
+    detX, DetectorsDimH_pad, detY, angles_rad, rot_offset, OS_number
+) -> FFTProjector:
+    return FFTProjector(
+        detX,
+        angles_rad,
+        2,
+        rot_offset,
         None,
     )
-    projector = AstraProjector(atools)
-
-    rec_dim = astra.geom_size(atools.vol_geom)
-    volume = cp.ones(rec_dim, dtype=cp.float32)
-    projected_volume = projector.forwproj(volume)
-    assert not np.allclose(projected_volume, 0.0)
 
 
+@pytest.mark.parametrize("projector_factory", [make_astra_proj, make_fft_proj])
 @pytest.mark.parametrize("DetectorsDimH_pad", [0, 1801, 2560, 3601])
 @pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-@pytest.mark.parametrize("OS_number", [8])
-def test_astra_forwprojOS(data, angles, DetectorsDimH_pad, CenterRotOffset, OS_number):
-    atools = AstraTools3D(
-        data.shape[2],
+@pytest.mark.parametrize("OS_number", [1, 8])
+def test_forwproj(
+    phantom_3D_volume,
+    phantom_3D_projection_angles_rad,
+    projector_factory,
+    DetectorsDimH_pad,
+    CenterRotOffset,
+    OS_number,
+):
+    data = cp.asarray(phantom_3D_volume)
+    detY, detX0, detX = data.shape
+    assert detX0 == detX
+    num_angles = phantom_3D_projection_angles_rad.size
+    projector = projector_factory(
+        detX,
         DetectorsDimH_pad,
-        data.shape[1],
-        angles,
+        detY,
+        phantom_3D_projection_angles_rad,
         CenterRotOffset,
-        data.shape[2],
-        "gpu",
-        0,
         OS_number,
     )
-    projector = AstraProjector(atools)
 
-    rec_dim = astra.geom_size(atools.vol_geom)
-    volume = cp.ones(rec_dim, dtype=cp.float32)
-    projected_volume = projector.forwprojOS(volume, sub_ind=0)
-    assert not np.allclose(projected_volume, 0.0)
+    total_angles = 0
+    for os_idx in range(OS_number):
+        if OS_number > 1:
+            projected_volume = projector.forwprojOS(data, os_idx)
+        else:
+            projected_volume = projector.forwproj(data)
+        padded_detX = detX + 2 * DetectorsDimH_pad
+        total_angles += projected_volume.shape[1]
+        assert projected_volume.shape[0] == detY
+        assert projected_volume.shape[2] == padded_detX
+        assert not np.allclose(projected_volume, 0.0)
+    assert total_angles == num_angles
 
 
+@pytest.mark.parametrize("projector_factory", [make_astra_proj, make_fft_proj])
 @pytest.mark.parametrize("DetectorsDimH_pad", [0, 1801, 2560, 3601])
 @pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-def test_astra_backproj(data, angles, DetectorsDimH_pad, CenterRotOffset):
-    atools = AstraTools3D(
-        data.shape[2],
+@pytest.mark.parametrize("OS_number", [1, 8])
+def test_backproj(
+    phantom_3D_projections,
+    phantom_3D_projection_angles_rad,
+    projector_factory,
+    DetectorsDimH_pad,
+    CenterRotOffset,
+    OS_number,
+):
+    detY, num_angles, detX = phantom_3D_projections.shape
+    assert phantom_3D_projection_angles_rad.size == num_angles
+    if OS_number > 1:
+        atools = AstraTools3D(
+            detX,
+            DetectorsDimH_pad,
+            detY,
+            phantom_3D_projection_angles_rad,
+            CenterRotOffset,
+            detX,
+            "gpu",
+            0,
+            OS_number,
+        )
+    projections = cp.asarray(phantom_3D_projections)
+    projector = projector_factory(
+        detX,
         DetectorsDimH_pad,
-        data.shape[1],
-        angles,
+        detY,
+        phantom_3D_projection_angles_rad,
         CenterRotOffset,
-        data.shape[2],
-        "gpu",
-        0,
-        None,
+        OS_number,
     )
-    projector = AstraProjector(atools)
-
-    shape = list(data.shape)
-    shape[0], shape[1] = shape[1], shape[0]
-    shape = tuple(shape)
-
     projected_volume = cp.pad(
-        cp.ones(shape, dtype=cp.float32),
+        projections,
         ((0, 0), (0, 0), (DetectorsDimH_pad, DetectorsDimH_pad)),
         mode="edge",
     )
-    volume = projector.backproj(projected_volume)
-    assert not np.allclose(volume, 0.0)
-
-
-@pytest.mark.parametrize("DetectorsDimH_pad", [0, 1801, 2560, 3601])
-@pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-@pytest.mark.parametrize("OS_number", [8])
-def test_astra_backprojOS(data, angles, DetectorsDimH_pad, CenterRotOffset, OS_number):
-    atools = AstraTools3D(
-        data.shape[2],
-        DetectorsDimH_pad,
-        data.shape[1],
-        angles,
-        CenterRotOffset,
-        data.shape[2],
-        "gpu",
-        0,
-        OS_number,
-    )
-    projector = AstraProjector(atools)
-
-    shape = list(data.shape)
-    shape[0] = shape[0] // OS_number + 1
-    shape[0], shape[1] = shape[1], shape[0]
-    shape = tuple(shape)
-
-    projected_volume = cp.pad(
-        cp.ones(shape, dtype=cp.float32),
-        ((0, 0), (0, 0), (DetectorsDimH_pad, DetectorsDimH_pad)),
-        mode="edge",
-    )
-    volume = projector.backprojOS(projected_volume, sub_ind=0)
-    assert not np.allclose(volume, 0.0)
-
-
-def test_astra_update_projection_width(data):
-    pass
-
-
-@pytest.mark.parametrize("DetectorsDimH_pad", [0, 1801, 2560, 3601])
-@pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-def test_fft_forwproj(data, angles, DetectorsDimH_pad, CenterRotOffset):
-    projector = FFTProjector(
-        n=data.shape[2],
-        theta=angles,
-        mask_r=4,
-        CenterRotOffset=CenterRotOffset,
-        indVec=None,
-    )
-
-    volume = cp.ones((data.shape[1], data.shape[2], data.shape[2]), dtype=cp.float32)
-    projected_volume = projector.forwproj(volume)
-    assert not np.allclose(projected_volume, 0.0)
-
-
-@pytest.mark.parametrize("DetectorsDimH_pad", [0, 1801, 2560, 3601])
-@pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-@pytest.mark.parametrize("OS_number", [8])
-def test_fft_forwprojOS(data, angles, DetectorsDimH_pad, CenterRotOffset, OS_number):
-    atools = AstraTools3D(
-        data.shape[2],
-        DetectorsDimH_pad,
-        data.shape[1],
-        angles,
-        CenterRotOffset,
-        data.shape[2],
-        "gpu",
-        0,
-        OS_number,
-    )
-    projector = FFTProjector(
-        n=data.shape[2],
-        theta=angles,
-        mask_r=4,
-        CenterRotOffset=CenterRotOffset,
-        indVec=atools.newInd_Vec,
-    )
-
-    rec_dim = astra.geom_size(atools.vol_geom)
-    volume = cp.ones(rec_dim, dtype=cp.float32)
-    projected_volume = projector.forwprojOS(volume, sub_ind=0)
-    assert not np.allclose(projected_volume, 0.0)
-
-
-@pytest.mark.parametrize("DetectorsDimH_pad", [0, 1801, 2560, 3601])
-@pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-def test_fft_backproj(data, angles, DetectorsDimH_pad, CenterRotOffset):
-    projector = FFTProjector(
-        n=data.shape[2],
-        theta=angles,
-        mask_r=4,
-        CenterRotOffset=CenterRotOffset,
-        indVec=None,
-    )
-
-    shape = list(data.shape)
-    shape[0], shape[1] = shape[1], shape[0]
-    shape = tuple(shape)
-
-    projected_volume = cp.pad(
-        cp.ones(shape, dtype=cp.float32),
-        ((0, 0), (0, 0), (DetectorsDimH_pad, DetectorsDimH_pad)),
-        mode="edge",
-    )
-    volume = projector.backproj(projected_volume)
-    assert not np.allclose(volume, 0.0)
-
-
-@pytest.mark.parametrize("DetectorsDimH_pad", [0, 1801, 2560, 3601])
-@pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-@pytest.mark.parametrize("OS_number", [8])
-def test_fft_backprojOS(data, angles, DetectorsDimH_pad, CenterRotOffset, OS_number):
-    atools = AstraTools3D(
-        data.shape[2],
-        DetectorsDimH_pad,
-        data.shape[1],
-        angles,
-        CenterRotOffset,
-        data.shape[2],
-        "gpu",
-        0,
-        OS_number,
-    )
-    projector = FFTProjector(
-        n=data.shape[2],
-        theta=angles,
-        mask_r=4,
-        CenterRotOffset=CenterRotOffset,
-        indVec=atools.newInd_Vec,
-    )
-
-    shape = list(data.shape)
-    shape[0] = shape[0] // OS_number + 1
-    shape[0], shape[1] = shape[1], shape[0]
-    shape = tuple(shape)
-
-    projected_volume = cp.pad(
-        cp.ones(shape, dtype=cp.float32),
-        ((0, 0), (0, 0), (DetectorsDimH_pad, DetectorsDimH_pad)),
-        mode="edge",
-    )
-    volume = projector.backprojOS(projected_volume, sub_ind=0)
-    assert not np.allclose(volume, 0.0)
-
-
-def test_fft_update_projection_width(data):
-    pass
+    for os_idx in range(OS_number):
+        if OS_number > 1:
+            indVec = atools.newInd_Vec[os_idx, :]
+            if indVec[atools.NumbProjBins - 1] == 0:
+                indVec = indVec[:-1]  # shrink vector size
+            volume = projector.backprojOS(projected_volume[:, indVec, :], os_idx)
+        else:
+            volume = projector.backproj(projected_volume)
+        assert volume.shape == (detY, detX, detX)
+        assert not np.allclose(volume, 0.0)
