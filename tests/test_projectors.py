@@ -40,7 +40,7 @@ def make_fft_proj(
 @pytest.mark.parametrize("OS_number", [1, 8])
 def test_forwproj(
     phantom_3D_volume,
-    phantom_3D_projection_angles_rad,
+    phantom_3D_projection_angles_deg,
     projector_factory,
     DetectorsDimH_pad,
     CenterRotOffset,
@@ -49,12 +49,12 @@ def test_forwproj(
     data = cp.asarray(phantom_3D_volume)
     detY, detX0, detX = data.shape
     assert detX0 == detX
-    num_angles = phantom_3D_projection_angles_rad.size
+    num_angles = phantom_3D_projection_angles_deg.size
     projector = projector_factory(
         detX,
         DetectorsDimH_pad,
         detY,
-        phantom_3D_projection_angles_rad,
+        phantom_3D_projection_angles_deg * np.pi / 180,
         CenterRotOffset,
         OS_number,
     )
@@ -79,20 +79,20 @@ def test_forwproj(
 @pytest.mark.parametrize("OS_number", [1, 8])
 def test_backproj(
     phantom_3D_projections,
-    phantom_3D_projection_angles_rad,
+    phantom_3D_projection_angles_deg,
     projector_factory,
     DetectorsDimH_pad,
     CenterRotOffset,
     OS_number,
 ):
     detY, num_angles, detX = phantom_3D_projections.shape
-    assert phantom_3D_projection_angles_rad.size == num_angles
+    assert phantom_3D_projection_angles_deg.size == num_angles
     if OS_number > 1:
         atools = AstraTools3D(
             detX,
             DetectorsDimH_pad,
             detY,
-            phantom_3D_projection_angles_rad,
+            phantom_3D_projection_angles_deg * np.pi / 180,
             CenterRotOffset,
             detX,
             "gpu",
@@ -104,7 +104,7 @@ def test_backproj(
         detX,
         DetectorsDimH_pad,
         detY,
-        phantom_3D_projection_angles_rad,
+        phantom_3D_projection_angles_deg,
         CenterRotOffset,
         OS_number,
     )

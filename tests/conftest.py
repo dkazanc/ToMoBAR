@@ -152,18 +152,16 @@ def phantom_3D_volume(phantom_model, phantom_N_size, phantom_path_library):
 
 
 @pytest.fixture
-def phantom_3D_projection_angles_rad(phantom_N_size):
+def phantom_3D_projection_angles_deg(phantom_N_size):
     angles_num = int(0.25 * np.pi * phantom_N_size)
-    return (
-        np.linspace(0.0, 179.9, angles_num, dtype="float32") * np.pi / 180
-    )  # in degrees
+    return np.linspace(0.0, 179.9, angles_num, dtype="float32")  # in degrees
 
 
 @pytest.fixture
 def phantom_3D_projections(
     phantom_model,
     phantom_N_size,
-    phantom_3D_projection_angles_rad,
+    phantom_3D_projection_angles_deg,
     phantom_path_library,
 ):
     Horiz_det = int(np.sqrt(2) * phantom_N_size)  # detector column count (horizontal)
@@ -175,6 +173,6 @@ def phantom_3D_projections(
         phantom_N_size,
         Horiz_det,
         Vert_det,
-        phantom_3D_projection_angles_rad,
+        phantom_3D_projection_angles_deg,
         phantom_path_library,
     )
