@@ -103,16 +103,14 @@ class RecToolsIRCuPy:
         if projector == "astra":
             self.projector = AstraProjector(self.Atools)
         elif projector == "fourier":
-            indVec = None
-            if OS_number is not None and OS_number > 1:
-                indVec = self.Atools.newInd_Vec
             self.projector = FFTProjector(
                 n=ObjSize,
                 theta=AnglesVec,
                 mask_r=4,
                 CenterRotOffset=CenterRotOffset,
                 DetectorDimH_pad=DetectorsDimH_pad,
-                indVec=indVec,
+                indVec=getattr(self.Atools, "newInd_Vec", None),
+                numProjBins=getattr(self.Atools, "NumbProjBins", None),
             )
         else:
             raise ValueError("projector must be astra or fourier")

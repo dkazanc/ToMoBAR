@@ -78,7 +78,7 @@ def test_forwproj(
 @pytest.mark.parametrize("projector_factory", [make_astra_proj, make_fft_proj])
 @pytest.mark.parametrize("DetectorsDimH_pad", [0, 7, 64])
 @pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-@pytest.mark.parametrize("OS_number", [1])
+@pytest.mark.parametrize("OS_number", [1, 8])
 def test_backproj(
     phantom_3D_projections,
     phantom_3D_projection_angles_deg,

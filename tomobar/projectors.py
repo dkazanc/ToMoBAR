@@ -175,7 +175,6 @@ class FFTProjector(ProjectorBase):
         # normalization, incorporate mask in phi for optimization
         phi *= mask / (cp.float32(4 * n) * cp.sqrt(n * len(theta)))
 
-        self.ntheta = len(theta)
         self.theta = theta
         self.mask = mask
         self.raxis = (
@@ -242,12 +241,12 @@ class FFTProjector(ProjectorBase):
     def forwprojOS(self, object3D: cp.ndarray, sub_ind: int) -> cp.ndarray:
         return self._forwproj_impl(object3D, self._get_OS_theta(sub_ind))
 
-    def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
+    def _backproj_impl(self, proj_data: cp.ndarray, theta: np.ndarray) -> cp.ndarray:
         """Adjoint Radon transform"""
 
         [nz, ntheta, n] = proj_data.shape
         assert n == self.n + 2 * self.DetectorDimH_pad
-        assert ntheta == self.ntheta
+        assert ntheta == theta.size
 
         if self.DetectorDimH_pad > 0:
             proj_data = proj_data[..., self.DetectorDimH_pad : -self.DetectorDimH_pad]
@@ -269,9 +268,9 @@ class FFTProjector(ProjectorBase):
         mua = cp.array([mu], dtype="float32")
         fde = cp.zeros([nz, 2 * n, 2 * n], dtype="complex64")
         gather_kernel(
-            (math.ceil(n / 32), math.ceil(self.ntheta / 32), nz),
+            (math.ceil(n / 32), math.ceil(theta.size / 32), nz),
             (32, 32, 1),
-            (sino, fde, cp.asarray(self.theta), m, mua, n, self.ntheta, nz, 1),
+            (sino, fde, cp.asarray(theta), m, mua, n, theta.size, nz, 1),
         )
         # STEP3: ifft 2d
         fde = cp.fft.ifft2(fde[:, ::-1, :] * c2dfftshift) * c2dfftshift
@@ -283,8 +282,11 @@ class FFTProjector(ProjectorBase):
 
         return fde.real
 
+    def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
+        return self._backproj_impl(proj_data, self.theta)
+
     def backprojOS(self, proj_data: cp.ndarray, sub_ind: int) -> cp.ndarray:
-        assert False
+        return self._backproj_impl(proj_data, self._get_OS_theta(sub_ind))
 
     def update_projection_width(self, proj_data: cp.ndarray) -> cp.ndarray:
         if proj_data.shape[2] == self.n:
