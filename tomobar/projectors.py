@@ -130,13 +130,14 @@ class FFTProjector(ProjectorBase):
         self,
         n: int,
         theta: np.ndarray,
-        mask_r: float,
-        CenterRotOffset: Optional[float],
-        indVec: Optional[np.ndarray],
+        mask_r: float = 1.0,
+        CenterRotOffset: Optional[float] = None,
+        DetectorDimH_pad: int = 0,
     ):
         """Usfft parameters
         mask_r - circle radius"""
         self.n = n
+        self.DetectorDimH_pad = DetectorDimH_pad
 
         eps = 1e-3  # accuracy of usfft
         mu = -math.log(eps) / (2 * n * n)
@@ -153,7 +154,7 @@ class FFTProjector(ProjectorBase):
         [dx, dy] = cp.meshgrid(t, t)
         phi = (
             cp.exp((mu * (n * n) * (dx * dx + dy * dy)).astype("float32"))
-            * (1 - n % 4)
+            # * (1 - n % 4)
             * n
         )
 
@@ -218,7 +219,9 @@ class FFTProjector(ProjectorBase):
             t = cp.fft.fftfreq(n).astype("float32")
             w = cp.exp(2 * cp.pi * 1j * t * (-self.raxis + n / 2))
             sino = cp.fft.ifft(w * cp.fft.fft(sino))
-        return sino.real
+        return cp.pad(
+            sino.real, ((0, 0), (0, 0), (self.DetectorDimH_pad, self.DetectorDimH_pad))
+        )
 
     def forwprojOS(self, object3D: cp.ndarray, sub_ind: int) -> cp.ndarray:
         assert False
@@ -227,8 +230,13 @@ class FFTProjector(ProjectorBase):
         """Adjoint Radon transform"""
 
         [nz, ntheta, n] = proj_data.shape
-        assert n == self.n
+        assert n == self.n + 2 * self.DetectorDimH_pad
         assert ntheta == self.ntheta
+
+        if self.DetectorDimH_pad > 0:
+            proj_data = proj_data[..., self.DetectorDimH_pad : -self.DetectorDimH_pad]
+            n = proj_data.shape[2]
+            assert n == self.n
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
 
