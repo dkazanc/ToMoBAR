@@ -6,24 +6,13 @@ from tomobar.projectors import AstraProjector, FFTProjector
 
 
 def make_astra_proj(
-    detX, DetectorsDimH_pad, detY, angles_rad, rot_offset, OS_number
+    detX, DetectorsDimH_pad, angles_rad, rot_offset, atools
 ) -> AstraProjector:
-    atools = AstraTools3D(
-        detX,
-        DetectorsDimH_pad,
-        detY,
-        angles_rad,
-        rot_offset,
-        detX,
-        "gpu",
-        0,
-        None if OS_number < 2 else OS_number,
-    )
     return AstraProjector(atools)
 
 
 def make_fft_proj(
-    detX, DetectorsDimH_pad, detY, angles_rad, rot_offset, OS_number
+    detX, DetectorsDimH_pad, angles_rad, rot_offset, atools
 ) -> FFTProjector:
     return FFTProjector(
         n=detX,
@@ -31,13 +20,15 @@ def make_fft_proj(
         mask_r=1,
         CenterRotOffset=rot_offset,
         DetectorDimH_pad=DetectorsDimH_pad,
+        indVec=getattr(atools, "newInd_Vec", None),
+        numProjBins=getattr(atools, "NumbProjBins", None),
     )
 
 
 @pytest.mark.parametrize("projector_factory", [make_astra_proj, make_fft_proj])
 @pytest.mark.parametrize("DetectorsDimH_pad", [0, 7, 64])
 @pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
-@pytest.mark.parametrize("OS_number", [1])
+@pytest.mark.parametrize("OS_number", [1, 8])
 def test_forwproj(
     phantom_3D_volume,
     phantom_3D_projection_angles_deg,
@@ -51,13 +42,23 @@ def test_forwproj(
     assert detX0 == detX
     num_angles = phantom_3D_projection_angles_deg.size
     phantom_3D_projection_angles_rad = phantom_3D_projection_angles_deg * np.pi / 180
-    projector = projector_factory(
+    atools = AstraTools3D(
         detX,
         DetectorsDimH_pad,
         detY,
         phantom_3D_projection_angles_rad,
         CenterRotOffset,
+        detX,
+        "gpu",
+        0,
         OS_number,
+    )
+    projector = projector_factory(
+        detX,
+        DetectorsDimH_pad,
+        phantom_3D_projection_angles_rad,
+        CenterRotOffset,
+        atools,
     )
 
     total_angles = 0
@@ -89,26 +90,24 @@ def test_backproj(
     detY, num_angles, detX = phantom_3D_projections.shape
     assert phantom_3D_projection_angles_deg.size == num_angles
     phantom_3D_projection_angles_rad = phantom_3D_projection_angles_deg * np.pi / 180
-    if OS_number > 1:
-        atools = AstraTools3D(
-            detX,
-            DetectorsDimH_pad,
-            detY,
-            phantom_3D_projection_angles_rad,
-            CenterRotOffset,
-            detX,
-            "gpu",
-            0,
-            OS_number,
-        )
-    projections = cp.asarray(phantom_3D_projections)
-    projector = projector_factory(
+    atools = AstraTools3D(
         detX,
         DetectorsDimH_pad,
         detY,
         phantom_3D_projection_angles_rad,
         CenterRotOffset,
+        detX,
+        "gpu",
+        0,
         OS_number,
+    )
+    projections = cp.asarray(phantom_3D_projections)
+    projector = projector_factory(
+        detX,
+        DetectorsDimH_pad,
+        phantom_3D_projection_angles_rad,
+        CenterRotOffset,
+        atools,
     )
     projected_volume = cp.pad(
         projections,

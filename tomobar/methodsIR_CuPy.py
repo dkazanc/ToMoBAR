@@ -112,6 +112,7 @@ class RecToolsIRCuPy:
                 mask_r=4,
                 CenterRotOffset=CenterRotOffset,
                 DetectorDimH_pad=DetectorsDimH_pad,
+                indVec=indVec,
             )
         else:
             raise ValueError("projector must be astra or fourier")

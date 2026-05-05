@@ -133,11 +133,16 @@ class FFTProjector(ProjectorBase):
         mask_r: float = 1.0,
         CenterRotOffset: Optional[float] = None,
         DetectorDimH_pad: int = 0,
+        indVec: Optional[np.ndarray] = None,
+        numProjBins: Optional[int] = None,
     ):
         """Usfft parameters
         mask_r - circle radius"""
         self.n = n
         self.DetectorDimH_pad = DetectorDimH_pad
+        self.indVec = indVec
+        self.numProjBins = numProjBins
+        assert (self.indVec is None) == (self.numProjBins is None)
 
         eps = 1e-3  # accuracy of usfft
         mu = -math.log(eps) / (2 * n * n)
@@ -180,14 +185,22 @@ class FFTProjector(ProjectorBase):
         self.left_pad = n // 2
         self.right_pad = n - self.left_pad
 
-    def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
+    def _get_OS_theta(self, sub_ind: int) -> np.ndarray:
+        assert self.indVec is not None
+        assert self.numProjBins is not None
+        indVec = self.indVec[sub_ind, :]
+        if indVec[self.numProjBins - 1] == 0:
+            indVec = indVec[:-1]  # shrink vector size
+        return self.theta[indVec]
+
+    def _forwproj_impl(self, object3D: cp.ndarray, theta: np.ndarray) -> cp.ndarray:
         """Radon transform"""
         [nz, ny, n] = object3D.shape
         assert ny == self.n
         assert n == self.n
 
         m, mu, phi, c1dfftshift, c2dfftshift = self.pars
-        sino = cp.zeros([nz, self.ntheta, n], dtype="complex64")
+        sino = cp.zeros([nz, theta.size, n], dtype="complex64")
 
         # STEP0: multiplication by phi, padding
         fde = object3D * phi
@@ -207,9 +220,9 @@ class FFTProjector(ProjectorBase):
         mua = cp.array([mu], dtype="float32")
 
         gather_kernel(
-            (math.ceil(n / 32), math.ceil(self.ntheta / 32), nz),
+            (math.ceil(n / 32), math.ceil(theta.size / 32), nz),
             (32, 32, 1),
-            (sino, fde, cp.asarray(self.theta), m, mua, n, self.ntheta, nz, 0),
+            (sino, fde, cp.asarray(theta), m, mua, n, theta.size, nz, 0),
         )
         # STEP3: ifft 1d
         sino = cp.fft.ifft(c1dfftshift * sino) * c1dfftshift
@@ -223,8 +236,11 @@ class FFTProjector(ProjectorBase):
             sino.real, ((0, 0), (0, 0), (self.DetectorDimH_pad, self.DetectorDimH_pad))
         )
 
+    def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
+        return self._forwproj_impl(object3D, self.theta)
+
     def forwprojOS(self, object3D: cp.ndarray, sub_ind: int) -> cp.ndarray:
-        assert False
+        return self._forwproj_impl(object3D, self._get_OS_theta(sub_ind))
 
     def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
         """Adjoint Radon transform"""
