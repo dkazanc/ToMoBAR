@@ -54,6 +54,8 @@ class AstraProjector(ProjectorBase):
         )
 
 
+_CENTER_SIZE_MIN = 192
+
 gather_kernel = cp.RawKernel(
     r"""
 extern "C" __global__ void gather(float2* g, float2* f, float* theta, int m, float* mu,
@@ -184,6 +186,18 @@ class FFTProjector(ProjectorBase):
         self.left_pad = n // 2
         self.right_pad = n - self.left_pad
 
+        module = load_cuda_module("fft_us_kernels")
+        self.r2c_c1dfftshift = module.get_function("r2c_c1dfftshift")
+        self.c1dfftshift = module.get_function("c1dfftshift")
+        self.gather_kernel_partial = module.get_function("gather_kernel_partial")
+        self.gather_kernel_center_angle_based_prune = module.get_function(
+            "gather_kernel_center_angle_based_prune"
+        )
+        self.gather_kernel_center = module.get_function("gather_kernel_center")
+        self.gather_kernel = module.get_function("gather_kernel")
+        self.c2dfftshift = module.get_function("c2dfftshift")
+        self.unpadding_mul_phi = module.get_function("unpadding_mul_phi")
+
     def _get_OS_theta(self, sub_ind: int) -> np.ndarray:
         assert self.indVec is not None
         assert self.numProjBins is not None
@@ -253,34 +267,230 @@ class FFTProjector(ProjectorBase):
             n = proj_data.shape[2]
             assert n == self.n
 
-        m, mu, phi, c1dfftshift, c2dfftshift = self.pars
-
-        # STEP0: Shift based on the rotation axis, not  needed if rotation_axis==n/2
+        # STEP0: Shift based on the rotation axis, not needed if rotation_axis==n/2
         if self.raxis is not None:
             t = cp.fft.fftfreq(n).astype("float32")
             w = cp.exp(-2 * cp.pi * 1j * t * (-self.raxis + n / 2))
             proj_data = cp.fft.ifft(w * cp.fft.fft(proj_data))
+            proj_data = cp.ascontiguousarray(proj_data.real, dtype=cp.float32)
+
+        odd_horiz = bool(n % 2)
+        odd_vert = bool(nz % 2)
+        n += odd_horiz
+        nz += odd_vert
+        if odd_horiz or odd_vert:
+            data_p = cp.zeros((nz, ntheta, n), dtype=proj_data.dtype)
+            data_p[: nz - odd_vert, :, : n - odd_horiz] = proj_data
+            data_p[: nz - odd_vert, :, -odd_horiz] = proj_data[..., -odd_horiz]
+            proj_data = data_p
+            del data_p
+        center_size = 32768
+        center_size = min(center_size, n * 2)
+
+        theta = cp.array(-theta, dtype=cp.float32)
+
+        if center_size >= _CENTER_SIZE_MIN:
+            sorted_theta_indices = cp.argsort(theta)
+            sorted_theta = theta[sorted_theta_indices]
+            sorted_theta_cpu = sorted_theta.get()
+
+            theta_full_range = abs(sorted_theta_cpu[ntheta - 1] - sorted_theta_cpu[0])
+            angle_range_pi_count = 1 + int(np.ceil(theta_full_range / math.pi))
+
+            angle_range = cp.zeros(
+                [center_size, center_size, 1 + angle_range_pi_count * 2],
+                dtype=cp.uint16,
+            )
+
+        datac = cp.empty(
+            (nz // 2, ntheta, n),
+            dtype=cp.complex64,
+        )
+        if center_size >= _CENTER_SIZE_MIN:
+            fde = cp.empty(
+                [nz // 2, 2 * n, 2 * n],
+                dtype=cp.complex64,
+            )
+        else:
+            fde = cp.zeros(
+                [nz // 2, 2 * n, 2 * n],
+                dtype=cp.complex64,
+            )
 
         # STEP1: fft 1d
-        sino = cp.fft.fft(c1dfftshift * proj_data) * c1dfftshift
+        self.r2c_c1dfftshift(
+            (
+                int(np.ceil(n / 32)),
+                int(np.ceil(ntheta / 32)),
+                np.int32(nz // 2),
+            ),
+            (32, 32, 1),
+            (proj_data, datac, n, ntheta, nz // 2),
+        )
+
+        datac = fft(datac)
+        eps = 1e-3  # accuracy of usfft
+        mu = -math.log(eps) / (2 * n * n)
+        m = int(
+            np.ceil(
+                2 * n * 1 / np.pi * np.sqrt(-mu * np.log(eps) + (mu * n) * (mu * n) / 4)
+            )
+        )
+
+        self.c1dfftshift(
+            (
+                int(np.ceil(n / 32)),
+                int(np.ceil(ntheta / 32)),
+                np.int32(nz // 2),
+            ),
+            (32, 32, 1),
+            (
+                datac,
+                np.float32(4 / n),
+                n,
+                ntheta,
+                nz // 2,
+            ),
+        )
 
         # STEP2: interpolation (gathering) in the frequency domain
-        mua = cp.array([mu], dtype="float32")
-        fde = cp.zeros([nz, 2 * n, 2 * n], dtype="complex64")
-        gather_kernel(
-            (math.ceil(n / 32), math.ceil(theta.size / 32), nz),
-            (32, 32, 1),
-            (sino, fde, cp.asarray(theta), m, mua, n, theta.size, nz, 1),
-        )
+        # Use original kernel at low dimension.
+        block_dim = [16, 16]
+        block_dim_center = [32, 4]
+        if center_size >= _CENTER_SIZE_MIN:
+            if center_size != (n * 2):
+                self.gather_kernel_partial(
+                    (
+                        int(np.ceil(n / block_dim[0])),
+                        int(np.ceil(ntheta / block_dim[1])),
+                        nz // 2,
+                    ),
+                    (block_dim[0], block_dim[1], 1),
+                    (
+                        datac,
+                        fde,
+                        theta,
+                        np.int32(m),
+                        np.float32(mu),
+                        np.int32(center_size),
+                        np.int32(n),
+                        np.int32(ntheta),
+                        np.int32(nz // 2),
+                    ),
+                )
+
+            self.gather_kernel_center_angle_based_prune(
+                (int(np.ceil(center_size / 256)), center_size, 1),
+                (256, 1, 1),
+                (
+                    angle_range,
+                    angle_range_pi_count * 2 + 1,
+                    sorted_theta,
+                    np.int32(m),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(ntheta),
+                ),
+            )
+
+            self.gather_kernel_center(
+                (
+                    int(np.ceil(center_size / block_dim_center[0])),
+                    int(np.ceil(center_size / block_dim_center[1])),
+                    nz // 2,
+                ),
+                (block_dim_center[0], block_dim_center[1], 1),
+                (
+                    datac,
+                    fde,
+                    angle_range,
+                    angle_range_pi_count * 2 + 1,
+                    theta,
+                    sorted_theta_indices,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(center_size),
+                    np.int32(n),
+                    np.int32(ntheta),
+                    np.int32(nz // 2),
+                ),
+            )
+        else:
+            self.gather_kernel(
+                (
+                    int(np.ceil(n / block_dim[0])),
+                    int(np.ceil(ntheta / block_dim[1])),
+                    nz // 2,
+                ),
+                (block_dim[0], block_dim[1], 1),
+                (
+                    datac,
+                    fde,
+                    theta,
+                    np.int32(m),
+                    np.float32(mu),
+                    np.int32(n),
+                    np.int32(ntheta),
+                    np.int32(nz // 2),
+                ),
+            )
+
         # STEP3: ifft 2d
-        fde = cp.fft.ifft2(fde[:, ::-1, :] * c2dfftshift) * c2dfftshift
+        self.c2dfftshift(
+            (
+                int(np.ceil((2 * n) / 32)),
+                int(np.ceil((2 * n) / 8)),
+                np.int32(nz // 2),
+            ),
+            (32, 8, 1),
+            (fde, n, nz // 2),
+        )
+        # fde = cp.fft.ifft2(fde[:, ::-1, :])
+        fde = cp.fft.ifft2(fde)
+        self.c2dfftshift(
+            (
+                int(np.ceil((2 * n) / 32)),
+                int(np.ceil((2 * n) / 8)),
+                np.int32(nz // 2),
+            ),
+            (32, 8, 1),
+            (fde, n, nz // 2),
+        )
 
         # STEP4: unpadding, multiplication by phi
-        fde = fde[
-            :, self.left_pad : -self.right_pad, self.left_pad : -self.right_pad
-        ] * (phi * 4)
+        odd_recon_size = bool(self.n % 2)
+        unpad_z = nz - odd_vert
+        unpad_recon_m = (n - odd_horiz) // 2 - self.n // 2
+        unpad_recon_p = (n - odd_horiz) // 2 + (self.n + odd_recon_size) // 2
+        unpad_recon_size = unpad_recon_p - unpad_recon_m
 
-        return fde.real
+        # memory for recon
+        recon_up = cp.empty(
+            [unpad_z, unpad_recon_size, unpad_recon_size], dtype=cp.float32
+        )
+
+        # STEP4: unpadding, multiplication by phi and restructure memory
+        self.unpadding_mul_phi(
+            (
+                int(np.ceil(unpad_recon_size / 32)),
+                int(np.ceil(unpad_recon_size / 32)),
+                np.int32(nz // 2),
+            ),
+            (32, 32, 1),
+            (
+                recon_up,
+                fde,
+                np.float32(mu),
+                ntheta,
+                unpad_recon_p,
+                unpad_z,
+                unpad_recon_m,
+                n,
+                nz // 2,
+            ),
+        )
+
+        return recon_up
 
     def backproj(self, proj_data: cp.ndarray) -> cp.ndarray:
         return self._backproj_impl(proj_data, self.theta)
