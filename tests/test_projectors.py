@@ -6,16 +6,17 @@ from tomobar.projectors import AstraProjector, FFTProjector
 
 
 def make_astra_proj(
-    detX, DetectorsDimH_pad, angles_rad, rot_offset, atools
+    ObjSize, detX, DetectorsDimH_pad, angles_rad, rot_offset, atools
 ) -> AstraProjector:
     return AstraProjector(atools)
 
 
 def make_fft_proj(
-    detX, DetectorsDimH_pad, angles_rad, rot_offset, atools
+    ObjSize, detX, DetectorsDimH_pad, angles_rad, rot_offset, atools
 ) -> FFTProjector:
     return FFTProjector(
-        n=detX,
+        n=ObjSize,
+        detX=detX,
         theta=angles_rad,
         mask_r=1,
         CenterRotOffset=rot_offset,
@@ -27,6 +28,7 @@ def make_fft_proj(
 
 @pytest.mark.parametrize("projector_factory", [make_astra_proj, make_fft_proj])
 @pytest.mark.parametrize("DetectorsDimH_pad", [0, 7, 64])
+@pytest.mark.parametrize("ObjSize_ratio", [1, 0.8])
 @pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
 @pytest.mark.parametrize("OS_number", [1, 8])
 def test_forwproj(
@@ -34,6 +36,7 @@ def test_forwproj(
     phantom_3D_projection_angles_deg,
     projector_factory,
     DetectorsDimH_pad,
+    ObjSize_ratio,
     CenterRotOffset,
     OS_number,
 ):
@@ -42,18 +45,34 @@ def test_forwproj(
     assert detX0 == detX
     num_angles = phantom_3D_projection_angles_deg.size
     phantom_3D_projection_angles_rad = phantom_3D_projection_angles_deg * np.pi / 180
+    if DetectorsDimH_pad > 0:
+        ObjSize = detX + 2 * DetectorsDimH_pad
+    else:
+        ObjSize = int(detX * ObjSize_ratio)
+
+    # forwproj: input is always the size of ObjSize
+    if detX < ObjSize:  # Can happen when DetectorsDimH_pad is specified
+        left_pad = (ObjSize - detX) // 2
+        right_pad = ObjSize - detX - left_pad
+        data = cp.pad(data, ((0, 0), (left_pad, right_pad), (left_pad, right_pad)))
+    elif detX > ObjSize:  # Can happen if ObjSize ratio < 1
+        left_crop = (detX - ObjSize) // 2
+        right_crop = detX - ObjSize - left_crop
+        data = data[:, left_crop:-right_crop, left_crop:-right_crop]
+
     atools = AstraTools3D(
         detX,
         DetectorsDimH_pad,
         detY,
         phantom_3D_projection_angles_rad,
         CenterRotOffset,
-        detX,
+        ObjSize,
         "gpu",
         0,
         OS_number,
     )
     projector = projector_factory(
+        ObjSize,
         detX,
         DetectorsDimH_pad,
         phantom_3D_projection_angles_rad,
@@ -77,6 +96,7 @@ def test_forwproj(
 
 @pytest.mark.parametrize("projector_factory", [make_astra_proj, make_fft_proj])
 @pytest.mark.parametrize("DetectorsDimH_pad", [0, 7, 64])
+@pytest.mark.parametrize("ObjSize_ratio", [1, 0.8])
 @pytest.mark.parametrize("CenterRotOffset", [0, 0.5, 1, 2])
 @pytest.mark.parametrize("OS_number", [1, 8])
 def test_backproj(
@@ -84,25 +104,31 @@ def test_backproj(
     phantom_3D_projection_angles_deg,
     projector_factory,
     DetectorsDimH_pad,
+    ObjSize_ratio,
     CenterRotOffset,
     OS_number,
 ):
     detY, num_angles, detX = phantom_3D_projections.shape
     assert phantom_3D_projection_angles_deg.size == num_angles
     phantom_3D_projection_angles_rad = phantom_3D_projection_angles_deg * np.pi / 180
+    if DetectorsDimH_pad > 0:
+        ObjSize = detX + 2 * DetectorsDimH_pad
+    else:
+        ObjSize = int(detX * ObjSize_ratio)
     atools = AstraTools3D(
         detX,
         DetectorsDimH_pad,
         detY,
         phantom_3D_projection_angles_rad,
         CenterRotOffset,
-        detX,
+        ObjSize,
         "gpu",
         0,
         OS_number,
     )
     projections = cp.asarray(phantom_3D_projections)
     projector = projector_factory(
+        ObjSize,
         detX,
         DetectorsDimH_pad,
         phantom_3D_projection_angles_rad,
@@ -122,5 +148,5 @@ def test_backproj(
             volume = projector.backprojOS(projected_volume[:, indVec, :], os_idx)
         else:
             volume = projector.backproj(projected_volume)
-        assert volume.shape == (detY, detX, detX)
+        assert volume.shape == (detY, ObjSize, ObjSize)
         assert not np.allclose(volume, 0.0)

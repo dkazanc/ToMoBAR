@@ -36,7 +36,7 @@ detectorHoriz = cp.size(data_norm_cupy, 0)
 detectorVert = cp.size(data_norm_cupy, 2)
 data_labels3D = ["detX", "angles", "detY"]  # set the input data labels
 
-N_size = detectorHoriz
+N_size = 1000
 angles_rad = np.linspace(0, np.pi, 360, dtype="float32")
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -75,7 +75,7 @@ plt.imshow(cp.asnumpy(FBPrec_cupy[3, :, :]), vmin=0, vmax=0.008, cmap="gray")
 plt.title("FBP reconstruction")
 # fig.savefig('dendr_LogPolar.png', dpi=200)
 # %%
-padding_value = 0
+padding_value = 100
 RecToolsCP = RecToolsDIRCuPy(
     DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
     DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
@@ -119,7 +119,7 @@ _data_ = {
 
 ####################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "iterations": 100,
+    "iterations": 20,
     "recon_mask_radius": 2.0,
 }  # The number of iterations
 
@@ -128,8 +128,7 @@ _algorithm_ = {
 Rec_CGLS = RectoolsCuPy.CGLS(_data_, _algorithm_)
 
 fig = plt.figure()
-im = plt.imshow(cp.asnumpy((Rec_CGLS[3, :, :])), cmap="gray")
-plt.colorbar(im)
+plt.imshow(cp.asnumpy((Rec_CGLS[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
 plt.title("CGLS reconstruction")
 plt.show()
 # %%

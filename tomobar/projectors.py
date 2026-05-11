@@ -131,6 +131,7 @@ class FFTProjector(ProjectorBase):
     def __init__(
         self,
         n: int,
+        detX: int,
         theta: np.ndarray,
         mask_r: float = 1.0,
         CenterRotOffset: Optional[float] = None,
@@ -141,6 +142,7 @@ class FFTProjector(ProjectorBase):
         """Usfft parameters
         mask_r - circle radius"""
         self.n = n
+        self.detX = detX
         self.DetectorDimH_pad = DetectorDimH_pad
         self.indVec = indVec
         self.numProjBins = numProjBins
@@ -245,9 +247,11 @@ class FFTProjector(ProjectorBase):
             t = cp.fft.fftfreq(n).astype("float32")
             w = cp.exp(2 * cp.pi * 1j * t * (-self.raxis + n / 2))
             sino = cp.fft.ifft(w * cp.fft.fft(sino))
-        return cp.pad(
-            sino.real, ((0, 0), (0, 0), (self.DetectorDimH_pad, self.DetectorDimH_pad))
-        )
+
+        padded_size = self.detX + 2 * self.DetectorDimH_pad
+        left_pad = (padded_size - self.n) // 2
+        right_pad = padded_size - self.n - left_pad
+        return cp.pad(sino.real, ((0, 0), (0, 0), (left_pad, right_pad)))
 
     def forwproj(self, object3D: cp.ndarray) -> cp.ndarray:
         return self._forwproj_impl(object3D, self.theta)
@@ -259,11 +263,14 @@ class FFTProjector(ProjectorBase):
         """Adjoint Radon transform"""
 
         [nz, ntheta, n] = proj_data.shape
-        assert n == self.n + 2 * self.DetectorDimH_pad
+        assert n == self.detX + 2 * self.DetectorDimH_pad
         assert ntheta == theta.size
 
-        if self.DetectorDimH_pad > 0:
-            proj_data = proj_data[..., self.DetectorDimH_pad : -self.DetectorDimH_pad]
+        if self.n != n:
+            assert self.n < n
+            left_crop = (n - self.n) // 2
+            right_crop = n - self.n - left_crop
+            proj_data = proj_data[..., left_crop:-right_crop]
             n = proj_data.shape[2]
             assert n == self.n
 
@@ -499,9 +506,13 @@ class FFTProjector(ProjectorBase):
         return self._backproj_impl(proj_data, self._get_OS_theta(sub_ind))
 
     def update_projection_width(self, proj_data: cp.ndarray) -> cp.ndarray:
-        if proj_data.shape[2] == self.n:
+        if proj_data.shape[2] > self.n:
+            left_unpad = (proj_data.shape[2] - self.n) // 2
+            right_unpad = proj_data.shape[2] - self.n - left_unpad
+            return proj_data[..., left_unpad:-right_unpad]
+        elif proj_data.shape[2] < self.n:
+            left_pad = (self.n - proj_data.shape[2]) // 2
+            right_pad = self.n - proj_data.shape[2] - left_pad
+            return cp.pad(proj_data, ((0, 0), (0, 0), (left_pad, right_pad)))
+        else:
             return proj_data
-        assert proj_data.shape[2] > self.n
-        left_unpad = (proj_data.shape[2] - self.n) // 2
-        right_unpad = proj_data.shape[2] - self.n - left_unpad
-        return proj_data[..., left_unpad:-right_unpad]
