@@ -35,18 +35,15 @@ sliceSel = int(0.5 * N_size)
 # plt.gray()
 plt.figure()
 plt.subplot(131)
-im = plt.imshow(phantom_tm[sliceSel, :, :], vmin=0, vmax=1)
-plt.colorbar(im)
+plt.imshow(phantom_tm[sliceSel, :, :], vmin=0, vmax=1)
 plt.title("3D Phantom, axial view")
 
 plt.subplot(132)
-im = plt.imshow(phantom_tm[:, sliceSel, :], vmin=0, vmax=1)
-plt.colorbar(im)
+plt.imshow(phantom_tm[:, sliceSel, :], vmin=0, vmax=1)
 plt.title("3D Phantom, coronal view")
 
 plt.subplot(133)
-im = plt.imshow(phantom_tm[:, :, sliceSel], vmin=0, vmax=1)
-plt.colorbar(im)
+plt.imshow(phantom_tm[:, :, sliceSel], vmin=0, vmax=1)
 plt.title("3D Phantom, sagittal view")
 plt.show()
 
@@ -78,16 +75,13 @@ intens_max = 45
 sliceSel = int(0.5 * N_size)
 plt.figure()
 plt.subplot(131)
-im = plt.imshow(projData3D_analyt_noise[:, sliceSel, :], vmin=0, vmax=intens_max)
-plt.colorbar(im)
+plt.imshow(projData3D_analyt_noise[:, sliceSel, :], vmin=0, vmax=intens_max)
 plt.title("2D Projection (analytical)")
 plt.subplot(132)
-im = plt.imshow(projData3D_analyt_noise[sliceSel, :, :], vmin=0, vmax=intens_max)
-plt.colorbar(im)
+plt.imshow(projData3D_analyt_noise[sliceSel, :, :], vmin=0, vmax=intens_max)
 plt.title("Sinogram view")
 plt.subplot(133)
-im = plt.imshow(projData3D_analyt_noise[:, :, sliceSel], vmin=0, vmax=intens_max)
-plt.colorbar(im)
+plt.imshow(projData3D_analyt_noise[:, :, sliceSel], vmin=0, vmax=intens_max)
 plt.title("Tangentogram view")
 plt.show()
 # %%
@@ -126,18 +120,15 @@ sliceSel = int(0.5 * N_size)
 max_val = 1
 plt.figure()
 plt.subplot(131)
-im = plt.imshow(FBPrec_numpy[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
+plt.imshow(FBPrec_numpy[sliceSel, :, :], vmin=0, vmax=max_val)
 plt.title("3D FBP Reconstruction, axial view")
 
 plt.subplot(132)
-im = plt.imshow(FBPrec_numpy[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
+plt.imshow(FBPrec_numpy[:, sliceSel, :], vmin=0, vmax=max_val)
 plt.title("3D FBP Reconstruction, coronal view")
 
 plt.subplot(133)
-im = plt.imshow(FBPrec_numpy[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.colorbar(im)
+plt.imshow(FBPrec_numpy[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D FBP Reconstruction, sagittal view")
 plt.show()
 
@@ -182,18 +173,15 @@ sliceSel = int(0.5 * N_size)
 max_val = 1
 plt.figure()
 plt.subplot(131)
-im = plt.imshow(Fourier_cupy[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
+plt.imshow(Fourier_cupy[sliceSel, :, :], vmin=0, vmax=max_val)
 plt.title("3D Fourier Reconstruction, axial view")
 
 plt.subplot(132)
-im = plt.imshow(Fourier_cupy[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
+plt.imshow(Fourier_cupy[:, sliceSel, :], vmin=0, vmax=max_val)
 plt.title("3D Fourier Reconstruction, coronal view")
 
 plt.subplot(133)
-im = plt.imshow(Fourier_cupy[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.colorbar(im)
+plt.imshow(Fourier_cupy[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D Fourier Reconstruction, sagittal view")
 plt.show()
 
@@ -206,201 +194,156 @@ Qtools = QualityTools(phantom_tm, Fourier_cupy)
 RMSE = Qtools.rmse()
 print("Root Mean Square Error is {} for Fourier inversion".format(RMSE))
 
-RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector=0,
-    projector="fourier",
-)
+for projector in ("astra", "fourier"):
+    # %%
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    print(f"Reconstructing with FISTA OS-TV (PD) method ({projector} projector)")
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    RectoolsCuPy = RecToolsIRCuPy(
+        DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles_rad,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,
+        OS_number=6,  # The number of ordered subsets
+        projector=projector,
+    )
+    ####################### Creating the data dictionary: #######################
+    _data_ = {
+        "data_fidelity": "LS",
+        "projection_data": projData3D_analyt_cupy,  # Normalised projection data
+        "data_axes_labels_order": input_data_labels,
+    }
 
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%Reconstructing with CGLS method %%%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "projection_data": cp.copy(projData3D_analyt_cupy),  # Normalised projection data
-    "data_axes_labels_order": input_data_labels,
-}
+    lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
 
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "iterations": 20,
-    "recon_mask_radius": 2.0,
-}  # The number of iterations
+    ####################### Creating the algorithm dictionary: #######################
+    _algorithm_ = {
+        "iterations": 25,
+        "lipschitz_const": lc,
+        "recon_mask_radius": 2.0,
+    }  # The number of iterations
 
+    ##### creating regularisation dictionary: #####
+    _regularisation_ = {
+        "method": "PD_TV",  # Selected regularisation method
+        "regul_param": 0.0003,  # Regularisation parameter
+        "iterations": 50,  # The number of regularisation iterations
+        "half_precision": True,  # enabling half-precision calculation
+    }
 
-# RUN CGLS METHOD:
-Rec_CGLS = RectoolsCuPy.CGLS(_data_, _algorithm_)
+    # RUN THE FISTA METHOD:
+    tic = timeit.default_timer()
+    RecFISTA_os_tv = RectoolsCuPy.FISTA(_data_, _algorithm_, _regularisation_)
+    toc = timeit.default_timer()
+    Run_time = toc - tic
+    print(
+        "FISTA OS-TV reconstruction ({} projector) done in {} seconds".format(
+            projector, Run_time
+        )
+    )
 
-Rec_CGLS = cp.asnumpy(Rec_CGLS)
+    RecFISTA_os_tv = cp.asnumpy(RecFISTA_os_tv)
 
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-im = plt.imshow(Rec_CGLS[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("CGLS Reconstruction, axial view")
+    sliceSel = int(0.5 * N_size)
+    max_val = 1
+    plt.figure()
+    plt.subplot(131)
+    plt.imshow(RecFISTA_os_tv[sliceSel, :, :], vmin=0, vmax=max_val)
+    plt.title(f"FISTA OS-TV (PD) Reconstruction ({projector} projector), axial view")
 
-plt.subplot(132)
-im = plt.imshow(Rec_CGLS[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("CGLS Reconstruction, coronal view")
+    plt.subplot(132)
+    plt.imshow(RecFISTA_os_tv[:, sliceSel, :], vmin=0, vmax=max_val)
+    plt.title(f"FISTA OS-TV (PD) Reconstruction ({projector} projector), coronal view")
 
-plt.subplot(133)
-im = plt.imshow(Rec_CGLS[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("CGLS Reconstruction, sagittal view")
-plt.show()
+    plt.subplot(133)
+    plt.imshow(RecFISTA_os_tv[:, :, sliceSel], vmin=0, vmax=max_val)
+    plt.title(f"FISTA OS-TV (PD) Reconstruction ({projector} projector), sagittal view")
+    plt.show()
 
-# calculate errors
-Qtools = QualityTools(phantom_tm, Rec_CGLS)
-RMSE = Qtools.rmse()
-print("Root Mean Square Error is {} for CGLS reconstruction".format(RMSE))
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector=0,
-    OS_number=1,  # The number of ordered subsets
-    projector="fourier",
-)
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "data_fidelity": "LS",
-    "projection_data": projData3D_analyt_cupy,  # Normalised projection data
-    "data_axes_labels_order": input_data_labels,
-}
+    # calculate errors
+    Qtools = QualityTools(phantom_tm, RecFISTA_os_tv)
+    RMSE = Qtools.rmse()
+    print(
+        "Root Mean Square Error is {} for FISTA OS-TV (PD) reconstruction ({} projector)".format(
+            RMSE, projector
+        )
+    )
+    # %%
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    print(f"Reconstructing with ADMM OS-TV (PD) method ({projector} projector)")
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    RectoolsCuPy = RecToolsIRCuPy(
+        DetectorsDimH=Horiz_det,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles_rad,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,
+        OS_number=36,  # The number of ordered subsets
+        projector=projector,
+    )
+    ####################### Creating the data dictionary: #######################
+    _data_ = {
+        "data_fidelity": "LS",
+        "projection_data": projData3D_analyt_cupy,  # Normalised projection data
+        "data_axes_labels_order": input_data_labels,
+    }
 
-lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
+    ####################### Creating the algorithm dictionary: #######################
+    _algorithm_ = {
+        "initialise": FBPrec_cupy,
+        "iterations": 10,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.7,
+        "recon_mask_radius": 2.0,
+    }  # The number of iterations
 
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "iterations": 25,
-    "lipschitz_const": lc,
-    "recon_mask_radius": 2.0,
-}  # The number of iterations
+    ##### creating regularisation dictionary: #####
+    _regularisation_ = {
+        "method": "PD_TV",  # Selected regularisation method
+        "regul_param": 0.13,  # Regularisation parameter
+        "iterations": 30,  # The number of regularisation iterations
+        "half_precision": True,  # enabling half-precision calculation
+    }
 
-##### creating regularisation dictionary: #####
-_regularisation_ = {
-    "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.0003,  # Regularisation parameter
-    "iterations": 50,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
+    # RUN THE ADMM METHOD:
+    tic = timeit.default_timer()
+    RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
+    toc = timeit.default_timer()
+    Run_time = toc - tic
+    print(
+        "ADMM OS-TV reconstruction ({} projector) done in {} seconds".format(
+            projector, Run_time
+        )
+    )
 
-# RUN THE FISTA METHOD:
-tic = timeit.default_timer()
-RecFISTA_os_tv = RectoolsCuPy.FISTA(_data_, _algorithm_, _regularisation_)
-toc = timeit.default_timer()
-Run_time = toc - tic
-print("FISTA OS-TV reconstruction done in {} seconds".format(Run_time))
+    RecADMM_os_tv = cp.asnumpy(RecADMM_os_tv)
 
-RecFISTA_os_tv = cp.asnumpy(RecFISTA_os_tv)
+    sliceSel = int(0.5 * N_size)
+    max_val = 1
+    plt.figure()
+    plt.subplot(131)
+    plt.imshow(RecADMM_os_tv[sliceSel, :, :], vmin=0, vmax=max_val)
+    plt.title(f"ADMM OS-TV (PD) Reconstruction ({projector} projector), axial view")
 
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-im = plt.imshow(RecFISTA_os_tv[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("FISTA OS-TV (PD) Reconstruction, axial view")
+    plt.subplot(132)
+    plt.imshow(RecADMM_os_tv[:, sliceSel, :], vmin=0, vmax=max_val)
+    plt.title(f"ADMM OS-TV (PD) Reconstruction ({projector} projector), coronal view")
 
-plt.subplot(132)
-im = plt.imshow(RecFISTA_os_tv[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("FISTA OS-TV (PD) Reconstruction, coronal view")
+    plt.subplot(133)
+    plt.imshow(RecADMM_os_tv[:, :, sliceSel], vmin=0, vmax=max_val)
+    plt.title(f"ADMM OS-TV (PD) Reconstruction ({projector} projector), sagittal view")
+    plt.show()
 
-plt.subplot(133)
-im = plt.imshow(RecFISTA_os_tv[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("FISTA OS-TV (PD) Reconstruction, sagittal view")
-plt.show()
-
-# calculate errors
-Qtools = QualityTools(phantom_tm, RecFISTA_os_tv)
-RMSE = Qtools.rmse()
-print("Root Mean Square Error is {} for FISTA OS-TV (PD) reconstruction".format(RMSE))
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector=0,
-    OS_number=1,  # The number of ordered subsets
-    projector="fourier",
-)
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "data_fidelity": "LS",
-    "projection_data": projData3D_analyt_cupy,  # Normalised projection data
-    "data_axes_labels_order": input_data_labels,
-}
-
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "initialise": FBPrec_cupy,
-    "iterations": 10,
-    "ADMM_rho_const": 1.0,
-    "ADMM_relax_par": 1.7,
-    "recon_mask_radius": 2.0,
-}  # The number of iterations
-
-##### creating regularisation dictionary: #####
-_regularisation_ = {
-    "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.13,  # Regularisation parameter
-    "iterations": 30,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-# RUN THE ADMM METHOD:
-tic = timeit.default_timer()
-RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
-toc = timeit.default_timer()
-Run_time = toc - tic
-print("ADMM OS-TV reconstruction done in {} seconds".format(Run_time))
-
-RecADMM_os_tv = cp.asnumpy(RecADMM_os_tv)
-
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-im = plt.imshow(RecADMM_os_tv[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("ADMM OS-TV (PD) Reconstruction, axial view")
-
-plt.subplot(132)
-im = plt.imshow(RecADMM_os_tv[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("ADMM OS-TV (PD) Reconstruction, coronal view")
-
-plt.subplot(133)
-im = plt.imshow(RecADMM_os_tv[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.colorbar(im)
-plt.title("ADMM OS-TV (PD) Reconstruction, sagittal view")
-plt.show()
-
-# calculate errors
-Qtools = QualityTools(phantom_tm, RecADMM_os_tv)
-RMSE = Qtools.rmse()
-print("Root Mean Square Error is {} for ADMM OS-TV (PD) reconstruction".format(RMSE))
+    # calculate errors
+    Qtools = QualityTools(phantom_tm, RecADMM_os_tv)
+    RMSE = Qtools.rmse()
+    print(
+        "Root Mean Square Error is {} for ADMM OS-TV (PD) reconstruction ({} projector)".format(
+            RMSE, projector
+        )
+    )
