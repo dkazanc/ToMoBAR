@@ -212,7 +212,8 @@ for projector in ("astra", "fourier"):
     )
     ####################### Creating the data dictionary: #######################
     _data_ = {
-        "data_fidelity": "LS",
+        "data_fidelity": "PWLS",
+        # "data_fidelity": "LS",
         "projection_data": projData3D_analyt_cupy,  # Normalised projection data
         "data_axes_labels_order": input_data_labels,
     }
@@ -222,14 +223,15 @@ for projector in ("astra", "fourier"):
     ####################### Creating the algorithm dictionary: #######################
     _algorithm_ = {
         "iterations": 25,
-        "lipschitz_const": lc,
+        # "lipschitz_const": lc,
         "recon_mask_radius": 2.0,
     }  # The number of iterations
 
     ##### creating regularisation dictionary: #####
     _regularisation_ = {
         "method": "PD_TV",  # Selected regularisation method
-        "regul_param": 0.0003,  # Regularisation parameter
+        "regul_param": 0.0015,  # Regularisation parameter
+        # "regul_param": 0.0003,  # Regularisation parameter
         "iterations": 50,  # The number of regularisation iterations
         "half_precision": True,  # enabling half-precision calculation
     }
@@ -288,7 +290,7 @@ for projector in ("astra", "fourier"):
     )
     ####################### Creating the data dictionary: #######################
     _data_ = {
-        "data_fidelity": "LS",
+        "data_fidelity": "PWLS",
         "projection_data": projData3D_analyt_cupy,  # Normalised projection data
         "data_axes_labels_order": input_data_labels,
     }
@@ -296,17 +298,22 @@ for projector in ("astra", "fourier"):
     ####################### Creating the algorithm dictionary: #######################
     _algorithm_ = {
         "initialise": FBPrec_cupy,
-        "iterations": 10,
-        "ADMM_rho_const": 1.0,
+        "iterations": 2,
+        "ADMM_rho_const": 0.9,
         "ADMM_relax_par": 1.7,
+        # "iterations": 10,
+        # "ADMM_rho_const": 1.0,
+        # "ADMM_relax_par": 1.7,
         "recon_mask_radius": 2.0,
     }  # The number of iterations
 
     ##### creating regularisation dictionary: #####
     _regularisation_ = {
         "method": "PD_TV",  # Selected regularisation method
-        "regul_param": 0.13,  # Regularisation parameter
-        "iterations": 30,  # The number of regularisation iterations
+        "regul_param": 0.0035,  # Regularisation parameter
+        "iterations": 40,  # The number of regularisation iterations
+        # "regul_param": 0.13,  # Regularisation parameter
+        # "iterations": 30,  # The number of regularisation iterations
         "half_precision": True,  # enabling half-precision calculation
     }
 
