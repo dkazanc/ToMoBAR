@@ -1061,3 +1061,56 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(data_cupy, angles, ensure_clean_memory
     assert_allclose(np.max(Iter_rec), 0.031305, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 128, 128)
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    zip(
+        ADMM_TEST_CASES,
+        [
+            -0.000639,
+            -0.000632,
+            -0.000487,
+        ],
+        [
+            0.000919,
+            0.000915,
+            0.000841,
+        ],
+    ),
+    ids=ADMM_TEST_IDS,
+)
+def test_ADMM_SWLS_cp_3D(data_cupy, raw_data_cupy, angles, test_case, ensure_clean_memory):
+    regularization, expected_min, expected_max = test_case
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "data_fidelity": "SWLS",
+        "projection_data": data_cupy,
+        "projection_raw_data": raw_data_cupy,
+        "beta_SWLS": 1.0,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    _algorithm_ = {
+        "iterations": 2,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.6,
+    }
+
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularization)
+
+    assert_allclose(cp.min(Iter_rec).get(), expected_min, rtol=0, atol=eps)
+    assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)

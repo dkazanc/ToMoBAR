@@ -26,10 +26,7 @@ def grad_data_term(
     Returns:
         cp.ndarray: gradient of the data fidelity as a 3D CuPy array.
     """
-    half_precision = False
-    kernel_name = (
-        f"stripe_weighted_least_squares_{'half' if half_precision else 'float'}"
-    )
+    kernel_name = "stripe_weighted_least_squares_float"
     module = load_cuda_module("stripe_weighted_least_squares")
     stripe_weighted_least_squares = module.get_function(kernel_name)
 
