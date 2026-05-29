@@ -1,5 +1,9 @@
 # Change Log
 
+## v.2026.3.1.0
+
+Stripe Weighted Least Squares (SWLS) [method](http://ieeexplore.ieee.org/document/7967846/) added to the list of data fidelities. Demo with dendrites (RealData.py) demonstrates the benefit of using such method.
+
 ## v.2026.3.0.0
 
 We apologise for the abrupt change, but starting from this version, iterative reconstruction methods will no longer be accessible through the `RecToolsIR` class. Only `RecToolsIRCuPy` will be supported going forward.
@@ -20,7 +24,6 @@ Changes:
 * `OS_number` added to `RecToolsIRCuPy` class as it is a geometry related parameter.
 * Ordered Subsets Expectation Maximization (OSEM) and MLEM added in `RecToolsIRCuPy` for emission-type data.
 * Upgrade of dependencies to CuPy 14.* and numpy 2.4.
-
 
 
 ## v.2026.2.0.0
