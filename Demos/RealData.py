@@ -18,7 +18,7 @@ from tomobar.supp.suppTools import normaliser
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
-# load dendritic data
+# load raw X-ray data of dendrites
 datadict = scipy.io.loadmat("../data/DendrRawData.mat")
 # extract data (print(datadict.keys()))
 dataRaw = datadict["data_raw3D"]
@@ -333,7 +333,7 @@ _data_ = {
 
 #################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "initialise": None,  # needs to be the padded size detectorHoriz + 2*padding_value
+    "initialise": None,
     "iterations": 20,
     "ADMM_rho_const": 0.9,
     "ADMM_relax_par": 1.7,
