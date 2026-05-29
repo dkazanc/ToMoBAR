@@ -23,8 +23,10 @@ def dicts_check(
 
     Keyword Args:
         _data_['projection_data'] (ndarray): Can be either projection data after negative log or raw data given as a 3D CuPy array.
+        _data_['projection_raw_data'] (ndarray): Pre-log/pre flat-dark normalised raw data as a 3D CuPy array. Required for PWLS and SWLS fidelity terms.
         _data_['data_axes_labels_order'] (list, None).  The order of the axes labels for the input data. The default data labels are: ["detY", "angles", "detX"].
-        _data_['data_fidelity'] (str). Data fidelity given as 'LS' (Least Squares), 'PWLS' (Penalised Weightes LS), 'KL' (Kullback Leilbler). Defaults to 'LS'.
+        _data_['data_fidelity'] (str). Data fidelity given as 'LS' (Least Squares), 'PWLS' (Penalised Weighted LS), 'SWLS' (Stripe-Weighted PWLS), 'KL' (Kullback Leilbler). Defaults to 'LS'.
+        _data_['beta_SWLS'] (float): When SWLS data term is selected, this parameter controls the weight with which the stripes/rings will be suppressed. Defaults to 0.1.
 
         _algorithm_['iterations'] (int): The number of iterations for the reconstruction algorithm.
         _algorithm_['nonnegativity'] (bool): Enable nonnegativity for the solution. Defaults to False.
@@ -51,53 +53,62 @@ def dicts_check(
     correct_labels_order2D = ["angles", "detX"]
     data2dinput = False
 
+    # -------- dealing with _data_ dictionary ------------
     if _data_ is None:
-        raise NameError("The data dictionary must be always provided")
-    else:
-        # -------- dealing with _data_ dictionary ------------
-        if _data_.get("projection_data") is None:
-            raise NameError("'projection_data' needs to be provided")
-        if _data_["projection_data"].ndim == 2:
-            data2dinput = True
+        raise NameError("The data dictionary must be provided")
+    if _data_.get("projection_data") is None:
+        raise NameError("'projection_data' must be provided")
 
-        if "data_axes_labels_order" not in _data_:
-            _data_["data_axes_labels_order"] = None
+    if _data_.get("data_fidelity") is None:
+        _data_["data_fidelity"] = "LS"
+    if _data_["data_fidelity"] not in ["LS", "PWLS", "KL", "SWLS"]:
+        raise ValueError(
+            "_data_['data_fidelity'] should be provided as 'LS', 'PWLS', 'SWLS' or 'KL'."
+        )
+    if (
+        _data_["data_fidelity"] in ["PWLS", "SWLS"]
+        and _data_.get("projection_raw_data") is None
+    ):
+        raise ValueError(
+            "For 'PWLS' and 'SWLS' data terms, 'projection_raw_data' must be provided (same dimension as 'projection_data')"
+        )
 
-        if _data_["data_axes_labels_order"] is not None:
-            if data2dinput:
-                correct_labels_order = correct_labels_order2D
+    self.data_fidelity = _data_["data_fidelity"]
 
-            _data_["projection_data"] = _data_dims_swapper(
-                _data_["projection_data"],
+    if _data_["projection_data"].ndim == 2:
+        data2dinput = True
+
+    if "data_axes_labels_order" not in _data_:
+        _data_["data_axes_labels_order"] = None
+
+    if _data_["data_axes_labels_order"] is not None:
+        if data2dinput:
+            correct_labels_order = correct_labels_order2D
+
+        _data_["projection_data"] = _data_dims_swapper(
+            _data_["projection_data"],
+            _data_["data_axes_labels_order"],
+            correct_labels_order,
+        )
+        if "projection_raw_data" in _data_:
+            _data_["projection_raw_data"] = _data_dims_swapper(
+                _data_["projection_raw_data"],
                 _data_["data_axes_labels_order"],
                 correct_labels_order,
             )
-            if "projection_raw_data" in _data_:
-                _data_["projection_raw_data"] = _data_dims_swapper(
-                    _data_["projection_raw_data"],
-                    _data_["data_axes_labels_order"],
-                    correct_labels_order,
-                )
-            # we need to reset the swap option here as the data already been modified so we don't swap it again in the method itself
-            _data_["data_axes_labels_order"] = None
+        # we need to reset the swap option here as the data already been modified so we don't swap it again in the method itself
+        _data_["data_axes_labels_order"] = None
 
-        if data2dinput:
-            _data_["projection_data"] = cp.expand_dims(
-                _data_["projection_data"], axis=0
+    if data2dinput:
+        _data_["projection_data"] = cp.expand_dims(_data_["projection_data"], axis=0)
+        if "projection_raw_data" in _data_:
+            _data_["projection_raw_data"] = cp.expand_dims(
+                _data_["projection_raw_data"], axis=0
             )
-            if "projection_raw_data" in _data_:
-                _data_["projection_raw_data"] = cp.expand_dims(
-                    _data_["projection_raw_data"], axis=0
-                )
 
-        if _data_.get("data_fidelity") is None:
-            _data_["data_fidelity"] = "LS"
-        if _data_["data_fidelity"] not in {"LS", "PWLS", "KL", "SWLS"}:
-            raise ValueError(
-                "_data_['data_fidelity'] should be provided as 'LS', 'PWLS', 'KL'."
-            )
-        else:
-            self.data_fidelity = _data_["data_fidelity"]
+    if _data_["data_fidelity"] == "SWLS":
+        if _data_.get("beta_SWLS") is None:
+            _data_["beta_SWLS"] = 0.1
 
     if self.OS_number > 1:
         if method_run in {"SIRT", "CGLS", "Landweber"}:
@@ -108,7 +119,7 @@ def dicts_check(
     # ----------  dealing with _algorithm_  --------------
     if _algorithm_ is None:
         _algorithm_ = {}
-    if method_run in {"SIRT", "CGLS", "power", "Landweber", "OSEM"}:
+    if method_run in ["SIRT", "CGLS", "power", "Landweber", "OSEM"]:
         _algorithm_["lipschitz_const"] = 0  # bypass Lipshitz const calculation
         if _algorithm_.get("iterations") is None:
             if method_run == "SIRT":
@@ -170,7 +181,7 @@ def dicts_check(
         _regularisation_ = {}
     if bool(_regularisation_) is False:
         _regularisation_["method"] = None
-    if method_run in {"FISTA", "ADMM", "OSEM"}:
+    if method_run in ["FISTA", "ADMM", "OSEM"]:
         # regularisation parameter  (main)
         if "regul_param" not in _regularisation_:
             _regularisation_["regul_param"] = 0.001

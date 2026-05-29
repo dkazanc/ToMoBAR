@@ -396,16 +396,13 @@ class RecToolsIRCuPy:
         use_os = self.OS_number > 1
 
         if _data_["data_fidelity"] in ["PWLS", "SWLS"]:
-            w = cp.asarray(_data_upd_["projection_raw_data"])  # weights for PWLS model
+            w = cp.asarray(
+                _data_upd_["projection_raw_data"], dtype=np.float32, order="C"
+            )  # weights for PWLS model
             w = cp.maximum(w, 1e-6)
             w /= w.max()
         else:
             w = None
-
-        if _data_["data_fidelity"] in ["SWLS"]:
-            beta_SWLS = _data_upd_["beta_SWLS"]
-        else:
-            beta_SWLS = None
 
         return (
             _data_upd_,
@@ -413,7 +410,6 @@ class RecToolsIRCuPy:
             _regularisation_upd_,
             x0,
             w,
-            beta_SWLS,
             use_os,
         )
 
@@ -449,7 +445,6 @@ class RecToolsIRCuPy:
             _regularisation_upd_,
             x0,
             w,
-            beta_SWLS,
             use_os,
         ) = self.__common_initialisation(
             _data_, _algorithm_, _regularisation_, method_run="FISTA"
@@ -475,21 +470,19 @@ class RecToolsIRCuPy:
 
                 proj_data[sub_ind] = _data_upd_["projection_data"][:, indVec, :]
                 weights[sub_ind] = None if w is None else w[:, indVec, :]
-
                 weight_subset = weights[sub_ind]
-                weight_sums[sub_ind] = (
-                    None
-                    if weight_subset is None
-                    else (cp.sum(weight_subset, axis=1) + beta_SWLS)
-                )
+
+                if _data_upd_["data_fidelity"] == "SWLS":
+                    weight_sums[sub_ind] = (
+                        cp.sum(weight_subset, axis=1) + _data_upd_["beta_SWLS"]
+                    )
         else:
             proj_data_subset = _data_upd_["projection_data"]
             weight_subset = w
-            weight_subset_sum = (
-                None
-                if weight_subset is None
-                else cp.sum(weight_subset, axis=1) + beta_SWLS
-            )
+            if _data_upd_["data_fidelity"] == "SWLS":
+                weight_subset_sum = (
+                    cp.sum(weight_subset, axis=1) + _data_upd_["beta_SWLS"]
+                )
 
         # FISTA iterations
         for _ in range(_algorithm_upd_["iterations"]):
@@ -560,7 +553,6 @@ class RecToolsIRCuPy:
             _regularisation_upd_,
             x0,
             w,
-            beta_SWLS,
             use_os,
         ) = self.__common_initialisation(
             _data_, _algorithm_, _regularisation_, method_run="ADMM"
@@ -581,19 +573,17 @@ class RecToolsIRCuPy:
                 weights[sub_ind] = None if w is None else w[:, indVec, :]
 
                 weight_subset = weights[sub_ind]
-                weight_sums[sub_ind] = (
-                    None
-                    if weight_subset is None
-                    else (cp.sum(weight_subset, axis=1) + beta_SWLS)
-                )
+                if _data_upd_["data_fidelity"] == "SWLS":
+                    weight_sums[sub_ind] = (
+                        cp.sum(weight_subset, axis=1) + _data_upd_["beta_SWLS"]
+                    )
         else:
             proj_data_subset = _data_upd_["projection_data"]
             weight_subset = w
-            weight_subset_sum = (
-                None
-                if weight_subset is None
-                else cp.sum(weight_subset, axis=1) + beta_SWLS
-            )
+            if _data_upd_["data_fidelity"] == "SWLS":
+                weight_subset_sum = (
+                    cp.sum(weight_subset, axis=1) + _data_upd_["beta_SWLS"]
+                )
 
         indVec = None
         x = x0.copy()

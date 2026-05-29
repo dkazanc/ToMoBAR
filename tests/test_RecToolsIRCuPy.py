@@ -809,6 +809,7 @@ def test_FISTA_OS_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
 def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     normalised = normaliser(raw_data, flats, darks)
     normalised_cp = cp.asarray(normalised)
+    raw_data_cp = cp.asarray(raw_data)
 
     detX = cp.shape(normalised_cp)[2]
     detY = cp.shape(normalised_cp)[1]
@@ -827,6 +828,7 @@ def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     _data_ = {
         "data_fidelity": "PWLS",
         "projection_data": normalised_cp,
+        "projection_raw_data": raw_data_cp,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
@@ -1080,7 +1082,9 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(data_cupy, angles, ensure_clean_memory
     ),
     ids=ADMM_TEST_IDS,
 )
-def test_ADMM_SWLS_cp_3D(data_cupy, raw_data_cupy, angles, test_case, ensure_clean_memory):
+def test_ADMM_SWLS_cp_3D(
+    data_cupy, raw_data_cupy, angles, test_case, ensure_clean_memory
+):
     regularization, expected_min, expected_max = test_case
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
