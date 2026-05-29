@@ -22,6 +22,7 @@ def grad_data_term(
         sub_ind (int): index for the ordered-subset approach.
         indVec (Optional, cp.ndarray): Array of indices for the OS-model.
         w (Optional, cp.ndarray): weights for Penalised-Weighted LS.
+        w_sum (Optional, cp.ndarray): sum_weights for SWLS.
 
     Returns:
         cp.ndarray: gradient of the data fidelity as a 3D CuPy array.

@@ -456,6 +456,7 @@ class RecToolsIRCuPy:
         t = cp.float32(1.0)
         X_t = cp.copy(x0)
         X = cp.copy(x0)
+        weight_subset_sum = None
 
         if use_os:
             proj_data = [None] * self.OS_number
@@ -557,6 +558,7 @@ class RecToolsIRCuPy:
         ) = self.__common_initialisation(
             _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
+        weight_subset_sum = None
 
         if use_os:
             proj_data = [None] * self.OS_number

@@ -308,3 +308,54 @@ plt.imshow(swls_tv_np[3, :, :], vmin=0, vmax=0.003, cmap="gray")
 plt.title("FISTA OS-SWLS-TV (PD) reconstruction")
 plt.show()
 # fig.savefig('dendr_SWLS.png', dpi=200)
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM OS-SWLS-TV (PD) method %%%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+RectoolsCuPy = RecToolsIRCuPy(
+    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
+    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
+    CenterRotOffset=None,  # Center of Rotation scalar
+    AnglesVec=angles_rad,  # A vector of projection angles in radians
+    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    device_projector=0,
+    OS_number=12,  # The number of ordered subsets
+)
+####################### Creating the data dictionary: #######################
+_data_ = {
+    "data_fidelity": "SWLS",
+    "beta_SWLS": 1.0,  # stripe-suppressing parameter for SWLS
+    "projection_data": data_norm_cupy,  # Normalised projection data
+    "projection_raw_data": data_raw_cupy,  # raw data for PWLS/SWLS models
+    "data_axes_labels_order": data_labels3D,
+}
+
+#################### Creating the algorithm dictionary: #######################
+_algorithm_ = {
+    "initialise": None,  # needs to be the padded size detectorHoriz + 2*padding_value
+    "iterations": 20,
+    "ADMM_rho_const": 0.9,
+    "ADMM_relax_par": 1.7,
+    "recon_mask_radius": 2.0,
+}  # The number of iterations
+
+##### creating regularisation dictionary: #####
+_regularisation_ = {
+    "method": "PD_TV",  # Selected regularisation method
+    "regul_param": 0.002,  # Regularisation parameter
+    "iterations": 40,  # The number of regularisation iterations
+    "half_precision": True,  # enabling half-precision calculation
+}
+
+# RUN THE ADMM-OS-TV METHOD:
+tic = timeit.default_timer()
+RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
+toc = timeit.default_timer()
+Run_time = toc - tic
+print("ADMM-OS-TV (PD) reconstruction done in {} seconds".format(Run_time))
+
+fig = plt.figure()
+plt.imshow(cp.asnumpy((RecADMM_os_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
+plt.title("ADMM OS-TV (PD) reconstruction")
+plt.show()
