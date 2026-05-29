@@ -367,6 +367,12 @@ class RecToolsIRCuPy:
             self.Atools.detectors_x_pad,
             cupyrun=True,
         )
+        if "projection_raw_data" in _data_upd_:
+            _data_upd_["projection_raw_data"] = _apply_horiz_detector_padding(
+                _data_upd_["projection_raw_data"],
+                self.Atools.detectors_x_pad,
+                cupyrun=True,
+            )
 
         if _algorithm_upd_.get("lipschitz_const") is None:
             _algorithm_upd_["lipschitz_const"] = self.powermethod(_data_upd_)
@@ -389,14 +395,23 @@ class RecToolsIRCuPy:
 
         use_os = self.OS_number > 1
 
-        if _data_["data_fidelity"] in ["PWLS"]:
-            w = cp.asarray(_data_upd_["projection_data"])  # weights for PWLS model
+        if _data_["data_fidelity"] in ["PWLS", "SWLS"]:
+            w = cp.asarray(
+                _data_upd_["projection_raw_data"], dtype=np.float32, order="C"
+            )  # weights for PWLS model
             w = cp.maximum(w, 1e-6)
             w /= w.max()
         else:
             w = None
 
-        return (_data_upd_, _algorithm_upd_, _regularisation_upd_, x0, w, use_os)
+        return (
+            _data_upd_,
+            _algorithm_upd_,
+            _regularisation_upd_,
+            x0,
+            w,
+            use_os,
+        )
 
     def FISTA(
         self,
@@ -437,11 +452,38 @@ class RecToolsIRCuPy:
 
         L_const_inv = 1.0 / _algorithm_upd_["lipschitz_const"]
 
-        proj_data = _data_upd_["projection_data"]
         indVec = None
         t = cp.float32(1.0)
         X_t = cp.copy(x0)
         X = cp.copy(x0)
+        weight_subset_sum = None
+
+        if use_os:
+            proj_data = [None] * self.OS_number
+            weights = [None] * self.OS_number
+            weight_sums = [None] * self.OS_number
+
+            for sub_ind in range(self.OS_number):
+                # select a specific set of indeces for the subset (OS)
+                indVec = self.Atools.newInd_Vec[sub_ind, :]
+                if indVec[self.Atools.NumbProjBins - 1] == 0:
+                    indVec = indVec[:-1]  # shrink vector size
+
+                proj_data[sub_ind] = _data_upd_["projection_data"][:, indVec, :]
+                weights[sub_ind] = None if w is None else w[:, indVec, :]
+                weight_subset = weights[sub_ind]
+
+                if _data_upd_["data_fidelity"] == "SWLS":
+                    weight_sums[sub_ind] = (
+                        cp.sum(weight_subset, axis=1) + _data_upd_["beta_SWLS"]
+                    )
+        else:
+            proj_data_subset = _data_upd_["projection_data"]
+            weight_subset = w
+            if _data_upd_["data_fidelity"] == "SWLS":
+                weight_subset_sum = (
+                    cp.sum(weight_subset, axis=1) + _data_upd_["beta_SWLS"]
+                )
 
         # FISTA iterations
         for _ in range(_algorithm_upd_["iterations"]):
@@ -450,14 +492,18 @@ class RecToolsIRCuPy:
                 X_old = X
                 t_old = t
                 if use_os:
-                    # select a specific set of indeces for the subset (OS)
-                    indVec = self.Atools.newInd_Vec[sub_ind, :]
-                    if indVec[self.Atools.NumbProjBins - 1] == 0:
-                        indVec = indVec[:-1]  # shrink vector size
-                    proj_data = _data_upd_["projection_data"][:, indVec, :]
+                    proj_data_subset = proj_data[sub_ind]
+                    weight_subset = weights[sub_ind]
+                    weight_subset_sum = weight_sums[sub_ind]
 
                 grad_data = grad_data_term(
-                    self, X_t, proj_data, use_os, sub_ind, indVec, w
+                    self,
+                    X_t,
+                    proj_data_subset,
+                    use_os,
+                    sub_ind,
+                    weight_subset,
+                    weight_subset_sum,
                 )
 
                 X = X_t - L_const_inv * grad_data
@@ -512,7 +558,34 @@ class RecToolsIRCuPy:
         ) = self.__common_initialisation(
             _data_, _algorithm_, _regularisation_, method_run="ADMM"
         )
-        proj_data = _data_upd_["projection_data"]
+        weight_subset_sum = None
+
+        if use_os:
+            proj_data = [None] * self.OS_number
+            weights = [None] * self.OS_number
+            weight_sums = [None] * self.OS_number
+
+            for sub_ind in range(self.OS_number):
+                # select a specific set of indeces for the subset (OS)
+                indVec = self.Atools.newInd_Vec[sub_ind, :]
+                if indVec[self.Atools.NumbProjBins - 1] == 0:
+                    indVec = indVec[:-1]  # shrink vector size
+
+                proj_data[sub_ind] = _data_upd_["projection_data"][:, indVec, :]
+                weights[sub_ind] = None if w is None else w[:, indVec, :]
+
+                weight_subset = weights[sub_ind]
+                if _data_upd_["data_fidelity"] == "SWLS":
+                    weight_sums[sub_ind] = (
+                        cp.sum(weight_subset, axis=1) + _data_upd_["beta_SWLS"]
+                    )
+        else:
+            proj_data_subset = _data_upd_["projection_data"]
+            weight_subset = w
+            if _data_upd_["data_fidelity"] == "SWLS":
+                weight_subset_sum = (
+                    cp.sum(weight_subset, axis=1) + _data_upd_["beta_SWLS"]
+                )
 
         indVec = None
         x = x0.copy()
@@ -531,15 +604,19 @@ class RecToolsIRCuPy:
         for iter_no in range(_algorithm_upd_["iterations"]):
             for sub_ind in range(self.OS_number):
                 if use_os:
-                    # select a specific set of indeces for the subset (OS)
-                    indVec = self.Atools.newInd_Vec[sub_ind, :]
-                    if indVec[self.Atools.NumbProjBins - 1] == 0:
-                        indVec = indVec[:-1]  # shrink vector size
-                    proj_data = _data_upd_["projection_data"][:, indVec, :]
+                    proj_data_subset = proj_data[sub_ind]
+                    weight_subset = weights[sub_ind]
+                    weight_subset_sum = weight_sums[sub_ind]
 
                 # ---- z-update (linearized data term) ----
                 grad_data = grad_data_term(
-                    self, z, proj_data, use_os, sub_ind, indVec, w
+                    self,
+                    z,
+                    proj_data_subset,
+                    use_os,
+                    sub_ind,
+                    weight_subset,
+                    weight_subset_sum,
                 )
 
                 grad_admm = _algorithm_upd_["ADMM_rho_const"] * (z - x + u)

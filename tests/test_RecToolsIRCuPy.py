@@ -323,6 +323,39 @@ def test_FISTA_cp_lc_known_3D(data_cupy, angles, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
+def test_FISTA_SWLS_cp_3D(data_cupy, raw_data_cupy, angles, ensure_clean_memory):
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "data_fidelity": "SWLS",
+        "projection_data": data_cupy,
+        "projection_raw_data": raw_data_cupy,
+        "beta_SWLS": 1.0,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }  # data dictionary
+    # calculate Lipschitz constant
+    lc = RecTools.powermethod(_data_)
+    _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
+    Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), -0.0061533, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.008243, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
+
+
 def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
@@ -776,6 +809,7 @@ def test_FISTA_OS_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
 def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     normalised = normaliser(raw_data, flats, darks)
     normalised_cp = cp.asarray(normalised)
+    raw_data_cp = cp.asarray(raw_data)
 
     detX = cp.shape(normalised_cp)[2]
     detY = cp.shape(normalised_cp)[1]
@@ -794,6 +828,7 @@ def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     _data_ = {
         "data_fidelity": "PWLS",
         "projection_data": normalised_cp,
+        "projection_raw_data": raw_data_cp,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     # calculate Lipschitz constant
@@ -814,7 +849,7 @@ def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     Iter_rec = Iter_rec.get()
 
     assert 4000 <= lc <= 5000
-    assert_allclose(np.max(Iter_rec), 0.03565, rtol=1e-03)
+    assert_allclose(np.max(Iter_rec), 0.027205, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -822,6 +857,7 @@ def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
 def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
     normalised = normaliser(raw_data, flats, darks)
     normalised_cp = cp.asarray(normalised)
+    raw_data_cp = cp.asarray(raw_data)
 
     detX = cp.shape(normalised_cp)[2]
     detY = cp.shape(normalised_cp)[1]
@@ -839,6 +875,7 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
     # data dictionary
     _data_ = {
         "data_fidelity": "PWLS",
+        "projection_raw_data": raw_data_cp,
         "projection_data": normalised_cp,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
@@ -860,7 +897,7 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
     Iter_rec = Iter_rec.get()
 
     assert 5000 <= lc <= 6000
-    assert_allclose(np.max(Iter_rec), 0.032535, rtol=1e-03)
+    assert_allclose(np.max(Iter_rec), 0.027137, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -985,9 +1022,13 @@ def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
     assert Iter_rec.shape == (128, 160, 160)
 
 
-def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
+def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(
+    data_cupy, raw_data, angles, ensure_clean_memory
+):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
+    raw_data_cp = cp.asarray(raw_data)
+
     N_size = 128
     pad_value = 17
     RecTools = RecToolsIRCuPy(
@@ -1007,6 +1048,7 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(data_cupy, angles, ensure_clean_memory
     _data_ = {
         "data_fidelity": "PWLS",
         "projection_data": data_cupy,
+        "projection_raw_data": raw_data_cp,
         "data_axes_labels_order": ["angles", "detY", "detX"],
     }
     _algorithm_ = {
@@ -1025,6 +1067,61 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(data_cupy, angles, ensure_clean_memory
     Iter_rec = RecTools.ADMM(_data_, _algorithm_, _regularisation_)
 
     Iter_rec = Iter_rec.get()
-    assert_allclose(np.max(Iter_rec), 0.031305, rtol=1e-03)
+    assert_allclose(np.max(Iter_rec), 0.02733, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 128, 128)
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    zip(
+        ADMM_TEST_CASES,
+        [
+            -0.000639,
+            -0.000632,
+            -0.000487,
+        ],
+        [
+            0.000919,
+            0.000915,
+            0.000841,
+        ],
+    ),
+    ids=ADMM_TEST_IDS,
+)
+def test_ADMM_SWLS_cp_3D(
+    data_cupy, raw_data_cupy, angles, test_case, ensure_clean_memory
+):
+    regularization, expected_min, expected_max = test_case
+    detX = cp.shape(data_cupy)[2]
+    detY = cp.shape(data_cupy)[1]
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padded size of horizontal detector with edge values
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
+        AnglesVec=angles,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,  # define the device
+    )
+
+    _data_ = {
+        "data_fidelity": "SWLS",
+        "projection_data": data_cupy,
+        "projection_raw_data": raw_data_cupy,
+        "beta_SWLS": 1.0,
+        "data_axes_labels_order": ["angles", "detY", "detX"],
+    }
+    _algorithm_ = {
+        "iterations": 2,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.6,
+    }
+
+    Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularization)
+
+    assert_allclose(cp.min(Iter_rec).get(), expected_min, rtol=0, atol=eps)
+    assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (128, 160, 160)
