@@ -12,19 +12,21 @@ Measurement Science and Technology, 28(9), p.094004.
 import timeit
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.io
 import cupy as cp
 from tomobar.supp.suppTools import normaliser
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 # load raw X-ray data of dendrites
-datadict = scipy.io.loadmat("../data/DendrRawData.mat")
+data_npz = np.load(
+    "../tests/test_data/DendrRawData.npz"
+)  # you need to be in ToMoBAR/Demos folder
+
 # extract data (print(datadict.keys()))
-dataRaw = datadict["data_raw3D"]
-angles = datadict["angles"]
-flats = datadict["flats_ar"]
-darks = datadict["darks_ar"]
+dataRaw = data_npz["arr_0"]
+angles = data_npz["arr_1"]
+flats = data_npz["arr_2"]
+darks = data_npz["arr_3"]
 
 # normalise the data
 data_norm = normaliser(
@@ -39,6 +41,7 @@ data_labels3D = ["detX", "angles", "detY"]  # set the input data labels
 
 N_size = 1000
 angles_rad = np.linspace(0, np.pi, 360)
+del data_npz
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%Reconstructing with Log-Polar Fourier method %%%%%%%%%%%")

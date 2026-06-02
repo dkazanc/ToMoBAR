@@ -1125,3 +1125,127 @@ def test_ADMM_SWLS_cp_3D(
     assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
+
+
+def test_MLEM_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
+    _, detY, detX = np.shape(raw_data_Xrf)
+    data_cp = cp.asarray(np.float32(raw_data_Xrf), order="C")
+    angles_rad = np.deg2rad(angles_data_Xrf)
+    data_labels3D = ["angles", "detY", "detX"]
+
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=-0.5,  # Center of Rotation scalar or a vector
+        AnglesVec=angles_rad,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,
+        OS_number=1,  # The number of ordered subsets
+    )
+
+    _data_ = {
+        "projection_data": data_cp,
+        "data_axes_labels_order": data_labels3D,
+    }
+
+    ####################### Creating the algorithm dictionary: #######################
+    _algorithm_ = {
+        "iterations": 5,
+        "recon_mask_radius": 2.0,
+        "nonnegativity": True,
+    }  # The number of iterations
+
+    Iter_rec = RecTools.OSEM(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), 0.06285925, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 836700.8, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (41, 90, 90)
+
+
+def test_OSEM_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
+    _, detY, detX = np.shape(raw_data_Xrf)
+    data_cp = cp.asarray(np.float32(raw_data_Xrf), order="C")
+    angles_rad = np.deg2rad(angles_data_Xrf)
+    data_labels3D = ["angles", "detY", "detX"]
+
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=-0.5,  # Center of Rotation scalar or a vector
+        AnglesVec=angles_rad,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,
+        OS_number=12,  # The number of ordered subsets
+    )
+
+    _data_ = {
+        "projection_data": data_cp,
+        "data_axes_labels_order": data_labels3D,
+    }
+
+    ####################### Creating the algorithm dictionary: #######################
+    _algorithm_ = {
+        "iterations": 5,
+        "recon_mask_radius": 2.0,
+        "nonnegativity": True,
+    }  # The number of iterations
+
+    Iter_rec = RecTools.OSEM(_data_, _algorithm_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), 0.0, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 8849.165, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (41, 90, 90)
+
+
+def test_OSEM_PDTV_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
+    _, detY, detX = np.shape(raw_data_Xrf)
+    data_cp = cp.asarray(np.float32(raw_data_Xrf), order="C")
+    angles_rad = np.deg2rad(angles_data_Xrf)
+    data_labels3D = ["angles", "detY", "detX"]
+
+    N_size = detX
+    RecTools = RecToolsIRCuPy(
+        DetectorsDimH=detX,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
+        CenterRotOffset=-0.5,  # Center of Rotation scalar or a vector
+        AnglesVec=angles_rad,  # A vector of projection angles in radians
+        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        device_projector=0,
+        OS_number=12,  # The number of ordered subsets
+    )
+
+    _data_ = {
+        "projection_data": data_cp,
+        "data_axes_labels_order": data_labels3D,
+    }
+
+    ####################### Creating the algorithm dictionary: #######################
+    _algorithm_ = {
+        "iterations": 3,
+        "recon_mask_radius": 2.0,
+        "nonnegativity": True,
+    }  # The number of iterations
+
+    _regularisation_ = {
+        "method": "PD_TV",  # Selected regularisation method
+        "regul_param": 1.5,  # Regularisation parameter
+        "iterations": 5,  # The number of regularisation iterations
+        "half_precision": True,  # enabling half-precision calculation
+    }
+
+    Iter_rec = RecTools.OSEM(_data_, _algorithm_, _regularisation_)
+
+    Iter_rec = Iter_rec.get()
+    assert_allclose(np.min(Iter_rec), 3.2815723e-07, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 8659.158, rtol=1e-04)
+    assert Iter_rec.dtype == np.float32
+    assert Iter_rec.shape == (41, 90, 90)
