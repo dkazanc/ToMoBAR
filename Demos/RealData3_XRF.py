@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-In this demo XRF tomographic data from I14 beamline at Diamond Light Source (UK synchrotron)
-is reconstructed
-"""
+#
+# In this demo XRF tomographic data from I14 beamline at Diamond Light Source (UK synchrotron) is reconstructed
+
 
 import numpy as np
 import cupy as cp
