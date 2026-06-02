@@ -89,9 +89,25 @@ def data_raw_file(test_data_path):
     return np.load(in_file)
 
 
+@pytest.fixture(scope="session")
+def data_XRFfile(test_data_path):
+    in_file = os.path.join(test_data_path, "Ga-Ka_aligned.npz")
+    return np.load(in_file)
+
+
 @pytest.fixture
 def raw_data(data_raw_file):
     return np.float32(np.copy(data_raw_file["data"]))
+
+
+@pytest.fixture
+def raw_data_Xrf(data_XRFfile):
+    return np.float32(np.copy(data_XRFfile["arr_0"]))
+
+
+@pytest.fixture
+def angles_data_Xrf(data_XRFfile):
+    return np.float32(np.copy(data_XRFfile["arr_1"]))
 
 
 @pytest.fixture

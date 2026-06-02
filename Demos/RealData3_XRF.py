@@ -5,19 +5,18 @@ In this demo XRF tomographic data from I14 beamline at Diamond Light Source (UK 
 is reconstructed
 """
 
-import h5py
 import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
-datapathfile = (
-    "../tests/test_data/Ga-Ka_aligned.nxs"  # you need to be in ToMoBAR/Demos folder
-)
-h5f = h5py.File(datapathfile, "r")
-data = h5f["/entry/data/data"][:]
-angles = h5f["/entry/data/rotation_angle"][:]
+data_npz = np.load(
+    "../tests/test_data/Ga-Ka_aligned.npz"
+)  # you need to be in ToMoBAR/Demos folder
+
+data = data_npz["arr_0"]
+angles = data_npz["arr_1"]
 
 angles_tot, detectorVert, detectorHoriz = np.shape(data)
 data_labels3D = ["angles", "detY", "detX"]
