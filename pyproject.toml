@@ -20,7 +20,7 @@ dev_template = "{tag}"
 
 [project]
 name = "tomobar"
-version = "2026.3.0.0"
+version = "2026.3.1.0"
 description = "TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software"
 readme = "Readme.md"
 license = {text = "GPLv3"}
