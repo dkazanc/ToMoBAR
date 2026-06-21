@@ -218,19 +218,34 @@ def PD_TV_cupy(
     lt = cp.float32(tau / regularisation_parameter)
 
     # initialise CuPy arrays here:
-    U_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
+    U_arrays = [
+        cp.copy(data),
+        cp.empty_like(data),
+    ]
     P1_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
     P2_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
 
     # loading and compiling CUDA kernels:
-    kernel_name = f"primal_dual_for_total_variation_{'3D' if data.ndim == 3 else '2D'}_{'half' if half_precision else 'float'}"
-    if nonneg:
-        kernel_name += "_nonneg"
-    if methodTV:
-        kernel_name += "_methodTV"
+    intermediate_typename = "half" if half_precision else "float"
+    kernel_name_base = (
+        f"primal_dual_for_total_variation_{'3D' if data.ndim == 3 else '2D'}_"
+    )
+    kernel_names = [
+        kernel_name_base + f"{intermediate_typename}_float_{intermediate_typename}",
+        kernel_name_base
+        + f"{intermediate_typename}_{intermediate_typename}_{intermediate_typename}",
+        kernel_name_base + f"{intermediate_typename}_{intermediate_typename}_float",
+    ]
+    for kernel_name in kernel_names:
+        if nonneg:
+            kernel_name += "_nonneg"
+        if methodTV:
+            kernel_name += "_methodTV"
 
     module = load_cuda_module("primal_dual_for_total_variation")
-    primal_dual_for_total_variation = module.get_function(kernel_name)
+    first_kernel, middle_kernel, last_kernel = [
+        module.get_function(kernel_name) for kernel_name in kernel_names
+    ]
 
     dz, dy, dx = (0,) * (3 - data.ndim) + data.shape
     block_x = 128
@@ -252,7 +267,7 @@ def PD_TV_cupy(
     input_index = 0
     output_index = 1
 
-    for _ in range(iterations):
+    for i in range(iterations):
         if input_is_2d:
             params = (
                 data,
@@ -285,15 +300,23 @@ def PD_TV_cupy(
                 theta,
                 *data_dims,
             )
+        if i == 0:
+            current_kernel = first_kernel
+        elif i == iterations - 1:
+            current_kernel = last_kernel
+        else:
+            current_kernel = middle_kernel
 
-        primal_dual_for_total_variation(grid_dims, block_dims, params)
+        current_kernel(grid_dims, block_dims, params)
 
         input_index = 1 - input_index
         output_index = 1 - output_index
     if input_is_2d:
-        return cp.expand_dims(U_arrays[input_index], axis=ind_axis)
+        return cp.expand_dims(
+            cp.asarray(U_arrays[input_index], dtype=cp.float32), axis=ind_axis
+        )
     else:
-        return U_arrays[input_index]
+        return cp.asarray(U_arrays[input_index], dtype=cp.float32)
 
 
 def __check_if_input_2d_or_3d(data: cp.ndarray) -> Tuple[cp.ndarray, bool, int]:
