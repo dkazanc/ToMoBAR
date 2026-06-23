@@ -22,6 +22,8 @@ from tomobar.methodsDIR import RecToolsDIR
 
 _CENTER_SIZE_MIN = 192  # must be divisible by 8
 
+# _NEW_NVMATH_ESTIMATOR = False
+_NEW_NVMATH_ESTIMATOR = True
 
 class RecToolsDIRCuPy(RecToolsDIR):
     """Reconstruction class using direct methods with CuPy API.
@@ -611,7 +613,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
             filter_vol_chunk_count = detector_height
 
         slice_count_per_chunk = int(np.ceil(detector_height / filter_vol_chunk_count))
-        full_chunk_exists = (detector_height / slice_count_per_chunk) > 1
+        full_chunk_exists = (detector_height / slice_count_per_chunk) >= 1
         slice_count_for_last_chunk = detector_height % slice_count_per_chunk
 
         projection_count_per_projection_chunk = int(
@@ -619,7 +621,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
         full_projection_chunk_exists = (
             projection_count / projection_count_per_projection_chunk
-        ) > 1
+        ) >= 1
         projection_count_for_last_projection_chunk = (
             projection_count % projection_count_per_projection_chunk
         )
@@ -641,48 +643,71 @@ class RecToolsDIRCuPy(RecToolsDIR):
         for slice_count in slice_counts:
             for proj_count in proj_counts:
                 # Loop over the chunks
-                rfft_input_nbytes = (
-                    np.prod(
-                        (
-                            slice_count,
-                            proj_count,
-                            oversampled_detector_width,
-                        )
-                    )
-                    * cp.float32().itemsize
+                rfft_input_fake = cp.ndarray(
+                    shape=(slice_count, proj_count, oversampled_detector_width),
+                    dtype=cp.float32(),
+                    memptr=cp.cuda.MemoryPointer(None, 0),
                 )
-                mem_stack.malloc(rfft_input_nbytes)
+                mem_stack.malloc(rfft_input_fake.nbytes)
 
-                rfft_plan_work_area_mem_size = (
-                    nvmath.bindings.cufft.estimate1d(
-                        nx=oversampled_detector_width,
-                        type=nvmath.bindings.cufft.Type.R2C,
-                        batch=proj_count,
+                if _NEW_NVMATH_ESTIMATOR:
+                    fft_options = nvmath.fft.FFTOptions(
+                        fft_type="R2C",
+                        inplace=False,
                     )
-                ) * slice_count
+                    key = nvmath.fft.FFT.create_key(
+                        operand=rfft_input_fake,
+                        axes=[2],
+                        options=fft_options,
+                        execution=nvmath.fft.ExecutionCUDA(),
+                    )
+                    rfft_plan_work_area_mem_size = nvmath.fft.estimate_workspace_size(key)
+                else:
+                    rfft_plan_work_area_mem_size = (
+                        nvmath.bindings.cufft.estimate1d(
+                            nx=oversampled_detector_width,
+                            type=nvmath.bindings.cufft.Type.R2C,
+                            batch=proj_count,
+                        )
+                    ) * slice_count
+
                 mem_stack.malloc(rfft_plan_work_area_mem_size)
                 fft_plan_sizes.append(rfft_plan_work_area_mem_size)
 
-                rfft_output_nbytes = (
-                    np.prod(
-                        (
-                            slice_count,
-                            proj_count,
-                            oversampled_detector_width // 2 + 1,
-                        )
-                    )
-                    * cp.complex64().itemsize
+                rfft_output_fake = cp.ndarray(
+                    shape=(
+                        slice_count,
+                        proj_count,
+                        oversampled_detector_width // 2 + 1,
+                    ),
+                    dtype=cp.complex64(),
+                    memptr=cp.cuda.MemoryPointer(None, 0),
                 )
-                mem_stack.malloc(rfft_output_nbytes)
-                mem_stack.free(rfft_output_nbytes)
+                mem_stack.malloc(rfft_output_fake.nbytes)
+                mem_stack.free(rfft_output_fake.nbytes)
 
-                irfft_plan_work_area_mem_size = (
-                    nvmath.bindings.cufft.estimate1d(
-                        nx=oversampled_detector_width,
-                        type=nvmath.bindings.cufft.Type.C2R,
-                        batch=proj_count,
+                if _NEW_NVMATH_ESTIMATOR:
+                    fft_options = nvmath.fft.FFTOptions(
+                        fft_type="C2R",
+                        inplace=False,
+                        last_axis_parity="even",
                     )
-                ) * slice_count
+                    key = nvmath.fft.FFT.create_key(
+                        operand=rfft_output_fake,
+                        axes=[2],
+                        options=fft_options,
+                        execution=nvmath.fft.ExecutionCUDA(),
+                    )
+                    irfft_plan_work_area_mem_size = nvmath.fft.estimate_workspace_size(key)
+                else:
+                    irfft_plan_work_area_mem_size = (
+                        nvmath.bindings.cufft.estimate1d(
+                            nx=oversampled_detector_width,
+                            type=nvmath.bindings.cufft.Type.C2R,
+                            batch=proj_count,
+                        )
+                    ) * slice_count
+
                 mem_stack.malloc(irfft_plan_work_area_mem_size)
                 fft_plan_sizes.append(irfft_plan_work_area_mem_size)
 
@@ -699,7 +724,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
                 mem_stack.malloc(irfft_output_size)
                 mem_stack.free(irfft_output_size)
-                mem_stack.free(rfft_input_nbytes)
+                mem_stack.free(rfft_input_fake.nbytes)
 
         for fft_plan_size in fft_plan_sizes:
             mem_stack.free(fft_plan_size)
@@ -911,17 +936,33 @@ class RecToolsDIRCuPy(RecToolsDIR):
     ):
         mem_stack = DeviceMemStack.instance()
         (datac_shape, datac_dtype) = datac
-        fft_input_nbytes = np.prod(datac_shape) * datac_dtype.itemsize
-        mem_stack.malloc(fft_input_nbytes)
-
-        fft_plan_work_area_mem_size = (
-            nvmath.bindings.cufft.estimate1d(
-                nx=datac_shape[2],
-                type=nvmath.bindings.cufft.Type.C2C,
-                batch=datac_shape[1],
-            )
-            * datac_shape[0]
+        datac_fake = cp.ndarray(
+            shape=datac_shape, dtype=datac_dtype, memptr=cp.cuda.MemoryPointer(None, 0)
         )
+        mem_stack.malloc(datac_fake.nbytes)
+
+        if _NEW_NVMATH_ESTIMATOR:
+            fft_options = nvmath.fft.FFTOptions(
+                fft_type="C2C",
+                inplace=False,
+            )
+            key = nvmath.fft.FFT.create_key(
+                operand=datac_fake,
+                axes=[2],
+                options=fft_options,
+                execution=nvmath.fft.ExecutionCUDA(),
+            )
+            fft_plan_work_area_mem_size = nvmath.fft.estimate_workspace_size(key)
+        else:
+            fft_plan_work_area_mem_size = (
+                nvmath.bindings.cufft.estimate1d(
+                    nx=datac_shape[2],
+                    type=nvmath.bindings.cufft.Type.C2C,
+                    batch=datac_shape[1],
+                )
+                * datac_shape[0]
+            )
+
         mem_stack.malloc(fft_plan_work_area_mem_size)
         mem_stack.malloc(fft_plan_work_area_mem_size)
         mem_stack.free(fft_plan_work_area_mem_size)
@@ -1007,8 +1048,8 @@ class RecToolsDIRCuPy(RecToolsDIR):
             chunk_count = detector_height // 2
 
         slice_count_per_chunk = int(np.ceil(detector_height // 2 / chunk_count))
-        full_chunk_exists = (detector_height / slice_count_per_chunk) > 1
-        slice_count_for_last_chunk = detector_height % slice_count_per_chunk
+        full_chunk_exists = (detector_height // 2 // slice_count_per_chunk) >= 1
+        slice_count_for_last_chunk = detector_height // 2 % slice_count_per_chunk
 
         fft_plan_sizes = []
 
@@ -1020,19 +1061,41 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         for slice_count in slice_counts:
             (fde_shape, fde_dtype) = fde
-            ifft2_input_nbytes = (
-                np.prod((slice_count, *fde_shape[1:])) * fde_dtype.itemsize
+
+            ifft2_input_fake = cp.ndarray(
+                shape=(slice_count, *fde_shape[1:]),
+                dtype=fde_dtype,
+                memptr=cp.cuda.MemoryPointer(None, 0),
             )
 
-            ifft2_plan_work_area_mem_size = nvmath.bindings.cufft.estimate2d(
-                nx=fde_shape[2], ny=fde_shape[1], type=nvmath.bindings.cufft.Type.C2C
-            )
+            if _NEW_NVMATH_ESTIMATOR:
+                fft_options = nvmath.fft.FFTOptions(
+                    fft_type="C2C",
+                    inplace=True,
+                )
+                key = nvmath.fft.FFT.create_key(
+                    operand=ifft2_input_fake,
+                    # axes=[2, 1],
+                    axes=[1, 2],
+                    options=fft_options,
+                    execution=nvmath.fft.ExecutionCUDA(),
+                )
+                ifft2_plan_work_area_mem_size = nvmath.fft.estimate_workspace_size(key)
+            else:
+                ifft2_plan_work_area_mem_size = (
+                    nvmath.bindings.cufft.estimate2d(
+                        nx=fde_shape[2],
+                        ny=fde_shape[1],
+                        type=nvmath.bindings.cufft.Type.C2C,
+                    )
+                    * slice_count
+                )
+
             mem_stack.malloc(ifft2_plan_work_area_mem_size)
-            if len(fft_plan_sizes) == 0:
-                fft_plan_sizes.append(ifft2_plan_work_area_mem_size)
+            fft_plan_sizes.append(ifft2_plan_work_area_mem_size)
 
-            mem_stack.malloc(ifft2_input_nbytes)
-            mem_stack.free(ifft2_input_nbytes)
+            mem_stack.malloc(ifft2_input_fake.nbytes)
+            mem_stack.free(ifft2_input_fake.nbytes)
 
         for fft_plan_size in fft_plan_sizes:
             mem_stack.free(fft_plan_size)
