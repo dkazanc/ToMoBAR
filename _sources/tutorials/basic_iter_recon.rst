@@ -1,0 +1,57 @@
+.. _examples_basic_iter:
+
+Basic iterative reconstruction
+*******************************
+
+.. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
+
+We start by defining a 3D projection data Numpy array of unsigned integer 16-bit data type (optional)
+and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide the corresponding flats and darks fields
+(also 3D arrays of the same axes order).
+
+* The first step is to normalise :mod:`dataRaw` using the :mod:`normaliser` function from :mod:`tomobar.supp.suppTools.normaliser`.
+
+.. code-block:: python
+
+    from tomobar.supp.suppTools import normaliser
+
+    data_norm = normaliser(dataRaw, flats, darks, log=True, method="mean", axis=1)
+
+* Instantiate the iterative reconstructor :mod:`tomobar.methodsIR_CuPy`:
+
+.. code-block:: python
+
+    import cupy as cp
+    from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+
+    detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
+
+    Rectools = RecToolsIRCuPy(
+        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
+        DetectorsDimH_pad=0,  # Padding size of horizontal detector
+        DetectorsDimV=detectorVert,  # Vertical detector dimension
+        CenterRotOffset=0.0,  # Center of Rotation (needs to be found)
+        AnglesVec=angles_rad,  # A vector of projection angles in radians
+        ObjSize=detectorHoriz,  # The reconstructed object dimensions
+        device_projector=0,  # Device to perform reconstruction on
+    )
+
+* Now we have an access to all methods of this particular reconstructor. Let us use SIRT and CGLS reconstruction algorithms.
+
+     **Please note that the dictionaries needed for all iterative methods with exact
+     keyword arguments defined in** :mod:`tomobar.supp.dicts`.
+
+.. code-block:: python
+
+    _data_ = {
+        "projection_data": cp.asarray(data_norm),
+        "data_axes_labels_order": ["detY", "angles", "detX"],
+    }  # data dictionary
+
+    _algorithm_ = {"iterations": 300, "nonnegativity": True}  # algorithm dict
+
+    SIRT_Rec = Rectools.SIRT(_data_, _algorithm_)
+
+    _algorithm_ = {"iterations": 20, "nonnegativity": True}  # algorithm dict
+
+    CGLS_Rec = Rectools.CGLS(_data_, _algorithm_)

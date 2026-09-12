@@ -1,0 +1,617 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tomobar.supp.dicts &#8212; Tomobar Documentation page</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=4418a689" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/general.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+
+    <script src="../../../_static/documentation_options.js?v=184c542a"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tomobar/supp/dicts';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="icon" href="../../../_static/tomobar_logo_light.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+    <meta name="docbuild:last-update" content="Sep 12, 2026"/>
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items">
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/tomobar_logo_light.png" class="logo__image only-light" alt="Tomobar Documentation page - Home"/>
+    <img src="../../../_static/tomobar_logo_dark.png" class="logo__image only-dark pst-js-only" alt="Tomobar Documentation page - Home"/>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/about.html">About ToMoBAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/dependencies.html">Dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">How To's</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/use.html">Using ToMoBAR</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/direct_recon.html">Direct reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/basic_iter_recon.html">Basic iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/regul_iter_recon.html">Regularised iterative reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/synthetic_recon.html">Synthethic data reconstruction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/real_data_recon.html">Real data reconstruction</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Reference guides</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../reference/api.html">API reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsDIR.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsDIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsDIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.methodsIR_CuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.methodsIR_CuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.regularisersCuPy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.regularisersCuPy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.supp.dicts.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.dicts</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/tomobar.supp.suppTools.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tomobar.supp.suppTools</span></code></a></li>
+</ul>
+</details></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button pst-navbar-icon"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for tomobar.supp.dicts</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tomobar.supp.funcs</span><span class="w"> </span><span class="kn">import</span> <span class="n">_data_dims_swapper</span>
+
+
+<div class="viewcode-block" id="dicts_check">
+<a class="viewcode-back" href="../../../api/tomobar.supp.dicts.html#tomobar.supp.dicts.dicts_check">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dicts_check</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">_data_</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">_algorithm_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">_regularisation_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">method_run</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"FISTA"</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""This function accepts the `_data_`, `_algorithm_`, and  `_regularisation_`</span>
+<span class="sd">    dictionaries and populates parameters in them, if required. Please note that the dictionaries are</span>
+<span class="sd">    needed for iterative methods only. The most versatile methods that can accept a variety of different parameters</span>
+<span class="sd">    are FISTA and ADMM.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        _data_ (dict):  *Data dictionary where data-related items must be specified.*</span>
+<span class="sd">        _algorithm_ (dict, optional): *Algorithm dictionary. Defaults to None.*</span>
+<span class="sd">        _regularisation_ (dict, optional): *Regularisation dictionary. Needed only for FISTA and ADMM algorithms. Defaults to None.*</span>
+<span class="sd">        method_run (str): *The name of the method to be run. Defaults to "FISTA".*</span>
+
+<span class="sd">    Keyword Args:</span>
+<span class="sd">        _data_['projection_data'] (ndarray): Can be either projection data after negative log or raw data given as a 3D CuPy array.</span>
+<span class="sd">        _data_['projection_raw_data'] (ndarray): Pre-log/pre flat-dark normalised raw data as a 3D CuPy array. Required for PWLS and SWLS fidelity terms.</span>
+<span class="sd">        _data_['data_axes_labels_order'] (list, None).  The order of the axes labels for the input data. The default data labels are: ["detY", "angles", "detX"].</span>
+<span class="sd">        _data_['data_fidelity'] (str). Data fidelity given as 'LS' (Least Squares), 'PWLS' (Penalised Weighted LS), 'SWLS' (Stripe-Weighted PWLS), 'KL' (Kullback Leilbler). Defaults to 'LS'.</span>
+<span class="sd">        _data_['beta_SWLS'] (float): When SWLS data term is selected, this parameter controls the weight with which the stripes/rings will be suppressed. Defaults to 0.1.</span>
+
+<span class="sd">        _algorithm_['iterations'] (int): The number of iterations for the reconstruction algorithm.</span>
+<span class="sd">        _algorithm_['nonnegativity'] (bool): Enable nonnegativity for the solution. Defaults to False.</span>
+<span class="sd">        _algorithm_['recon_mask_radius'] (float): Enables the circular mask cutoff in the reconstructed image. Defaults to 1.0.</span>
+<span class="sd">        _algorithm_['initialise'] (ndarray): Initialisation for the solution. An array of the expected output size must be provided.</span>
+<span class="sd">        _algorithm_['lipschitz_const'] (float): Lipschitz constant for the FISTA and ADMM algorithms. If not provided, it will be calculated for each method call.</span>
+<span class="sd">        _algorithm_['ADMM_rho_const'] (float): Augmented Lagrangian parameter for the ADMM algorithm.</span>
+<span class="sd">        _algorithm_['ADMM_relax_par'] (float): Over relaxation parameter for the convergence acceleration of the ADMM algorithm. Values within 1.5-1.8 range work well.</span>
+<span class="sd">        _algorithm_['tolerance'] (float): Tolerance to terminate reconstruction algorithm iterations earlier. Defaults to 0.0.</span>
+<span class="sd">        _algorithm_['verbose'] (bool): Switch on printing of iterations number and other messages. Defaults to False.</span>
+
+<span class="sd">        _regularisation_['method'] (str): Select the regularisation method for noise supression. The supported methods are: ROF_TV, PD_TV.</span>
+<span class="sd">        _regularisation_['regul_param'] (float): The main regularisation parameter for regularisers to control the amount of smoothing. Defaults to 0.001.</span>
+<span class="sd">        _regularisation_['iterations'] (int): The number of iterations for regularisers (INNER iterations). Defaults to 150.</span>
+<span class="sd">        _regularisation_['device_regulariser'] (int): A GPU device index to perform operation on. Defaults to 0.</span>
+<span class="sd">        _regularisation_['time_marching_step'] (float): Time step parameter for convergence of gradient-based methods: ROF_TV.</span>
+<span class="sd">        _regularisation_['PD_LipschitzConstant'] (float): The Primal-Dual (PD) penalty related parameter for convergence (PD_TV specific).</span>
+<span class="sd">        _regularisation_['methodTV'] (int): 0/1 - TV specific isotropic/anisotropic choice.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: A tuple with three populated dictionaries (_data_, _algorithm_, _regularisation_).</span>
+<span class="sd">    """</span>
+    <span class="n">correct_labels_order</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"detY"</span><span class="p">,</span> <span class="s2">"angles"</span><span class="p">,</span> <span class="s2">"detX"</span><span class="p">]</span>
+    <span class="n">correct_labels_order2D</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"angles"</span><span class="p">,</span> <span class="s2">"detX"</span><span class="p">]</span>
+    <span class="n">data2dinput</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># -------- dealing with _data_ dictionary ------------</span>
+    <span class="k">if</span> <span class="n">_data_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s2">"The data dictionary must be provided"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"projection_data"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s2">"'projection_data' must be provided"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data_fidelity"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_fidelity"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"LS"</span>
+    <span class="k">if</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_fidelity"</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"LS"</span><span class="p">,</span> <span class="s2">"PWLS"</span><span class="p">,</span> <span class="s2">"KL"</span><span class="p">,</span> <span class="s2">"SWLS"</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"_data_['data_fidelity'] should be provided as 'LS', 'PWLS', 'SWLS' or 'KL'."</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_fidelity"</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"PWLS"</span><span class="p">,</span> <span class="s2">"SWLS"</span><span class="p">]</span>
+        <span class="ow">and</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"projection_raw_data"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"For 'PWLS' and 'SWLS' data terms, 'projection_raw_data' must be provided (same dimension as 'projection_data')"</span>
+        <span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">data_fidelity</span> <span class="o">=</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_fidelity"</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_data"</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">data2dinput</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="s2">"data_axes_labels_order"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+        <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_axes_labels_order"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_axes_labels_order"</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">data2dinput</span><span class="p">:</span>
+            <span class="n">correct_labels_order</span> <span class="o">=</span> <span class="n">correct_labels_order2D</span>
+
+        <span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_data"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_data"</span><span class="p">],</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_axes_labels_order"</span><span class="p">],</span>
+            <span class="n">correct_labels_order</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"projection_raw_data"</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_raw_data"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data_dims_swapper</span><span class="p">(</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_raw_data"</span><span class="p">],</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_axes_labels_order"</span><span class="p">],</span>
+                <span class="n">correct_labels_order</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="c1"># we need to reset the swap option here as the data already been modified so we don't swap it again in the method itself</span>
+        <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_axes_labels_order"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">data2dinput</span><span class="p">:</span>
+        <span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_data"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_data"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"projection_raw_data"</span> <span class="ow">in</span> <span class="n">_data_</span><span class="p">:</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_raw_data"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span>
+                <span class="n">_data_</span><span class="p">[</span><span class="s2">"projection_raw_data"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+            <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">_data_</span><span class="p">[</span><span class="s2">"data_fidelity"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"SWLS"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">_data_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"beta_SWLS"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_data_</span><span class="p">[</span><span class="s2">"beta_SWLS"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">OS_number</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">method_run</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"SIRT"</span><span class="p">,</span> <span class="s2">"CGLS"</span><span class="p">,</span> <span class="s2">"Landweber"</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span>
+                <span class="s2">"There is no ordered-subsets implementation for this reconstruction method, please set OS_number=None"</span>
+            <span class="p">)</span>
+
+    <span class="c1"># ----------  dealing with _algorithm_  --------------</span>
+    <span class="k">if</span> <span class="n">_algorithm_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_algorithm_</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"SIRT"</span><span class="p">,</span> <span class="s2">"CGLS"</span><span class="p">,</span> <span class="s2">"power"</span><span class="p">,</span> <span class="s2">"Landweber"</span><span class="p">,</span> <span class="s2">"OSEM"</span><span class="p">]:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"lipschitz_const"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># bypass Lipshitz const calculation</span>
+        <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"iterations"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">"SIRT"</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+            <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">"CGLS"</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30</span>
+            <span class="k">if</span> <span class="n">method_run</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"power"</span><span class="p">}:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">15</span>
+            <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">"Landweber"</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1500</span>
+        <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tau_step_lanweber"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"tau_step_lanweber"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-05</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">"OSEM"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"iterations"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">OS_number</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">15</span>  <span class="c1"># Ordered - Subsets</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">300</span>  <span class="c1"># Classical</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">"FISTA"</span><span class="p">:</span>
+        <span class="c1"># default iterations number for FISTA reconstruction algorithm</span>
+        <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"iterations"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">OS_number</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">20</span>  <span class="c1"># Ordered - Subsets</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">400</span>  <span class="c1"># Classical</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="o">==</span> <span class="s2">"ADMM"</span><span class="p">:</span>
+        <span class="c1"># ADMM -algorithm  augmented Lagrangian parameter</span>
+        <span class="k">if</span> <span class="n">_algorithm_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"iterations"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">OS_number</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># Ordered - Subsets</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">400</span>  <span class="c1"># Classical</span>
+        <span class="k">if</span> <span class="s2">"ADMM_rho_const"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+            <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"ADMM_rho_const"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="c1"># ADMM over-relaxation parameter to accelerate convergence</span>
+        <span class="k">if</span> <span class="s2">"ADMM_relax_par"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+            <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"ADMM_relax_par"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.6</span>
+    <span class="c1"># initialise an algorithm with an array</span>
+    <span class="k">if</span> <span class="s2">"initialise"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"initialise"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># ENABLE or DISABLE the nonnegativity for algorithm</span>
+    <span class="k">if</span> <span class="s2">"nonnegativity"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"nonnegativity"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"nonnegativity"</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"_algorithm_['nonnegativity'] should be set to True or False."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"nonnegativity"</span><span class="p">]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nonneg_regul</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># enable nonnegativity for regularisers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nonneg_regul</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># disable nonnegativity for regularisers</span>
+    <span class="k">if</span> <span class="s2">"recon_mask_radius"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"recon_mask_radius"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="c1"># tolerance to stop OUTER algorithm iterations earlier</span>
+    <span class="k">if</span> <span class="s2">"tolerance"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"tolerance"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">if</span> <span class="s2">"verbose"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_algorithm_</span><span class="p">:</span>
+        <span class="n">_algorithm_</span><span class="p">[</span><span class="s2">"verbose"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># ----------  deal with _regularisation_  --------------</span>
+    <span class="k">if</span> <span class="n">_regularisation_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_regularisation_</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">_regularisation_</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">"method"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">method_run</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"FISTA"</span><span class="p">,</span> <span class="s2">"ADMM"</span><span class="p">,</span> <span class="s2">"OSEM"</span><span class="p">]:</span>
+        <span class="c1"># regularisation parameter  (main)</span>
+        <span class="k">if</span> <span class="s2">"regul_param"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">"regul_param"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.001</span>
+        <span class="c1"># set the number of inner (regularisation) iterations</span>
+        <span class="k">if</span> <span class="s2">"iterations"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">"iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">150</span>
+        <span class="c1"># tolerance to stop inner regularisation iterations prematurely</span>
+        <span class="k">if</span> <span class="s2">"tolerance"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">"tolerance"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c1"># time marching step to ensure convergence for gradient based methods: ROF_TV, LLT_ROF,  NDF, Diff4th</span>
+        <span class="k">if</span> <span class="s2">"time_marching_step"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">"time_marching_step"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.005</span>
+        <span class="c1"># Primal-dual parameter for convergence (TGV specific)</span>
+        <span class="k">if</span> <span class="s2">"PD_LipschitzConstant"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">"PD_LipschitzConstant"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">12.0</span>
+        <span class="k">if</span> <span class="s2">"methodTV"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">"methodTV"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># choose the type of the device for the regulariser</span>
+        <span class="k">if</span> <span class="s2">"device_regulariser"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_regularisation_</span><span class="p">:</span>
+            <span class="n">_regularisation_</span><span class="p">[</span><span class="s2">"device_regulariser"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">_data_</span><span class="p">,</span> <span class="n">_algorithm_</span><span class="p">,</span> <span class="n">_regularisation_</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Daniil Kazantsev
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Diamond Light Source and Manchester University, UK.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Sep 12, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
