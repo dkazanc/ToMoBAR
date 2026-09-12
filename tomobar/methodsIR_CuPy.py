@@ -21,7 +21,7 @@ except ImportError:
     )
 import astra
 
-from tomobar.supp.funcs import _data_dims_swapper
+from tomobar.supp.funcs import _data_dims_swapper, _validate_ordsub_number
 from tomobar.supp.suppTools import (
     check_kwargs,
     perform_recon_crop,
@@ -43,11 +43,16 @@ class RecToolsIRCuPy:
         DetectorsDimH (int): Horizontal detector dimension size.
         DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
         DetectorsDimV (int, None): Vertical detector dimension size, 'None' for 2D or an integer for 3D
-        CenterRotOffset (float, np.ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        CenterRotOffset (float, ndarray): Detector displacement for ASTRA methods,
+            in pixels. None means zero; a scalar or (n_angles,) array gives
+            horizontal offsets. For 3D, (n_angles, 2) gives horizontal/vertical
+            pairs. Positive offsets move the detector along its column/row
+            directions; vertical is world +Z for the current CT geometry.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): The size of the reconstructed object (a slice) defined as [recon_size, recon_size].
         device_projector (int, optional): Provide a GPU index of a specific GPU device. Defaults to 0.
-        OS_number (int, optional): The number of ordered-subset, set to None for non-OS reconstruction
+        OS_number (int, optional): Number of ordered subsets, from 1 to the
+            number of views. None or 1 selects non-OS reconstruction.
     """
 
     def __init__(
@@ -67,6 +72,7 @@ class RecToolsIRCuPy:
             int
         ] = None,  # The number of ordered-subset, set to None for non-OS reconstruction
     ):
+        self._angles_count = len(AnglesVec)
         self.OS_number = OS_number
 
         if DetectorsDimH_pad == 0:
@@ -100,10 +106,7 @@ class RecToolsIRCuPy:
 
     @OS_number.setter
     def OS_number(self, OS_number_val):
-        if OS_number_val is not None:
-            self._OS_number = OS_number_val
-        else:
-            self._OS_number = 1
+        self._OS_number = _validate_ordsub_number(OS_number_val, self._angles_count)
 
     @property
     def objsize_user_given(self) -> int:
@@ -342,15 +345,16 @@ class RecToolsIRCuPy:
             # OS approach
             y = self.Atools._forwprojOSCuPy(x1, 0)
             if _data_["data_fidelity"] == "PWLS":
+                # y and w already contain only subset zero's views.
                 w = cp.ones_like(y)
-                y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
+                y = cp.multiply(w, y)
             for _ in range(power_iterations):
                 x1 = self.Atools._backprojOSCuPy(y, 0)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
                 y = self.Atools._forwprojOSCuPy(x1, 0)
                 if _data_["data_fidelity"] == "PWLS":
-                    y = cp.multiply(w[:, self.Atools.newInd_Vec[0, :], :], y)
+                    y = cp.multiply(w, y)
         return float(s)
 
     def __common_initialisation(
@@ -465,9 +469,7 @@ class RecToolsIRCuPy:
 
             for sub_ind in range(self.OS_number):
                 # select a specific set of indeces for the subset (OS)
-                indVec = self.Atools.newInd_Vec[sub_ind, :]
-                if indVec[self.Atools.NumbProjBins - 1] == 0:
-                    indVec = indVec[:-1]  # shrink vector size
+                indVec = self.Atools.subset_indices[sub_ind]
 
                 proj_data[sub_ind] = _data_upd_["projection_data"][:, indVec, :]
                 weights[sub_ind] = None if w is None else w[:, indVec, :]
@@ -567,9 +569,7 @@ class RecToolsIRCuPy:
 
             for sub_ind in range(self.OS_number):
                 # select a specific set of indeces for the subset (OS)
-                indVec = self.Atools.newInd_Vec[sub_ind, :]
-                if indVec[self.Atools.NumbProjBins - 1] == 0:
-                    indVec = indVec[:-1]  # shrink vector size
+                indVec = self.Atools.subset_indices[sub_ind]
 
                 proj_data[sub_ind] = _data_upd_["projection_data"][:, indVec, :]
                 weights[sub_ind] = None if w is None else w[:, indVec, :]
@@ -701,9 +701,7 @@ class RecToolsIRCuPy:
             normalisation = cp.clip(normalisation, eps, None)
             normalisation /= 1
         else:
-            indVec = self.Atools.newInd_Vec[0, :]
-            if indVec[self.Atools.NumbProjBins - 1] == 0:
-                indVec = indVec[:-1]  # shrink vector size
+            indVec = self.Atools.subset_indices[0]
             normalisation = self._Atb(
                 cp.ones_like(proj_data[:, indVec, :], dtype=cp.float32, order="C"),
                 0,
@@ -717,9 +715,7 @@ class RecToolsIRCuPy:
             for sub_ind in range(self.OS_number):
                 if use_os:
                     # select a specific set of indeces for the subset (OS)
-                    indVec = self.Atools.newInd_Vec[sub_ind, :]
-                    if indVec[self.Atools.NumbProjBins - 1] == 0:
-                        indVec = indVec[:-1]  # shrink vector size
+                    indVec = self.Atools.subset_indices[sub_ind]
                     proj_data = _data_upd_["projection_data"][:, indVec, :]
 
                 Ax = self._Ax(x, sub_ind, use_os)

@@ -53,7 +53,6 @@ class AstraTools2D(AstraBase):
                     )
                 )
         else:
-            super()._setOS_indices()
             super()._set_projection2d_OS_parallel_geometry()
             if verbosity:
                 print(

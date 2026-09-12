@@ -11,7 +11,11 @@ import scipy.fftpack
 
 from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
-from tomobar.supp.funcs import _data_dims_swapper, _parse_device_argument
+from tomobar.supp.funcs import (
+    _transpose_data_axes,
+    _resolve_data_axes,
+    _parse_device_argument,
+)
 from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 
 
@@ -22,7 +26,11 @@ class RecToolsDIR:
         DetectorsDimH (int): Horizontal detector dimension.
         DetectorsDimH_pad (int): Padding size of horizontal detector
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
-        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        CenterRotOffset (float, ndarray): Detector displacement for ASTRA methods,
+            in pixels. None means zero; a scalar or (n_angles,) array gives
+            horizontal offsets. For 3D, (n_angles, 2) gives horizontal/vertical
+            pairs. Positive offsets move the detector along its column/row
+            directions; vertical is world +Z for the current CT geometry.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): Reconstructed object dimensions (a scalar).
         device_projector (str, int, optional): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
@@ -68,64 +76,70 @@ class RecToolsDIR:
                     GPUdevice_index,
                 )
 
-    def FORWPROJ(self, data: np.ndarray, **kwargs) -> np.ndarray:
+    def FORWPROJ(self, data: np.ndarray, *, output_axes=None, **kwargs) -> np.ndarray:
         """Module to perform forward projection of 2d/3d data numpy array
 
         Args:
             data (np.ndarray): 2D or 3D object
 
         Keyword Args:
-            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the OUTPUT data.
+            output_axes (list or tuple, optional): Explicit projection axis order.
+                Uses the default below when omitted. Conflicting aliases raise ValueError.
+            data_axes_labels_order (list or tuple, optional): Legacy alias for output_axes.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
 
         Returns:
             np.ndarray: Forward projected numpy array (projection data)
         """
+        native_axes = (
+            ("angles", "detX") if self.geom == "2D" else ("detY", "angles", "detX")
+        )
+        axes = _resolve_data_axes(
+            output_axes, kwargs.get("data_axes_labels_order"), native_axes
+        )
         projected = self.Atools._forwproj(data)
-        for key, value in kwargs.items():
-            if key == "data_axes_labels_order" and value is not None:
-                if self.geom == "2D":
-                    projected = _data_dims_swapper(projected, value, ["angles", "detX"])
-                else:
-                    projected = _data_dims_swapper(
-                        projected, value, ["detY", "angles", "detX"]
-                    )
+        return _transpose_data_axes(
+            projected, source_axes=native_axes, target_axes=axes
+        )
 
-        return projected
-
-    def BACKPROJ(self, data: np.ndarray, **kwargs) -> np.ndarray:
+    def BACKPROJ(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
         """Module to perform back-projection of 2d/3d data numpy array
 
         Args:
             data (np.ndarray): 2D/3D projection data
 
         Keyword Args:
-            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
+            input_axes (list or tuple, optional): Explicit projection axis order.
+                Uses the default below when omitted. Conflicting aliases raise ValueError.
+            data_axes_labels_order (list or tuple, optional): Legacy alias for input_axes.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
 
         Returns:
             np.ndarray: Backprojected 2D/3D object
         """
-        for key, value in kwargs.items():
-            if key == "data_axes_labels_order" and value is not None:
-                if self.geom == "2D":
-                    data = _data_dims_swapper(data, value, ["angles", "detX"])
-                else:
-                    data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+        native_axes = (
+            ("angles", "detX") if self.geom == "2D" else ("detY", "angles", "detX")
+        )
+        axes = _resolve_data_axes(
+            input_axes, kwargs.get("data_axes_labels_order"), native_axes
+        )
+        data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
 
         data = _apply_horiz_detector_padding(
             data, self.Atools.detectors_x_pad, cupyrun=False
         )
         return self.Atools._backproj(data)
 
-    def FBP(self, data: np.ndarray, **kwargs) -> np.ndarray:
+    def FBP(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
         """Filtered backprojection reconstruction module for 2D or 3D data.
 
         Args:
             data (np.ndarray): 2D or 3D projection data.
 
         Keyword Args:
-            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
+            input_axes (list or tuple, optional): Explicit projection axis order.
+                Uses the default below when omitted. Conflicting aliases raise ValueError.
+            data_axes_labels_order (list or tuple, optional): Legacy alias for input_axes.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
             filter_type (str) : type of projection filter, see https://astra-toolbox.com/docs/algs/FBP_CUDA.html for all available options
             filter_parameter (float) : Parameter value for the 'tukey', 'gaussian', 'blackman' and 'kaiser' filter types (see ASTRA's API).
@@ -134,12 +148,14 @@ class RecToolsDIR:
         Returns:
             np.ndarray: FBP reconstructed 2D or 3D object.
         """
+        native_axes = (
+            ("angles", "detX") if self.geom == "2D" else ("detY", "angles", "detX")
+        )
+        axes = _resolve_data_axes(
+            input_axes, kwargs.get("data_axes_labels_order"), native_axes
+        )
+        data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
         for key, value in kwargs.items():
-            if key == "data_axes_labels_order" and value is not None:
-                if self.geom == "2D":
-                    data = _data_dims_swapper(data, value, ["angles", "detX"])
-                else:
-                    data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
             if key == "filter_type":
                 self.Atools.fbp_filter_type = value
             if key == "filter_parameter":
@@ -174,7 +190,7 @@ class RecToolsDIR:
                 self.Atools._backproj(_filtersinc3D(data)), **kwargs
             )  # 3D FBP reconstruction using customised SINC filter
 
-    def FOURIER(self, data: np.ndarray, **kwargs) -> np.ndarray:
+    def FOURIER(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
         """2D Reconstruction using Fourier slice theorem (scipy required)
         for griddata interpolation module choose nearest, linear or cubic
 
@@ -182,21 +198,26 @@ class RecToolsDIR:
             data (np.ndarray): 2D sinogram data
 
         Keyword Args:
-            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
-                 When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
+            input_axes (list or tuple, optional): Explicit projection axis order.
+                Uses the default below when omitted. Conflicting aliases raise ValueError.
+            data_axes_labels_order (list or tuple, optional): Legacy alias for input_axes.
+                 Defaults to ["angles", "detX"] for this 2D method.
             method (str, optional): Interpolation type (nearest, linear, or cubic). Defaults to "linear".
 
         Returns:
             np.ndarray: Reconstructed object
         """
+        native_axes = ("angles", "detX")
+        axes = _resolve_data_axes(
+            input_axes, kwargs.get("data_axes_labels_order"), native_axes
+        )
+        data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
         if data.ndim == 3:
             raise ValueError(
                 "Fourier method is currently for 2D data only, use FBP if 3D reconstruction needed"
             )
 
         for key, value in kwargs.items():
-            if key == "data_axes_labels_order" and value is not None:
-                data = _data_dims_swapper(data, value, ["angles", "detX"])
             if key == "method":
                 if value not in ["linear", "nearest", "cubic"]:
                     raise ValueError(

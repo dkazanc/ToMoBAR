@@ -29,7 +29,6 @@ for mod_name in MOCK_MODULES:
 
 autodoc_mock_imports = [
     "astra",
-    "astra.experimental",
     "cupy",
     "cupyx",
     "cupyx.scipy",
