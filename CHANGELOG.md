@@ -2,7 +2,7 @@
 
 ## v.2026.4.0.0
 
-Replaced GPULink and experimental calls with public DLPack methods (only available in  ASTRA toolbox version 2.5 ). Pinning ASTRA toolbox to 2.5 or newer.
+Replaced GPULink and experimental calls with public DLPack methods (only available in ASTRA toolbox version 2.5). Pinning ASTRA toolbox to 2.5 or newer.
 Various minor fixes and patches.
 
 ## v.2026.3.1.0
