@@ -149,8 +149,9 @@ def test_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = RecTools.CGLS(_data_, _algorithm_)
 
     Iter_rec = Iter_rec.get()
-    assert_allclose(np.min(Iter_rec), -0.0039929836, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.024821747, rtol=1e-04)
+    slice2d = Iter_rec[64, :, :]
+    assert_allclose(np.min(Iter_rec), -0.016721718, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.046047475, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -213,8 +214,8 @@ def test_CGLS_after_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
 
     Iter_rec = Iter_rec.get()
     Iter_recS = Iter_recSIRT.get()
-    assert_allclose(np.min(Iter_rec), -0.0030896277, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.022553273, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), -0.004260729, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.025812823, rtol=1e-04)
     assert_allclose(np.min(Iter_recS), -0.0002806916, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)

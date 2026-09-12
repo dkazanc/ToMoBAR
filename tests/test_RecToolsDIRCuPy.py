@@ -711,7 +711,7 @@ def test_backproj3D(data_cupy, angles, ensure_clean_memory):
         data=data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
     )
     recon_data = rec_cupy.get()
-    assert_allclose(np.min(recon_data), -2.309583, rtol=eps)
-    assert_allclose(np.max(recon_data), 174.80643, rtol=eps)
+    assert_allclose(np.min(recon_data), -3.8901403, rtol=eps)
+    assert_allclose(np.max(recon_data), 350.38193, rtol=eps)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)

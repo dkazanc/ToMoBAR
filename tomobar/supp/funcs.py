@@ -18,10 +18,53 @@ except ImportError:
     import numpy as xp
 
 
+def _validate_ordsub_number(value, n_angles):
+    """Normalize None to one; subsets must be nonempty integer partitions."""
+    if value is None:
+        value = 1
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
+        raise TypeError("The number of ordered subsets must be an integer")
+    if not 1 <= value <= n_angles:
+        raise ValueError(
+            f"The number of ordered subsets must be between 1 and {n_angles}"
+        )
+    return int(value)
+
+
+def _normalise_center_rot_offset(offset, n_angles, *, is_3d):
+    """Validate detector offsets, retaining scalar and per-view representations.
+
+    None means zero. A scalar or (n_angles,) array specifies horizontal
+    displacement; 3D additionally accepts (n_angles, 2) horizontal/vertical
+    pairs. Values are finite, real numbers in geometry length units (pixels
+    for ToMoBAR's unit detector spacing). A length-two vector always means
+    two horizontal offsets, never a constant horizontal/vertical pair.
+    """
+    if offset is None:
+        return 0.0
+    values = np.asarray(offset)
+    if values.dtype.kind not in "iuf":
+        raise TypeError("CenterRotOffset must contain real numeric values")
+    allowed_shapes = [(), (n_angles,)]
+    if is_3d:
+        allowed_shapes.append((n_angles, 2))
+    if values.shape not in allowed_shapes:
+        raise ValueError(
+            f"CenterRotOffset must have shape {allowed_shapes}, got {values.shape}"
+        )
+    values = np.array(values, dtype=np.float64, copy=True)
+    if not np.all(np.isfinite(values)):
+        raise ValueError("CenterRotOffset must contain only finite values")
+    return float(values) if values.ndim == 0 else values
+
+
 # define a 2D vector geometry
 def _vec_geom_init2D(
     angles_rad: np.ndarray, CenterRotOffset: Union[float, List]
 ) -> np.ndarray:
+    CenterRotOffset = _normalise_center_rot_offset(
+        CenterRotOffset, angles_rad.size, is_3d=False
+    )
     DetectorSpacingX = 1.0
     s0 = [0.0, -1.0]  # source
     u0 = [DetectorSpacingX, 0.0]  # detector coordinates
@@ -43,6 +86,15 @@ def _vec_geom_init2D(
 
 # define 3D vector geometry
 def _vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOffset):
+    """Build 3D vectors from scalar, (n,) horizontal or (n, 2) H/V offsets.
+
+    Positive horizontal displacement follows the detector column direction;
+    positive vertical displacement follows detector rows (world +Z for CT).
+    Offsets are geometry lengths, independent of the detector pixel spacing.
+    """
+    CenterRotOffset = _normalise_center_rot_offset(
+        CenterRotOffset, angles_rad.size, is_3d=True
+    )
     s0 = [0.0, -1.0, 0.0]  # source
     u0 = [DetectorSpacingX, 0.0, 0.0]  # detector coordinates
     v0 = [0.0, 0.0, DetectorSpacingY]  # detector coordinates
@@ -51,6 +103,8 @@ def _vec_geom_init3D(angles_rad, DetectorSpacingX, DetectorSpacingY, CenterRotOf
     for i in range(0, angles_rad.size):
         if np.ndim(CenterRotOffset) == 0:
             d0 = [CenterRotOffset, 0.0, 0.0]  # detector
+        elif np.ndim(CenterRotOffset) == 1:
+            d0 = [CenterRotOffset[i], 0.0, 0.0]  # horizontal offset per view
         else:
             d0 = [CenterRotOffset[i, 0], 0.0, CenterRotOffset[i, 1]]  # detector
         theta = angles_rad[i]
@@ -93,6 +147,54 @@ def __get_swap_tuple(data_axis_labels, labels_order):
     return swap_tuple
 
 
+def _axis_permutation(source_axes, target_axes):
+    """Return source-to-target indices for a complete 2D/3D projection layout."""
+    for name, axes in (("source_axes", source_axes), ("target_axes", target_axes)):
+        if not isinstance(axes, (list, tuple)) or not all(
+            isinstance(axis, str) for axis in axes
+        ):
+            raise ValueError(f"{name} must be a list or tuple of axis labels")
+        if len(axes) not in (2, 3) or len(set(axes)) != len(axes):
+            raise ValueError(f"{name} must contain two or three unique axis labels")
+        expected = {"angles", "detX"} if len(axes) == 2 else {"detY", "angles", "detX"}
+        if set(axes) != expected:
+            raise ValueError(f"{name} must contain exactly {sorted(expected)}")
+    if len(source_axes) != len(target_axes):
+        raise ValueError("Source and target axes must have the same length")
+    return tuple(source_axes.index(axis) for axis in target_axes)
+
+
+def _transpose_data_axes(data, *, source_axes, target_axes):
+    """Reorder NumPy/CuPy arrays or estimator shape tuples without copying."""
+    permutation = _axis_permutation(source_axes, target_axes)
+    ndim = len(data) if isinstance(data, tuple) else data.ndim
+    if ndim != len(permutation):
+        raise ValueError(
+            f"Axis labels describe {len(permutation)} dimensions, got {ndim}"
+        )
+    if permutation == tuple(range(ndim)):
+        return data
+    if isinstance(data, tuple):
+        return tuple(data[index] for index in permutation)
+    return data.transpose(permutation)
+
+
+def _resolve_data_axes(explicit_axes, legacy_axes, default_axes):
+    """Resolve explicit input/output axes and the legacy keyword consistently."""
+    if explicit_axes is not None:
+        _axis_permutation(explicit_axes, default_axes)
+    if legacy_axes is not None:
+        _axis_permutation(legacy_axes, default_axes)
+    if explicit_axes is not None and legacy_axes is not None:
+        if tuple(explicit_axes) != tuple(legacy_axes):
+            raise ValueError("Conflicting axis orders in explicit and legacy keywords")
+    return (
+        explicit_axes
+        if explicit_axes is not None
+        else (legacy_axes if legacy_axes is not None else default_axes)
+    )
+
+
 def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
     """A module to ensure that the input tomographic data is prepeared for reconstruction
     in the axes order required.
@@ -105,10 +207,7 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
         list: A list of two tuples for input data swaping axis. If both are None, then no swapping needed.
     """
 
-    if len(data_axes_labels) != len(required_labels_order):
-        raise ValueError(
-            "Warning: The mismatch in length between provided labels and data dimensions."
-        )
+    _axis_permutation(data_axes_labels, required_labels_order)
     swap_tuple2 = None
     # check if the labels names are the accepted ones
     for str_1 in data_axes_labels:
@@ -116,7 +215,7 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
             raise ValueError(
                 f'Axis title "{str_1}" is not valid, please use one of these: "angles", "detX", or "detY"'
             )
-    data_axes_labels_copy = data_axes_labels.copy()
+    data_axes_labels_copy = list(data_axes_labels)
 
     # check the order and produce a swapping tuple if needed
     swap_tuple1 = __get_swap_tuple(data_axes_labels_copy, required_labels_order)
@@ -200,7 +299,6 @@ def _data_dims_swapper(
     Returns:
         xp.ndarray: An array with swapped (or not) axes.
     """
-    data_swap_list = _swap_data_axes_to_accepted(
-        data_axes_labels_order, required_labels_order
+    return _transpose_data_axes(
+        data, source_axes=data_axes_labels_order, target_axes=required_labels_order
     )
-    return _data_swap(data, data_swap_list)

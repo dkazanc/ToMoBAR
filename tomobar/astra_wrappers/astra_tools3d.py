@@ -21,6 +21,11 @@ class AstraTools3D(AstraBase):
 
     Args:
         AstraBase (class): the inherited base class.
+
+    ``centre_of_rotation`` accepts None (zero), a scalar horizontal offset,
+    an (n_angles,) sequence of horizontal offsets, or an (n_angles, 2) array
+    of horizontal/vertical pairs. Values must be finite and real, in pixels.
+    A length-two sequence denotes two views, not a constant H/V pair.
     """
 
     def __init__(
@@ -66,7 +71,6 @@ class AstraTools3D(AstraBase):
                     )
                 )
         else:
-            super()._setOS_indices()
             super()._set_projection3d_OS_parallel_geometry()
             if verbosity:
                 print(

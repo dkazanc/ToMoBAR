@@ -36,12 +36,12 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "numpy==2.4.*",
-    "cupy==14.0.*",
-    "astra-toolbox==2.4.*",
+    "numpy>=2",
+    "cupy>=14",
+    "astra-toolbox>=2",
     "scipy",
     "pillow",
-    "scikit-image"
+    "scikit-image",
 ]
 
 [project.optional-dependencies]

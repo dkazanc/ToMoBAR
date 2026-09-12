@@ -14,7 +14,7 @@ from cupyx.scipy.fftpack import get_fft_plan
 
 from tomobar.supp.memory_estimator_helpers import DeviceMemStack
 from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
-from tomobar.supp.funcs import _data_dims_swapper
+from tomobar.supp.funcs import _transpose_data_axes, _resolve_data_axes
 from tomobar.fourier import _filtersinc3D_cupy, calc_filter
 from tomobar.cuda_kernels import load_cuda_module
 
@@ -30,7 +30,12 @@ class RecToolsDIRCuPy(RecToolsDIR):
         DetectorsDimH (int): Horizontal detector dimension.
         DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
         DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
-        CenterRotOffset (float, ndarray): The Centre of Rotation (CoR) scalar or a vector for each angle.
+        CenterRotOffset (float, ndarray): Detector displacement for ASTRA methods,
+            in pixels. None means zero; a scalar or (n_angles,) array gives
+            horizontal offsets. For 3D, (n_angles, 2) gives horizontal/vertical
+            pairs. Positive offsets move the detector along its column/row
+            directions; vertical is world +Z for the current CT geometry.
+            FOURIER_INV currently requires a scalar horizontal offset.
         AnglesVec (np.ndarray): Vector of projection angles in radians.
         ObjSize (int): Reconstructed object dimensions (a scalar).
         device_projector (int): An index (integer) of a specific GPU device.
@@ -67,51 +72,61 @@ class RecToolsDIRCuPy(RecToolsDIR):
         # if DetectorsDimV == 0 or DetectorsDimV is None:
         #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
 
-    def FORWPROJ(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
+    def FORWPROJ(self, data: cp.ndarray, *, output_axes=None, **kwargs) -> cp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
 
         Args:
             data (cp.ndarray): 2D or 3D object as a cupy array
 
         Keyword Args:
-            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the OUTPUT data.
+            output_axes (list or tuple, optional): Explicit projection axis order.
+                Uses the default below when omitted. Conflicting aliases raise ValueError.
+            data_axes_labels_order (list or tuple, optional): Legacy alias for output_axes.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
 
         Returns:
             cp.ndarray: Forward projected cupy array (projection data)
         """
+        native_axes = (
+            ("angles", "detX") if self.geom == "2D" else ("detY", "angles", "detX")
+        )
+        axes = _resolve_data_axes(
+            output_axes, kwargs.get("data_axes_labels_order"), native_axes
+        )
         projected = self.Atools._forwprojCuPy(data)
-        for key, value in kwargs.items():
-            if key == "data_axes_labels_order" and value is not None:
-                projected = _data_dims_swapper(
-                    projected, value, ["detY", "angles", "detX"]
-                )
+        return _transpose_data_axes(
+            projected, source_axes=native_axes, target_axes=axes
+        )
 
-        return projected
-
-    def BACKPROJ(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
+    def BACKPROJ(self, data: cp.ndarray, *, input_axes=None, **kwargs) -> cp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
 
         Args:
             data (cp.ndarray): 2D/3D projection data as a cupy array
 
         Keyword Args:
-            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
+            input_axes (list or tuple, optional): Explicit projection axis order.
+                Uses the default below when omitted. Conflicting aliases raise ValueError.
+            data_axes_labels_order (list or tuple, optional): Legacy alias for input_axes.
                  When "None" we assume  ["angles", "detX"] for 2D and ["detY", "angles", "detX"] for 3D.
 
         Returns:
             cp.ndarray: Backprojected 2D/3D object
         """
-        for key, value in kwargs.items():
-            if key == "data_axes_labels_order" and value is not None:
-                data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
+        native_axes = (
+            ("angles", "detX") if self.geom == "2D" else ("detY", "angles", "detX")
+        )
+        axes = _resolve_data_axes(
+            input_axes, kwargs.get("data_axes_labels_order"), native_axes
+        )
+        data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
 
         data = _apply_horiz_detector_padding(
             data, self.Atools.detectors_x_pad, cupyrun=True
         )
         return self.Atools._backprojCuPy(data)
 
-    def FBP(self, data: cp.ndarray, **kwargs) -> cp.ndarray:
+    def FBP(self, data: cp.ndarray, *, input_axes=None, **kwargs) -> cp.ndarray:
         """Filtered backprojection reconstruction on a CuPy array using a custom built SINC filter.
            See more about the method `here <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/FBP3d_tomobar.html>`__.
 
@@ -119,22 +134,27 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data (cp.ndarray): projection data as a CuPy array
 
         Keyword Args:
-            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
-                 When "None" we assume  ["angles", "detX"] for 2D and ["angles", "detY", "detX"] for 3D.
+            input_axes (list or tuple, optional): Explicit projection axis order.
+                Uses the default below when omitted. Conflicting aliases raise ValueError.
+            data_axes_labels_order (list or tuple, optional): Legacy alias for input_axes.
+                 Defaults to ["angles", "detY", "detX"] for this 3D method.
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
             cutoff_freq (float): Cutoff frequency parameter for the sinc filter. Defaults to 0.35.
 
         Returns:
             cp.ndarray: The FBP reconstructed volume as a CuPy array.
         """
+        native_axes = ("angles", "detY", "detX")
+        axes = _resolve_data_axes(
+            input_axes, kwargs.get("data_axes_labels_order"), native_axes
+        )
+        data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
 
         cupyrun = True
         kwargs.update({"cupyrun": cupyrun})  # needed for agnostic array cropping
         cutoff_freq = 0.35  # default value
 
         for key, value in kwargs.items():
-            if key == "data_axes_labels_order" and value is not None:
-                data = _data_dims_swapper(data, value, ["angles", "detY", "detX"])
             if key == "cutoff_freq" and value is not None:
                 cutoff_freq = value
 
@@ -150,7 +170,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         return check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(
-        self, data: cp.ndarray | Tuple[int, int, int], **kwargs
+        self, data: cp.ndarray | Tuple[int, int, int], *, input_axes=None, **kwargs
     ) -> cp.ndarray:
         """Fourier direct inversion in 3D on unequally spaced (also called as NonUniform FFT/NUFFT) grids using CuPy array as an input, see more in
         [NIKITIN2017]_. This implementation is originated from V. Nikitin's CUDA-C implementation:
@@ -162,8 +182,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
             data (cp.ndarray): projection data as a CuPy array
 
         Keyword Args:
-            data_axes_labels_order (Union[list, None], optional): The order of the axes labels for the input data.
-                        When "None" we assume  ["angles", "detX"] for 2D and ["angles", "detY", "detX"] for 3D.
+            input_axes (list or tuple, optional): Explicit projection axis order.
+                Uses the default below when omitted. Conflicting aliases raise ValueError.
+            data_axes_labels_order (list or tuple, optional): Legacy alias for input_axes.
+                 Defaults to ["detY", "angles", "detX"] for this 3D method,
+                 including shape tuples supplied to the memory estimator.
             recon_mask_radius (float): zero values outside the circular mask of a certain radius. To see the effect of the cropping, set the value in the range [0.7-1.0].
             filter_type (str): Filter type, the accepted values are: none, ramp, shepp, cosine, cosine2, hamming, hann, parzen.
             cutoff_freq (float): Cutoff frequency parameter for different filter. The higher values increase resolution and noise.
@@ -171,6 +194,11 @@ class RecToolsDIRCuPy(RecToolsDIR):
         Returns:
             cp.ndarray: The NUFFT reconstructed volume as a CuPy array.
         """
+        native_axes = ("detY", "angles", "detX")
+        axes = _resolve_data_axes(
+            input_axes, kwargs.get("data_axes_labels_order"), native_axes
+        )
+        data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
         cupyrun = True
         kwargs.update({"cupyrun": cupyrun})  # needed for agnostic array cropping
         cutoff_freq = 1.0  # default value
@@ -191,9 +219,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         padding = 0
 
         for key, value in kwargs.items():
-            if key == "data_axes_labels_order" and value is not None:
-                data = _data_dims_swapper(data, value, ["detY", "angles", "detX"])
-            elif key == "center_size" and value is not None:
+            if key == "center_size" and value is not None:
                 center_size = value
             elif key == "block_dim" and value is not None:
                 block_dim = value
