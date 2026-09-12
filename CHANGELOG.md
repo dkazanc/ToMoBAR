@@ -1,5 +1,10 @@
 # Change Log
 
+## v.2026.4.0.0
+
+Replaced GPULink and experimental calls with public DLPack methods (only available in  ASTRA toolbox version 2.5 ). Pinning ASTRA toolbox to 2.5 or newer.
+Various minor fixes and patches.
+
 ## v.2026.3.1.0
 
 Stripe Weighted Least Squares (SWLS) [method](http://ieeexplore.ieee.org/document/7967846/) added to the list of data fidelities. Demo with dendrites (RealData.py) demonstrates the benefit of using such method.

@@ -134,7 +134,6 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         self.array = MockGPUArray(np.ones((2, 3, 4), dtype=np.float32))
         self.output = None
         self.current_device = 0
-        self.link_arguments = []
         cupy = ModuleType("cupy")
         cupy.ndarray = MockGPUArray
         cupy.float32 = np.float32
@@ -158,18 +157,13 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         cupy.ascontiguousarray = Mock(side_effect=self.ascontiguousarray)
         cupy.empty = Mock(side_effect=self.empty)
         self.cupy = cupy
-        experimental = ModuleType("astra.experimental")
-        experimental.direct_FP3D = Mock(side_effect=self.direct)
-        experimental.direct_BP3D = Mock(side_effect=self.direct)
-        pythonutils = ModuleType("astra.pythonutils")
-        pythonutils.GPULink = Mock(side_effect=self.link)
+        self.astra.projector3d.direct_FP = Mock(side_effect=self.direct)
+        self.astra.projector3d.direct_BP = Mock(side_effect=self.direct)
         # Restore sys.modules immediately after importing isolated module objects.
         with patch.dict(
             "sys.modules",
             {
                 "astra": self.astra,
-                "astra.experimental": experimental,
-                "astra.pythonutils": pythonutils,
                 "cupy": cupy,
             },
         ):
@@ -204,12 +198,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         self.output = MockGPUArray(np.empty(shape, dtype=dtype), self.current_device)
         return self.output
 
-    def link(self, *args):
-        self.backend.hit("GPULink")
-        self.link_arguments.append(args)
-        return args
-
-    def direct(self, ident, *args):
+    def direct(self, ident, data, *, out):
         self.backend.hit("direct")
         self.assertIn(ident, self.backend.live["projector3d"])
         prepared = self.prepared()
@@ -221,11 +210,8 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         self.projected_input = prepared.storage.copy()
         self.assertEqual(prepared.device.id, self.current_device)
         self.assertEqual(self.output.device.id, self.current_device)
-        for array in (prepared, self.output):
-            self.assertIn(
-                (array.data.ptr, *array.shape[::-1], array.itemsize * array.shape[2]),
-                args,
-            )
+        self.assertIs(data, prepared)
+        self.assertIs(out, self.output)
         self.assertEqual(
             self.astra.create_projector.call_args.kwargs["options"],
             {"GPUindex": self.current_device},
@@ -402,8 +388,6 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                 wrapper = self.make_wrapper(3, subsets, "gpu")
                 persistent = set(self.backend.live["projector3d"])
                 for failure in (
-                    ("GPULink", 1),
-                    ("GPULink", 2),
                     ("empty", 1),
                     ("projector3d.create", 1),
                     ("direct", 1),
@@ -479,7 +463,6 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                     with self.subTest(forward=forward, dtype=dtype, layout=layout):
                         data = MockGPUArray(storage)
                         before = storage.copy()
-                        self.link_arguments.clear()
                         if forward:
                             result = wrapper.runAstraProj3DCuPy(data, None)
                         else:
@@ -492,13 +475,17 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                         np.testing.assert_array_equal(storage, before)
                         self.assertEqual(result.dtype, np.float32)
                         self.assertTrue(result.flags.c_contiguous)
+                        direct = (
+                            self.astra.projector3d.direct_FP
+                            if forward
+                            else self.astra.projector3d.direct_BP
+                        )
+                        passed_input = direct.call_args.args[1]
+                        self.assertIs(direct.call_args.kwargs["out"], result)
                         if dtype == np.float32 and storage.flags.c_contiguous:
-                            self.assertEqual(self.link_arguments[0][0], data.data.ptr)
+                            self.assertIs(passed_input, data)
                         else:
-                            self.assertNotEqual(
-                                self.link_arguments[0][0], data.data.ptr
-                            )
-                        self.assertEqual(self.link_arguments[0][1:], (4, 3, 2, 16))
+                            self.assertIsNot(passed_input, data)
             wrapper.close()
 
     def test_invalid_gpu_inputs_fail_before_linking_or_allocating(self):

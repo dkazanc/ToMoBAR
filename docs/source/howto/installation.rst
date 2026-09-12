@@ -69,7 +69,7 @@ If one needs to conda-build the package, please follow the steps bellow:
 
 .. code-block:: console
 
-   $ export VERSION=$(date +%Y.%m) # OR set VERSION=2026.3.0.0 for Windows
+   $ export VERSION=$(date +%Y.%m) # OR set VERSION=2026.4.0.0 for Windows
    $ git clone git@github.com/dkazanc/ToMoBAR.git # clone the repo
    $ conda build conda-recipe/
    $ conda install path/to/the/tarball

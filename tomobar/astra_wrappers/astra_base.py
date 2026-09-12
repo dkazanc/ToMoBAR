@@ -15,8 +15,6 @@ from tomobar.supp.funcs import (
     _vec_geom_init2D,
     _vec_geom_init3D,
 )
-from astra.experimental import direct_BP3D, direct_FP3D
-from astra.pythonutils import GPULink
 
 try:
     import cupy as xp
@@ -585,15 +583,10 @@ class AstraBase:
         with xp.cuda.Device(self.device_index):
             return xp.ascontiguousarray(data, dtype=xp.float32)
 
-    @staticmethod
-    def _cupy_link(data):
-        """Link packed float32 storage prepared or allocated by this wrapper."""
-        return GPULink(data.data.ptr, *data.shape[::-1], data.itemsize * data.shape[2])
-
     def runAstraBackproj3DCuPy(
         self, proj_data: xp.ndarray, method: str, os_index: Union[int, None]
     ) -> xp.ndarray:
-        """3d back-projection using ASTRA's GPULink functionality for CuPy arrays
+        """3d back-projection using ASTRA's direct DLPack API for CuPy arrays
 
         Args:
             proj_data (xp.ndarray): Real 3D CuPy array on the configured GPU,
@@ -619,7 +612,6 @@ class AstraBase:
         proj_data = self._prepare_cupy_input(proj_data, proj_geom, "proj_data")
         with xp.cuda.Device(self.device_index), ExitStack() as resources:
             # Keep the normalized input alive until the direct call completes.
-            proj_link = self._cupy_link(proj_data)
             projector_id = astra.create_projector(
                 "cuda3d",
                 proj_geom,
@@ -628,14 +620,13 @@ class AstraBase:
             )
             resources.callback(astra.projector3d.delete, projector_id)
             recon_volume = xp.empty(astra.geom_size(self.vol_geom), dtype=xp.float32)
-            rec_link = self._cupy_link(recon_volume)
-            direct_BP3D(projector_id, rec_link, proj_link)
+            astra.projector3d.direct_BP(projector_id, proj_data, out=recon_volume)
             return recon_volume
 
     def runAstraProj3DCuPy(
         self, volume_data: xp.ndarray, os_index: Union[int, None]
     ) -> xp.ndarray:
-        """3d forward projector using ASTRA's GPULink functionality for CuPy arrays
+        """3d forward projector using ASTRA's direct DLPack API for CuPy arrays
 
         Args:
             volume_data (xp.ndarray): Real 3D CuPy array on the configured GPU,
@@ -660,9 +651,7 @@ class AstraBase:
         )
         with xp.cuda.Device(self.device_index), ExitStack() as resources:
             # Keep the normalized input alive until the direct call completes.
-            volume_link = self._cupy_link(volume_data)
             proj_volume = xp.empty(astra.geom_size(proj_geom), dtype=xp.float32)
-            gpu_link_sino = self._cupy_link(proj_volume)
             projector_id = astra.create_projector(
                 "cuda3d",
                 proj_geom,
@@ -670,5 +659,5 @@ class AstraBase:
                 options={"GPUindex": self.device_index},
             )
             resources.callback(astra.projector3d.delete, projector_id)
-            direct_FP3D(projector_id, volume_link, gpu_link_sino)
+            astra.projector3d.direct_FP(projector_id, volume_data, out=proj_volume)
             return proj_volume
