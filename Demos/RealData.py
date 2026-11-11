@@ -83,6 +83,13 @@ plt.title("FBP reconstruction")
 # fig.savefig('dendr_LogPolar.png', dpi=200)
 # %%
 padding_value = 100
+working_grid = VolumeGeometry(
+    shape=(
+        detectorVert,
+        detectorHoriz + 2 * padding_value,
+        detectorHoriz + 2 * padding_value,
+    )
+)
 
 # Initialise the IR class once here
 # Set scanning geometry parameters and initiate a class object
@@ -92,7 +99,8 @@ RectoolsCuPy = RecToolsIRCuPy(
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=0.0,
     ),
-    volume_geometry=reconstruction_grid,
+    volume_geometry=working_grid,
+    output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
     device_projector=0,
 )
@@ -156,7 +164,8 @@ RectoolsCuPy = RecToolsIRCuPy(
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=0.0,
     ),
-    volume_geometry=reconstruction_grid,
+    volume_geometry=working_grid,
+    output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
     device_projector=0,
     OS_number=6,
@@ -199,7 +208,16 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-PWLS-TV (PD) method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# Warm-start ADMM with FBP on the same reconstruction grid; detector padding does not change that grid.
+# Warm starts use the full working grid, before the iterative output crop.
+with RecToolsDIRCuPy(
+    projection_geometry=RectoolsCuPy.projection_geometry,
+    volume_geometry=working_grid,
+    detector_padding=padding_value,
+    device_projector=0,
+) as warm_start_reconstructor:
+    working_fbp = warm_start_reconstructor.FBP(
+        data_norm_cupy, input_axes=data_labels3D, cutoff_freq=0.3, recon_mask_radius=2.0
+    )
 
 RectoolsCuPy = RecToolsIRCuPy(
     projection_geometry=Parallel3DGeometry(
@@ -207,7 +225,8 @@ RectoolsCuPy = RecToolsIRCuPy(
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=0.0,
     ),
-    volume_geometry=reconstruction_grid,
+    volume_geometry=working_grid,
+    output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
     device_projector=0,
     OS_number=24,
@@ -222,7 +241,7 @@ _data_ = {
 
 #################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "initialise": FBPrec_cupy,  # shape matches reconstruction_grid.shape
+    "initialise": working_fbp,  # shape matches working_grid.shape
     "iterations": 2,
     "ADMM_rho_const": 0.9,
     "ADMM_relax_par": 1.7,
@@ -260,7 +279,8 @@ RectoolsCuPy = RecToolsIRCuPy(
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=0.0,
     ),
-    volume_geometry=reconstruction_grid,
+    volume_geometry=working_grid,
+    output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
     device_projector=0,
     OS_number=6,
@@ -311,7 +331,8 @@ RectoolsCuPy = RecToolsIRCuPy(
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=0.0,
     ),
-    volume_geometry=reconstruction_grid,
+    volume_geometry=working_grid,
+    output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
     device_projector=0,
     OS_number=12,

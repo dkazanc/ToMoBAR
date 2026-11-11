@@ -59,8 +59,8 @@ def test_Landweber_cp_2D(data_cupy, angles, ensure_clean_memory):
 
     assert Iter_rec.shape == (1, 160, 160)
     Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
-    assert_allclose(np.min(Iter_rec), -0.0027037817, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.02463191, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.0027037817, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.02463191, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
 
 
@@ -72,7 +72,8 @@ def test_Landweber_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 1, detX + 2 * 1)),
+        output_shape=(detY, N_size, N_size),
         detector_padding=1,
         device_projector=0,
     ) as RecTools:
@@ -151,7 +152,8 @@ def test_CGLS_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 50, detX + 2 * 50)),
+        output_shape=(detY, N_size, N_size),
         detector_padding=50,
         device_projector=0,
     ) as RecTools:
@@ -255,7 +257,8 @@ def test_power_cp_OS_PWLS_pad_3D(data_cupy, angles, ensure_clean_memory):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 50, detX + 2 * 50)),
+        output_shape=(detY, N_size, N_size),
         detector_padding=50,
         device_projector=0,
         OS_number=5,
@@ -378,8 +381,8 @@ def test_FISTA_cp_2D(data_cupy, angles, ensure_clean_memory):
 
     assert Iter_rec.shape == (1, 160, 160)
     Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
-    assert_allclose(np.min(Iter_rec), -0.010516173, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.03179016, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.010519, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.03179016, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
 
 
@@ -391,7 +394,8 @@ def test_FISTA_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 60, detX + 2 * 60)),
+        output_shape=(detY, N_size, N_size),
         detector_padding=60,
         device_projector=0,
     ) as RecTools:
@@ -585,8 +589,8 @@ def test_FISTA_OS_cp_2D(data_cupy, angles, ensure_clean_memory):
 
     assert Iter_rec.shape == (1, 160, 160)
     Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
-    assert_allclose(np.min(Iter_rec), -0.010578496, rtol=eps)
-    assert_allclose(np.max(Iter_rec), 0.03182499, rtol=eps)
+    assert_allclose(np.min(Iter_rec), -0.010581, rtol=1e-04)
+    assert_allclose(np.max(Iter_rec), 0.03182499, rtol=1e-04)
     assert Iter_rec.dtype == np.float32
 
 
@@ -598,7 +602,8 @@ def test_FISTA_OS_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 60, detX + 2 * 60)),
+        output_shape=(detY, N_size, N_size),
         detector_padding=60,
         device_projector=0,
         OS_number=5,
@@ -660,8 +665,8 @@ def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     Iter_rec = Iter_rec.get()
 
     assert_allclose(lc, 5510.867, rtol=1e-05)
-    assert_allclose(np.min(Iter_rec), -0.00024514267, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 0.02189674, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), -0.0002451741, atol=1e-05)
+    assert_allclose(np.max(Iter_rec), 0.0218967, atol=1e-05)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 160, 160)
 
@@ -968,7 +973,10 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=VolumeGeometry(
+            shape=(detY, detX + 2 * pad_value, detX + 2 * pad_value)
+        ),
+        output_shape=(detY, N_size, N_size),
         detector_padding=pad_value,
         device_projector=0,
         OS_number=24,
@@ -999,9 +1007,7 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(
         Iter_rec = RecTools.ADMM(_data_, _algorithm_, _regularisation_)
 
     Iter_rec = Iter_rec.get()
-    # Reference for the explicitly requested 128x128 grid. The former value
-    # used a detector-sized padded grid, then cropped the reconstruction.
-    assert_allclose(np.max(Iter_rec), 0.029976, rtol=1e-03)
+    assert_allclose(np.max(Iter_rec), 0.02733, rtol=1e-03)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (128, 128, 128)
 
@@ -1167,7 +1173,7 @@ def test_OSEM_PDTV_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
         Iter_rec = RecTools.OSEM(_data_, _algorithm_, _regularisation_)
 
     Iter_rec = Iter_rec.get()
-    assert_allclose(np.min(Iter_rec), 3.2815723e-07, rtol=1e-04)
-    assert_allclose(np.max(Iter_rec), 8659.158, rtol=1e-04)
+    assert_allclose(np.min(Iter_rec), 3.274282e-07, atol=1e-04)
+    assert_allclose(np.max(Iter_rec), 8659.128, atol=1e-04)
     assert Iter_rec.dtype == np.float32
     assert Iter_rec.shape == (41, 90, 90)

@@ -29,7 +29,7 @@ from tomobar.supp.suppTools import (
 from tomobar.supp.dicts import dicts_check
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+from tomobar.geometry import Parallel3DGeometry, VolumeGeometry, _validate_shape
 from tomobar.reconstruction_geometry import GeometryReconstruction
 from tomobar.data_fidelities import grad_data_term
 
@@ -39,6 +39,9 @@ class RecToolsIRCuPy(GeometryReconstruction):
 
     detector_padding adds edge pixels per detector side. It changes only the
     internal projection geometry; reconstruction always uses volume_geometry.
+    output_shape optionally selects a central (z, y, x) crop after an iterative
+    method finishes. Warm starts, forward/backprojection and the power method
+    use the full working volume. Masks are applied before the output crop.
     Projector handles are created lazily and reused until close().
     """
 
@@ -48,12 +51,23 @@ class RecToolsIRCuPy(GeometryReconstruction):
         projection_geometry: Parallel3DGeometry,
         volume_geometry: VolumeGeometry,
         detector_padding: int = 0,
+        output_shape: tuple[int, int, int] | None = None,
         device_projector: int = 0,
         OS_number: Optional[int] = None,
     ):
         if not isinstance(projection_geometry, Parallel3DGeometry):
             raise TypeError("projection_geometry must be a Parallel3DGeometry")
         self._init_geometry(projection_geometry, volume_geometry, detector_padding)
+        self._output_shape = (
+            volume_geometry.shape
+            if output_shape is None
+            else _validate_shape(output_shape, 3, "output_shape")
+        )
+        if any(
+            output > working
+            for output, working in zip(self.output_shape, volume_geometry.shape)
+        ):
+            raise ValueError("output_shape must fit inside volume_geometry.shape")
         self._OS_number = _validate_ordsub_number(
             OS_number, projection_geometry.angles.size
         )
@@ -67,6 +81,26 @@ class RecToolsIRCuPy(GeometryReconstruction):
     @property
     def OS_number(self) -> int:
         return self._OS_number
+
+    @property
+    def output_shape(self) -> tuple[int, int, int]:
+        return self._output_shape
+
+    def _finish_reconstruction(self, volume, **kwargs):
+        """Apply the working-grid mask, then copy the requested central crop.
+
+        Odd differences remove the extra voxel from the high-index side.
+        Copying releases the larger working allocation and returns contiguous
+        storage. With no crop, the existing output array is returned directly.
+        """
+        volume = check_kwargs(volume, **kwargs)
+        if self.output_shape == self.volume_geometry.shape:
+            return volume
+        crop = tuple(
+            slice((working - output) // 2, (working - output) // 2 + output)
+            for working, output in zip(self.volume_geometry.shape, self.output_shape)
+        )
+        return volume[crop].copy()
 
     def forward(self, volume, *, subset_index=None):
         """Project to acquisition columns, optionally selecting one subset."""
@@ -130,7 +164,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
-        return check_kwargs(x_rec, **additional_args)
+        return self._finish_reconstruction(x_rec, **additional_args)
 
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
@@ -186,7 +220,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
-        return check_kwargs(x_rec, **additional_args)
+        return self._finish_reconstruction(x_rec, **additional_args)
 
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Conjugate Gradients Least Squares iterative technique to reconstruct projection data
@@ -254,7 +288,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
 
         del d, s, beta, r, alpha, Ad, normr2_new, normr2
 
-        return check_kwargs(
+        return self._finish_reconstruction(
             cp.reshape(x_rec, newshape=x_shape_3d, order="C"), **additional_args
         )
 
@@ -473,7 +507,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             "cupyrun": True,
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
-        return check_kwargs(X, **additional_args)
+        return self._finish_reconstruction(X, **additional_args)
 
     def ADMM(
         self,
@@ -600,7 +634,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             "cupyrun": True,
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
-        return check_kwargs(x, **additional_args)
+        return self._finish_reconstruction(x, **additional_args)
 
     def OSEM(
         self,
@@ -675,4 +709,4 @@ class RecToolsIRCuPy(GeometryReconstruction):
             "cupyrun": True,
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
-        return check_kwargs(x, **additional_args)
+        return self._finish_reconstruction(x, **additional_args)

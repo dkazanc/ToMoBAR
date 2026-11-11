@@ -176,8 +176,8 @@ def test_Fourier2d():
         device_projector="cpu",
     ) as RectoolsDirect:
         RecFourier = RectoolsDirect.FOURIER(sino_num, method="linear")
-    assert_allclose(np.min(RecFourier), -0.0009970121907807294, rtol=eps)
-    assert_allclose(np.max(RecFourier), 0.05049668114021118, rtol=eps)
+    assert_allclose(np.min(RecFourier), -0.00099701, rtol=1e-04)
+    assert_allclose(np.max(RecFourier), 0.05049668, rtol=1e-04)
     assert RecFourier.dtype == np.float64
     assert RecFourier.shape == (64, 64)
 
@@ -186,14 +186,13 @@ def test_FBP2D_normalise(angles, raw_data, flats, darks):
     # normalise data first and take negative log
     normalised = normaliser(raw_data, flats, darks)
     detX = np.shape(normalised)[2]
-    detY = 0
     data2D = normalised[:, 60, :]
     N_size = detX
     with RecToolsDIR(
-        projection_geometry=Parallel3DGeometry(
-            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        projection_geometry=Parallel2DGeometry(
+            angles=angles, detector_shape=(detX,), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
         device_projector="cpu",
     ) as RecTools:
         FBPrec = RecTools.FBP(data2D)

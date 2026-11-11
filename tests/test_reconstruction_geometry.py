@@ -263,13 +263,74 @@ def test_admm_keeps_volume_sized_warm_start_when_detector_padding_is_enabled(
     algorithm = {"initialise": warm_start, "lipschitz_const": 1.0}
     iterative.dicts_check.return_value = (data, algorithm, {"method": None})
     with iterative.RecToolsIRCuPy(
-        projection_geometry=scan, volume_geometry=grid, detector_padding=2, OS_number=2
+        projection_geometry=scan,
+        volume_geometry=grid,
+        detector_padding=2,
+        output_shape=(1, 2, 4),
+        OS_number=2,
     ) as rec:
         _, _, _, initial, _, use_os = rec._RecToolsIRCuPy__common_initialisation(
             data, algorithm, {"method": None}, method_run="ADMM"
         )
         assert initial is warm_start
         assert initial.shape == grid.shape
+        assert rec.output_shape == (1, 2, 4)
         assert use_os
         assert data["projection_data"].shape == (3, 3, 11)
     assert "incorrect dimensions" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "shape,error",
+    [
+        ((1, 2), ValueError),
+        ((1, 0, 2), ValueError),
+        ((1, 2.5, 2), TypeError),
+        ((True, 2, 2), TypeError),
+        ((4, 2, 2), ValueError),
+        ((1, 9, 2), ValueError),
+        ((1, 2, 11), ValueError),
+    ],
+)
+def test_output_shape_is_validated_before_binding(harness, shape, error):
+    backend, _, iterative = harness
+    with pytest.raises(error, match="output_shape"):
+        iterative.RecToolsIRCuPy(
+            projection_geometry=Parallel3DGeometry(angles=[0.0], detector_shape=(3, 7)),
+            volume_geometry=VolumeGeometry(shape=(3, 8, 10)),
+            output_shape=shape,
+        )
+    backend.astra.create_projector.assert_not_called()
+
+
+@pytest.mark.parametrize("output_shape", [None, (4, 8, 10), (2, 4, 6), (3, 5, 7)])
+def test_output_crop_indices_storage_and_working_operators(harness, output_shape):
+    _, _, iterative = harness
+    grid = VolumeGeometry(shape=(4, 8, 10))
+    volume = np.arange(np.prod(grid.shape), dtype=np.float32).reshape(grid.shape)
+    with iterative.RecToolsIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=[0.0, 0.5], detector_shape=(3, 7)
+        ),
+        volume_geometry=grid,
+        output_shape=output_shape,
+        detector_padding=2,
+    ) as rec:
+        result = rec._finish_reconstruction(volume)
+        expected_shape = output_shape or grid.shape
+        assert result.shape == expected_shape
+        assert result.dtype == volume.dtype
+        if expected_shape == grid.shape:
+            assert result is volume
+        else:
+            slices = tuple(
+                slice((a - b) // 2, (a - b) // 2 + b)
+                for a, b in zip(grid.shape, expected_shape)
+            )
+            np.testing.assert_array_equal(result, volume[slices])
+            assert result.flags.c_contiguous
+            assert not np.shares_memory(result, volume)
+        assert rec.volume_geometry is grid
+        projected = rec.forward(np.ones(grid.shape, dtype=np.float32))
+        assert projected.shape == (3, 2, 7)
+        assert rec.backproject(projected).shape == grid.shape

@@ -54,3 +54,46 @@ def test_direct_full_and_subset_projection_on_cuda(array_library):
         wrapper.backproject(full)
         assert wrapper._projector_handles == handles
     assert not wrapper._projector_handles
+
+
+@pytest.mark.parametrize(
+    "method", ["Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM"]
+)
+def test_iterative_output_crop_matches_full_working_volume(method):
+    astra = pytest.importorskip("astra")
+    if not astra.use_cuda():
+        pytest.skip("ASTRA CUDA is unavailable")
+    cp = pytest.importorskip("cupy")
+    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+    from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+
+    scan = Parallel3DGeometry(
+        angles=np.linspace(0, np.pi, 6, endpoint=False), detector_shape=(4, 10)
+    )
+    grid = VolumeGeometry(shape=(4, 8, 10))
+    output_shape = (3, 5, 6)
+    projections = cp.asarray(
+        np.linspace(0.1, 1.0, 4 * 6 * 10, dtype=np.float32).reshape(4, 6, 10)
+    )
+    results = []
+    for crop in (None, output_shape):
+        with RecToolsIRCuPy(
+            projection_geometry=scan,
+            volume_geometry=grid,
+            detector_padding=2,
+            output_shape=crop,
+        ) as rec:
+            algorithm = {
+                "iterations": 1,
+                "lipschitz_const": 50.0,
+                "recon_mask_radius": 1.0,
+            }
+            result = getattr(rec, method)({"projection_data": projections}, algorithm)
+            results.append(result)
+            assert rec.Atools.volume_geometry is grid
+    full, cropped = results
+    assert full.shape == grid.shape
+    assert cropped.shape == output_shape
+    cp.testing.assert_allclose(cropped, full[:3, 1:6, 2:8], rtol=1e-5, atol=1e-6)
+    assert cropped.flags.c_contiguous
+    assert cp.isfinite(cropped).all()

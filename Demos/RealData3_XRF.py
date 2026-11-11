@@ -19,6 +19,7 @@ data = data_npz["arr_0"]
 angles = data_npz["arr_1"]
 
 angles_tot, detectorVert, detectorHoriz = np.shape(data)
+padding_value = 45
 data_labels3D = ["angles", "detY", "detX"]
 data_cp = cp.asarray(np.float32(data), order="C")
 # %%
@@ -32,7 +33,7 @@ RectoolsDIR_cp = RecToolsDIRCuPy(
         centre_of_rotation=-0.5,
     ),
     volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
-    detector_padding=45,
+    detector_padding=padding_value,
     device_projector=0,
 )
 
@@ -59,8 +60,15 @@ RectoolsIR_cp = RecToolsIRCuPy(
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=-0.5,
     ),
-    volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
-    detector_padding=45,
+    volume_geometry=VolumeGeometry(
+        shape=(
+            detectorVert,
+            detectorHoriz + 2 * padding_value,
+            detectorHoriz + 2 * padding_value,
+        )
+    ),
+    output_shape=(detectorVert, detectorHoriz, detectorHoriz),
+    detector_padding=padding_value,
     device_projector=0,
     OS_number=12,
 )
