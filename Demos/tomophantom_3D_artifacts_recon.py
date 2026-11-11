@@ -16,6 +16,7 @@ import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.qualitymetrics import QualityTools
 from tomophantom.flatsgen import synth_flats
+from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
 from tomobar.supp.suppTools import normaliser
 
 print("Building 3D phantom using TomoPhantom software")
@@ -128,12 +129,10 @@ input_data_labels = ["detY", "angles", "detX"]
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
 RecToolsDIRCuPy = RecToolsDIRCuPy(
-    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=None,  # Center of Rotation (CoR) scalar (for 3D case only)
-    AnglesVec=angles_rad,  # array of angles in radians
-    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
     device_projector="gpu",
 )
 
@@ -176,14 +175,12 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
 Rectools = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=None,  # Center of Rotation (CoR) scalar (for 3D case only)
-    AnglesVec=angles_rad,  # array of angles in radians
-    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
     device_projector=0,
-    OS_number=8,  # The number of ordered subsets
+    OS_number=8,
 )
 
 # prepare dictionaries with parameters:
@@ -239,14 +236,12 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
 Rectools = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=None,  # Center of Rotation (CoR) scalar (for 3D case only)
-    AnglesVec=angles_rad,  # array of angles in radians
-    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
     device_projector=0,
-    OS_number=24,  # The number of ordered subsets
+    OS_number=24,
 )
 # prepare dictionaries with parameters:
 _data_ = {

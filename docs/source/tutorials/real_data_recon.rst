@@ -17,15 +17,16 @@ demo.
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     Rectools = RecToolsDIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=None,  # Vertical detector dimension
-        CenterRotOffset=None,  # Center of Rotation scalar
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        projection_geometry=Parallel2DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorHoriz,),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
         device_projector="gpu",
     )
 
@@ -39,15 +40,17 @@ demo.
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     Rectools = RecToolsDIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=100,  # Padding size of horizontal detector
-        DetectorsDimV=None,  # Vertical detector dimension
-        CenterRotOffset=None,  # Center of Rotation scalar
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+        projection_geometry=Parallel2DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorHoriz,),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
+        detector_padding=100,
         device_projector="gpu",
     )
 

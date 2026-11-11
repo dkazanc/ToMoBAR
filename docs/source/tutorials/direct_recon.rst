@@ -21,18 +21,19 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
     Rectools = RecToolsDIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detectorVert,  # Vertical detector dimension
-        CenterRotOffset=0.0,  # Center of Rotation (needs to be found)
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=detectorHoriz,  # The reconstructed object dimensions
-        device_projector="gpu",  # Device to perform reconstruction on
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorVert, detectorHoriz),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
+        device_projector="gpu",
     )
 
 * Now we have an access to all methods of this particular reconstructor, let us use the standard Filtered Backprojection algorithm (FBP).

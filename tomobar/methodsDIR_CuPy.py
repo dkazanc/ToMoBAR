@@ -1,11 +1,11 @@
 """Reconstruction class for 3D direct methods using CuPy-library.
 
-* :func:`RecToolsDIRCuPy.FORWPROJ` and :func:`RecToolsDIRCuPy.BACKPROJ` - Forward/Backward projection modules (ASTRA with DirectLink and CuPy).
+* :func:`RecToolsDIRCuPy.forward` and :func:`RecToolsDIRCuPy.backproject` - Forward/Backward projection modules (ASTRA with DirectLink and CuPy).
 * :func:`RecToolsDIRCuPy.FBP` - Filtered Back Projection (ASTRA, the filter is implemented with CuPy).
 * :func:`RecToolsDIRCuPy.FOURIER_INV` - Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method [NIKITIN2017]_.
 """
 
-from typing import Literal, Tuple
+from typing import Tuple
 import numpy as np
 import math
 import cupy as cp
@@ -24,55 +24,13 @@ _CENTER_SIZE_MIN = 192  # must be divisible by 8
 
 
 class RecToolsDIRCuPy(RecToolsDIR):
-    """Reconstruction class using direct methods with CuPy API.
+    """CuPy direct reconstruction with the geometry-based RecToolsDIR API.
 
-    Args:
-        DetectorsDimH (int): Horizontal detector dimension.
-        DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
-        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
-        CenterRotOffset (float, ndarray): Detector displacement for ASTRA methods,
-            in pixels. None means zero; a scalar or (n_angles,) array gives
-            horizontal offsets. For 3D, (n_angles, 2) gives horizontal/vertical
-            pairs. Positive offsets move the detector along its column/row
-            directions; vertical is world +Z for the current CT geometry.
-            FOURIER_INV currently requires a scalar horizontal offset.
-        AnglesVec (np.ndarray): Vector of projection angles in radians.
-        ObjSize (int): Reconstructed object dimensions (a scalar).
-        device_projector (int): An index (integer) of a specific GPU device.
+    FOURIER_INV requires a square (y, x) grid with one volume slice per detector
+    row and zero detector shifts. ASTRA supports independent volume dimensions.
     """
 
-    def __init__(
-        self,
-        DetectorsDimH,  # Horizontal detector dimension
-        DetectorsDimH_pad,  # Padding size of horizontal detector
-        DetectorsDimV,  # Vertical detector dimension (3D case)
-        CenterRotOffset,  # The Centre of Rotation scalar or a vector
-        AnglesVec,  # Array of projection angles in radians
-        ObjSize,  # Reconstructed object dimensions (scalar)
-        projector: Literal["fourier", "astra"] = "astra",
-        device_projector=0,  # set an index (integer) of a specific GPU device
-    ):
-        self.detectors_x_pad = DetectorsDimH_pad
-        if CenterRotOffset is None:
-            CenterRotOffset = 0.0
-        self.centre_of_rotation = CenterRotOffset
-        self.angles_vec = AnglesVec
-        self.recon_size = ObjSize
-
-        super().__init__(
-            DetectorsDimH,
-            DetectorsDimH_pad,
-            DetectorsDimV,
-            CenterRotOffset,
-            AnglesVec,
-            ObjSize,
-            projector,
-            device_projector,
-        )
-        # if DetectorsDimV == 0 or DetectorsDimV is None:
-        #     raise ValueError("2D CuPy reconstruction is not yet supported, only 3D is")
-
-    def FORWPROJ(self, data: cp.ndarray, *, output_axes=None, **kwargs) -> cp.ndarray:
+    def forward(self, data: cp.ndarray, *, output_axes=None, **kwargs) -> cp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
 
         Args:
@@ -93,12 +51,18 @@ class RecToolsDIRCuPy(RecToolsDIR):
         axes = _resolve_data_axes(
             output_axes, kwargs.get("data_axes_labels_order"), native_axes
         )
-        projected = self.Atools._forwprojCuPy(data)
+        self._ensure_open()
+        projected = (
+            self.Atools.forward(data)
+            if self.geom == "3D"
+            else self.Atools._forwprojCuPy(data)
+        )
+        projected = self._crop_projection(projected)
         return _transpose_data_axes(
             projected, source_axes=native_axes, target_axes=axes
         )
 
-    def BACKPROJ(self, data: cp.ndarray, *, input_axes=None, **kwargs) -> cp.ndarray:
+    def backproject(self, data: cp.ndarray, *, input_axes=None, **kwargs) -> cp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
 
         Args:
@@ -121,10 +85,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
         )
         data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
 
-        data = _apply_horiz_detector_padding(
-            data, self.Atools.detectors_x_pad, cupyrun=True
+        data = _apply_horiz_detector_padding(data, self.detector_padding, cupyrun=True)
+        self._ensure_open()
+        return (
+            self.Atools.backproject(data)
+            if self.geom == "3D"
+            else self.Atools._backprojCuPy(data)
         )
-        return self.Atools._backprojCuPy(data)
 
     def FBP(self, data: cp.ndarray, *, input_axes=None, **kwargs) -> cp.ndarray:
         """Filtered backprojection reconstruction on a CuPy array using a custom built SINC filter.
@@ -159,14 +126,14 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 cutoff_freq = value
 
         # Edge-Pad the horizontal detector (detX) on both sides symmetrically using the provided amount of pixels.
-        data = _apply_horiz_detector_padding(data, self.Atools.detectors_x_pad, cupyrun)
+        data = _apply_horiz_detector_padding(data, self.detector_padding, cupyrun)
         # filter the data on the GPU and keep the result there
         data = _filtersinc3D_cupy(data, cutoff=cutoff_freq)
         data = cp.ascontiguousarray(cp.swapaxes(data, 0, 1))
         cache = cp.fft.config.get_plan_cache()
         cache.clear()  # flush FFT cache here before backprojection
         cp._default_memory_pool.free_all_blocks()  # free everything related to the filtering before starting Astra
-        reconstruction = self.Atools._backprojCuPy(data)  # 3d backprojecting
+        reconstruction = self.Atools.backproject(data)  # 3d backprojecting
         return check_kwargs(reconstruction, **kwargs)
 
     def FOURIER_INV(
@@ -262,6 +229,19 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 else:
                     chunk_count = value
 
+        self._ensure_open()
+        shape = self.volume_geometry.shape
+        if (
+            self.geom != "3D"
+            or shape[1] != shape[2]
+            or shape[0] != self.projection_geometry.detector_shape[0]
+        ):
+            raise ValueError(
+                "FOURIER_INV requires square slices and one volume slice per detector row"
+            )
+        if np.any(self.projection_geometry.detector_shifts != 0):
+            raise ValueError("FOURIER_INV does not support detector_shifts")
+
         # extract kernels from CUDA modules
         module = load_cuda_module("fft_us_kernels")
         gather_kernel = module.get_function("gather_kernel")
@@ -283,7 +263,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         else:
             [nz, nproj, data_n] = data.shape
 
-        recon_size = self.recon_size
+        recon_size = self.volume_geometry.shape[-1]
         if recon_size > data_n:
             raise ValueError(
                 "The reconstruction size {} should not be larger than the size of the horizontal detector {}".format(
@@ -307,7 +287,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
                 data = data_p
                 del data_p
 
-        n = data_n + self.detectors_x_pad * 2 + padding * 2
+        n = data_n + self.detector_padding * 2 + padding * 2
         if power_of_2_cropping:
             n_pow2 = 2 ** math.ceil(math.log2(n))
             if 0.9 < n / n_pow2:
@@ -317,14 +297,21 @@ class RecToolsDIRCuPy(RecToolsDIR):
         center_size = min(center_size, n * 2)
 
         if mem_stack:
-            mem_stack.malloc(np.prod(self.angles_vec.shape) * cp.float32().itemsize)
+            mem_stack.malloc(
+                np.prod(self.projection_geometry.angles.shape) * cp.float32().itemsize
+            )
 
-        theta = cp.array(-self.angles_vec, dtype=cp.float32)
+        theta = cp.array(-self.projection_geometry.angles, dtype=cp.float32)
 
         if center_size >= _CENTER_SIZE_MIN:
             if mem_stack:
-                mem_stack.malloc(np.prod(self.angles_vec.shape) * np.int64().itemsize)
-                mem_stack.malloc(np.prod(self.angles_vec.shape) * np.float32().itemsize)
+                mem_stack.malloc(
+                    np.prod(self.projection_geometry.angles.shape) * np.int64().itemsize
+                )
+                mem_stack.malloc(
+                    np.prod(self.projection_geometry.angles.shape)
+                    * np.float32().itemsize
+                )
 
                 sorted_theta_cpu = cp.sort(theta).get()
             else:
@@ -502,7 +489,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         unpad_m = oversampled_detector_width // 2 - detector_width // 2
         unpad_p = oversampled_detector_width // 2 + detector_width // 2
 
-        rotation_axis = self.centre_of_rotation + 0.5
+        rotation_axis = self.projection_geometry.centre_of_rotation + 0.5
 
         wfilter = calc_filter(oversampled_detector_width, filter_type, cutoff_freq)
         t = rfftfreq(oversampled_detector_width).astype(cp.float32)

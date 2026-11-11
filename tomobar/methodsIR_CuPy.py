@@ -24,109 +24,70 @@ import astra
 from tomobar.supp.funcs import _data_dims_swapper, _validate_ordsub_number
 from tomobar.supp.suppTools import (
     check_kwargs,
-    perform_recon_crop,
     _apply_horiz_detector_padding,
 )
 from tomobar.supp.dicts import dicts_check
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+from tomobar.reconstruction_geometry import GeometryReconstruction
 from tomobar.data_fidelities import grad_data_term
 
 
-class RecToolsIRCuPy:
-    """CuPy-enabled iterative reconstruction algorithms using ASTRA toolbox for forward/back projection.
-    Parameters for reconstruction algorithms should be provided in three dictionaries:
-    :data:`_data_`, :data:`_algorithm_`, and :data:`_regularisation_`. See :mod:`tomobar.supp.dicts`
-    function of ToMoBAR's :ref:`ref_api` for all parameters explained.
+class RecToolsIRCuPy(GeometryReconstruction):
+    """Iterative CuPy reconstruction using explicit 3D geometry.
 
-    Args:
-        DetectorsDimH (int): Horizontal detector dimension size.
-        DetectorsDimH_pad (int): The amount of padding for the horizontal detector.
-        DetectorsDimV (int, None): Vertical detector dimension size, 'None' for 2D or an integer for 3D
-        CenterRotOffset (float, ndarray): Detector displacement for ASTRA methods,
-            in pixels. None means zero; a scalar or (n_angles,) array gives
-            horizontal offsets. For 3D, (n_angles, 2) gives horizontal/vertical
-            pairs. Positive offsets move the detector along its column/row
-            directions; vertical is world +Z for the current CT geometry.
-        AnglesVec (np.ndarray): Vector of projection angles in radians.
-        ObjSize (int): The size of the reconstructed object (a slice) defined as [recon_size, recon_size].
-        device_projector (int, optional): Provide a GPU index of a specific GPU device. Defaults to 0.
-        OS_number (int, optional): Number of ordered subsets, from 1 to the
-            number of views. None or 1 selects non-OS reconstruction.
+    detector_padding adds edge pixels per detector side. It changes only the
+    internal projection geometry; reconstruction always uses volume_geometry.
+    Projector handles are created lazily and reused until close().
     """
 
     def __init__(
         self,
-        DetectorsDimH: int,  # Horizontal detector dimension size.
-        DetectorsDimH_pad: int,  # The amount of padding for the horizontal detector.
-        DetectorsDimV: Union[
-            int, None
-        ],  # Vertical detector dimension, 'None' for 2D or an integer for 3D
-        CenterRotOffset: Union[
-            float, np.ndarray
-        ],  # The Centre of Rotation scalar or a vector
-        AnglesVec: np.ndarray,  # Array of projection angles in radians
-        ObjSize: int,  # The size of the reconstructed object (a slice)
-        device_projector: int = 0,  # provide a GPU index (integer) of a specific device
-        OS_number: Optional[
-            int
-        ] = None,  # The number of ordered-subset, set to None for non-OS reconstruction
+        *,
+        projection_geometry: Parallel3DGeometry,
+        volume_geometry: VolumeGeometry,
+        detector_padding: int = 0,
+        device_projector: int = 0,
+        OS_number: Optional[int] = None,
     ):
-        self._angles_count = len(AnglesVec)
-        self.OS_number = OS_number
-
-        if DetectorsDimH_pad == 0:
-            self.objsize_user_given = None
-        else:
-            self.objsize_user_given = ObjSize
-
-        if DetectorsDimH_pad > 0:
-            # when we pad horizontal detector we might need to reconstruct on a larger grid as well to avoid artifacts
-            ObjSize = DetectorsDimH + 2 * DetectorsDimH_pad
-
-        if DetectorsDimV == 0 or DetectorsDimV is None:
-            DetectorsDimV = 1
-
-        self.geom = "3D"
+        if not isinstance(projection_geometry, Parallel3DGeometry):
+            raise TypeError("projection_geometry must be a Parallel3DGeometry")
+        self._init_geometry(projection_geometry, volume_geometry, detector_padding)
+        self._OS_number = _validate_ordsub_number(
+            OS_number, projection_geometry.angles.size
+        )
         self.Atools = AstraTools3D(
-            DetectorsDimH,
-            DetectorsDimH_pad,
-            DetectorsDimV,
-            AnglesVec,
-            CenterRotOffset,
-            ObjSize,
-            "gpu",
-            device_projector,
-            OS_number,
+            projection_geometry=self.padded_projection_geometry,
+            volume_geometry=volume_geometry,
+            device_index=device_projector,
+            ordsub_number=self.OS_number,
         )
 
     @property
     def OS_number(self) -> int:
         return self._OS_number
 
-    @OS_number.setter
-    def OS_number(self, OS_number_val):
-        self._OS_number = _validate_ordsub_number(OS_number_val, self._angles_count)
+    def forward(self, volume, *, subset_index=None):
+        """Project to acquisition columns, optionally selecting one subset."""
+        self._ensure_open()
+        return self._crop_projection(
+            self.Atools.forward(volume, subset_index=subset_index)
+        )
 
-    @property
-    def objsize_user_given(self) -> int:
-        return self._objsize_user_given
+    def backproject(self, projections, *, subset_index=None):
+        """Pad acquired detector columns and backproject to the requested grid."""
+        self._ensure_open()
+        projections = _apply_horiz_detector_padding(
+            projections, self.detector_padding, cupyrun=True
+        )
+        return self.Atools.backproject(projections, subset_index=subset_index)
 
-    @objsize_user_given.setter
-    def objsize_user_given(self, objsize_user_given_val):
-        self._objsize_user_given = objsize_user_given_val
+    def _Ax(self, x, sub_ind: int = 0, os: bool = False):
+        return self.Atools.forward(x, subset_index=sub_ind if os else None)
 
-    def _Ax(self, x, sub_ind: int = 1, os: bool = False):
-        if not os:
-            return self.Atools._forwprojCuPy(x)
-        else:
-            return self.Atools._forwprojOSCuPy(x, os_index=sub_ind)
-
-    def _Atb(self, b, sub_ind: int = 1, os: bool = False):
-        if not os:
-            return self.Atools._backprojCuPy(b)
-        else:
-            return self.Atools._backprojOSCuPy(b, os_index=sub_ind)
+    def _Atb(self, b, sub_ind: int = 0, os: bool = False):
+        return self.Atools.backproject(b, subset_index=sub_ind if os else None)
 
     def Landweber(
         self, _data_: dict, _algorithm_: Union[dict, None] = None
@@ -150,7 +111,7 @@ class RecToolsIRCuPy:
 
         _data_upd_["projection_data"] = _apply_horiz_detector_padding(
             _data_upd_["projection_data"],
-            self.Atools.detectors_x_pad,
+            self.detector_padding,
             cupyrun=True,
         )
 
@@ -168,9 +129,6 @@ class RecToolsIRCuPy:
             x_rec -= _algorithm_upd_["tau_step_lanweber"] * self._Atb(residual)
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
-
-        if self.objsize_user_given is not None:
-            return perform_recon_crop(x_rec, self.objsize_user_given)
 
         return check_kwargs(x_rec, **additional_args)
 
@@ -195,7 +153,7 @@ class RecToolsIRCuPy:
         )
         _data_upd_["projection_data"] = _apply_horiz_detector_padding(
             _data_upd_["projection_data"],
-            self.Atools.detectors_x_pad,
+            self.detector_padding,
             cupyrun=True,
         )
         del _data_, _algorithm_
@@ -206,12 +164,12 @@ class RecToolsIRCuPy:
         }
         ######################################################################
 
-        R = 1.0 / self.Atools._forwprojCuPy(
+        R = 1.0 / self.Atools.forward(
             cp.ones(astra.geom_size(self.Atools.vol_geom), dtype=np.float32)
         )
         R = cp.nan_to_num(R, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
 
-        C = 1.0 / self.Atools._backprojCuPy(
+        C = 1.0 / self.Atools.backproject(
             cp.ones(astra.geom_size(self.Atools.proj_geom), dtype=np.float32)
         )
         C = cp.nan_to_num(C, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
@@ -222,14 +180,11 @@ class RecToolsIRCuPy:
 
         # perform SIRT iterations
         for _ in range(_algorithm_upd_["iterations"]):
-            x_rec += C * self.Atools._backprojCuPy(
-                R * (_data_upd_["projection_data"] - self.Atools._forwprojCuPy(x_rec))
+            x_rec += C * self.Atools.backproject(
+                R * (_data_upd_["projection_data"] - self.Atools.forward(x_rec))
             )
             if _algorithm_upd_["nonnegativity"]:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
-
-        if self.objsize_user_given is not None:
-            return perform_recon_crop(x_rec, self.objsize_user_given)
 
         return check_kwargs(x_rec, **additional_args)
 
@@ -253,7 +208,7 @@ class RecToolsIRCuPy:
         del _data_, _algorithm_
         _data_upd_["projection_data"] = _apply_horiz_detector_padding(
             _data_upd_["projection_data"],
-            self.Atools.detectors_x_pad,
+            self.detector_padding,
             cupyrun=True,
         )
 
@@ -270,7 +225,7 @@ class RecToolsIRCuPy:
         )  # initialisation
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
-        d = self.Atools._backprojCuPy(_data_upd_["projection_data"])
+        d = self.Atools.backproject(_data_upd_["projection_data"])
         d = cp.ravel(d, order="C")
         normr2 = cp.inner(d, d)
         r = cp.ravel(_data_upd_["projection_data"], order="C")
@@ -280,14 +235,12 @@ class RecToolsIRCuPy:
         # perform CG iterations
         for _ in range(_algorithm_upd_["iterations"]):
             # Update x_rec and r vectors:
-            Ad = self.Atools._forwprojCuPy(
-                cp.reshape(d, newshape=x_shape_3d, order="C")
-            )
+            Ad = self.Atools.forward(cp.reshape(d, newshape=x_shape_3d, order="C"))
             Ad = cp.ravel(Ad, order="C")
             alpha = normr2 / cp.inner(Ad, Ad)
             x_rec += alpha * d
             r -= alpha * Ad
-            s = self.Atools._backprojCuPy(
+            s = self.Atools.backproject(
                 cp.reshape(r, newshape=data_shape_3d, order="C")
             )
             s = cp.ravel(s, order="C")
@@ -301,15 +254,9 @@ class RecToolsIRCuPy:
 
         del d, s, beta, r, alpha, Ad, normr2_new, normr2
 
-        if self.objsize_user_given is not None:
-            return perform_recon_crop(
-                cp.reshape(x_rec, newshape=x_shape_3d, order="C"),
-                self.objsize_user_given,
-            )
-        else:
-            return check_kwargs(
-                cp.reshape(x_rec, newshape=x_shape_3d, order="C"), **additional_args
-            )
+        return check_kwargs(
+            cp.reshape(x_rec, newshape=x_shape_3d, order="C"), **additional_args
+        )
 
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
@@ -330,29 +277,29 @@ class RecToolsIRCuPy:
 
         if self.OS_number == 1:
             # non-OS approach
-            y = self.Atools._forwprojCuPy(x1)
+            y = self.Atools.forward(x1)
             if _data_["data_fidelity"] == "PWLS":
                 w = cp.ones_like(y)
                 y = cp.multiply(w, y)
             for _ in range(power_iterations):
-                x1 = self.Atools._backprojCuPy(y)
+                x1 = self.Atools.backproject(y)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
-                y = self.Atools._forwprojCuPy(x1)
+                y = self.Atools.forward(x1)
                 if _data_["data_fidelity"] == "PWLS":
                     y = cp.multiply(w, y)
         else:
             # OS approach
-            y = self.Atools._forwprojOSCuPy(x1, 0)
+            y = self.Atools.forward(x1, subset_index=0)
             if _data_["data_fidelity"] == "PWLS":
                 # y and w already contain only subset zero's views.
                 w = cp.ones_like(y)
                 y = cp.multiply(w, y)
             for _ in range(power_iterations):
-                x1 = self.Atools._backprojOSCuPy(y, 0)
+                x1 = self.Atools.backproject(y, subset_index=0)
                 s = cp.linalg.norm(cp.ravel(x1), axis=0)
                 x1 = x1 / s
-                y = self.Atools._forwprojOSCuPy(x1, 0)
+                y = self.Atools.forward(x1, subset_index=0)
                 if _data_["data_fidelity"] == "PWLS":
                     y = cp.multiply(w, y)
         return float(s)
@@ -368,13 +315,13 @@ class RecToolsIRCuPy:
         ######################################################################
         _data_upd_["projection_data"] = _apply_horiz_detector_padding(
             _data_upd_["projection_data"],
-            self.Atools.detectors_x_pad,
+            self.detector_padding,
             cupyrun=True,
         )
         if "projection_raw_data" in _data_upd_:
             _data_upd_["projection_raw_data"] = _apply_horiz_detector_padding(
                 _data_upd_["projection_raw_data"],
-                self.Atools.detectors_x_pad,
+                self.detector_padding,
                 cupyrun=True,
             )
 
@@ -522,9 +469,6 @@ class RecToolsIRCuPy:
                 t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
                 X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
 
-        if self.objsize_user_given is not None:
-            return perform_recon_crop(X, self.objsize_user_given)
-
         additional_args = {
             "cupyrun": True,
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
@@ -652,9 +596,6 @@ class RecToolsIRCuPy:
                         "regularisation",
                     )
 
-        if self.objsize_user_given is not None:
-            return perform_recon_crop(x, self.objsize_user_given)
-
         additional_args = {
             "cupyrun": True,
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
@@ -729,9 +670,6 @@ class RecToolsIRCuPy:
                 # proximal regularisation
                 if _regularisation_upd_["method"] is not None:
                     x = prox_regul(self, x, _regularisation_upd_)
-
-        if self.objsize_user_given is not None:
-            return perform_recon_crop(x, self.objsize_user_given)
 
         additional_args = {
             "cupyrun": True,

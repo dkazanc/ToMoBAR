@@ -8,6 +8,7 @@ from cupy import float32
 from cupyx.profiler import time_range
 import pytest
 
+from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
 from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
@@ -227,21 +228,18 @@ def test_Fourier3D_inv(data_cupy, angles):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector=0,
-    )
-
-    Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
-        data_cupy,
-        data_axes_labels_order=["angles", "detY", "detX"],
-        recon_mask_radius=2.0,
-    )
+    ) as RecToolsCP:
+        Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
+            data_cupy,
+            data_axes_labels_order=["angles", "detY", "detX"],
+            recon_mask_radius=2.0,
+        )
     recon_data = cp.asnumpy(Fourier_rec_cupy)
 
     assert_allclose(np.min(recon_data), -0.0372409, atol=1e-5)
@@ -259,26 +257,24 @@ def test_Fourier3D_inv_vert_blocks(data_cupy, angles, blocks):
     block_size = blocks
     index_start = 0
     index_end = block_size
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=block_size,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(block_size, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(block_size, detX, detX)),
         device_projector=0,
-    )
-    for block_index in range(0, detY // block_size):
-        proj_data_block = data_cupy[:, index_start:index_end, :]
+    ) as RecToolsCP:
+        for block_index in range(0, detY // block_size):
+            proj_data_block = data_cupy[:, index_start:index_end, :]
 
-        lprec_block_recon = RecToolsCP.FOURIER_INV(
-            proj_data_block,
-            recon_mask_radius=2.0,
-            data_axes_labels_order=["angles", "detY", "detX"],
-        )
-        recon_vol_block_size[index_start:index_end, :, :] = lprec_block_recon
-        index_start += block_size
-        index_end += block_size
+            lprec_block_recon = RecToolsCP.FOURIER_INV(
+                proj_data_block,
+                recon_mask_radius=2.0,
+                data_axes_labels_order=["angles", "detY", "detX"],
+            )
+            recon_vol_block_size[index_start:index_end, :, :] = lprec_block_recon
+            index_start += block_size
+            index_end += block_size
 
     recon_data = cp.asnumpy(recon_vol_block_size)
 
@@ -295,36 +291,35 @@ def test_Fourier3D_inv_vert_blocks_last_odd(data_cupy, angles):
     recon_vol_block_size = cp.empty((detY, detX, detX), dtype=cp.float32)
 
     odd_block_size_last = 3
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY
-        - odd_block_size_last,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles,
+            detector_shape=(detY - odd_block_size_last, detX),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY - odd_block_size_last, detX, detX)),
         device_projector=0,
-    )
-    lprec_block_recon1 = RecToolsCP.FOURIER_INV(
-        data_cupy[:, 0 : detY - odd_block_size_last, :],
-        recon_mask_radius=2.0,
-        data_axes_labels_order=["angles", "detY", "detX"],
-    )
+    ) as RecToolsCP:
+        lprec_block_recon1 = RecToolsCP.FOURIER_INV(
+            data_cupy[:, 0 : detY - odd_block_size_last, :],
+            recon_mask_radius=2.0,
+            data_axes_labels_order=["angles", "detY", "detX"],
+        )
 
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=odd_block_size_last,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles,
+            detector_shape=(odd_block_size_last, detX),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=VolumeGeometry(shape=(odd_block_size_last, detX, detX)),
         device_projector=0,
-    )
-    lprec_block_recon2 = RecToolsCP.FOURIER_INV(
-        data_cupy[:, detY - odd_block_size_last : :, :],
-        recon_mask_radius=2.0,
-        data_axes_labels_order=["angles", "detY", "detX"],
-    )
+    ) as RecToolsCP:
+        lprec_block_recon2 = RecToolsCP.FOURIER_INV(
+            data_cupy[:, detY - odd_block_size_last : :, :],
+            recon_mask_radius=2.0,
+            data_axes_labels_order=["angles", "detY", "detX"],
+        )
 
     recon_vol_block_size[0 : detY - odd_block_size_last, :, :] = lprec_block_recon1
     recon_vol_block_size[detY - odd_block_size_last : :, :, :] = lprec_block_recon2
@@ -347,18 +342,16 @@ def test_Fourier3D_Y_odd_to_even(ensure_clean_memory):
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
     N_size = 1300
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector=0,
-    )
-    recon = RecToolsCP.FOURIER_INV(
-        data, data_axes_labels_order=["angles", "detY", "detX"]
-    )
+    ) as RecToolsCP:
+        recon = RecToolsCP.FOURIER_INV(
+            data, data_axes_labels_order=["angles", "detY", "detX"]
+        )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
 
@@ -373,18 +366,16 @@ def test_Fourier3D_Y_even_to_odd(ensure_clean_memory):
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
     N_size = 1333
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector=0,
-    )
-    recon = RecToolsCP.FOURIER_INV(
-        data, data_axes_labels_order=["angles", "detY", "detX"]
-    )
+    ) as RecToolsCP:
+        recon = RecToolsCP.FOURIER_INV(
+            data, data_axes_labels_order=["angles", "detY", "detX"]
+        )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
 
@@ -399,18 +390,16 @@ def test_Fourier3D_Y_even_to_even(ensure_clean_memory):
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
     N_size = 1340
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector=0,
-    )
-    recon = RecToolsCP.FOURIER_INV(
-        data, data_axes_labels_order=["angles", "detY", "detX"]
-    )
+    ) as RecToolsCP:
+        recon = RecToolsCP.FOURIER_INV(
+            data, data_axes_labels_order=["angles", "detY", "detX"]
+        )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
 
@@ -425,18 +414,16 @@ def test_Fourier3D_Y_odd_to_odd(ensure_clean_memory):
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
     N_size = 1331
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector="gpu",
-    )
-    recon = RecToolsCP.FOURIER_INV(
-        data, data_axes_labels_order=["angles", "detY", "detX"]
-    )
+    ) as RecToolsCP:
+        recon = RecToolsCP.FOURIER_INV(
+            data, data_axes_labels_order=["angles", "detY", "detX"]
+        )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
 
@@ -452,18 +439,16 @@ def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
     detX = cp.shape(data)[2]
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=detX,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, detX, detX)),
         device_projector=0,
-    )
-    recon = RecToolsCP.FOURIER_INV(
-        data, data_axes_labels_order=["angles", "detY", "detX"]
-    )
+    ) as RecToolsCP:
+        recon = RecToolsCP.FOURIER_INV(
+            data, data_axes_labels_order=["angles", "detY", "detX"]
+        )
     assert recon.dtype == np.float32
     assert recon.shape == (slices, detX, detX)
 
@@ -544,20 +529,18 @@ def test_FBP3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector=0,
-    )
-    FBPrec_cupy = RecToolsCP.FBP(
-        data_cupy,
-        data_axes_labels_order=["angles", "detY", "detX"],
-        cutoff_freq=1.1,
-    )
+    ) as RecToolsCP:
+        FBPrec_cupy = RecToolsCP.FBP(
+            data_cupy,
+            data_axes_labels_order=["angles", "detY", "detX"],
+            cutoff_freq=1.1,
+        )
     recon_data = FBPrec_cupy.get()
     assert_allclose(np.min(recon_data), -0.014693323, rtol=eps)
     assert_allclose(np.max(recon_data), 0.0340156, rtol=eps)
@@ -569,20 +552,19 @@ def test_FBP3D_pad(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=20,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        detector_padding=20,
         device_projector=0,
-    )
-    FBPrec_cupy = RecToolsCP.FBP(
-        data_cupy,
-        data_axes_labels_order=["angles", "detY", "detX"],
-        cutoff_freq=1.1,
-    )
+    ) as RecToolsCP:
+        FBPrec_cupy = RecToolsCP.FBP(
+            data_cupy,
+            data_axes_labels_order=["angles", "detY", "detX"],
+            cutoff_freq=1.1,
+        )
     recon_data = FBPrec_cupy.get()
     assert_allclose(np.min(recon_data), -0.013320832, rtol=eps)
     assert_allclose(np.max(recon_data), 0.03534874, rtol=eps)
@@ -597,20 +579,19 @@ def test_FBP3D_swaped_axis_pad(data_cupy, angles, ensure_clean_memory):
     detY = cp.shape(data_cupy)[2]
     N_size = detX
     axis_labels = ["detX", "angles", "detY"]
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=45,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        detector_padding=45,
         device_projector=0,
-    )
-    FBPrec_cupy = RecToolsCP.FBP(
-        data_cupy,
-        data_axes_labels_order=axis_labels,
-        cutoff_freq=1.1,
-    )
+    ) as RecToolsCP:
+        FBPrec_cupy = RecToolsCP.FBP(
+            data_cupy,
+            data_axes_labels_order=axis_labels,
+            cutoff_freq=1.1,
+        )
     recon_data = FBPrec_cupy.get()
     assert_allclose(np.mean(recon_data), 0.001496, atol=1e-04)
     assert recon_data.dtype == np.float32
@@ -646,21 +627,19 @@ def test_FBP3D_mask(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector=0,
-    )
-    FBPrec_cupy = RecToolsCP.FBP(
-        data_cupy,
-        recon_mask_radius=0.7,
-        data_axes_labels_order=["angles", "detY", "detX"],
-        cutoff_freq=1.1,
-    )
+    ) as RecToolsCP:
+        FBPrec_cupy = RecToolsCP.FBP(
+            data_cupy,
+            recon_mask_radius=0.7,
+            data_axes_labels_order=["angles", "detY", "detX"],
+            cutoff_freq=1.1,
+        )
     recon_data = FBPrec_cupy.get()
     assert_allclose(np.min(recon_data), -0.0129751, rtol=eps)
     assert_allclose(np.max(recon_data), 0.0340156, rtol=eps)
@@ -674,19 +653,16 @@ def test_forwproj3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     phantom = cp.ones((detY, N_size, N_size), dtype=float32, order="C")
 
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,
-        CenterRotOffset=0.0,
-        AnglesVec=angles,
-        ObjSize=N_size,
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector=0,
-    )
-
-    frw_proj = RecToolsCP.FORWPROJ(
-        phantom, data_axes_labels_order=["detY", "angles", "detX"]
-    )
+    ) as RecToolsCP:
+        frw_proj = RecToolsCP.forward(
+            phantom, data_axes_labels_order=["detY", "angles", "detX"]
+        )
     frw_proj_np = frw_proj.get()
     assert_allclose(np.min(frw_proj_np), 67.27458, rtol=eps)
     assert_allclose(np.max(frw_proj_np), 225.27428, rtol=eps)
@@ -698,18 +674,16 @@ def test_backproj3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    RecToolsCP = RecToolsDIRCuPy(
-        DetectorsDimH=detX,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detY,  # Vertical detector dimension (3D case)
-        CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-        AnglesVec=angles,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    with RecToolsDIRCuPy(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
+        ),
+        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
         device_projector=0,
-    )
-    rec_cupy = RecToolsCP.BACKPROJ(
-        data=data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
-    )
+    ) as RecToolsCP:
+        rec_cupy = RecToolsCP.backproject(
+            data=data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
+        )
     recon_data = rec_cupy.get()
     assert_allclose(np.min(recon_data), -3.8901403, rtol=eps)
     assert_allclose(np.max(recon_data), 350.38193, rtol=eps)

@@ -9,6 +9,7 @@ import timeit
 import numpy as np
 import matplotlib.pyplot as plt
 import cupy as cp
+from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
 from tomobar.supp.suppTools import normaliser
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
@@ -39,12 +40,12 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RectoolsDIR_cp = RecToolsDIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Centre of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=detectorHoriz,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=0.0,
+    ),
+    volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
     device_projector=0,
 )
 
@@ -60,17 +61,17 @@ plt.title("FBP reconstruction")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# FBP recon needed for warm start. Note that with padding enabled it needs to be the padded size
+# The FBP warm start must match the explicitly requested volume geometry.
 
 RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=detectorHoriz,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=0.0,
+    ),
+    volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
     device_projector=0,
-    OS_number=24,  # The number of ordered subsets
+    OS_number=24,
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {

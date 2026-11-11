@@ -31,9 +31,42 @@ def test_geometry_defaults_to_zero_shifts():
     np.testing.assert_array_equal(projection.detector_shifts, [[0.0, 0.0]])
 
 
+def test_cor_correction_does_not_populate_detector_shifts():
+    projection = Parallel3DGeometry.tomography(
+        angles=[0.0, 0.5], detector_shape=(7, 11), centre_of_rotation=2.5
+    )
+    assert projection.centre_of_rotation == 2.5
+    np.testing.assert_array_equal(projection.detector_shifts, np.zeros((2, 2)))
+
+
+@pytest.mark.parametrize(
+    ("cor", "error"),
+    [
+        ([1.0, 2.0], ValueError),
+        ([[1.0, 2.0], [3.0, 4.0]], ValueError),
+        (np.nan, ValueError),
+        (np.inf, ValueError),
+        (1j, TypeError),
+        ("1", TypeError),
+        (None, TypeError),
+        (True, TypeError),
+    ],
+)
+def test_cor_requires_a_finite_real_scalar(cor, error):
+    with pytest.raises(error, match="centre_of_rotation"):
+        Parallel3DGeometry(
+            angles=[0.0, 0.5], detector_shape=(7, 11), centre_of_rotation=cor
+        )
+
+
 @pytest.mark.parametrize(
     ("angles", "error"),
-    [([], ValueError), ([[0.0]], ValueError), ([np.nan], ValueError), ([1j], TypeError)],
+    [
+        ([], ValueError),
+        ([[0.0]], ValueError),
+        ([np.nan], ValueError),
+        ([1j], TypeError),
+    ],
 )
 def test_geometry_rejects_invalid_angles(angles, error):
     with pytest.raises(error, match="angles"):

@@ -21,19 +21,20 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
     import cupy as cp
     from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
     Rectools = RecToolsIRCuPy(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detectorVert,  # Vertical detector dimension
-        CenterRotOffset=0.0,  # Center of Rotation (needs to be found)
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=detectorHoriz,  # The reconstructed object dimensions
-        device_projector=0,  # Device to perform reconstruction on
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorVert, detectorHoriz),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
+        device_projector=0,
     )
 
 * Now we have an access to all methods of this particular reconstructor. Let us use SIRT and CGLS reconstruction algorithms.

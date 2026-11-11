@@ -7,6 +7,7 @@
 import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
+from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 
@@ -25,12 +26,13 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RectoolsDIR_cp = RecToolsDIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=45,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=-0.5,  # Centre of Rotation scalar
-    AnglesVec=np.deg2rad(angles),  # A vector of projection angles in radians
-    ObjSize=detectorHoriz,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=np.deg2rad(angles),
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=-0.5,
+    ),
+    volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
+    detector_padding=45,
     device_projector=0,
 )
 
@@ -52,14 +54,15 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with OSEM-TV method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RectoolsIR_cp = RecToolsIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=45,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=-0.5,  # Centre of Rotation scalar
-    AnglesVec=np.deg2rad(angles),  # A vector of projection angles in radians
-    ObjSize=detectorHoriz,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=np.deg2rad(angles),
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=-0.5,
+    ),
+    volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
+    detector_padding=45,
     device_projector=0,
-    OS_number=12,  # The number of ordered subsets
+    OS_number=12,
 )
 
 ####################### Creating the data dictionary: #######################

@@ -38,7 +38,7 @@ requires-python = ">=3.12"
 dependencies = [
     "numpy>=2",
     "cupy>=14",
-    "astra-toolbox>=2.5.*",
+    "astra-toolbox>=2.5",
     "scipy",
     "pillow",
     "scikit-image",

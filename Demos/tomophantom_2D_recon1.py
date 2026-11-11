@@ -90,15 +90,19 @@ plt.imshow(sino_artifacts, cmap="gray")
 plt.colorbar(ticks=[0, 150, 250], orientation="vertical")
 plt.title("{}" "{}".format("Analytical noisy sinogram with artifacts.", model))
 # %%
+from tomobar.geometry import (
+    Parallel2DGeometry,
+    Parallel3DGeometry,
+    Volume2DGeometry,
+    VolumeGeometry,
+)
 from tomobar.methodsDIR import RecToolsDIR
 
 Rectools = RecToolsDIR(
-    DetectorsDimH=P,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=None,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel2DGeometry(
+        angles=angles_rad, detector_shape=(P,), centre_of_rotation=0.0
+    ),
+    volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
     device_projector="gpu",
 )
 
@@ -133,12 +137,10 @@ plt.title("FBP reconstruction differences")
 from tomobar.methodsDIR import RecToolsDIR
 
 Rectools = RecToolsDIR(
-    DetectorsDimH=P,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=None,  # Vertical detector dimension (3D case)
-    CenterRotOffset=-shifts,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel2DGeometry(
+        angles=angles_rad, detector_shape=(P,), centre_of_rotation=-shifts
+    ),
+    volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
     device_projector="gpu",
 )
 
@@ -158,12 +160,10 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
 RectoolsIR = RecToolsIRCuPy(
-    DetectorsDimH=P,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=None,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(1, P), centre_of_rotation=0.0
+    ),
+    volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
     device_projector=0,
     OS_number=6,
 )

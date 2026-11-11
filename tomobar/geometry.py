@@ -11,8 +11,7 @@ def _validate_shape(shape, ndim: int, name: str) -> tuple[int, ...]:
     if len(dimensions) != ndim:
         raise ValueError(f"{name} must have {ndim} dimensions")
     if any(
-        isinstance(size, (bool, np.bool_))
-        or not isinstance(size, (int, np.integer))
+        isinstance(size, (bool, np.bool_)) or not isinstance(size, (int, np.integer))
         for size in dimensions
     ):
         raise TypeError(f"{name} dimensions must be integers")
@@ -33,6 +32,26 @@ def _freeze_array(values: np.ndarray, name: str) -> NDArray[np.float64]:
     return frozen
 
 
+def _validate_centre_of_rotation(value: float) -> float:
+    """Require one finite horizontal CoR correction in detector pixels."""
+    if value is None:
+        raise TypeError(
+            "centre_of_rotation must be a real scalar, not None; "
+            "use 0.0 for a centred rotation axis"
+        )
+    scalar = np.asarray(value)
+    if scalar.dtype.kind not in "iuf":
+        raise TypeError("centre_of_rotation must be a real scalar")
+    if scalar.ndim != 0:
+        raise ValueError(
+            "centre_of_rotation must be a scalar; use detector_shifts for per-view displacements"
+        )
+    correction = float(scalar)
+    if not np.isfinite(correction):
+        raise ValueError("centre_of_rotation must be finite")
+    return correction
+
+
 @dataclass(frozen=True, eq=False, init=False)
 class Parallel3DGeometry:
     """Parallel-beam acquisition rotating around the volume's Z axis.
@@ -41,11 +60,18 @@ class Parallel3DGeometry:
     is (rows, columns). Detector shifts are (horizontal, vertical) pairs in
     pixels, one pair per view. Positive shifts move the detector centre along
     the increasing column and row directions, respectively.
+
+    centre_of_rotation is a single horizontal CoR correction in pixels,
+    independent of detector motion. Positive corrections move the effective
+    detector centre along increasing columns. The effective horizontal
+    displacement is detector_shifts[:, 0] + centre_of_rotation; vertical
+    displacement is detector_shifts[:, 1]. Zero is a centred rotation axis.
     """
 
     angles: NDArray[np.float64]
     detector_shape: tuple[int, int]
     detector_shifts: NDArray[np.float64]
+    centre_of_rotation: float
 
     def __init__(
         self,
@@ -53,6 +79,7 @@ class Parallel3DGeometry:
         angles: ArrayLike,
         detector_shape: tuple[int, int],
         detector_shifts: ArrayLike | None = None,
+        centre_of_rotation: float = 0.0,
     ) -> None:
         angle_values = np.asarray(angles)
         if angle_values.ndim != 1 or angle_values.size == 0:
@@ -73,6 +100,9 @@ class Parallel3DGeometry:
         object.__setattr__(
             self, "detector_shifts", _freeze_array(shifts, "detector_shifts")
         )
+        object.__setattr__(
+            self, "centre_of_rotation", _validate_centre_of_rotation(centre_of_rotation)
+        )
 
     @classmethod
     def tomography(
@@ -81,12 +111,14 @@ class Parallel3DGeometry:
         angles: ArrayLike,
         detector_shape: tuple[int, int],
         detector_shifts: ArrayLike | None = None,
+        centre_of_rotation: float = 0.0,
     ) -> "Parallel3DGeometry":
         """Build a scan geometry, using zero shifts when they are omitted."""
         return cls(
             angles=angles,
             detector_shape=detector_shape,
             detector_shifts=detector_shifts,
+            centre_of_rotation=centre_of_rotation,
         )
 
 
@@ -98,3 +130,56 @@ class VolumeGeometry:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "shape", _validate_shape(self.shape, 3, "shape"))
+
+
+@dataclass(frozen=True, eq=False, init=False)
+class Parallel2DGeometry:
+    """2D parallel scan with (columns,) detector shape and per-view shifts.
+
+    Horizontal detector shifts and the scalar CoR correction are in pixels,
+    positive along detector columns. Angles are in radians.
+    """
+
+    angles: NDArray[np.float64]
+    detector_shape: tuple[int]
+    detector_shifts: NDArray[np.float64]
+    centre_of_rotation: float
+
+    def __init__(
+        self,
+        *,
+        angles: ArrayLike,
+        detector_shape: tuple[int],
+        detector_shifts: ArrayLike | None = None,
+        centre_of_rotation: float = 0.0,
+    ):
+        angles = np.asarray(angles)
+        if angles.ndim != 1 or angles.size == 0:
+            raise ValueError("angles must be a nonempty one-dimensional array")
+        shifts = (
+            np.zeros(angles.size)
+            if detector_shifts is None
+            else np.asarray(detector_shifts)
+        )
+        if shifts.shape != angles.shape:
+            raise ValueError("detector_shifts must have shape (n_views,)")
+        object.__setattr__(self, "angles", _freeze_array(angles, "angles"))
+        object.__setattr__(
+            self, "detector_shape", _validate_shape(detector_shape, 1, "detector_shape")
+        )
+        object.__setattr__(
+            self, "detector_shifts", _freeze_array(shifts, "detector_shifts")
+        )
+        object.__setattr__(
+            self, "centre_of_rotation", _validate_centre_of_rotation(centre_of_rotation)
+        )
+
+
+@dataclass(frozen=True)
+class Volume2DGeometry:
+    """Centred, unit-spaced 2D grid with shape (y, x)."""
+
+    shape: tuple[int, int]
+
+    def __post_init__(self):
+        object.__setattr__(self, "shape", _validate_shape(self.shape, 2, "shape"))

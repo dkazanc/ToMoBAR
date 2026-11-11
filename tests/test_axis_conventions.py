@@ -8,6 +8,12 @@ import unittest
 from unittest.mock import Mock, patch
 
 import numpy as np
+from tomobar.geometry import (
+    Parallel2DGeometry,
+    Parallel3DGeometry,
+    Volume2DGeometry,
+    VolumeGeometry,
+)
 
 ROOT = Path(__file__).resolve().parents[1] / "tomobar"
 
@@ -98,8 +104,25 @@ class TestAxisConventions(unittest.TestCase):
 
     def reconstructor(self, cls, native, dim=3):
         rec = cls.__new__(cls)
-        rec.geom = f"{dim}D"
+        if dim == 3:
+            scan = Parallel3DGeometry(
+                angles=np.arange(native.shape[1], dtype=float),
+                detector_shape=(native.shape[0], native.shape[-1]),
+            )
+            volume = VolumeGeometry(
+                shape=(native.shape[0], native.shape[-1], native.shape[-1])
+            )
+        else:
+            scan = Parallel2DGeometry(
+                angles=np.arange(native.shape[0], dtype=float),
+                detector_shape=(native.shape[-1],),
+            )
+            volume = Volume2DGeometry(shape=(native.shape[-1], native.shape[-1]))
+        rec._init_geometry(scan, volume, 0)
         rec.Atools = SimpleNamespace(
+            close=Mock(),
+            forward=Mock(return_value=native),
+            backproject=Mock(side_effect=lambda data: data),
             _forwproj=Mock(return_value=native),
             _forwprojCuPy=Mock(return_value=native),
             _backproj=Mock(side_effect=lambda data: data),
@@ -108,7 +131,35 @@ class TestAxisConventions(unittest.TestCase):
             detectors_x_pad=0,
             processing_arch="gpu",
         )
+        self.addCleanup(rec.close)
         return rec
+
+    def test_direct_constructors_forward_detector_shifts_separately_from_cor(self):
+        shifts = np.array([[1.0, 2.0], [-3.0, 4.0]])
+        wrapper = self.numpy_module.AstraTools3D
+        for cls in self.classes:
+            wrapper.reset_mock()
+            original = Parallel3DGeometry(
+                angles=[0.0, 0.5],
+                detector_shape=(3, 5),
+                centre_of_rotation=0.75,
+                detector_shifts=shifts,
+            )
+            volume = VolumeGeometry(shape=(2, 4, 6))
+            rec = cls(
+                projection_geometry=original, volume_geometry=volume, detector_padding=2
+            )
+            self.addCleanup(rec.close)
+            call = wrapper.call_args
+            self.assertEqual(call.args, ())
+            scan = call.kwargs["projection_geometry"]
+            self.assertEqual(scan.centre_of_rotation, 0.75)
+            np.testing.assert_array_equal(scan.detector_shifts, shifts)
+            self.assertEqual(rec.detector_padding, 2)
+            self.assertEqual(scan.detector_shape, (3, 9))
+            self.assertIs(call.kwargs["volume_geometry"], volume)
+            self.assertIs(rec.projection_geometry, original)
+            self.assertIs(rec.volume_geometry, volume)
 
     def test_all_source_target_permutations_and_shape_tuples(self):
         for axes, shape in (
@@ -166,13 +217,13 @@ class TestAxisConventions(unittest.TestCase):
                                     "data_axes_labels_order" if legacy else "input_axes"
                                 ): target
                             }
-                            result = rec.FORWPROJ(np.zeros((2,) * len(shape)), **out_kw)
+                            result = rec.forward(np.zeros((2,) * len(shape)), **out_kw)
                             expected = native.transpose(
                                 tuple(axes.index(a) for a in target)
                             )
                             np.testing.assert_array_equal(result, expected)
                             np.testing.assert_array_equal(
-                                rec.BACKPROJ(result, **in_kw), native
+                                rec.backproject(result, **in_kw), native
                             )
 
     def test_default_orders_and_matching_aliases_preserve_behavior(self):
@@ -180,16 +231,16 @@ class TestAxisConventions(unittest.TestCase):
         native = np.arange(30).reshape(2, 3, 5)
         for cls in self.classes:
             rec = self.reconstructor(cls, native)
-            self.assertIs(rec.FORWPROJ(native), native)
-            self.assertIs(rec.BACKPROJ(native), native)
+            self.assertIs(rec.forward(native), native)
+            self.assertIs(rec.backproject(native), native)
             self.assertIs(
-                rec.FORWPROJ(
+                rec.forward(
                     native, output_axes=axes, data_axes_labels_order=list(axes)
                 ),
                 native,
             )
             self.assertIs(
-                rec.BACKPROJ(
+                rec.backproject(
                     native, input_axes=axes, data_axes_labels_order=list(axes)
                 ),
                 native,
@@ -300,8 +351,8 @@ class TestAxisConventions(unittest.TestCase):
         for cls in self.classes:
             rec = self.reconstructor(cls, data)
             for method, alias in (
-                ("FORWPROJ", "output_axes"),
-                ("BACKPROJ", "input_axes"),
+                ("forward", "output_axes"),
+                ("backproject", "input_axes"),
                 ("FBP", "input_axes"),
             ):
                 with self.assertRaisesRegex(ValueError, "Conflicting"):

@@ -372,17 +372,15 @@ def apply_circular_mask(data, recon_mask_radius, cupyrun=False):
     Returns:
         cp or np ndarray: recon volume after mask applied
     """
-    axis = 1  # axis to extract the reconstructed data shape, e.g. axis = 1 for 2d and 2 for 3d.
-    if len(data.shape) == 3:
-        axis = 2
-    recon_size = data.shape[axis]
-    half_size = recon_size // 2
+    rows, columns = data.shape[-2:]
+    half_y, half_x = rows // 2, columns // 2
+    half_size = min(half_y, half_x)
     if cupyrun:
-        Y, X = xp.ogrid[:recon_size, :recon_size]
-        dist_from_center = xp.sqrt((X - half_size) ** 2 + (Y - half_size) ** 2)
+        Y, X = xp.ogrid[:rows, :columns]
+        dist_from_center = xp.sqrt((X - half_x) ** 2 + (Y - half_y) ** 2)
     else:
-        Y, X = np.ogrid[:recon_size, :recon_size]
-        dist_from_center = np.sqrt((X - half_size) ** 2 + (Y - half_size) ** 2)
+        Y, X = np.ogrid[:rows, :columns]
+        dist_from_center = np.sqrt((X - half_x) ** 2 + (Y - half_y) ** 2)
 
     if recon_mask_radius <= 1.0:
         mask = dist_from_center <= half_size - abs(

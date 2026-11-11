@@ -16,6 +16,7 @@ from tomophantom import TomoP3D
 from tomophantom.qualitymetrics import QualityTools
 from tomophantom.artefacts import artefacts_mix
 
+from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 
@@ -89,12 +90,10 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%Reconstructing with 3D FBP-CuPy method %%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecToolsCP = RecToolsDIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
     device_projector="gpu",
 )
 
@@ -145,12 +144,10 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%Reconstructing with 3D Fourier-CuPy method %%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecToolsCP = RecToolsDIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
     device_projector="gpu",
 )
 
@@ -198,14 +195,12 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
     device_projector=0,
-    OS_number=6,  # The number of ordered subsets
+    OS_number=6,
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
@@ -265,14 +260,12 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
     device_projector=0,
-    OS_number=36,  # The number of ordered subsets
+    OS_number=36,
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {

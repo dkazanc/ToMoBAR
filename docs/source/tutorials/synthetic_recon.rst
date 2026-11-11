@@ -102,15 +102,16 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     RectoolsDIR = RecToolsDIR(
-        DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-        CenterRotOffset=None,  # Center of Rotation (CoR) scalar (the data is perfectly centered here)
-        AnglesVec=angles_rad,  # array of angles in radians
-        ObjSize=N_size,  # a scalar to define reconstructed object dimensions
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad,
+            detector_shape=(Vert_det, Horiz_det),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
         device_projector="gpu",
     )
 

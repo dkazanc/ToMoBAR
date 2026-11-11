@@ -1,6 +1,6 @@
 """Reconstruction class for direct reconstruction methods (2D/3D).
 
-* :func:`RecToolsDIR.FORWPROJ` and :func:`RecToolsDIR.BACKPROJ` Forward/Backward 2D/3D projection (ASTRA-Toolbox)
+* :func:`RecToolsDIR.forward` and :func:`RecToolsDIR.backproject` Forward/Backward 2D/3D projection (ASTRA-Toolbox)
 * :func:`RecToolsDIR.FOURIER` Fourier Slice Theorem-based reconstruction in 2D only (adopted from the Tim Day's code)
 * :func:`RecToolsDIR.FBP` Filtered Back Projection 2D/3D (ASTRA with the custom built filter).
 """
@@ -11,6 +11,13 @@ import scipy.fftpack
 
 from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+from tomobar.geometry import (
+    Parallel2DGeometry,
+    Parallel3DGeometry,
+    Volume2DGeometry,
+    VolumeGeometry,
+)
+from tomobar.reconstruction_geometry import GeometryReconstruction
 from tomobar.supp.funcs import (
     _transpose_data_axes,
     _resolve_data_axes,
@@ -19,64 +26,58 @@ from tomobar.supp.funcs import (
 from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 
 
-class RecToolsDIR:
-    """Reconstruction class using DIRect methods (FBP and Fourier).
+class RecToolsDIR(GeometryReconstruction):
+    """Direct reconstruction from explicit acquisition and volume geometry.
 
-    Args:
-        DetectorsDimH (int): Horizontal detector dimension.
-        DetectorsDimH_pad (int): Padding size of horizontal detector
-        DetectorsDimV (int): Vertical detector dimension for 3D case, 0 or None for 2D case.
-        CenterRotOffset (float, ndarray): Detector displacement for ASTRA methods,
-            in pixels. None means zero; a scalar or (n_angles,) array gives
-            horizontal offsets. For 3D, (n_angles, 2) gives horizontal/vertical
-            pairs. Positive offsets move the detector along its column/row
-            directions; vertical is world +Z for the current CT geometry.
-        AnglesVec (np.ndarray): Vector of projection angles in radians.
-        ObjSize (int): Reconstructed object dimensions (a scalar).
-        device_projector (str, int, optional): 'cpu' or 'gpu'  device OR provide a GPU index (integer) of a specific GPU device.
-        cupyrun (bool, optional): instantiate CuPy class if True.
+    Use Parallel3DGeometry with VolumeGeometry, or Parallel2DGeometry with
+    Volume2DGeometry. detector_padding adds edge pixels per detector side and
+    derives a padded scan without modifying either supplied geometry object.
+    The requested volume shape is always preserved. ASTRA 3D uses GPU
+    projectors; NumPy and CuPy arrays use the ASTRA 2.5 direct DLPack API.
     """
 
     def __init__(
         self,
-        DetectorsDimH,  # DetectorsDimH # detector dimension (horizontal)
-        DetectorsDimH_pad,  # Padding size of horizontal detector
-        DetectorsDimV,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-        CenterRotOffset,  # Centre of Rotation (CoR) scalar or a vector
-        AnglesVec,  # Array of angles in radians
-        ObjSize,  # A scalar to define reconstructed object dimensions
+        *,
+        projection_geometry: Parallel2DGeometry | Parallel3DGeometry,
+        volume_geometry: Volume2DGeometry | VolumeGeometry,
+        detector_padding: int = 0,
         projector: Literal["fourier", "astra"] = "astra",
-        device_projector="gpu",  # Choose the device  to be 'cpu' or 'gpu' OR provide a GPU index (integer) of a specific device
+        device_projector=0,
     ):
-        device_projector, GPUdevice_index = _parse_device_argument(device_projector)
-
-        if DetectorsDimV == 0 or DetectorsDimV is None:
-            self.geom = "2D"
-            if projector == "astra":
-                self.Atools = AstraTools2D(
-                    DetectorsDimH,
-                    DetectorsDimH_pad,
-                    AnglesVec,
-                    CenterRotOffset,
-                    ObjSize,
-                    device_projector,
-                    GPUdevice_index,
+        self._init_geometry(projection_geometry, volume_geometry, detector_padding)
+        if projector not in ("astra", "fourier"):
+            raise ValueError("projector must be 'astra' or 'fourier'")
+        self.projector = projector
+        architecture, device_index = _parse_device_argument(device_projector)
+        if self.geom == "3D":
+            if architecture != "gpu":
+                raise ValueError(
+                    "3D CPU reconstruction is not supported, please use GPU"
                 )
-        else:
-            self.geom = "3D"
             if projector == "astra":
                 self.Atools = AstraTools3D(
-                    DetectorsDimH,
-                    DetectorsDimH_pad,
-                    DetectorsDimV,
-                    AnglesVec,
-                    CenterRotOffset,
-                    ObjSize,
-                    device_projector,
-                    GPUdevice_index,
+                    projection_geometry=self.padded_projection_geometry,
+                    volume_geometry=volume_geometry,
+                    device_index=device_index,
                 )
+        elif projector == "astra":
+            if volume_geometry.shape[0] != volume_geometry.shape[1]:
+                raise ValueError(
+                    "The 2D ASTRA wrapper currently requires a square volume"
+                )
+            self.Atools = AstraTools2D(
+                projection_geometry.detector_shape[0],
+                detector_padding,
+                projection_geometry.angles,
+                projection_geometry.detector_shifts
+                + projection_geometry.centre_of_rotation,
+                volume_geometry.shape[0],
+                architecture,
+                device_index,
+            )
 
-    def FORWPROJ(self, data: np.ndarray, *, output_axes=None, **kwargs) -> np.ndarray:
+    def forward(self, data: np.ndarray, *, output_axes=None, **kwargs) -> np.ndarray:
         """Module to perform forward projection of 2d/3d data numpy array
 
         Args:
@@ -97,12 +98,18 @@ class RecToolsDIR:
         axes = _resolve_data_axes(
             output_axes, kwargs.get("data_axes_labels_order"), native_axes
         )
-        projected = self.Atools._forwproj(data)
+        self._ensure_open()
+        projected = (
+            self.Atools.forward(data)
+            if self.geom == "3D"
+            else self.Atools._forwproj(data)
+        )
+        projected = self._crop_projection(projected)
         return _transpose_data_axes(
             projected, source_axes=native_axes, target_axes=axes
         )
 
-    def BACKPROJ(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
+    def backproject(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
         """Module to perform back-projection of 2d/3d data numpy array
 
         Args:
@@ -125,10 +132,13 @@ class RecToolsDIR:
         )
         data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
 
-        data = _apply_horiz_detector_padding(
-            data, self.Atools.detectors_x_pad, cupyrun=False
+        data = _apply_horiz_detector_padding(data, self.detector_padding, cupyrun=False)
+        self._ensure_open()
+        return (
+            self.Atools.backproject(data)
+            if self.geom == "3D"
+            else self.Atools._backproj(data)
         )
-        return self.Atools._backproj(data)
 
     def FBP(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
         """Filtered backprojection reconstruction module for 2D or 3D data.
@@ -169,7 +179,7 @@ class RecToolsDIR:
         if self.geom == "2D":
             if self.Atools.processing_arch == "gpu":
                 data = _apply_horiz_detector_padding(
-                    data, self.Atools.detectors_x_pad, cupyrun
+                    data, self.detector_padding, cupyrun
                 )
                 return check_kwargs(
                     self.Atools._fbp(data), **kwargs
@@ -177,17 +187,15 @@ class RecToolsDIR:
             else:
                 "dealing with FBP 2D not working for parallel_vec geometry and CPU"
                 data = _apply_horiz_detector_padding(
-                    data, self.Atools.detectors_x_pad, cupyrun
+                    data, self.detector_padding, cupyrun
                 )
                 return check_kwargs(
                     self.Atools._backproj(_filtersinc2D(data)), **kwargs
                 )  # 2D FBP reconstruction using the customised SINC filter
         else:
-            data = _apply_horiz_detector_padding(
-                data, self.Atools.detectors_x_pad, cupyrun
-            )
+            data = _apply_horiz_detector_padding(data, self.detector_padding, cupyrun)
             return check_kwargs(
-                self.Atools._backproj(_filtersinc3D(data)), **kwargs
+                self.Atools.backproject(_filtersinc3D(data)), **kwargs
             )  # 3D FBP reconstruction using customised SINC filter
 
     def FOURIER(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
@@ -207,6 +215,14 @@ class RecToolsDIR:
         Returns:
             np.ndarray: Reconstructed object
         """
+        self._ensure_open()
+        if (
+            self.geom != "2D"
+            or self.volume_geometry.shape[0] != self.volume_geometry.shape[1]
+        ):
+            raise ValueError("FOURIER requires a square 2D volume")
+        if np.any(self.projection_geometry.detector_shifts != 0):
+            raise ValueError("FOURIER does not support detector_shifts")
         native_axes = ("angles", "detX")
         axes = _resolve_data_axes(
             input_axes, kwargs.get("data_axes_labels_order"), native_axes
@@ -229,7 +245,7 @@ class RecToolsDIR:
         from scipy.fft import fftshift, ifftshift, fft, ifft2
         from scipy.interpolate import griddata
 
-        ObjSize = self.Atools.recon_size
+        ObjSize = self.volume_geometry.shape[-1]
         # pad sinogram and move it to compensate for CoR
         oversampling = 2  # 2 or larger
         angles_tot, DetectorsDimH = data.shape
@@ -239,14 +255,18 @@ class RecToolsDIR:
             )
         det_x_up = oversampling * DetectorsDimH
         sino_up = np.zeros([angles_tot, det_x_up], dtype=np.float32)
-        pad_from = DetectorsDimH // 2 + int(self.Atools.centre_of_rotation)
-        pad_to = det_x_up - DetectorsDimH // 2 + int(self.Atools.centre_of_rotation)
+        pad_from = DetectorsDimH // 2 + int(self.projection_geometry.centre_of_rotation)
+        pad_to = (
+            det_x_up
+            - DetectorsDimH // 2
+            + int(self.projection_geometry.centre_of_rotation)
+        )
         sino_up[:, pad_from:pad_to] = data
 
         # Fourier transform the rows of the sinogram, move the DC component to the row's centre
         sinogram_fft_rows = fftshift(fft(ifftshift(sino_up, axes=1)), axes=1)
         # Coordinates of sinogram FFT-ed rows' samples in 2D FFT space
-        a = -self.Atools.angles_vec
+        a = -self.projection_geometry.angles
         r = np.arange(det_x_up) - det_x_up / 2
         r, a = np.meshgrid(r, a)
         r = r.flatten()

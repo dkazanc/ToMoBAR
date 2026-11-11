@@ -13,6 +13,7 @@ import timeit
 import numpy as np
 import matplotlib.pyplot as plt
 import cupy as cp
+from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
 from tomobar.supp.suppTools import normaliser
 from tomobar.methodsIR_CuPy import RecToolsIRCuPy
 from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
@@ -40,6 +41,7 @@ detectorVert = cp.size(data_norm_cupy, 2)
 data_labels3D = ["detX", "angles", "detY"]  # set the input data labels
 
 N_size = 1000
+reconstruction_grid = VolumeGeometry(shape=(detectorVert, N_size, N_size))
 angles_rad = np.linspace(0, np.pi, 360)
 del data_npz
 # %%
@@ -47,12 +49,13 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%Reconstructing with Log-Polar Fourier method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RecToolsCP = RecToolsDIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=100,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Centre of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=0.0,
+    ),
+    volume_geometry=reconstruction_grid,
+    detector_padding=100,
     device_projector=0,
 )
 
@@ -80,33 +83,17 @@ plt.title("FBP reconstruction")
 # fig.savefig('dendr_LogPolar.png', dpi=200)
 # %%
 padding_value = 100
-RecToolsCP = RecToolsDIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Centre of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=detectorHoriz
-    + 2 * padding_value,  # Reconstructed object dimensions (scalar)
-    device_projector=0,
-)
-
-FBPrec_cupy_pad = RecToolsCP.FBP(
-    data_norm_cupy,
-    recon_mask_radius=2.0,
-    data_axes_labels_order=data_labels3D,
-    cutoff_freq=0.3,
-)
 
 # Initialise the IR class once here
 # Set scanning geometry parameters and initiate a class object
 RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=0.0,
+    ),
+    volume_geometry=reconstruction_grid,
+    detector_padding=padding_value,
     device_projector=0,
 )
 
@@ -164,14 +151,15 @@ print("Reconstructing with FISTA OS-PWLS-TV (PD) method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=0.0,
+    ),
+    volume_geometry=reconstruction_grid,
+    detector_padding=padding_value,
     device_projector=0,
-    OS_number=6,  # The number of ordered subsets
+    OS_number=6,
 )
 
 _data_ = {
@@ -211,17 +199,18 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-PWLS-TV (PD) method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-# FBP recon needed for warm start. Note that with padding enabled it needs to be the padded size
+# Warm-start ADMM with FBP on the same reconstruction grid; detector padding does not change that grid.
 
 RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=0.0,
+    ),
+    volume_geometry=reconstruction_grid,
+    detector_padding=padding_value,
     device_projector=0,
-    OS_number=24,  # The number of ordered subsets
+    OS_number=24,
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
@@ -233,7 +222,7 @@ _data_ = {
 
 #################### Creating the algorithm dictionary: #######################
 _algorithm_ = {
-    "initialise": FBPrec_cupy_pad,  # needs to be the padded size detectorHoriz + 2*padding_value
+    "initialise": FBPrec_cupy,  # shape matches reconstruction_grid.shape
     "iterations": 2,
     "ADMM_rho_const": 0.9,
     "ADMM_relax_par": 1.7,
@@ -266,14 +255,15 @@ print("Reconstructing with FISTA OS-SWLS-TV (PD) method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 ####################### Creating the data dictionary: #######################
 RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=0.0,
+    ),
+    volume_geometry=reconstruction_grid,
+    detector_padding=padding_value,
     device_projector=0,
-    OS_number=6,  # The number of ordered subsets
+    OS_number=6,
 )
 
 _data_ = {
@@ -316,14 +306,15 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-SWLS-TV (PD) method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=padding_value,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=None,  # Center of Rotation scalar
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=0.0,
+    ),
+    volume_geometry=reconstruction_grid,
+    detector_padding=padding_value,
     device_projector=0,
-    OS_number=12,  # The number of ordered subsets
+    OS_number=12,
 )
 ####################### Creating the data dictionary: #######################
 _data_ = {
