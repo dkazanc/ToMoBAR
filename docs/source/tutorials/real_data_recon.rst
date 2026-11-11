@@ -27,7 +27,7 @@ demo.
             centre_of_rotation=0.0,
         ),
         volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
-        device_projector="gpu",
+        device_index=0,
     )
 
     FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
@@ -51,7 +51,7 @@ demo.
         ),
         volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
         detector_padding=100,
-        device_projector="gpu",
+        device_index=0,
     )
 
     FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
@@ -74,7 +74,7 @@ demo.
         AnglesVec=angles_rad,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         datafidelity="PWLS",  # Data fidelity term
-        device_projector="gpu",
+        device_index=0,
     )
 
     _data_ = {
@@ -133,7 +133,7 @@ demo.
         AnglesVec=angles_rad,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         datafidelity="SWLS",  # Data fidelity term
-        device_projector="gpu",
+        device_index=0,
     )
 
     _data_ = {

@@ -6,6 +6,33 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 
+def _validate_ordsub_number(value, n_angles):
+    """Normalize None to one; subsets must be nonempty integer partitions."""
+    if value is None:
+        value = 1
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
+        raise TypeError("The number of ordered subsets must be an integer")
+    if not 1 <= value <= n_angles:
+        raise ValueError(
+            f"The number of ordered subsets must be between 1 and {n_angles}"
+        )
+    return int(value)
+
+
+def interleaved_view_indices(
+    view_count: int, subset_count: int | None = None
+) -> tuple[NDArray[np.intp], ...]:
+    """Partition acquisition-order views into nonempty, read-only subsets."""
+    (view_count,) = _validate_shape((view_count,), 1, "view_count")
+    count = _validate_ordsub_number(subset_count, view_count)
+    return tuple(
+        np.frombuffer(
+            np.arange(index, view_count, count, dtype=np.intp).tobytes(), dtype=np.intp
+        )
+        for index in range(count)
+    )
+
+
 def _validate_shape(shape, ndim: int, name: str) -> tuple[int, ...]:
     dimensions = tuple(shape)
     if len(dimensions) != ndim:
@@ -121,6 +148,12 @@ class Parallel3DGeometry:
             centre_of_rotation=centre_of_rotation,
         )
 
+    @property
+    def projection_shape(self) -> tuple[int, int, int]:
+        """Native projection array shape (detector rows, views, columns)."""
+        rows, columns = self.detector_shape
+        return rows, self.angles.size, columns
+
 
 @dataclass(frozen=True)
 class VolumeGeometry:
@@ -173,6 +206,11 @@ class Parallel2DGeometry:
         object.__setattr__(
             self, "centre_of_rotation", _validate_centre_of_rotation(centre_of_rotation)
         )
+
+    @property
+    def projection_shape(self) -> tuple[int, int]:
+        """Native projection array shape (views, detector columns)."""
+        return self.angles.size, self.detector_shape[0]
 
 
 @dataclass(frozen=True)

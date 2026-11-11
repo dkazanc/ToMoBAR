@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 from tomobar.supp.suppTools import normaliser, _apply_horiz_detector_padding
-from tomobar.supp.funcs import _swap_data_axes_to_accepted
+from tomobar.supp.axis_order import _swap_data_axes_to_accepted
 from numpy.testing import assert_allclose
 
 

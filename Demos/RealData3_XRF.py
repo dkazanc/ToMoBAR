@@ -34,7 +34,7 @@ RectoolsDIR_cp = RecToolsDIRCuPy(
     ),
     volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
     detector_padding=padding_value,
-    device_projector=0,
+    device_index=0,
 )
 
 FBPrec_cupy = RectoolsDIR_cp.FBP(data_cp, data_axes_labels_order=data_labels3D)
@@ -69,7 +69,7 @@ RectoolsIR_cp = RecToolsIRCuPy(
     ),
     output_shape=(detectorVert, detectorHoriz, detectorHoriz),
     detector_padding=padding_value,
-    device_projector=0,
+    device_index=0,
     OS_number=12,
 )
 

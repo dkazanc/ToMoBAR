@@ -1,6 +1,6 @@
 from typing import Union
 import cupy as cp
-from tomobar.supp.funcs import _data_dims_swapper
+from tomobar.supp.axis_order import _transpose_data_axes
 
 
 def dicts_check(
@@ -85,16 +85,16 @@ def dicts_check(
         if data2dinput:
             correct_labels_order = correct_labels_order2D
 
-        _data_["projection_data"] = _data_dims_swapper(
+        _data_["projection_data"] = _transpose_data_axes(
             _data_["projection_data"],
-            _data_["data_axes_labels_order"],
-            correct_labels_order,
+            source_axes=_data_["data_axes_labels_order"],
+            target_axes=correct_labels_order,
         )
         if "projection_raw_data" in _data_:
-            _data_["projection_raw_data"] = _data_dims_swapper(
+            _data_["projection_raw_data"] = _transpose_data_axes(
                 _data_["projection_raw_data"],
-                _data_["data_axes_labels_order"],
-                correct_labels_order,
+                source_axes=_data_["data_axes_labels_order"],
+                target_axes=correct_labels_order,
             )
         # we need to reset the swap option here as the data already been modified so we don't swap it again in the method itself
         _data_["data_axes_labels_order"] = None

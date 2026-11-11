@@ -15,7 +15,13 @@ import weakref
 
 import numpy as np
 
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+from tomobar.geometry import (
+    Parallel2DGeometry,
+    Parallel3DGeometry,
+    Volume2DGeometry,
+    VolumeGeometry,
+)
+from tomobar.astra_wrappers.geometry import parallel2d_vectors, parallel3d_vectors
 
 ROOT = Path(__file__).resolve().parents[1] / "tomobar"
 
@@ -159,6 +165,8 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         cupy.ascontiguousarray = Mock(side_effect=self.ascontiguousarray)
         cupy.empty = Mock(side_effect=self.empty)
         self.cupy = cupy
+        self.astra.projector.direct_FP = Mock(side_effect=self.direct)
+        self.astra.projector.direct_BP = Mock(side_effect=self.direct)
         self.astra.projector3d.direct_FP = Mock(side_effect=self.direct)
         self.astra.projector3d.direct_BP = Mock(side_effect=self.direct)
         # Restore sys.modules immediately after importing isolated module objects.
@@ -169,9 +177,9 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                 "cupy": cupy,
             },
         ):
-            funcs = load_module("_resource_test_funcs", "supp/funcs.py")
-            self.funcs = funcs
-            with patch.dict("sys.modules", {"tomobar.supp.funcs": funcs}):
+            axes = load_module("_resource_test_axes", "supp/axis_order.py")
+            self.axes = axes
+            with patch.dict("sys.modules", {"tomobar.supp.axis_order": axes}):
                 self.base = load_module(
                     "_resource_test_base", "astra_wrappers/astra_base.py"
                 )
@@ -202,7 +210,9 @@ class TestAstraResourceLifecycle(unittest.TestCase):
 
     def direct(self, ident, data, *, out):
         self.backend.hit("direct")
-        self.assertIn(ident, self.backend.live["projector3d"])
+        self.assertIn(
+            ident, self.backend.live["projector3d"] | self.backend.live["projector"]
+        )
         if isinstance(data, np.ndarray):
             self.assertTrue(data.flags.c_contiguous)
             self.assertEqual(data.dtype, np.float32)
@@ -228,7 +238,6 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         self,
         dim=2,
         subsets=1,
-        arch="cpu",
         register_cleanup=True,
         offset=0.0,
         angles=None,
@@ -240,12 +249,21 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             angles_vec=np.arange(4.0) if angles is None else angles,
             centre_of_rotation=offset,
             recon_size=2,
-            processing_arch=arch,
             device_index=0,
             ordsub_number=subsets,
         )
         if dim == 2:
-            wrapper = self.tools2d.AstraTools2D(**common)
+            wrapper = self.tools2d.AstraTools2D(
+                projection_geometry=Parallel2DGeometry(
+                    angles=common["angles_vec"],
+                    detector_shape=(4,),
+                    centre_of_rotation=offset,
+                    detector_shifts=detector_shifts,
+                ),
+                volume_geometry=Volume2DGeometry(shape=(2, 2)),
+                device_index=0,
+                ordsub_number=subsets,
+            )
         else:
             wrapper = self.tools3d.AstraTools3D(
                 projection_geometry=Parallel3DGeometry.tomography(
@@ -266,37 +284,43 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         for manager in ("data2d", "data3d", "algorithm"):
             self.assertFalse(self.backend.live[manager], manager)
 
-    def test_2d_projectors_survive_repeated_calls_and_close_once(self):
-        for arch in ("cpu", "gpu"):
-            for subsets in (1, 2):
-                with self.subTest(arch=arch, subsets=subsets):
-                    wrapper = self.make_wrapper(subsets=subsets, arch=arch)
-                    owned = set(self.backend.live["projector"])
-                    indices = [None] if subsets == 1 else range(subsets)
-                    for _ in range(2):
-                        for index in indices:
-                            self.assertIs(
-                                wrapper._runAstraProj2D(np.ones((2, 2)), index, "FP"),
-                                self.backend.result,
-                            )
-                            self.assertIs(
-                                wrapper._runAstraBackproj2D(
-                                    np.ones((4, 4)), "BP", 1, index
-                                ),
-                                self.backend.result,
-                            )
-                            self.assertEqual(self.backend.live["projector"], owned)
-                            self.assert_no_temporaries()
-                    wrapper.close()
-                    wrapper.close()
-                    self.assertFalse(self.backend.live["projector"])
-                    for ident in owned:
-                        self.assertEqual(
-                            self.backend.deleted.count(("projector", ident)), 1
-                        )
+    def test_2d_handles_are_lazy_shared_and_closed_once(self):
+        for subsets in (1, 2):
+            wrapper = self.make_wrapper(subsets=subsets)
+            self.assertFalse(self.backend.live["projector"])
+            self.astra.geom_size.side_effect = lambda geom: (
+                (geom["GridRowCount"], geom["GridColCount"])
+                if "GridRowCount" in geom
+                else (len(geom["Vectors"]), geom["DetectorCount"])
+            )
+            handles = {}
+            for index in (None, *range(subsets), None):
+                projected = wrapper.forward(
+                    np.ones((2, 2), dtype=np.float64), subset_index=index
+                )
+                handle = self.astra.projector.direct_FP.call_args.args[0]
+                result = wrapper.backproject(projected, subset_index=index)
+                self.assertEqual(result.shape, (2, 2))
+                self.assertEqual(
+                    self.astra.projector.direct_BP.call_args.args[0], handle
+                )
+                if index in handles:
+                    self.assertEqual(handles[index], handle)
+                handles[index] = handle
+                self.assertEqual(len(self.backend.live["projector"]), len(handles))
+                self.assert_no_temporaries()
+            self.astra.data2d.create.assert_not_called()
+            self.astra.data2d.link.assert_not_called()
+            self.astra.algorithm.create.assert_not_called()
+            wrapper.close()
+            wrapper.close()
+            self.assertFalse(self.backend.live["projector"])
+            for handle in handles.values():
+                self.assertEqual(self.backend.deleted.count(("projector", handle)), 1)
+            self.astra.geom_size.side_effect = None
 
     def test_3d_handles_are_lazy_reused_and_released_once(self):
-        wrapper = self.make_wrapper(3, subsets=3, arch="gpu")
+        wrapper = self.make_wrapper(3, subsets=3)
         self.assertFalse(self.backend.live["projector3d"])
         self.astra.create_projector.assert_not_called()
         handles = {}
@@ -326,90 +350,40 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "closed"):
                 operation(self.array)
 
-    def test_numpy_paths_cleanup_on_success_and_failures(self):
-        for dim in (2,):
-            for forward in (False, True):
-                for subsets in (1, 2):
-                    wrapper = self.make_wrapper(
-                        dim, subsets, "cpu" if dim == 2 else "gpu"
-                    )
-                    manager = f"data{dim}d"
-                    first = f"{manager}.link" if forward else f"{manager}.create"
-                    second_count = 1 if forward else 2
-                    for failure in (
-                        None,
-                        (first, 1),
-                        (f"{manager}.create", second_count),
-                        ("algorithm.create", 1),
-                        ("algorithm.run", 1),
-                        (f"{manager}.get", 1),
-                    ):
-                        with self.subTest(
-                            dim=dim, forward=forward, subsets=subsets, failure=failure
-                        ):
-                            self.backend.counts.clear()
-                            self.backend.fail_at = failure
-                            index = None if subsets == 1 else 1
-                            data = np.ones((2,) * dim)
+    def test_fbp2d_scopes_temporary_resources_on_success_and_failure(self):
+        wrapper = self.make_wrapper(2)
+        for failure in (
+            None,
+            ("data2d.create", 1),
+            ("data2d.create", 2),
+            ("algorithm.create", 1),
+            ("algorithm.run", 1),
+            ("data2d.get", 1),
+        ):
+            self.backend.counts.clear()
+            self.backend.fail_at = failure
+            if failure:
+                with self.assertRaisesRegex(RuntimeError, "injected failure"):
+                    wrapper._fbp(np.ones((4, 4), dtype=np.float32))
+            else:
+                self.assertIs(
+                    wrapper._fbp(np.ones((4, 4), dtype=np.float32)), self.backend.result
+                )
+            self.assert_no_temporaries()
+        self.backend.fail_at = None
+        wrapper.close()
 
-                            def invoke():
-                                if dim == 2:
-                                    return (
-                                        wrapper._runAstraProj2D(data, index, "FP")
-                                        if forward
-                                        else wrapper._runAstraBackproj2D(
-                                            data, "BP", 1, index
-                                        )
-                                    )
-                                return (
-                                    wrapper.forward(data, subset_index=index)
-                                    if forward
-                                    else wrapper.backproject(data, subset_index=index)
-                                )
-
-                            if failure:
-                                with self.assertRaisesRegex(
-                                    RuntimeError, "injected failure"
-                                ):
-                                    invoke()
-                            else:
-                                self.assertIs(invoke(), self.backend.result)
-                            self.assert_no_temporaries()
-                    self.backend.fail_at = None
-                    wrapper.close()
-
-    def test_caller_owned_data_ids_are_preserved(self):
-        for dim in (2,):
-            wrapper = self.make_wrapper(dim, arch="cpu" if dim == 2 else "gpu")
-            manager = f"data{dim}d"
-            borrowed = self.backend.allocate(manager, "create")
-            for failure in (None, ("algorithm.run", 1)):
-                with self.subTest(dim=dim, failure=failure):
-                    self.backend.counts.clear()
-                    self.backend.fail_at = failure
-
-                    def invoke():
-                        return (
-                            wrapper._runAstraProj2D(borrowed, None, "FP")
-                            if dim == 2
-                            else wrapper.forward(borrowed, subset_index=None)
-                        )
-
-                    if failure:
-                        with self.assertRaisesRegex(RuntimeError, "injected failure"):
-                            invoke()
-                    else:
-                        invoke()
-                    self.assertEqual(self.backend.live[manager], {borrowed})
-                    self.assertFalse(self.backend.live["algorithm"])
-            self.backend.fail_at = None
-            self.backend.delete(manager, borrowed)
-            wrapper.close()
+    def test_2d_rejects_astra_ids_and_non_array_inputs(self):
+        wrapper = self.make_wrapper(2)
+        for data in (123, object()):
+            with self.assertRaisesRegex(TypeError, "CuPy"):
+                wrapper.forward(data)
+        self.astra.create_projector.assert_not_called()
 
     def test_failed_direct_operations_retain_cached_handles_until_close(self):
         for forward in (False, True):
             for failure in (("empty", 1), ("projector3d.create", 1), ("direct", 1)):
-                wrapper = self.make_wrapper(3, subsets=2, arch="gpu")
+                wrapper = self.make_wrapper(3, subsets=2)
                 self.backend.counts.clear()
                 self.backend.fail_at = failure
                 operation = wrapper.forward if forward else wrapper.backproject
@@ -432,17 +406,16 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                 raise RuntimeError("body failed")
         self.assertFalse(self.backend.live["projector"])
         with self.assertRaisesRegex(RuntimeError, "closed"):
-            wrapper._forwproj(np.ones((2, 2)))
+            wrapper.forward(np.ones((2, 2)))
         with self.assertRaisesRegex(RuntimeError, "closed"):
             wrapper.__enter__()
 
     def test_finalizer_releases_projectors_without_retaining_wrapper(self):
         for dim in (2, 3):
-            wrapper = self.make_wrapper(
-                dim, arch="cpu" if dim == 2 else "gpu", register_cleanup=False
+            wrapper = self.make_wrapper(dim, register_cleanup=False)
+            wrapper.forward(
+                self.array if dim == 3 else np.ones((2, 3, 4), dtype=np.float32)
             )
-            if dim == 3:
-                wrapper.forward(self.array)
             ref = weakref.ref(wrapper)
             del wrapper
             gc.collect()
@@ -451,18 +424,23 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                 self.backend.live["projector" if dim == 2 else "projector3d"]
             )
 
-    def test_partial_subset_constructor_failure_releases_created_projectors(self):
+    def test_failed_2d_subset_creation_keeps_existing_handle_until_close(self):
+        wrapper = self.make_wrapper(2, subsets=2)
+        array = np.ones((2, 3, 4), dtype=np.float32)
+        wrapper.forward(array, subset_index=0)
+        first_handle = wrapper._projector_handles[0]
         self.backend.fail_at = ("projector.create", 2)
         with self.assertRaisesRegex(RuntimeError, "injected failure"):
-            self.make_wrapper(subsets=2)
-        # Mock call history retains exception tracebacks and thus the constructor.
-        self.astra.create_projector.reset_mock()
-        gc.collect()
+            wrapper.forward(array, subset_index=1)
+        self.assertEqual(wrapper._projector_handles, {0: first_handle})
+        self.backend.fail_at = None
+        wrapper.forward(array, subset_index=1)
+        wrapper.close()
         self.assertFalse(self.backend.live["projector"])
 
     def test_real_inputs_are_packed_without_modifying_the_original(self):
         for forward in (False, True):
-            wrapper = self.make_wrapper(3, arch="gpu")
+            wrapper = self.make_wrapper(3)
             for dtype in (np.float32, np.float64, np.float16, np.int16, np.bool_):
                 base = np.arange(24).reshape(2, 3, 4).astype(dtype)
                 layouts = {
@@ -515,7 +493,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             ),
             (MockGPUArray(np.ones((2, 3, 4)), device=1), ValueError, "GPU 1"),
         )
-        wrapper = self.make_wrapper(3, arch="gpu")
+        wrapper = self.make_wrapper(3)
         for forward in (False, True):
             for data, error, message in cases:
                 with self.subTest(forward=forward, message=message):
@@ -531,7 +509,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
 
     def test_shapes_follow_volume_and_selected_projection_geometry(self):
         for subsets in (1, 2):
-            wrapper = self.make_wrapper(3, subsets, "gpu")
+            wrapper = self.make_wrapper(3, subsets)
             volume_shape = (2, 2, 2)
             projection_shape = (2, 4 // subsets, 4)
             self.astra.geom_size.side_effect = lambda geom: (
@@ -593,7 +571,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         self.backend.fail_at = None
 
     def test_cupy_paths_reject_numpy_fallback_explicitly(self):
-        wrapper = self.make_wrapper(3, arch="gpu")
+        wrapper = self.make_wrapper(3)
         with patch.object(self.base, "xp", np):
             with self.assertRaisesRegex(RuntimeError, "CuPy"):
                 wrapper.forward(self.array, subset_index=None)
@@ -611,7 +589,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         for cor, shifts, expected in cases:
             with self.subTest(cor=cor, shifts=shifts):
                 with self.make_wrapper(
-                    3, arch="gpu", offset=cor, detector_shifts=shifts, angles=angles
+                    3, offset=cor, detector_shifts=shifts, angles=angles
                 ) as wrapper:
                     vectors = wrapper.proj_geom["Vectors"]
                     np.testing.assert_allclose(vectors[:, 3:6], expected, atol=1e-14)
@@ -627,15 +605,19 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         offsets = np.array([1.0, -2.0, 0.5, 3.0])
         original = offsets.copy()
         wrapper = self.make_wrapper(
-            3, arch="gpu", detector_shifts=np.column_stack((offsets, offsets * 0))
+            3, detector_shifts=np.column_stack((offsets, offsets * 0))
         )
         offsets[:] = 99.0
         np.testing.assert_array_equal(
             wrapper.projection_geometry.detector_shifts[:, 0], original
         )
         angles = np.arange(4.0)
-        v2 = self.funcs._vec_geom_init2D(angles, original.tolist())
-        v3 = self.funcs._vec_geom_init3D(angles, 1.0, 1.0, original)
+        v2 = parallel2d_vectors(
+            Parallel2DGeometry(
+                angles=angles, detector_shape=(4,), detector_shifts=original
+            )
+        )
+        v3 = parallel3d_vectors(wrapper.projection_geometry)
         np.testing.assert_allclose(v2, v3[:, [0, 1, 3, 4, 6, 7]])
         np.testing.assert_array_equal(v3[:, 5], np.zeros(4))
 
@@ -649,17 +631,12 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         for offset in offsets:
             with self.subTest(offset=offset):
                 full = self.make_wrapper(
-                    3, arch="gpu", offset=1.25, detector_shifts=offset, angles=angles
+                    3, offset=1.25, detector_shifts=offset, angles=angles
                 )
                 full_vectors = full.proj_geom["Vectors"]
                 self.astra.create_proj_geom.reset_mock()
                 subsets = self.make_wrapper(
-                    3,
-                    subsets=2,
-                    arch="gpu",
-                    offset=1.25,
-                    detector_shifts=offset,
-                    angles=angles,
+                    3, subsets=2, offset=1.25, detector_shifts=offset, angles=angles
                 )
                 self.assertEqual(len(subsets.proj_geom_OS), 2)
                 for subset, geometry in subsets.proj_geom_OS.items():
@@ -707,6 +684,37 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                         subset["Vectors"], wrapper.vectors[indices]
                     )
             wrapper.close()
+
+    def test_2d_converts_vectors_once_and_slices_subset_views(self):
+        scan = Parallel2DGeometry(
+            angles=[1.2, 0.0, -0.3, 2.0, 0.7],
+            detector_shape=(8,),
+            centre_of_rotation=0.25,
+            detector_shifts=[1, -2, 3, -4, 5],
+        )
+        grid = Volume2DGeometry(shape=(3, 5))
+        for count in (1, 2, 5):
+            with patch.object(
+                self.tools2d,
+                "parallel2d_vectors",
+                wraps=self.tools2d.parallel2d_vectors,
+            ) as convert:
+                with self.tools2d.AstraTools2D(
+                    projection_geometry=scan,
+                    volume_geometry=grid,
+                    ordsub_number=count,
+                ) as wrapper:
+                    convert.assert_called_once_with(scan)
+                    self.assertIs(wrapper.projection_geometry, scan)
+                    self.assertIs(wrapper.volume_geometry, grid)
+                    if count == 1:
+                        self.assertIs(wrapper.proj_geom["Vectors"], wrapper.vectors)
+                    else:
+                        for index, views in enumerate(wrapper.subset_indices):
+                            np.testing.assert_array_equal(
+                                wrapper.proj_geom_OS[index]["Vectors"],
+                                wrapper.vectors[views],
+                            )
 
     def test_3d_uses_supplied_geometry_with_independent_non_cubic_volume(self):
         scan = Parallel3DGeometry(
@@ -779,27 +787,18 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                 self.astra.create_projector.reset_mock()
                 self.astra.create_proj_geom.reset_mock()
                 with self.assertRaises(error):
-                    self.make_wrapper(3, arch="gpu", offset=offset)
-                with self.assertRaises(error):
-                    self.funcs._vec_geom_init3D(np.arange(4.0), 1.0, 1.0, offset)
+                    self.make_wrapper(3, offset=offset)
                 self.astra.create_projector.assert_not_called()
                 self.astra.create_proj_geom.assert_not_called()
         with self.assertRaisesRegex(ValueError, "shape"):
-            self.make_wrapper(2, arch="gpu", offset=np.zeros((4, 2)))
-        with self.assertRaisesRegex(ValueError, "shape"):
-            self.funcs._vec_geom_init2D(np.arange(4.0), np.zeros((4, 2)))
+            self.make_wrapper(2, detector_shifts=np.zeros((4, 2)))
 
-    def test_cpu_zero_offset_arrays_are_accepted_and_nonzero_rejected(self):
-        with self.make_wrapper(2, arch="cpu", offset=[0.0, 0.0, 0.0, 0.0]):
-            pass
-        with self.assertRaisesRegex(ValueError, "GPU only"):
-            self.make_wrapper(2, arch="cpu", offset=[0.0, 0.0, 1.0, 0.0])
-
-    def test_single_view_pairs_and_nonunit_spacing_preserve_legacy_units(self):
-        vectors = self.funcs._vec_geom_init3D(np.array([0.0]), 2.0, 3.0, [[4.0, -5.0]])
-        np.testing.assert_array_equal(
-            vectors, [[0.0, -1.0, 0.0, 4.0, 0.0, -5.0, 2.0, 0.0, 0.0, 0.0, 0.0, 3.0]]
-        )
+    def test_2d_gpu_accepts_detector_shifts_without_architecture_selection(self):
+        with self.make_wrapper(2, detector_shifts=[0.0, 0.0, 1.0, 0.0]) as wrapper:
+            self.assertFalse(hasattr(wrapper, "processing_arch"))
+            np.testing.assert_array_equal(
+                wrapper.projection_geometry.detector_shifts, [0, 0, 1, 0]
+            )
 
     def test_gpu_is_selected_per_cached_handle_and_device_is_immutable(self):
         wrapper = self.tools3d.AstraTools3D(
@@ -823,7 +822,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             for count in range(1, n_views + 1):
                 with self.subTest(n_views=n_views, count=count):
                     wrapper = self.make_wrapper(
-                        3, subsets=count, arch="gpu", angles=np.arange(float(n_views))
+                        3, subsets=count, angles=np.arange(float(n_views))
                     )
                     indices = wrapper.subset_indices
                     self.assertIsInstance(indices, tuple)
@@ -852,23 +851,14 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             )
             self.astra.create_proj_geom.reset_mock()
             wrapper = self.make_wrapper(
-                dim,
-                subsets=4,
-                arch="gpu",
-                offset=offset if dim == 2 else 0.0,
-                detector_shifts=offset if dim == 3 else None,
-                angles=angles,
+                dim, subsets=4, detector_shifts=offset, angles=angles
             )
             expected = (
-                self.funcs._vec_geom_init2D(angles, offset)
+                parallel2d_vectors(wrapper.projection_geometry)
                 if dim == 2
-                else self.funcs._vec_geom_init3D(angles, 1.0, 1.0, offset)
+                else parallel3d_vectors(wrapper.projection_geometry)
             )
-            actual = (
-                [call.args[-1] for call in self.astra.create_proj_geom.call_args_list]
-                if dim == 2
-                else [geometry["Vectors"] for geometry in wrapper.proj_geom_OS.values()]
-            )
+            actual = [geometry["Vectors"] for geometry in wrapper.proj_geom_OS.values()]
             self.assertEqual(len(actual), 4)
             for index, vectors in enumerate(actual):
                 np.testing.assert_allclose(vectors, expected[index : index + 1])
@@ -887,10 +877,10 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             with self.subTest(count=count):
                 self.astra.create_projector.reset_mock()
                 with self.assertRaises(error):
-                    self.make_wrapper(3, subsets=count, arch="gpu")
+                    self.make_wrapper(3, subsets=count)
                 self.astra.create_projector.assert_not_called()
         for count, expected in ((None, 1), (1, 1), (np.int64(2), 2)):
-            wrapper = self.make_wrapper(3, subsets=count, arch="gpu")
+            wrapper = self.make_wrapper(3, subsets=count)
             self.assertEqual(wrapper.ordsub_number, expected)
             self.assertEqual(len(wrapper.subset_indices), expected)
             wrapper.close()
@@ -901,6 +891,11 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         cupy.__getattr__ = lambda name: getattr(np, name)
         cupy.random = SimpleNamespace(
             randn=lambda *shape, dtype: np.ones(shape, dtype=dtype)
+        )
+        from contextlib import nullcontext
+
+        cupy.cuda = SimpleNamespace(
+            Device=Mock(side_effect=lambda index: nullcontext())
         )
         cupy._default_memory_pool = SimpleNamespace(free_all_blocks=Mock())
         supp = ModuleType("suppTools")
@@ -920,7 +915,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             {
                 "cupy": cupy,
                 "astra": self.astra,
-                "tomobar.supp.funcs": self.funcs,
+                "tomobar.supp.axis_order": self.axes,
                 "tomobar.supp.suppTools": supp,
                 "tomobar.supp.dicts": dictionaries,
                 "tomobar.regularisersCuPy": regularisers,
@@ -1100,13 +1095,13 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                 with self.assertRaisesRegex(
                     (ValueError, TypeError), "centre_of_rotation"
                 ):
-                    self.make_wrapper(3, arch="gpu", offset=cor)
+                    self.make_wrapper(3, offset=cor)
                 self.astra.create_projector.assert_not_called()
         for shifts in (1.0, np.zeros(4), np.zeros((3, 2)), np.full((4, 2), np.nan)):
             with self.subTest(shifts=shifts):
                 self.astra.create_projector.reset_mock()
                 with self.assertRaisesRegex(ValueError, "detector_shifts"):
-                    self.make_wrapper(3, arch="gpu", detector_shifts=shifts)
+                    self.make_wrapper(3, detector_shifts=shifts)
                 self.astra.create_projector.assert_not_called()
 
 

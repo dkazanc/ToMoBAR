@@ -112,7 +112,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
             centre_of_rotation=0.0,
         ),
         volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
-        device_projector="gpu",
+        device_index=0,
     )
 
     data_axes_labels3D = ["detY", "angles", "detX"]
@@ -136,7 +136,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
         AnglesVec=angles_rad,  # array of angles in radians
         ObjSize=N_size,  # a scalar to define reconstructed object dimensions
         datafidelity="PWLS",  # data fidelity,
-        device_projector="gpu",
+        device_index=0,
     )
 
     _data_ = {
@@ -213,7 +213,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
         AnglesVec=angles_rad,  # A vector of projection angles in radians
         ObjSize=N_size,  # Reconstructed object dimensions (scalar)
         datafidelity="SWLS",  # Stripe Weighted LS  Data fidelity
-        device_projector="gpu",
+        device_index=0,
     )
 
     _data_ = {

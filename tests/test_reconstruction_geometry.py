@@ -144,7 +144,7 @@ def test_numpy_direct_full_and_uneven_subsets_share_handles_between_operations(h
 )
 def test_invalid_subsets_fail_before_creating_handles(harness, index, error):
     backend, _, _ = harness
-    with backend.make_wrapper(3, subsets=2, arch="gpu") as wrapper:
+    with backend.make_wrapper(3, subsets=2) as wrapper:
         with pytest.raises(error, match="subset_index"):
             wrapper.forward(np.ones((2, 2, 2)), subset_index=index)
         backend.astra.create_projector.assert_not_called()
@@ -334,3 +334,109 @@ def test_output_crop_indices_storage_and_working_operators(harness, output_shape
         projected = rec.forward(np.ones(grid.shape, dtype=np.float32))
         assert projected.shape == (3, 2, 7)
         assert rec.backproject(projected).shape == grid.shape
+
+
+@pytest.mark.parametrize(
+    "method", ["Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM"]
+)
+def test_iterative_algorithms_only_require_projection_operations(
+    harness, monkeypatch, method
+):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from tomobar.geometry import interleaved_view_indices
+
+    _, _, iterative = harness
+    scan = Parallel3DGeometry(angles=[0.0, 0.2, 0.5, 0.9, 1.5], detector_shape=(3, 7))
+    grid = VolumeGeometry(shape=(2, 4, 6))
+    count = 2 if method in ("FISTA", "ADMM", "OSEM") else 1
+    subsets = interleaved_view_indices(5, count)
+
+    def forward(volume, *, subset_index=None):
+        assert volume.shape == grid.shape
+        views = 5 if subset_index is None else len(subsets[subset_index])
+        return np.ones((3, views, 11), dtype=np.float32)
+
+    def backproject(data, *, subset_index=None):
+        views = 5 if subset_index is None else len(subsets[subset_index])
+        assert data.shape == (3, views, 11)
+        return np.ones(grid.shape, dtype=np.float32)
+
+    # Deliberately supplies no ASTRA dictionaries, shape queries or subset metadata.
+    projector = SimpleNamespace(
+        forward=Mock(side_effect=forward),
+        backproject=Mock(side_effect=backproject),
+        close=Mock(),
+    )
+    monkeypatch.setattr(iterative, "AstraTools3D", lambda **kwargs: projector)
+    data = {
+        "projection_data": np.ones(scan.projection_shape, dtype=np.float32),
+        "data_fidelity": "LS",
+    }
+    algorithm = {
+        "iterations": 1,
+        "lipschitz_const": 1.0,
+        "initialise": None,
+        "nonnegativity": False,
+        "recon_mask_radius": 1.0,
+        "tau_step_lanweber": 0.01,
+        "ADMM_rho_const": 1.0,
+        "ADMM_relax_par": 1.0,
+        "verbose": False,
+    }
+    regularisation = {"method": None, "regul_param": 1.0}
+    iterative.dicts_check.return_value = (data, algorithm, regularisation)
+    with iterative.RecToolsIRCuPy(
+        projection_geometry=scan,
+        volume_geometry=grid,
+        detector_padding=2,
+        output_shape=(1, 2, 4),
+        OS_number=count,
+    ) as rec:
+        for actual, expected in zip(rec.subset_indices, subsets):
+            np.testing.assert_array_equal(actual, expected)
+        result = getattr(rec, method)(data, algorithm)
+        assert result.shape == (1, 2, 4)
+        assert np.isfinite(result).all()
+        # Power iteration also allocates from geometry, using only FP/BP.
+        assert np.isfinite(rec.powermethod({"data_fidelity": "LS"}))
+    projector.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "kind", ["numpy", "cupy", "iterative", "wrapper2d", "wrapper3d"]
+)
+@pytest.mark.parametrize(
+    "keyword,value",
+    [
+        ("processing_arch", "gpu"),
+        ("device_projector", 0),
+        ("device_index", "gpu"),
+        ("device_index", -1),
+    ],
+)
+def test_gpu_only_constructors_reject_old_device_api(harness, kind, keyword, value):
+    backend, direct, iterative = harness
+    classes = {
+        "numpy": direct.numpy_module.RecToolsDIR,
+        "cupy": direct.cupy_module.RecToolsDIRCuPy,
+        "iterative": iterative.RecToolsIRCuPy,
+        "wrapper2d": backend.tools2d.AstraTools2D,
+        "wrapper3d": backend.tools3d.AstraTools3D,
+    }
+    scan = (
+        Parallel2DGeometry(angles=[0.0], detector_shape=(7,))
+        if kind == "wrapper2d"
+        else Parallel3DGeometry(angles=[0.0], detector_shape=(3, 7))
+    )
+    grid = (
+        Volume2DGeometry(shape=(4, 6))
+        if kind == "wrapper2d"
+        else VolumeGeometry(shape=(2, 4, 6))
+    )
+    error = ValueError if keyword == "device_index" and value == -1 else TypeError
+    with pytest.raises(error, match=keyword):
+        classes[kind](
+            projection_geometry=scan, volume_geometry=grid, **{keyword: value}
+        )
+    backend.astra.create_projector.assert_not_called()

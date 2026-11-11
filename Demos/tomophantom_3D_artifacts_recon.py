@@ -133,7 +133,7 @@ RecToolsDIRCuPy = RecToolsDIRCuPy(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
     volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
-    device_projector="gpu",
+    device_index=0,
 )
 
 print("Reconstruction using FBP from tomobar")
@@ -179,7 +179,7 @@ Rectools = RecToolsIRCuPy(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
     volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
-    device_projector=0,
+    device_index=0,
     OS_number=8,
 )
 
@@ -240,7 +240,7 @@ Rectools = RecToolsIRCuPy(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
     volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
-    device_projector=0,
+    device_index=0,
     OS_number=24,
 )
 # prepare dictionaries with parameters:

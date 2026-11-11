@@ -19,7 +19,7 @@ def test_Landweber_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=None,
     ) as RecTools:
         _data_ = {
@@ -46,7 +46,7 @@ def test_Landweber_cp_2D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=None,
     ) as RecTools:
         _data_ = {
@@ -75,7 +75,7 @@ def test_Landweber_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
         volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 1, detX + 2 * 1)),
         output_shape=(detY, N_size, N_size),
         detector_padding=1,
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -100,7 +100,7 @@ def test_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -126,7 +126,7 @@ def test_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -155,7 +155,7 @@ def test_CGLS_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 50, detX + 2 * 50)),
         output_shape=(detY, N_size, N_size),
         detector_padding=50,
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -184,7 +184,7 @@ def test_CGLS_after_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -215,7 +215,7 @@ def test_power_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "data_fidelity": "LS",
@@ -236,7 +236,7 @@ def test_power_cp_OS_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=5,
     ) as RecTools:
         _data_ = {
@@ -260,7 +260,7 @@ def test_power_cp_OS_PWLS_pad_3D(data_cupy, angles, ensure_clean_memory):
         volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 50, detX + 2 * 50)),
         output_shape=(detY, N_size, N_size),
         detector_padding=50,
-        device_projector=0,
+        device_index=0,
         OS_number=5,
     ) as RecTools:
         _data_ = {
@@ -282,7 +282,7 @@ def test_FISTA_cp_lc_known_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -307,7 +307,7 @@ def test_FISTA_SWLS_cp_3D(data_cupy, raw_data_cupy, angles, ensure_clean_memory)
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "data_fidelity": "SWLS",
@@ -337,7 +337,7 @@ def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "data_fidelity": "LS",
@@ -365,7 +365,7 @@ def test_FISTA_cp_2D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=None,
     ) as RecTools:
         _data_ = {
@@ -397,7 +397,7 @@ def test_FISTA_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 60, detX + 2 * 60)),
         output_shape=(detY, N_size, N_size),
         detector_padding=60,
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -428,7 +428,7 @@ def test_FISTA_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -464,7 +464,7 @@ def test_FISTA_regul_PDTV_cp_2D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=None,
     ) as RecTools:
         _data_ = {
@@ -503,7 +503,7 @@ def test_FISTA_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=None,
     ) as RecTools:
         _data_ = {
@@ -541,7 +541,7 @@ def test_FISTA_OS_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
@@ -573,7 +573,7 @@ def test_FISTA_OS_cp_2D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=5,
     ) as RecTools:
         _data_ = {
@@ -605,7 +605,7 @@ def test_FISTA_OS_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
         volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 60, detX + 2 * 60)),
         output_shape=(detY, N_size, N_size),
         detector_padding=60,
-        device_projector=0,
+        device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
@@ -640,7 +640,7 @@ def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
@@ -680,7 +680,7 @@ def test_FISTA_OS_regul_PDTV_cp_2D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=6,
     ) as RecTools:
         _data_ = {
@@ -720,7 +720,7 @@ def test_FISTA_OS_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
@@ -767,7 +767,7 @@ def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=6,
     ) as RecTools:
         # data dictionary
@@ -813,7 +813,7 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
@@ -892,7 +892,7 @@ def test_ADMM_cp_3D(data_cupy, test_case, angles):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "projection_data": data_cupy,
@@ -939,7 +939,7 @@ def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=2,
     ) as RecTools:
         _data_ = {
@@ -978,7 +978,7 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(
         ),
         output_shape=(detY, N_size, N_size),
         detector_padding=pad_value,
-        device_projector=0,
+        device_index=0,
         OS_number=24,
     ) as RecTools:
         initialisation_dummy = cp.zeros(
@@ -1041,7 +1041,7 @@ def test_ADMM_SWLS_cp_3D(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
     ) as RecTools:
         _data_ = {
             "data_fidelity": "SWLS",
@@ -1076,7 +1076,7 @@ def test_MLEM_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
             angles=angles_rad, detector_shape=(detY, detX), centre_of_rotation=-0.5
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=1,
     ) as RecTools:
         _data_ = {
@@ -1112,7 +1112,7 @@ def test_OSEM_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
             angles=angles_rad, detector_shape=(detY, detX), centre_of_rotation=-0.5
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=12,
     ) as RecTools:
         _data_ = {
@@ -1148,7 +1148,7 @@ def test_OSEM_PDTV_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
             angles=angles_rad, detector_shape=(detY, detX), centre_of_rotation=-0.5
         ),
         volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
-        device_projector=0,
+        device_index=0,
         OS_number=12,
     ) as RecTools:
         _data_ = {

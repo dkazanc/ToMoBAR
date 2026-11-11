@@ -8,6 +8,7 @@
 * :func:`RecToolsIRCuPy.OSEM` algorithm.
 """
 
+from tomobar.supp.device import _on_device
 import numpy as np
 from typing import Union, Optional
 from numpy import float32
@@ -19,9 +20,7 @@ except ImportError:
     print(
         "Cupy library is a required dependency for this part of the code, please install"
     )
-import astra
 
-from tomobar.supp.funcs import _data_dims_swapper, _validate_ordsub_number
 from tomobar.supp.suppTools import (
     check_kwargs,
     _apply_horiz_detector_padding,
@@ -29,7 +28,12 @@ from tomobar.supp.suppTools import (
 from tomobar.supp.dicts import dicts_check
 from tomobar.regularisersCuPy import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry, _validate_shape
+from tomobar.geometry import (
+    Parallel3DGeometry,
+    VolumeGeometry,
+    _validate_shape,
+    interleaved_view_indices,
+)
 from tomobar.reconstruction_geometry import GeometryReconstruction
 from tomobar.data_fidelities import grad_data_term
 
@@ -52,11 +56,12 @@ class RecToolsIRCuPy(GeometryReconstruction):
         volume_geometry: VolumeGeometry,
         detector_padding: int = 0,
         output_shape: tuple[int, int, int] | None = None,
-        device_projector: int = 0,
+        device_index: int = 0,
         OS_number: Optional[int] = None,
     ):
         if not isinstance(projection_geometry, Parallel3DGeometry):
             raise TypeError("projection_geometry must be a Parallel3DGeometry")
+        self._init_device(device_index)
         self._init_geometry(projection_geometry, volume_geometry, detector_padding)
         self._output_shape = (
             volume_geometry.shape
@@ -68,19 +73,24 @@ class RecToolsIRCuPy(GeometryReconstruction):
             for output, working in zip(self.output_shape, volume_geometry.shape)
         ):
             raise ValueError("output_shape must fit inside volume_geometry.shape")
-        self._OS_number = _validate_ordsub_number(
-            OS_number, projection_geometry.angles.size
+        self._subset_indices = interleaved_view_indices(
+            projection_geometry.angles.size, OS_number
         )
         self.Atools = AstraTools3D(
             projection_geometry=self.padded_projection_geometry,
             volume_geometry=volume_geometry,
-            device_index=device_projector,
+            device_index=self.device_index,
             ordsub_number=self.OS_number,
         )
 
     @property
     def OS_number(self) -> int:
-        return self._OS_number
+        return len(self.subset_indices)
+
+    @property
+    def subset_indices(self) -> tuple[np.ndarray, ...]:
+        """Acquisition-order indices for each interleaved subset."""
+        return self._subset_indices
 
     @property
     def output_shape(self) -> tuple[int, int, int]:
@@ -102,6 +112,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
         )
         return volume[crop].copy()
 
+    @_on_device(cp)
     def forward(self, volume, *, subset_index=None):
         """Project to acquisition columns, optionally selecting one subset."""
         self._ensure_open()
@@ -109,6 +120,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             self.Atools.forward(volume, subset_index=subset_index)
         )
 
+    @_on_device(cp)
     def backproject(self, projections, *, subset_index=None):
         """Pad acquired detector columns and backproject to the requested grid."""
         self._ensure_open()
@@ -123,6 +135,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
     def _Atb(self, b, sub_ind: int = 0, os: bool = False):
         return self.Atools.backproject(b, subset_index=sub_ind if os else None)
 
+    @_on_device(cp)
     def Landweber(
         self, _data_: dict, _algorithm_: Union[dict, None] = None
     ) -> cp.ndarray:
@@ -154,9 +167,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             "recon_mask_radius": _algorithm_upd_["recon_mask_radius"],
         }
         ######################################################################
-        x_rec = cp.zeros(
-            astra.geom_size(self.Atools.vol_geom), dtype=cp.float32
-        )  # initialisation
+        x_rec = cp.zeros(self.volume_geometry.shape, dtype=cp.float32)  # initialisation
 
         for _ in range(_algorithm_upd_["iterations"]):
             residual = self._Ax(x_rec) - _data_upd_["projection_data"]  # Ax - b term
@@ -166,6 +177,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
 
         return self._finish_reconstruction(x_rec, **additional_args)
 
+    @_on_device(cp)
     def SIRT(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Using Simultaneous Iterations Reconstruction Technique (SIRT) iterative technique to
         reconstruct projection data given as a CuPy array.
@@ -199,18 +211,16 @@ class RecToolsIRCuPy(GeometryReconstruction):
         ######################################################################
 
         R = 1.0 / self.Atools.forward(
-            cp.ones(astra.geom_size(self.Atools.vol_geom), dtype=np.float32)
+            cp.ones(self.volume_geometry.shape, dtype=np.float32)
         )
         R = cp.nan_to_num(R, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
 
         C = 1.0 / self.Atools.backproject(
-            cp.ones(astra.geom_size(self.Atools.proj_geom), dtype=np.float32)
+            cp.ones(self.padded_projection_geometry.projection_shape, dtype=np.float32)
         )
         C = cp.nan_to_num(C, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
 
-        x_rec = cp.ones(
-            astra.geom_size(self.Atools.vol_geom), dtype=np.float32
-        )  # initialisation
+        x_rec = cp.ones(self.volume_geometry.shape, dtype=np.float32)  # initialisation
 
         # perform SIRT iterations
         for _ in range(_algorithm_upd_["iterations"]):
@@ -222,6 +232,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
 
         return self._finish_reconstruction(x_rec, **additional_args)
 
+    @_on_device(cp)
     def CGLS(self, _data_: dict, _algorithm_: Union[dict, None] = None) -> cp.ndarray:
         """Conjugate Gradients Least Squares iterative technique to reconstruct projection data
         given as a CuPy array. See more about the method `here <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/CGLS3d_tomobar.html>`__.
@@ -254,9 +265,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
         data_shape_3d = cp.shape(_data_upd_["projection_data"])
 
         # Prepare for CG iterations.
-        x_rec = cp.zeros(
-            astra.geom_size(self.Atools.vol_geom), dtype=cp.float32
-        )  # initialisation
+        x_rec = cp.zeros(self.volume_geometry.shape, dtype=cp.float32)  # initialisation
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
         d = self.Atools.backproject(_data_upd_["projection_data"])
@@ -269,14 +278,12 @@ class RecToolsIRCuPy(GeometryReconstruction):
         # perform CG iterations
         for _ in range(_algorithm_upd_["iterations"]):
             # Update x_rec and r vectors:
-            Ad = self.Atools.forward(cp.reshape(d, newshape=x_shape_3d, order="C"))
+            Ad = self.Atools.forward(cp.reshape(d, x_shape_3d, order="C"))
             Ad = cp.ravel(Ad, order="C")
             alpha = normr2 / cp.inner(Ad, Ad)
             x_rec += alpha * d
             r -= alpha * Ad
-            s = self.Atools.backproject(
-                cp.reshape(r, newshape=data_shape_3d, order="C")
-            )
+            s = self.Atools.backproject(cp.reshape(r, data_shape_3d, order="C"))
             s = cp.ravel(s, order="C")
             # Update d vector
             normr2_new = cp.inner(s, s)
@@ -289,9 +296,10 @@ class RecToolsIRCuPy(GeometryReconstruction):
         del d, s, beta, r, alpha, Ad, normr2_new, normr2
 
         return self._finish_reconstruction(
-            cp.reshape(x_rec, newshape=x_shape_3d, order="C"), **additional_args
+            cp.reshape(x_rec, x_shape_3d, order="C"), **additional_args
         )
 
+    @_on_device(cp)
     def powermethod(self, _data_: dict) -> float:
         """Power iteration algorithm to  calculate the eigenvalue of the operator (projection matrix).
 
@@ -306,8 +314,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
 
         power_iterations = 15
         s = 1.0
-        proj_geom = astra.geom_size(self.Atools.vol_geom)
-        x1 = cp.random.randn(*proj_geom, dtype=cp.float32)
+        x1 = cp.random.randn(*self.volume_geometry.shape, dtype=cp.float32)
 
         if self.OS_number == 1:
             # non-OS approach
@@ -362,14 +369,14 @@ class RecToolsIRCuPy(GeometryReconstruction):
         if _algorithm_upd_.get("lipschitz_const") is None:
             _algorithm_upd_["lipschitz_const"] = self.powermethod(_data_upd_)
 
-        rec_dim = astra.geom_size(self.Atools.vol_geom)
+        rec_dim = self.volume_geometry.shape
         # initialisation of the solution (warm-start)
         if _algorithm_upd_["initialise"] is not None:
             if _algorithm_upd_["initialise"].shape == rec_dim:
                 x0 = _algorithm_upd_["initialise"]
             else:
                 print(
-                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {astra.geom_size(self.Atools.vol_geom)}. Zero initialisation is used."
+                    f"Provided initialisation (array) has incorrect dimensions, the correct dims are {self.volume_geometry.shape}. Zero initialisation is used."
                 )
                 x0 = cp.zeros(rec_dim, dtype=float32, order="C")
         else:
@@ -398,6 +405,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             use_os,
         )
 
+    @_on_device(cp)
     def FISTA(
         self,
         _data_: dict,
@@ -450,7 +458,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
 
             for sub_ind in range(self.OS_number):
                 # select a specific set of indeces for the subset (OS)
-                indVec = self.Atools.subset_indices[sub_ind]
+                indVec = self.subset_indices[sub_ind]
 
                 proj_data[sub_ind] = _data_upd_["projection_data"][:, indVec, :]
                 weights[sub_ind] = None if w is None else w[:, indVec, :]
@@ -509,6 +517,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
         }
         return self._finish_reconstruction(X, **additional_args)
 
+    @_on_device(cp)
     def ADMM(
         self,
         _data_: dict,
@@ -547,7 +556,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
 
             for sub_ind in range(self.OS_number):
                 # select a specific set of indeces for the subset (OS)
-                indVec = self.Atools.subset_indices[sub_ind]
+                indVec = self.subset_indices[sub_ind]
 
                 proj_data[sub_ind] = _data_upd_["projection_data"][:, indVec, :]
                 weights[sub_ind] = None if w is None else w[:, indVec, :]
@@ -636,6 +645,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
         }
         return self._finish_reconstruction(x, **additional_args)
 
+    @_on_device(cp)
     def OSEM(
         self,
         _data_: dict,
@@ -676,7 +686,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             normalisation = cp.clip(normalisation, eps, None)
             normalisation /= 1
         else:
-            indVec = self.Atools.subset_indices[0]
+            indVec = self.subset_indices[0]
             normalisation = self._Atb(
                 cp.ones_like(proj_data[:, indVec, :], dtype=cp.float32, order="C"),
                 0,
@@ -690,7 +700,7 @@ class RecToolsIRCuPy(GeometryReconstruction):
             for sub_ind in range(self.OS_number):
                 if use_os:
                     # select a specific set of indeces for the subset (OS)
-                    indVec = self.Atools.subset_indices[sub_ind]
+                    indVec = self.subset_indices[sub_ind]
                     proj_data = _data_upd_["projection_data"][:, indVec, :]
 
                 Ax = self._Ax(x, sub_ind, use_os)

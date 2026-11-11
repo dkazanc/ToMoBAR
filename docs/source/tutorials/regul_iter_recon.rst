@@ -44,7 +44,7 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
         AnglesVec=angles_rad,  # A vector of projection angles in radians
         ObjSize=detectorHoriz,  # The reconstructed object dimensions
         datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS and SWLS
-        device_projector="gpu",  # Device to perform reconstruction on
+        device_index=0,  # Device to perform reconstruction on
     )
 
 * Now we have an access to all methods of this particular reconstructor.
@@ -95,7 +95,7 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
         AnglesVec=angles_rad,  # A vector of projection angles in radians
         ObjSize=detectorHoriz,  # The reconstructed object dimensions
         datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS and SWLS
-        device_projector="gpu",  # Device to perform reconstruction on
+        device_index=0,  # Device to perform reconstruction on
     )
 
     _data_ = {

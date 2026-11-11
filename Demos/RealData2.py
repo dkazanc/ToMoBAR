@@ -46,7 +46,7 @@ RectoolsDIR_cp = RecToolsDIRCuPy(
         centre_of_rotation=0.0,
     ),
     volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
-    device_projector=0,
+    device_index=0,
 )
 
 FBPrec_cupy = RectoolsDIR_cp.FBP(data_norm_cupy, data_axes_labels_order=data_labels3D)
@@ -70,7 +70,7 @@ RectoolsCuPy = RecToolsIRCuPy(
         centre_of_rotation=0.0,
     ),
     volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
-    device_projector=0,
+    device_index=0,
     OS_number=24,
 )
 ####################### Creating the data dictionary: #######################

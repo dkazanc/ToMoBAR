@@ -21,7 +21,7 @@ In general, we would recommend installing 1,2 and 3 packages.
 .. note:: For faster device-to-device regularised iterative reconstruction, consider using the CuPy-based version of ToMoBAR (see point 3).
 
 * 2. `CuPy <https://cupy.dev/>`_ dependency provides access to GPU-accelerated routines that are separate from the main host-device-host implementation approach. The CuPy-driven algorithms operate on CuPy arrays that remain on the GPU, rather than on NumPy arrays stored in CPU memory.
-  When the CuPy dependency is available, users can access methods from the following classes:
+  CuPy and a CUDA-capable GPU are required. Users can access methods from the following classes:
   :mod:`tomobar.methodsDIR_CuPy` and :mod:`tomobar.methodsIR_CuPy`. For example, the ultra-fast reconstruction method
   :func:`tomobar.methodsDIR_CuPy.RecToolsDIRCuPy.FOURIER_INV`, based on the Fourier transform [NIKITIN2017]_, is available in :mod:`tomobar.methodsDIR_CuPy`.
   In addition, faster regularised iterative reconstruction methods are also provided (see point 4).

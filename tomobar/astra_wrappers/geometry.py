@@ -6,7 +6,21 @@ belong to the wrapper that binds the resulting dictionaries.
 
 import numpy as np
 
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+from tomobar.geometry import (
+    Parallel2DGeometry,
+    Parallel3DGeometry,
+    Volume2DGeometry,
+    VolumeGeometry,
+)
+
+
+def parallel2d_vectors(geometry: Parallel2DGeometry) -> np.ndarray:
+    """Build acquisition-order 2D vectors with unit detector spacing."""
+    sine, cosine = np.sin(geometry.angles), np.cos(geometry.angles)
+    horizontal = geometry.detector_shifts + geometry.centre_of_rotation
+    return np.column_stack(
+        (sine, -cosine, horizontal * cosine, horizontal * sine, cosine, sine)
+    )
 
 
 def parallel3d_vectors(geometry: Parallel3DGeometry) -> np.ndarray:
@@ -28,11 +42,18 @@ def parallel3d_vectors(geometry: Parallel3DGeometry) -> np.ndarray:
 
 
 def projection_geometry(
-    geometry: Parallel3DGeometry,
+    geometry: Parallel2DGeometry | Parallel3DGeometry,
     vectors: np.ndarray,
     view_indices: np.ndarray | None = None,
 ) -> dict:
     """Convert a scan, selecting subset rows from precomputed full-view vectors."""
+    if isinstance(geometry, Parallel2DGeometry):
+        columns = geometry.detector_shape[0]
+        return {
+            "type": "parallel_vec",
+            "DetectorCount": columns,
+            "Vectors": vectors if view_indices is None else vectors[view_indices],
+        }
     rows, columns = geometry.detector_shape
     return {
         "type": "parallel3d_vec",
@@ -42,19 +63,21 @@ def projection_geometry(
     }
 
 
-def volume_geometry(geometry: VolumeGeometry) -> dict:
-    """Convert (z, y, x) voxels to ASTRA's centred, unit-spaced volume."""
-    z, y, x = geometry.shape
-    return {
+def volume_geometry(geometry: Volume2DGeometry | VolumeGeometry) -> dict:
+    """Convert (y, x) or (z, y, x) voxels to a centred ASTRA volume."""
+    y, x = geometry.shape[-2:]
+    converted = {
         "GridRowCount": y,
         "GridColCount": x,
-        "GridSliceCount": z,
         "option": {
             "WindowMinX": -x / 2,
             "WindowMaxX": x / 2,
             "WindowMinY": -y / 2,
             "WindowMaxY": y / 2,
-            "WindowMinZ": -z / 2,
-            "WindowMaxZ": z / 2,
         },
     }
+    if isinstance(geometry, VolumeGeometry):
+        z = geometry.shape[0]
+        converted["GridSliceCount"] = z
+        converted["option"].update(WindowMinZ=-z / 2, WindowMaxZ=z / 2)
+    return converted

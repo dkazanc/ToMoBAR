@@ -34,6 +34,16 @@ def stub_module(name, **attributes):
 class TestAxisConventions(unittest.TestCase):
     def setUp(self):
         identity = lambda data, *args, **kwargs: data
+
+        class Device:
+            compute_capability = "80"
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
         cupy = stub_module(
             "cupy",
             ndarray=np.ndarray,
@@ -41,9 +51,7 @@ class TestAxisConventions(unittest.TestCase):
             float32=np.float32,
             ascontiguousarray=np.ascontiguousarray,
             swapaxes=np.swapaxes,
-            cuda=SimpleNamespace(
-                Device=Mock(return_value=SimpleNamespace(compute_capability="80"))
-            ),
+            cuda=SimpleNamespace(Device=Mock(return_value=Device())),
             fft=SimpleNamespace(
                 config=SimpleNamespace(
                     get_plan_cache=Mock(return_value=SimpleNamespace(clear=Mock()))
@@ -89,8 +97,8 @@ class TestAxisConventions(unittest.TestCase):
             ),
         }
         with patch.dict("sys.modules", stubs):
-            self.funcs = load_module("_axis_test_funcs", "supp/funcs.py")
-            with patch.dict("sys.modules", {"tomobar.supp.funcs": self.funcs}):
+            self.axes = load_module("_axis_test_axes", "supp/axis_order.py")
+            with patch.dict("sys.modules", {"tomobar.supp.axis_order": self.axes}):
                 self.numpy_module = load_module("_axis_test_dir", "methodsDIR.py")
                 with patch.dict(
                     "sys.modules", {"tomobar.methodsDIR": self.numpy_module}
@@ -118,18 +126,14 @@ class TestAxisConventions(unittest.TestCase):
                 detector_shape=(native.shape[-1],),
             )
             volume = Volume2DGeometry(shape=(native.shape[-1], native.shape[-1]))
+        rec._init_device(0)
         rec._init_geometry(scan, volume, 0)
         rec.Atools = SimpleNamespace(
             close=Mock(),
             forward=Mock(return_value=native),
             backproject=Mock(side_effect=lambda data: data),
-            _forwproj=Mock(return_value=native),
-            _forwprojCuPy=Mock(return_value=native),
-            _backproj=Mock(side_effect=lambda data: data),
-            _backprojCuPy=Mock(side_effect=lambda data: data),
             _fbp=Mock(side_effect=lambda data: data),
             detectors_x_pad=0,
-            processing_arch="gpu",
         )
         self.addCleanup(rec.close)
         return rec
@@ -174,20 +178,22 @@ class TestAxisConventions(unittest.TestCase):
                         expected = original.transpose(
                             tuple(axes.index(a) for a in target)
                         )
-                        result = self.funcs._transpose_data_axes(
+                        result = self.axes._transpose_data_axes(
                             supplied, source_axes=source, target_axes=target
                         )
                         np.testing.assert_array_equal(result, expected)
                         self.assertTrue(np.shares_memory(result, original))
                         self.assertEqual(
-                            self.funcs._transpose_data_axes(
+                            self.axes._transpose_data_axes(
                                 supplied.shape, source_axes=source, target_axes=target
                             ),
                             expected.shape,
                         )
                         np.testing.assert_array_equal(
-                            self.funcs._data_dims_swapper(
-                                supplied, list(source), list(target)
+                            self.axes._transpose_data_axes(
+                                supplied,
+                                source_axes=list(source),
+                                target_axes=list(target),
                             ),
                             expected,
                         )
@@ -272,7 +278,7 @@ class TestAxisConventions(unittest.TestCase):
         rec = self.reconstructor(self.cupy_module.RecToolsDIRCuPy, native)
 
         def capture(data, **kwargs):
-            self.normalized = self.funcs._transpose_data_axes(data, **kwargs)
+            self.normalized = self.axes._transpose_data_axes(data, **kwargs)
             return self.normalized
 
         with patch.object(
@@ -301,32 +307,6 @@ class TestAxisConventions(unittest.TestCase):
                 else:
                     self.assertIs(self.normalized, native)
 
-    def test_numpy_fourier_normalizes_input_before_fft(self):
-        native = np.arange(12, dtype=np.float32).reshape(3, 4)
-        rec = self.reconstructor(self.numpy_module.RecToolsDIR, native, dim=2)
-        rec.Atools.recon_size = 2
-        rec.Atools.centre_of_rotation = 0.0
-        rec.Atools.angles_vec = np.arange(3.0)
-
-        def stop_at_fft(data, **kwargs):
-            np.testing.assert_array_equal(data[:, 2:6], native)
-            raise RuntimeError("stop before FFT")
-
-        fft = stub_module(
-            "scipy.fft",
-            fftshift=Mock(),
-            ifftshift=stop_at_fft,
-            fft=Mock(),
-            ifft2=Mock(),
-        )
-        interp = stub_module("scipy.interpolate", griddata=Mock())
-        with patch.dict("sys.modules", {"scipy.fft": fft, "scipy.interpolate": interp}):
-            for order in (("angles", "detX"), ("detX", "angles")):
-                supplied = native if order[0] == "angles" else native.T
-                for key in ("input_axes", "data_axes_labels_order"):
-                    with self.assertRaisesRegex(RuntimeError, "stop before FFT"):
-                        rec.FOURIER(supplied, method="linear", **{key: order})
-
     def test_bad_labels_rank_and_conflicting_aliases_are_rejected(self):
         valid = ("detY", "angles", "detX")
         invalid = (
@@ -341,11 +321,11 @@ class TestAxisConventions(unittest.TestCase):
             with self.subTest(labels=labels):
                 for source, target in ((labels, valid), (valid, labels)):
                     with self.assertRaises(ValueError):
-                        self.funcs._transpose_data_axes(
+                        self.axes._transpose_data_axes(
                             data, source_axes=source, target_axes=target
                         )
         with self.assertRaisesRegex(ValueError, "dimensions"):
-            self.funcs._transpose_data_axes(
+            self.axes._transpose_data_axes(
                 np.zeros((3, 5)), source_axes=valid, target_axes=valid
             )
         for cls in self.classes:
@@ -366,10 +346,9 @@ class TestAxisConventions(unittest.TestCase):
                 for labels in invalid:
                     with self.assertRaises(ValueError):
                         getattr(rec, method)(data, **{alias: labels})
-            rec.Atools._forwproj.assert_not_called()
-            rec.Atools._forwprojCuPy.assert_not_called()
-            rec.Atools._backproj.assert_not_called()
-            rec.Atools._backprojCuPy.assert_not_called()
+
+            rec.Atools.forward.assert_not_called()
+            rec.Atools.backproject.assert_not_called()
 
     def test_legacy_swap_sequences_are_unchanged_and_accept_tuples(self):
         cases = (
@@ -381,11 +360,11 @@ class TestAxisConventions(unittest.TestCase):
         for source, target, expected in cases:
             labels = list(source)
             self.assertEqual(
-                self.funcs._swap_data_axes_to_accepted(labels, target), expected
+                self.axes._swap_data_axes_to_accepted(labels, target), expected
             )
             self.assertEqual(labels, list(source))
             self.assertEqual(
-                self.funcs._swap_data_axes_to_accepted(source, target), expected
+                self.axes._swap_data_axes_to_accepted(source, target), expected
             )
 
 

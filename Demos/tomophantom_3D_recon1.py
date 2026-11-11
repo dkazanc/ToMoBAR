@@ -94,7 +94,7 @@ RecToolsCP = RecToolsDIRCuPy(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
     volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
-    device_projector="gpu",
+    device_index=0,
 )
 
 tic = timeit.default_timer()
@@ -148,7 +148,7 @@ RecToolsCP = RecToolsDIRCuPy(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
     volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
-    device_projector="gpu",
+    device_index=0,
 )
 
 tic = timeit.default_timer()
@@ -199,7 +199,7 @@ RectoolsCuPy = RecToolsIRCuPy(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
     volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
-    device_projector=0,
+    device_index=0,
     OS_number=6,
 )
 ####################### Creating the data dictionary: #######################
@@ -264,7 +264,7 @@ RectoolsCuPy = RecToolsIRCuPy(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
     volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
-    device_projector=0,
+    device_index=0,
     OS_number=36,
 )
 ####################### Creating the data dictionary: #######################

@@ -5,6 +5,7 @@
 * :func:`RecToolsDIRCuPy.FOURIER_INV` - Fourier direct reconstruction on unequally spaced grids (interpolation in image space), aka log-polar method [NIKITIN2017]_.
 """
 
+from tomobar.supp.device import _on_device
 from typing import Tuple
 import numpy as np
 import math
@@ -14,7 +15,7 @@ from cupyx.scipy.fftpack import get_fft_plan
 
 from tomobar.supp.memory_estimator_helpers import DeviceMemStack
 from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
-from tomobar.supp.funcs import _transpose_data_axes, _resolve_data_axes
+from tomobar.supp.axis_order import _transpose_data_axes, _resolve_data_axes
 from tomobar.fourier import _filtersinc3D_cupy, calc_filter
 from tomobar.cuda_kernels import load_cuda_module
 
@@ -30,6 +31,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
     row and zero detector shifts. ASTRA supports independent volume dimensions.
     """
 
+    @_on_device(cp)
     def forward(self, data: cp.ndarray, *, output_axes=None, **kwargs) -> cp.ndarray:
         """Module to perform forward projection of 2d/3d data as a cupy array
 
@@ -52,16 +54,13 @@ class RecToolsDIRCuPy(RecToolsDIR):
             output_axes, kwargs.get("data_axes_labels_order"), native_axes
         )
         self._ensure_open()
-        projected = (
-            self.Atools.forward(data)
-            if self.geom == "3D"
-            else self.Atools._forwprojCuPy(data)
-        )
+        projected = self.Atools.forward(data)
         projected = self._crop_projection(projected)
         return _transpose_data_axes(
             projected, source_axes=native_axes, target_axes=axes
         )
 
+    @_on_device(cp)
     def backproject(self, data: cp.ndarray, *, input_axes=None, **kwargs) -> cp.ndarray:
         """Module to perform back-projection of 2d/3d data as a cupy array
 
@@ -87,12 +86,9 @@ class RecToolsDIRCuPy(RecToolsDIR):
 
         data = _apply_horiz_detector_padding(data, self.detector_padding, cupyrun=True)
         self._ensure_open()
-        return (
-            self.Atools.backproject(data)
-            if self.geom == "3D"
-            else self.Atools._backprojCuPy(data)
-        )
+        return self.Atools.backproject(data)
 
+    @_on_device(cp)
     def FBP(self, data: cp.ndarray, *, input_axes=None, **kwargs) -> cp.ndarray:
         """Filtered backprojection reconstruction on a CuPy array using a custom built SINC filter.
            See more about the method `here <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction/FBP3d_tomobar.html>`__.
@@ -136,6 +132,7 @@ class RecToolsDIRCuPy(RecToolsDIR):
         reconstruction = self.Atools.backproject(data)  # 3d backprojecting
         return check_kwargs(reconstruction, **kwargs)
 
+    @_on_device(cp)
     def FOURIER_INV(
         self, data: cp.ndarray | Tuple[int, int, int], *, input_axes=None, **kwargs
     ) -> cp.ndarray:

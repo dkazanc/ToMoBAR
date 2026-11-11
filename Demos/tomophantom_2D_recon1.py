@@ -103,7 +103,7 @@ Rectools = RecToolsDIR(
         angles=angles_rad, detector_shape=(P,), centre_of_rotation=0.0
     ),
     volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
-    device_projector="gpu",
+    device_index=0,
 )
 
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -138,10 +138,10 @@ from tomobar.methodsDIR import RecToolsDIR
 
 Rectools = RecToolsDIR(
     projection_geometry=Parallel2DGeometry(
-        angles=angles_rad, detector_shape=(P,), centre_of_rotation=-shifts
+        angles=angles_rad, detector_shape=(P,), detector_shifts=-shifts
     ),
     volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
-    device_projector="gpu",
+    device_index=0,
 )
 
 FBPrec_misalign = Rectools.FBP(sino_misalign)  # reconstruction with misalignment
@@ -164,7 +164,7 @@ RectoolsIR = RecToolsIRCuPy(
         angles=angles_rad, detector_shape=(1, P), centre_of_rotation=0.0
     ),
     volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
-    device_projector=0,
+    device_index=0,
     OS_number=6,
 )
 

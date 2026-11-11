@@ -1,6 +1,7 @@
 """Geometry and resource ownership shared by public reconstruction classes."""
 
 from dataclasses import replace
+from tomobar.supp.device import _validate_device_index
 import numpy as np
 
 from tomobar.geometry import (
@@ -46,6 +47,13 @@ class GeometryReconstruction:
             else projection_geometry
         )
         self._closed = False
+
+    def _init_device(self, device_index):
+        self._device_index = _validate_device_index(device_index)
+
+    @property
+    def device_index(self) -> int:
+        return self._device_index
 
     @property
     def projection_geometry(self):

@@ -103,3 +103,29 @@ def test_geometry_rejects_invalid_dimensions(shape, error):
         Parallel3DGeometry.tomography(angles=[0.0], detector_shape=shape)
     with pytest.raises(error, match="shape"):
         VolumeGeometry(shape=(*shape, 7))
+
+
+@pytest.mark.parametrize("view_count", [1, 5, 8])
+def test_view_subsets_are_backend_independent_immutable_partitions(view_count):
+    from tomobar.geometry import interleaved_view_indices
+
+    for count in range(1, view_count + 1):
+        subsets = interleaved_view_indices(view_count, count)
+        assert len(subsets) == count
+        np.testing.assert_array_equal(
+            np.sort(np.concatenate(subsets)), np.arange(view_count)
+        )
+        for index, views in enumerate(subsets):
+            np.testing.assert_array_equal(views, np.arange(index, view_count, count))
+            with pytest.raises(ValueError):
+                views.setflags(write=True)
+
+
+def test_projection_shapes_follow_geometry_axis_order():
+    from tomobar.geometry import Parallel2DGeometry
+
+    scan = Parallel3DGeometry(angles=[0.3, -0.1, 1.0], detector_shape=(5, 7))
+    assert scan.projection_shape == (5, 3, 7)
+    assert Parallel2DGeometry(
+        angles=[0.3, 0.0], detector_shape=(7,)
+    ).projection_shape == (2, 7)

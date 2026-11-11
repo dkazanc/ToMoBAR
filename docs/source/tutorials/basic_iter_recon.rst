@@ -34,7 +34,7 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
             centre_of_rotation=0.0,
         ),
         volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
-        device_projector=0,
+        device_index=0,
     )
 
 * Now we have an access to all methods of this particular reconstructor. Let us use SIRT and CGLS reconstruction algorithms.

@@ -56,7 +56,7 @@ RecToolsCP = RecToolsDIRCuPy(
     ),
     volume_geometry=reconstruction_grid,
     detector_padding=100,
-    device_projector=0,
+    device_index=0,
 )
 
 FourierLP_cupy = RecToolsCP.FOURIER_INV(
@@ -102,7 +102,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
-    device_projector=0,
+    device_index=0,
 )
 
 # %%
@@ -167,7 +167,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
-    device_projector=0,
+    device_index=0,
     OS_number=6,
 )
 
@@ -213,7 +213,7 @@ with RecToolsDIRCuPy(
     projection_geometry=RectoolsCuPy.projection_geometry,
     volume_geometry=working_grid,
     detector_padding=padding_value,
-    device_projector=0,
+    device_index=0,
 ) as warm_start_reconstructor:
     working_fbp = warm_start_reconstructor.FBP(
         data_norm_cupy, input_axes=data_labels3D, cutoff_freq=0.3, recon_mask_radius=2.0
@@ -228,7 +228,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
-    device_projector=0,
+    device_index=0,
     OS_number=24,
 )
 ####################### Creating the data dictionary: #######################
@@ -282,7 +282,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
-    device_projector=0,
+    device_index=0,
     OS_number=6,
 )
 
@@ -334,7 +334,7 @@ RectoolsCuPy = RecToolsIRCuPy(
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
-    device_projector=0,
+    device_index=0,
     OS_number=12,
 )
 ####################### Creating the data dictionary: #######################

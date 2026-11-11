@@ -1,13 +1,10 @@
 """Reconstruction class for direct reconstruction methods (2D/3D).
 
 * :func:`RecToolsDIR.forward` and :func:`RecToolsDIR.backproject` Forward/Backward 2D/3D projection (ASTRA-Toolbox)
-* :func:`RecToolsDIR.FOURIER` Fourier Slice Theorem-based reconstruction in 2D only (adopted from the Tim Day's code)
 * :func:`RecToolsDIR.FBP` Filtered Back Projection 2D/3D (ASTRA with the custom built filter).
 """
 
-from typing import Literal
 import numpy as np
-import scipy.fftpack
 
 from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
@@ -18,10 +15,9 @@ from tomobar.geometry import (
     VolumeGeometry,
 )
 from tomobar.reconstruction_geometry import GeometryReconstruction
-from tomobar.supp.funcs import (
+from tomobar.supp.axis_order import (
     _transpose_data_axes,
     _resolve_data_axes,
-    _parse_device_argument,
 )
 from tomobar.supp.suppTools import check_kwargs, _apply_horiz_detector_padding
 
@@ -32,8 +28,9 @@ class RecToolsDIR(GeometryReconstruction):
     Use Parallel3DGeometry with VolumeGeometry, or Parallel2DGeometry with
     Volume2DGeometry. detector_padding adds edge pixels per detector side and
     derives a padded scan without modifying either supplied geometry object.
-    The requested volume shape is always preserved. ASTRA 3D uses GPU
-    projectors; NumPy and CuPy arrays use the ASTRA 2.5 direct DLPack API.
+    The requested volume shape is always preserved. Reconstruction uses CUDA
+    projectors selected by device_index; NumPy inputs and outputs stay on the
+    host while projection and filtering execute on the GPU.
     """
 
     def __init__(
@@ -42,40 +39,16 @@ class RecToolsDIR(GeometryReconstruction):
         projection_geometry: Parallel2DGeometry | Parallel3DGeometry,
         volume_geometry: Volume2DGeometry | VolumeGeometry,
         detector_padding: int = 0,
-        projector: Literal["fourier", "astra"] = "astra",
-        device_projector=0,
+        device_index: int = 0,
     ):
+        self._init_device(device_index)
         self._init_geometry(projection_geometry, volume_geometry, detector_padding)
-        if projector not in ("astra", "fourier"):
-            raise ValueError("projector must be 'astra' or 'fourier'")
-        self.projector = projector
-        architecture, device_index = _parse_device_argument(device_projector)
-        if self.geom == "3D":
-            if architecture != "gpu":
-                raise ValueError(
-                    "3D CPU reconstruction is not supported, please use GPU"
-                )
-            if projector == "astra":
-                self.Atools = AstraTools3D(
-                    projection_geometry=self.padded_projection_geometry,
-                    volume_geometry=volume_geometry,
-                    device_index=device_index,
-                )
-        elif projector == "astra":
-            if volume_geometry.shape[0] != volume_geometry.shape[1]:
-                raise ValueError(
-                    "The 2D ASTRA wrapper currently requires a square volume"
-                )
-            self.Atools = AstraTools2D(
-                projection_geometry.detector_shape[0],
-                detector_padding,
-                projection_geometry.angles,
-                projection_geometry.detector_shifts
-                + projection_geometry.centre_of_rotation,
-                volume_geometry.shape[0],
-                architecture,
-                device_index,
-            )
+        wrapper = AstraTools3D if self.geom == "3D" else AstraTools2D
+        self.Atools = wrapper(
+            projection_geometry=self.padded_projection_geometry,
+            volume_geometry=volume_geometry,
+            device_index=self.device_index,
+        )
 
     def forward(self, data: np.ndarray, *, output_axes=None, **kwargs) -> np.ndarray:
         """Module to perform forward projection of 2d/3d data numpy array
@@ -99,11 +72,7 @@ class RecToolsDIR(GeometryReconstruction):
             output_axes, kwargs.get("data_axes_labels_order"), native_axes
         )
         self._ensure_open()
-        projected = (
-            self.Atools.forward(data)
-            if self.geom == "3D"
-            else self.Atools._forwproj(data)
-        )
+        projected = self.Atools.forward(data)
         projected = self._crop_projection(projected)
         return _transpose_data_axes(
             projected, source_axes=native_axes, target_axes=axes
@@ -134,11 +103,7 @@ class RecToolsDIR(GeometryReconstruction):
 
         data = _apply_horiz_detector_padding(data, self.detector_padding, cupyrun=False)
         self._ensure_open()
-        return (
-            self.Atools.backproject(data)
-            if self.geom == "3D"
-            else self.Atools._backproj(data)
-        )
+        return self.Atools.backproject(data)
 
     def FBP(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
         """Filtered backprojection reconstruction module for 2D or 3D data.
@@ -176,126 +141,18 @@ class RecToolsDIR(GeometryReconstruction):
         cupyrun = False
         kwargs.update({"cupyrun": cupyrun})  # needed for agnostic array cropping
 
+        data = _apply_horiz_detector_padding(data, self.detector_padding, cupyrun)
         if self.geom == "2D":
-            if self.Atools.processing_arch == "gpu":
-                data = _apply_horiz_detector_padding(
-                    data, self.detector_padding, cupyrun
-                )
-                return check_kwargs(
-                    self.Atools._fbp(data), **kwargs
-                )  # 2D FBP reconstruction using ASTRA's API which includes options for a variety of filters
-            else:
-                "dealing with FBP 2D not working for parallel_vec geometry and CPU"
-                data = _apply_horiz_detector_padding(
-                    data, self.detector_padding, cupyrun
-                )
-                return check_kwargs(
-                    self.Atools._backproj(_filtersinc2D(data)), **kwargs
-                )  # 2D FBP reconstruction using the customised SINC filter
-        else:
-            data = _apply_horiz_detector_padding(data, self.detector_padding, cupyrun)
-            return check_kwargs(
-                self.Atools.backproject(_filtersinc3D(data)), **kwargs
-            )  # 3D FBP reconstruction using customised SINC filter
-
-    def FOURIER(self, data: np.ndarray, *, input_axes=None, **kwargs) -> np.ndarray:
-        """2D Reconstruction using Fourier slice theorem (scipy required)
-        for griddata interpolation module choose nearest, linear or cubic
-
-        Args:
-            data (np.ndarray): 2D sinogram data
-
-        Keyword Args:
-            input_axes (list or tuple, optional): Explicit projection axis order.
-                Uses the default below when omitted. Conflicting aliases raise ValueError.
-            data_axes_labels_order (list or tuple, optional): Legacy alias for input_axes.
-                 Defaults to ["angles", "detX"] for this 2D method.
-            method (str, optional): Interpolation type (nearest, linear, or cubic). Defaults to "linear".
-
-        Returns:
-            np.ndarray: Reconstructed object
-        """
-        self._ensure_open()
-        if (
-            self.geom != "2D"
-            or self.volume_geometry.shape[0] != self.volume_geometry.shape[1]
-        ):
-            raise ValueError("FOURIER requires a square 2D volume")
-        if np.any(self.projection_geometry.detector_shifts != 0):
-            raise ValueError("FOURIER does not support detector_shifts")
-        native_axes = ("angles", "detX")
-        axes = _resolve_data_axes(
-            input_axes, kwargs.get("data_axes_labels_order"), native_axes
+            return check_kwargs(self.Atools._fbp(data), **kwargs)
+        return check_kwargs(
+            self.Atools.backproject(
+                _filtersinc3D(data, device_index=self.device_index)
+            ),
+            **kwargs,
         )
-        data = _transpose_data_axes(data, source_axes=axes, target_axes=native_axes)
-        if data.ndim == 3:
-            raise ValueError(
-                "Fourier method is currently for 2D data only, use FBP if 3D reconstruction needed"
-            )
-
-        for key, value in kwargs.items():
-            if key == "method":
-                if value not in ["linear", "nearest", "cubic"]:
-                    raise ValueError(
-                        "For griddata interpolation module choose nearest, linear or cubic"
-                    )
-                else:
-                    method = value
-
-        from scipy.fft import fftshift, ifftshift, fft, ifft2
-        from scipy.interpolate import griddata
-
-        ObjSize = self.volume_geometry.shape[-1]
-        # pad sinogram and move it to compensate for CoR
-        oversampling = 2  # 2 or larger
-        angles_tot, DetectorsDimH = data.shape
-        if (DetectorsDimH % 2) != 0:
-            raise ValueError(
-                "The horizontal detector size of the projection data (sinogram) must be even"
-            )
-        det_x_up = oversampling * DetectorsDimH
-        sino_up = np.zeros([angles_tot, det_x_up], dtype=np.float32)
-        pad_from = DetectorsDimH // 2 + int(self.projection_geometry.centre_of_rotation)
-        pad_to = (
-            det_x_up
-            - DetectorsDimH // 2
-            + int(self.projection_geometry.centre_of_rotation)
-        )
-        sino_up[:, pad_from:pad_to] = data
-
-        # Fourier transform the rows of the sinogram, move the DC component to the row's centre
-        sinogram_fft_rows = fftshift(fft(ifftshift(sino_up, axes=1)), axes=1)
-        # Coordinates of sinogram FFT-ed rows' samples in 2D FFT space
-        a = -self.projection_geometry.angles
-        r = np.arange(det_x_up) - det_x_up / 2
-        r, a = np.meshgrid(r, a)
-        r = r.flatten()
-        a = a.flatten()
-        srcx = (det_x_up / 2) + r * np.cos(a)
-        srcy = (det_x_up / 2) + r * np.sin(a)
-
-        # Coordinates of regular grid in 2D FFT space
-        dstx, dsty = np.meshgrid(np.arange(det_x_up), np.arange(det_x_up))
-        dstx = dstx.flatten()
-        dsty = dsty.flatten()
-        # Interpolate the 2D Fourier space grid from the transformed sinogram rows
-        fft2 = griddata(
-            (srcy, srcx),
-            sinogram_fft_rows.flatten(),
-            (dsty, dstx),
-            method,
-            fill_value=0.0,
-        ).reshape((det_x_up, det_x_up))
-        # Transform from 2D Fourier space back to a reconstruction of the target
-        recon = np.real(fftshift(ifft2(ifftshift(fft2))))
-
-        # Cropping the reconstruction to size of the original image
-        unpad_from = det_x_up // 2 - ObjSize // 2
-        unpad_to = det_x_up // 2 + ObjSize // 2
-        return recon[unpad_from:unpad_to, unpad_from:unpad_to]
 
 
-def _filtersinc3D(projection3D: np.ndarray):
+def _filtersinc3D(projection3D: np.ndarray, *, device_index: int = 0):
     """Applies a 3D filter to 3D projection data for FBP
 
     Args:
@@ -320,42 +177,12 @@ def _filtersinc3D(projection3D: np.ndarray):
     rd_c[0, :] = rd
     r = rn1 * (np.dot(rn2, np.linalg.pinv(rd_c))) ** 2
     multiplier = 1.0 / projectionsNum
-    f = scipy.fftpack.fftshift(r)
-    # making a 2d filter for projection
-    f_2d = np.zeros((DetectorsLengthV, DetectorsLengthH), dtype="float32")
-    f_2d[0::, :] = f
-    filtered = np.zeros(np.shape(projection3D), dtype="float32")
+    # Retain the established filter coefficients; run the batched FFT on CUDA.
+    import cupy as cp
 
-    for i in range(0, projectionsNum):
-        IMG = scipy.fftpack.fft2(projection3D[:, i, :])
-        fimg = IMG * f_2d
-        filtered[:, i, :] = np.real(scipy.fftpack.ifft2(fimg))
-    return multiplier * filtered
-
-
-def _filtersinc2D(sinogram):
-    # applies filters to __2D projection data__ in order to achieve FBP
-    a = 1.1
-    [projectionsNum, DetectorsLengthH] = np.shape(sinogram)
-    w = np.linspace(
-        -np.pi,
-        np.pi - (2 * np.pi) / DetectorsLengthH,
-        DetectorsLengthH,
-        dtype="float32",
-    )
-
-    rn1 = np.abs(2.0 / a * np.sin(a * w / 2.0))
-    rn2 = np.sin(a * w / 2.0)
-    rd = (a * w) / 2.0
-    rd_c = np.zeros([1, DetectorsLengthH])
-    rd_c[0, :] = rd
-    r = rn1 * (np.dot(rn2, np.linalg.pinv(rd_c))) ** 2
-    multiplier = 1.0 / projectionsNum
-    f = scipy.fftpack.fftshift(r)
-    filtered = np.zeros(np.shape(sinogram))
-
-    for i in range(0, projectionsNum):
-        IMG = scipy.fftpack.fft(sinogram[i, :])
-        fimg = IMG * f
-        filtered[i, :] = multiplier * np.real(scipy.fftpack.ifft(fimg))
-    return np.float32(filtered)
+    with cp.cuda.Device(device_index):
+        data = cp.asarray(projection3D, dtype=cp.float32)
+        spectrum = cp.fft.fft2(data, axes=(0, 2))
+        spectrum *= cp.asarray(np.fft.fftshift(r), dtype=cp.float32)[None, None, :]
+        filtered = cp.fft.ifft2(spectrum, axes=(0, 2)).real
+        return cp.asnumpy(multiplier * filtered)
