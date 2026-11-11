@@ -19,7 +19,7 @@ from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
     Volume2DGeometry,
-    VolumeGeometry,
+    Volume3DGeometry,
 )
 from tomobar.astra_wrappers.geometry import parallel2d_vectors, parallel3d_vectors
 
@@ -272,7 +272,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                     centre_of_rotation=offset,
                     detector_shifts=detector_shifts,
                 ),
-                volume_geometry=VolumeGeometry(shape=(2, 2, 2)),
+                volume_geometry=Volume3DGeometry(shape=(2, 2, 2)),
                 device_index=0,
                 ordsub_number=subsets,
             )
@@ -542,7 +542,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             projection_geometry=Parallel3DGeometry(
                 angles=np.arange(4.0), detector_shape=(2, 4)
             ),
-            volume_geometry=VolumeGeometry(shape=(2, 2, 2)),
+            volume_geometry=Volume3DGeometry(shape=(2, 2, 2)),
             device_index=1,
         )
         self.addCleanup(wrapper.close)
@@ -660,7 +660,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                     projection_geometry=Parallel3DGeometry.tomography(
                         angles=angles, detector_shape=(3, 8), detector_shifts=shifts
                     ),
-                    volume_geometry=VolumeGeometry(shape=(3, 2, 2)),
+                    volume_geometry=Volume3DGeometry(shape=(3, 2, 2)),
                     device_index=0,
                     ordsub_number=count,
                 )
@@ -723,7 +723,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             centre_of_rotation=0.75,
             detector_shifts=[[1, 2], [3, 4], [5, 6]],
         )
-        volume = VolumeGeometry(shape=(3, 5, 9))
+        volume = Volume3DGeometry(shape=(3, 5, 9))
         with self.tools3d.AstraTools3D(
             projection_geometry=scan, volume_geometry=volume
         ) as wrapper:
@@ -750,7 +750,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
 
     def test_3d_requires_geometry_objects_and_rejects_old_constructor(self):
         scan = Parallel3DGeometry(angles=[0.0], detector_shape=(2, 4))
-        volume = VolumeGeometry(shape=(2, 2, 2))
+        volume = Volume3DGeometry(shape=(2, 2, 2))
         self.astra.create_projector.reset_mock()
         self.astra.set_gpu_index.reset_mock()
         for projection, reconstruction, message in (
@@ -803,7 +803,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
     def test_gpu_is_selected_per_cached_handle_and_device_is_immutable(self):
         wrapper = self.tools3d.AstraTools3D(
             projection_geometry=Parallel3DGeometry(angles=[0.0], detector_shape=(2, 4)),
-            volume_geometry=VolumeGeometry(shape=(2, 2, 2)),
+            volume_geometry=Volume3DGeometry(shape=(2, 2, 2)),
             device_index=2,
         )
         self.addCleanup(wrapper.close)
@@ -901,14 +901,11 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         supp = ModuleType("suppTools")
         supp.check_kwargs = lambda data, **kw: data
         supp.perform_recon_crop = lambda data, *args: data
-        supp._apply_horiz_detector_padding = lambda data, *args, **kw: data
-        dictionaries = ModuleType("dicts")
-        dictionaries.dicts_check = Mock()
         regularisers = ModuleType("regularisers")
         regularisers.prox_regul = Mock()
         fidelities = ModuleType("fidelities")
         fidelities.grad_data_term = Mock(
-            side_effect=lambda rec, x, *args: np.zeros_like(x)
+            side_effect=lambda rec, x, *args, **kwargs: np.zeros_like(x)
         )
         with patch.dict(
             "sys.modules",
@@ -917,20 +914,19 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                 "astra": self.astra,
                 "tomobar.supp.axis_order": self.axes,
                 "tomobar.supp.suppTools": supp,
-                "tomobar.supp.dicts": dictionaries,
-                "tomobar.regularisersCuPy": regularisers,
+                "tomobar.regularisers": regularisers,
                 "tomobar.astra_wrappers.astra_tools3d": self.tools3d,
                 "tomobar.data_fidelities": fidelities,
             },
         ):
-            return load_module("_subset_test_ir", "methodsIR_CuPy.py")
+            return load_module("_subset_test_ir", "methodsIR.py")
 
     def make_iterative(self, module, n_views, count):
-        rec = module.RecToolsIRCuPy(
+        rec = module.RecToolsIR(
             projection_geometry=Parallel3DGeometry(
                 angles=np.arange(float(n_views)), detector_shape=(1, 2)
             ),
-            volume_geometry=VolumeGeometry(shape=(1, 2, 2)),
+            volume_geometry=Volume3DGeometry(shape=(1, 2, 2)),
             OS_number=count,
         )
         self.addCleanup(rec.close)
@@ -949,33 +945,16 @@ class TestAstraResourceLifecycle(unittest.TestCase):
                             1, n_views, 2
                         )
                         weights = None if fidelity == "LS" else data + 100
-                        data_dict = {
-                            "projection_data": data,
-                            "data_fidelity": fidelity,
-                            "beta_SWLS": 0.1,
-                        }
-                        algorithm = {
-                            "iterations": 1,
-                            "lipschitz_const": 1.0,
-                            "nonnegativity": False,
-                            "recon_mask_radius": 1.0,
-                            "ADMM_rho_const": 1.0,
-                            "ADMM_relax_par": 1.0,
-                            "verbose": False,
-                        }
-                        regularisation = {"method": None, "regul_param": 1.0}
-                        rec._RecToolsIRCuPy__common_initialisation = Mock(
-                            return_value=(
-                                data_dict,
-                                algorithm,
-                                regularisation,
-                                np.ones((1, 2, 2), dtype=np.float32),
-                                weights,
-                                count > 1,
-                            )
-                        )
                         module.grad_data_term.reset_mock()
-                        getattr(rec, method)(data_dict, algorithm, regularisation)
+                        getattr(rec, method)(
+                            data,
+                            weights=weights,
+                            fidelity=module.DataFidelity(fidelity),
+                            iterations=1,
+                            lipschitz_constant=1.0,
+                        )
+                        if weights is not None:
+                            weights = weights / weights.max()
                         self.assertEqual(module.grad_data_term.call_count, count)
                         for subset, call in enumerate(
                             module.grad_data_term.call_args_list
@@ -1005,23 +984,13 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             data = np.arange(1, 1 + n_views * 2, dtype=np.float32).reshape(
                 1, n_views, 2
             )
-            rec._RecToolsIRCuPy__common_initialisation = Mock(
-                return_value=(
-                    {"projection_data": data},
-                    {"iterations": 1, "recon_mask_radius": 1.0},
-                    {"method": None},
-                    np.ones((1, 2, 2), dtype=np.float32),
-                    None,
-                    count > 1,
-                )
-            )
             rec._Ax = Mock(
                 side_effect=lambda x, subset, use_os: np.ones(
                     (1, len(rec.Atools.subset_indices[subset]), 2)
                 )
             )
             rec._Atb = Mock(side_effect=lambda *args: np.ones((1, 2, 2)))
-            rec.OSEM({"projection_data": data})
+            rec.OSEM(data, iterations=1)
             self.assertEqual(rec._Ax.call_count, count)
             self.assertEqual(rec._Atb.call_count, count + 1)
             for subset, call in enumerate(rec._Atb.call_args_list[1:]):
@@ -1036,7 +1005,7 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             subset_shape = (1, len(rec.Atools.subset_indices[0]), 2)
             rec.Atools.forward = Mock(return_value=np.ones(subset_shape))
             rec.Atools.backproject = Mock(return_value=np.ones((1, 2, 2)))
-            result = rec.powermethod({"data_fidelity": "PWLS"})
+            result = rec.powermethod()
             self.assertTrue(np.isfinite(result))
             self.assertEqual(rec.Atools.forward.call_count, 16)
             self.assertEqual(rec.Atools.backproject.call_count, 15)
@@ -1059,14 +1028,14 @@ class TestAstraResourceLifecycle(unittest.TestCase):
     def test_iterative_constructor_keeps_detector_shifts_and_cor_separate(self):
         module = self.load_iterative_module()
         shifts = np.array([[1.0, 2.0], [-3.0, 4.0]])
-        rec = module.RecToolsIRCuPy(
+        rec = module.RecToolsIR(
             projection_geometry=Parallel3DGeometry(
                 angles=[0.0, 0.5],
                 detector_shape=(3, 5),
                 centre_of_rotation=0.75,
                 detector_shifts=shifts,
             ),
-            volume_geometry=VolumeGeometry(shape=(3, 5, 5)),
+            volume_geometry=Volume3DGeometry(shape=(3, 5, 5)),
         )
         self.addCleanup(rec.close)
         scan = rec.Atools.projection_geometry
@@ -1075,11 +1044,11 @@ class TestAstraResourceLifecycle(unittest.TestCase):
 
     def test_iterative_constructor_builds_padded_geometry(self):
         module = self.load_iterative_module()
-        rec = module.RecToolsIRCuPy(
+        rec = module.RecToolsIR(
             projection_geometry=Parallel3DGeometry(
                 angles=[0.0, 0.5], detector_shape=(3, 5), centre_of_rotation=0.75
             ),
-            volume_geometry=VolumeGeometry(shape=(2, 4, 6)),
+            volume_geometry=Volume3DGeometry(shape=(2, 4, 6)),
             detector_padding=2,
         )
         self.addCleanup(rec.close)

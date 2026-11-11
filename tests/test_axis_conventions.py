@@ -12,7 +12,7 @@ from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
     Volume2DGeometry,
-    VolumeGeometry,
+    Volume3DGeometry,
 )
 
 ROOT = Path(__file__).resolve().parents[1] / "tomobar"
@@ -51,6 +51,8 @@ class TestAxisConventions(unittest.TestCase):
             float32=np.float32,
             ascontiguousarray=np.ascontiguousarray,
             swapaxes=np.swapaxes,
+            asnumpy=np.asarray,
+            asarray=np.asarray,
             cuda=SimpleNamespace(Device=Mock(return_value=Device())),
             fft=SimpleNamespace(
                 config=SimpleNamespace(
@@ -84,7 +86,6 @@ class TestAxisConventions(unittest.TestCase):
             "tomobar.supp.suppTools": stub_module(
                 "suppTools",
                 check_kwargs=identity,
-                _apply_horiz_detector_padding=identity,
             ),
             "tomobar.supp.memory_estimator_helpers": stub_module(
                 "memory", DeviceMemStack=Mock()
@@ -99,16 +100,9 @@ class TestAxisConventions(unittest.TestCase):
         with patch.dict("sys.modules", stubs):
             self.axes = load_module("_axis_test_axes", "supp/axis_order.py")
             with patch.dict("sys.modules", {"tomobar.supp.axis_order": self.axes}):
-                self.numpy_module = load_module("_axis_test_dir", "methodsDIR.py")
-                with patch.dict(
-                    "sys.modules", {"tomobar.methodsDIR": self.numpy_module}
-                ):
-                    self.cupy_module = load_module(
-                        "_axis_test_dir_cupy", "methodsDIR_CuPy.py"
-                    )
-        self.numpy_module._filtersinc3D = self.filter
-        self.numpy_module._filtersinc2D = self.filter
-        self.classes = (self.numpy_module.RecToolsDIR, self.cupy_module.RecToolsDIRCuPy)
+                self.direct_module = load_module("_axis_test_dir", "methodsDIR.py")
+        self.direct_module._filtersinc3D = self.filter
+        self.classes = (self.direct_module.RecToolsDIR,)
 
     def reconstructor(self, cls, native, dim=3):
         rec = cls.__new__(cls)
@@ -117,7 +111,7 @@ class TestAxisConventions(unittest.TestCase):
                 angles=np.arange(native.shape[1], dtype=float),
                 detector_shape=(native.shape[0], native.shape[-1]),
             )
-            volume = VolumeGeometry(
+            volume = Volume3DGeometry(
                 shape=(native.shape[0], native.shape[-1], native.shape[-1])
             )
         else:
@@ -140,7 +134,7 @@ class TestAxisConventions(unittest.TestCase):
 
     def test_direct_constructors_forward_detector_shifts_separately_from_cor(self):
         shifts = np.array([[1.0, 2.0], [-3.0, 4.0]])
-        wrapper = self.numpy_module.AstraTools3D
+        wrapper = self.direct_module.AstraTools3D
         for cls in self.classes:
             wrapper.reset_mock()
             original = Parallel3DGeometry(
@@ -149,7 +143,7 @@ class TestAxisConventions(unittest.TestCase):
                 centre_of_rotation=0.75,
                 detector_shifts=shifts,
             )
-            volume = VolumeGeometry(shape=(2, 4, 6))
+            volume = Volume3DGeometry(shape=(2, 4, 6))
             rec = cls(
                 projection_geometry=original, volume_geometry=volume, detector_padding=2
             )
@@ -252,21 +246,21 @@ class TestAxisConventions(unittest.TestCase):
                 native,
             )
 
-    def test_fbp_input_orders_and_distinct_legacy_defaults(self):
+    def test_fbp_input_orders_for_both_filters(self):
         astra_axes = ("detY", "angles", "detX")
         native = np.arange(30, dtype=np.float32).reshape(2, 3, 5)
-        for cls in self.classes:
-            rec = self.reconstructor(cls, native)
-            is_cupy = cls is self.cupy_module.RecToolsDIRCuPy
-            filter_input = native.swapaxes(0, 1) if is_cupy else native
-            np.testing.assert_array_equal(rec.FBP(filter_input), native)
-            np.testing.assert_array_equal(self.filter.call_args.args[0], filter_input)
+        for filter_type in ("SINC", "SINC_CuPy"):
+            rec = self.reconstructor(self.direct_module.RecToolsDIR, native)
+            filter_input = (
+                native.swapaxes(0, 1) if filter_type == "SINC_CuPy" else native
+            )
             for order in permutations(astra_axes):
                 supplied = native.transpose(tuple(astra_axes.index(a) for a in order))
                 for key in ("input_axes", "data_axes_labels_order"):
-                    with self.subTest(cls=cls.__name__, order=order, key=key):
+                    with self.subTest(filter_type=filter_type, order=order, key=key):
                         np.testing.assert_array_equal(
-                            rec.FBP(supplied, **{key: order}), native
+                            rec.FBP(supplied, filter_type=filter_type, **{key: order}),
+                            native,
                         )
                         np.testing.assert_array_equal(
                             self.filter.call_args.args[0], filter_input
@@ -274,15 +268,24 @@ class TestAxisConventions(unittest.TestCase):
 
     def test_fourier_inv_normalizes_arrays_and_estimator_shapes_before_kernels(self):
         axes = ("detY", "angles", "detX")
-        native = np.arange(24).reshape(2, 3, 4)
-        rec = self.reconstructor(self.cupy_module.RecToolsDIRCuPy, native)
+        native = np.arange(24, dtype=np.float32).reshape(2, 3, 4)
+        rec = self.reconstructor(self.direct_module.RecToolsDIR, native)
 
         def capture(data, **kwargs):
             self.normalized = self.axes._transpose_data_axes(data, **kwargs)
             return self.normalized
 
-        with patch.object(
-            self.cupy_module, "_transpose_data_axes", side_effect=capture
+        prepare = rec._prepare_projection
+
+        def capture_prepared(data, **kwargs):
+            self.normalized = prepare(data, **kwargs)
+            return self.normalized
+
+        with (
+            patch.object(
+                self.direct_module, "_transpose_data_axes", side_effect=capture
+            ),
+            patch.object(rec, "_prepare_projection", side_effect=capture_prepared),
         ):
             for shape_only in (False, True):
                 for order in permutations(axes):

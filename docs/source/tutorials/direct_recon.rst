@@ -21,7 +21,7 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
 .. code-block:: python
 
-    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
@@ -32,7 +32,9 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
             detector_shape=(detectorVert, detectorHoriz),
             centre_of_rotation=0.0,
         ),
-        volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
+        volume_geometry=Volume3DGeometry(
+            shape=(detectorVert, detectorHoriz, detectorHoriz)
+        ),
         device_index=0,
     )
 
@@ -44,5 +46,4 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
     FBP_Rec = Rectools.FBP(data_norm, data_axes_labels_order=data_axes_labels3D)
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-For that one needs to use :mod:`tomobar.methodsDIR_CuPy` class instead of :mod:`tomobar.methodsDIR`. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
-
+Use :class:`tomobar.methodsDIR.RecToolsDIR` with either NumPy or CuPy arrays. Select ``filter_type="SINC_CuPy"`` in ``FBP`` for the custom CUDA SINC filter. Note that the array of angles for the CuPy modules should be provided as a Numpy array.

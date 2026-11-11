@@ -3,7 +3,7 @@
 Regularised iterative reconstruction
 ************************************
 
-.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. The class `RecToolsIR` is retired starting from version 2026.3.0.0 in favor of `RecToolsIRCuPy`. This demo will be updated soon.
+.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. The examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.methodsIR.RecToolsIR`` with explicit geometry objects. This demo will be updated soon. Historical wavelet illustrations are retained; current examples use supported PD-TV regularisation without wavelets.
 
 .. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
 
@@ -32,19 +32,22 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.methodsIR import RecToolsIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
     Rectools = RecToolsIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detectorVert,  # Vertical detector dimension
-        CenterRotOffset=0.0,  # Center of Rotation (needs to be found)
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=detectorHoriz,  # The reconstructed object dimensions
-        datafidelity="LS",  # Data fidelity, choose from LS, KL, PWLS and SWLS
-        device_index=0,  # Device to perform reconstruction on
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorVert, detectorHoriz),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=Volume3DGeometry(
+            shape=(detectorVert, detectorHoriz, detectorHoriz)
+        ),
+        device_index=0,
+        OS_number=None,
     )
 
 * Now we have an access to all methods of this particular reconstructor.
@@ -53,72 +56,62 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
   fast in convergence. Further speed-up can be obtained by using the CuPy
   versions of those methods.
 
-  **Please note that the dictionaries needed for all iterative methods with exact
-  keyword arguments defined in** :mod:`tomobar.supp.dicts`.
+  Pass projection arrays and solver options directly, with typed settings from
+  :mod:`tomobar.options`.
 
 .. code-block:: python
 
-    _data_ = {
-        "projection_norm_data": data_norm,
-        "data_axes_labels_order": ["detY", "angles", "detX"],
-    }  # data dictionary
+    from tomobar.options import DataFidelity, Regularisation
 
-    lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant
+    lc = Rectools.powermethod()  # calculate Lipschitz constant
 
-    _algorithm_ = {"iterations": 300, "lipschitz_const": lc}  # algorithm dict
 
-    _regularisation_ = {
-        "method": "PD_TV",  # Selected regularisation method
-        "regul_param": 0.000002,  # Regularisation parameter
-        "iterations": 150,  # The number of inner regularisation iterations
-        "device_regulariser": "gpu",
-    }
-
-    FISTA_Rec = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
-
+    FISTA_Rec = Rectools.FISTA(
+        data_norm,
+        input_axes=["detY", "angles", "detX"],
+        fidelity=DataFidelity(method="LS"),
+        iterations=300,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(method="PD_TV", strength=2e-06, iterations=150),
+    )
 
 * Let us consider a faster and slightly more advanced modification of the FISTA algorithm -
-  Penalised Weighted Least Squares (PWLS) Ordered-Subsets FISTA with Total Variation regularisation and WAVELETS
-  thresholding (note that `pypwt` package needed for wavelets, see :ref:`ref_dependencies`).
+  Penalised Weighted Least Squares (PWLS) Ordered-Subsets FISTA with Total Variation regularisation.
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.options import DataFidelity, Regularisation
     from tomobar.methodsIR import RecToolsIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
     Rectools = RecToolsIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detectorVert,  # Vertical detector dimension
-        CenterRotOffset=0.0,  # Center of Rotation (needs to be found)
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=detectorHoriz,  # The reconstructed object dimensions
-        datafidelity="PWLS",  # Data fidelity, choose from LS, KL, PWLS and SWLS
-        device_index=0,  # Device to perform reconstruction on
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorVert, detectorHoriz),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=Volume3DGeometry(
+            shape=(detectorVert, detectorHoriz, detectorHoriz)
+        ),
+        device_index=0,
+        OS_number=6,
     )
 
-    _data_ = {
-        "projection_norm_data": data_norm,  # Normalised projection data
-        "projection_raw_data": dataRaw,  # Raw projection data
-        "OS_number": 6,  # The number of ordered-subsets
-        "data_axes_labels_order": ["detY", "angles", "detX"],
-    }
 
-    lc = Rectools.powermethod(_data_)
+    lc = Rectools.powermethod()
 
-    _algorithm_ = {"iterations": 25, "lipschitz_const": lc}
 
-    _regularisation_ = {
-        "method": "PD_TV_WAVELETS",  # Selected regularisation method
-        "regul_param": 0.000002,  # Regularisation parameter for PD-TV
-        "regul_param2": 0.000002,  # Regularisation parameter for wavelets
-        "iterations": 30,  # The number of regularisation iterations
-        "device_regulariser": "gpu",
-    }
-
-    FISTA_OS_PWLS_Rec = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
-
+    FISTA_OS_PWLS_Rec = Rectools.FISTA(
+        data_norm,
+        input_axes=["detY", "angles", "detX"],
+        fidelity=DataFidelity(method="PWLS"),
+        weights=dataRaw,
+        iterations=25,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(method="PD_TV", strength=2e-06, iterations=30),
+    )
 
 There are hundreds of different data fidelities and regularisation combinations possible in ToMoBAR.
 Please note, however, that before using a certain combination of data and prior terms, its worth knowing
@@ -127,4 +120,4 @@ reconstructed object characteristics (geometry, texture etc.) and if your data c
 data inaccuracies? See an example in :ref:`examples_synth_iter`.
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-For that one needs to use :mod:`tomobar.methodsIR_CuPy` class instead of :mod:`tomobar.methodsIR`. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
+Use :class:`tomobar.methodsIR.RecToolsIR` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.

@@ -1,7 +1,7 @@
 from numpy.testing import assert_allclose
 import numpy as np
 import cupy as cp
-from tomobar.regularisersCuPy import ROF_TV_cupy, PD_TV_cupy, __check_if_input_2d_or_3d
+from tomobar.regularisers import ROF_TV_cupy, PD_TV_cupy, __check_if_input_2d_or_3d
 
 
 def test_check_if_input_2d_or_3d_1():

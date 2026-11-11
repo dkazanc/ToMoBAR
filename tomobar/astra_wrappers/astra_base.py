@@ -9,6 +9,7 @@ import weakref
 
 import numpy as np
 from tomobar.geometry import interleaved_view_indices
+from tomobar.supp.array_prepare import prepare_array
 
 try:
     import cupy as xp
@@ -105,13 +106,13 @@ class AstraBase:
         input_geometry = self.vol_geom if forward else projection
         output_geometry = projection if forward else self.vol_geom
         if isinstance(data, np.ndarray):
-            if data.shape != tuple(astra.geom_size(input_geometry)):
-                raise ValueError(
-                    f"Input must have shape {astra.geom_size(input_geometry)}, got {data.shape}"
-                )
-            if data.dtype.kind not in "biuf":
-                raise TypeError("Input must have a real numeric dtype")
-            prepared = np.ascontiguousarray(data, dtype=np.float32)
+            prepared = prepare_array(
+                data,
+                shape=astra.geom_size(input_geometry),
+                device_index=self.device_index,
+                array_module=xp,
+                pack=True,
+            )
             out = np.empty(astra.geom_size(output_geometry), dtype=np.float32)
             handle = self._projector_handle(subset_index)
             operation = manager.direct_FP if forward else manager.direct_BP
@@ -154,17 +155,11 @@ class AstraBase:
             raise RuntimeError("CuPy with an accessible GPU is required")
         if not isinstance(data, xp.ndarray):
             raise TypeError(f"{name} must be a CuPy array")
-        expected_shape = tuple(astra.geom_size(geometry))
-        if data.shape != expected_shape:
-            raise ValueError(
-                f"{name} must have shape {expected_shape}, got {data.shape}"
-            )
-        if data.dtype.kind not in "biuf":
-            raise TypeError(f"{name} must have a real numeric dtype, got {data.dtype}")
-        if data.device.id != self.device_index:
-            raise ValueError(
-                f"{name} is on GPU {data.device.id}, but the projector uses "
-                f"GPU {self.device_index}"
-            )
-        with xp.cuda.Device(self.device_index):
-            return xp.ascontiguousarray(data, dtype=xp.float32)
+        return prepare_array(
+            data,
+            shape=astra.geom_size(geometry),
+            device_index=self.device_index,
+            array_module=xp,
+            name=name,
+            pack=True,
+        )

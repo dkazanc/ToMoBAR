@@ -19,7 +19,7 @@
 ## Anouncements:
 *  $\sf\color{red}!$ 2026.4.0.0 version requires ASTRA-Toolbox version 2.5 or newer [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
 
-*  $\sf\color{red}!$ Starting from version 2026.3.0.0, iterative reconstruction methods will no longer be accessible through the `RecToolsIR` interface and `RecToolsIRCuPy` should be used instead. The dependency on the Regularisation Toolkit is dropped in favour of the internal CuPy routines. Please see more information in [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
+*  $\sf\color{red}!$ The current GPU-only iterative reconstruction interface is `tomobar.methodsIR.RecToolsIR`, using explicit projection and volume geometry. The dependency on the Regularisation Toolkit is dropped in favour of the internal CuPy routines. Please see more information in [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
 
 ### CHANGELOG:
 See [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.

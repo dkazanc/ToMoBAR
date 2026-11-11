@@ -28,13 +28,14 @@ def _filtersinc3D_cupy(projection3D: xp.ndarray, cutoff: float = 0.6) -> xp.ndar
 
     Args:
         data : xp.ndarray
-            Projection data as a CuPy array.
+            Projection data as a CuPy array in (angles, detY, detX) order.
+            The first dimension supplies the number of views for normalization.
         cutoff: float
             cutoff for sinc filter, lower values lead to sharper reconstructions
 
     Returns:
         xp.ndarray
-            The filtered projectiond data as a CuPy array.
+            Filtered data in the same (angles, detY, detX) order.
     """
     projectionsNum, DetectorsLengthV, DetectorsLengthH = xp.shape(projection3D)
 

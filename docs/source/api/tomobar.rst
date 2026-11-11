@@ -19,11 +19,9 @@ Submodules
 
    tomobar.fourier
    tomobar.methodsDIR
-   tomobar.methodsDIR_CuPy
    tomobar.methodsIR
-   tomobar.methodsIR_CuPy
+   tomobar.options
    tomobar.regularisers
-   tomobar.regularisersCuPy
 
 Module contents
 ---------------

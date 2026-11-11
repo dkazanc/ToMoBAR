@@ -17,7 +17,7 @@ def test_direct_full_and_subset_projection_on_cuda(array_library):
         except xp.cuda.runtime.CUDARuntimeError:
             pytest.skip("CuPy CUDA is unavailable")
     from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
-    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 5, endpoint=False),
@@ -25,7 +25,7 @@ def test_direct_full_and_subset_projection_on_cuda(array_library):
         centre_of_rotation=0.25,
         detector_shifts=np.column_stack((np.linspace(-0.2, 0.2, 5), np.zeros(5))),
     )
-    grid = VolumeGeometry(shape=(2, 4, 6))
+    grid = Volume3DGeometry(shape=(2, 4, 6))
     with AstraTools3D(
         projection_geometry=scan, volume_geometry=grid, ordsub_number=2
     ) as wrapper:
@@ -64,31 +64,31 @@ def test_iterative_output_crop_matches_full_working_volume(method):
     if not astra.use_cuda():
         pytest.skip("ASTRA CUDA is unavailable")
     cp = pytest.importorskip("cupy")
-    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
-    from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.methodsIR import RecToolsIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 6, endpoint=False), detector_shape=(4, 10)
     )
-    grid = VolumeGeometry(shape=(4, 8, 10))
+    grid = Volume3DGeometry(shape=(4, 8, 10))
     output_shape = (3, 5, 6)
     projections = cp.asarray(
         np.linspace(0.1, 1.0, 4 * 6 * 10, dtype=np.float32).reshape(4, 6, 10)
     )
     results = []
     for crop in (None, output_shape):
-        with RecToolsIRCuPy(
+        with RecToolsIR(
             projection_geometry=scan,
             volume_geometry=grid,
             detector_padding=2,
             output_shape=crop,
         ) as rec:
-            algorithm = {
-                "iterations": 1,
-                "lipschitz_const": 50.0,
-                "recon_mask_radius": 1.0,
-            }
-            result = getattr(rec, method)({"projection_data": projections}, algorithm)
+            options = (
+                {"lipschitz_constant": 50.0} if method in ("FISTA", "ADMM") else {}
+            )
+            result = getattr(rec, method)(
+                projections, iterations=1, recon_mask_radius=1.0, **options
+            )
             results.append(result)
             assert rec.Atools.volume_geometry is grid
     full, cropped = results
@@ -172,7 +172,7 @@ def test_public_2d_cupy_projection_and_detector_padding():
         pytest.skip("ASTRA CUDA is unavailable")
     cp = pytest.importorskip("cupy")
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+    from tomobar.methodsDIR import RecToolsDIR
     from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
     from dataclasses import replace
 
@@ -182,7 +182,7 @@ def test_public_2d_cupy_projection_and_detector_padding():
         centre_of_rotation=0.25,
     )
     grid = Volume2DGeometry(shape=(4, 6))
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=scan, volume_geometry=grid, detector_padding=2
     ) as rec:
         projected = rec.forward(cp.ones(grid.shape, dtype=cp.float64))

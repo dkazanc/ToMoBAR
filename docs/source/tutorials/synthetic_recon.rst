@@ -3,7 +3,7 @@
 Synthethic data reconstruction
 ******************************
 
-.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. The class `RecToolsIR` is retired starting from version 2026.3.0.0 in favor of `RecToolsIRCuPy`. This demo will be updated soon.
+.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. These examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.methodsIR.RecToolsIR`` with explicit geometry objects. This demo will be updated soon. Historical wavelet illustrations are retained; current examples use supported PD-TV regularisation without wavelets.
 
 .. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
 
@@ -51,7 +51,6 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
     projData3D_analyt = TomoP3D.ModelSino(
         model, N_size, Horiz_det, Vert_det, angles, path_library3D
     )
-
 
 .. figure::  ../_static/tutorial/synth/sinogram3d.png
     :scale: 25 %
@@ -102,7 +101,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
 
 .. code-block:: python
 
-    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     RectoolsDIR = RecToolsDIR(
@@ -111,7 +110,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
             detector_shape=(Vert_det, Horiz_det),
             centre_of_rotation=0.0,
         ),
-        volume_geometry=VolumeGeometry(shape=(Vert_det, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
         device_index=0,
     )
 
@@ -128,40 +127,34 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.options import DataFidelity, Regularisation
+
     Rectools = RecToolsIR(
-        DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-        CenterRotOffset=None,  # Center of Rotation (CoR) scalar
-        AnglesVec=angles_rad,  # array of angles in radians
-        ObjSize=N_size,  # a scalar to define reconstructed object dimensions
-        datafidelity="PWLS",  # data fidelity,
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+        ),
+        volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
         device_index=0,
+        OS_number=8,
     )
 
-    _data_ = {
-        "projection_norm_data": projData3D_norm,
-        "projection_raw_data": projData3D_noisy / np.max(projData3D_noisy),
-        "OS_number": 8,  # the number of Ordered Subsets
-        "data_axes_labels_order": ["detY", "angles", "detX"],
-    }  # data dictionary
 
-    lc = Rectools.powermethod(
-        _data_
-    )  # calculate Lipschitz constant (run once to initialise)
+    lc = Rectools.powermethod()  # calculate Lipschitz constant (run once to initialise)
 
     # algorithm parameters
-    _algorithm_ = {"iterations": 15, "lipschitz_const": lc}
 
     # regularisation dict
-    _regularisation_ = {
-        "method": "PD_TV",
-        "regul_param": 0.0000035,  # Regularisation parameter for TV
-        "iterations": 80,
-        "device_regulariser": "gpu",
-    }
 
-    FISTA_TV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+    FISTA_TV = Rectools.FISTA(
+        projData3D_norm,
+        input_axes=["detY", "angles", "detX"],
+        fidelity=DataFidelity(method="PWLS"),
+        weights=projData3D_noisy / np.max(projData3D_noisy),
+        iterations=15,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(method="PD_TV", strength=3.5e-06, iterations=80),
+    )
 
 .. figure::  ../_static/tutorial/synth/PWLS_TV_recon.png
     :scale: 25 %
@@ -172,20 +165,23 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
   have smooth objects in our reconstructed data (Gaussians). So may be we should try
   a penalty that favours piecewise-smooth solution, a dual penalty like Total Generilised Variation or
   or even TV and Wavelet-based terms combined. Let us try the latter by modifying the
-  regularisation dictionary and re-running the method.
+  regularisation settings and re-running the method.
 
 .. code-block:: python
 
-    # modifying regularisation dict
-    _regularisation_ = {
-        "method": "PD_TV_WAVELETS",
-        "regul_param": 0.0000035,  # Regularisation parameter for TV
-        "regul_param2": 0.000001,  # Regularisation parameter for wavelets
-        "iterations": 80,
-        "device_regulariser": "gpu",
-    }
+    from tomobar.options import DataFidelity, Regularisation
 
-    FISTA_TV_WV = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+    # modifying regularisation dict
+
+    FISTA_TV_WV = Rectools.FISTA(
+        projData3D_norm,
+        input_axes=["detY", "angles", "detX"],
+        fidelity=DataFidelity(method="PWLS"),
+        weights=projData3D_noisy / np.max(projData3D_noisy),
+        iterations=15,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(method="PD_TV", strength=3.5e-06, iterations=80),
+    )
 
 .. figure::  ../_static/tutorial/synth/PWLS_TV_WV_recon.png
     :scale: 25 %
@@ -205,41 +201,33 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.options import DataFidelity, Regularisation
+
     Rectools = RecToolsIR(
-        DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-        CenterRotOffset=None,  # Centre of Rotation scalar
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="SWLS",  # Stripe Weighted LS  Data fidelity
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+        ),
+        volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
         device_index=0,
+        OS_number=8,
     )
 
-    _data_ = {
-        "projection_norm_data": projData3D_norm,
-        "projection_raw_data": projData3D_noisy / np.max(projData3D_noisy),
-        "beta_SWLS": 0.5,  # SWLS related term
-        "OS_number": 8,  # the number of Ordered Subsets
-        "data_axes_labels_order": ["detY", "angles", "detX"],
-    }  # data dictionary
 
-    lc = Rectools.powermethod(
-        _data_
-    )  # calculate Lipschitz constant (run once to initialise)
+    lc = Rectools.powermethod()  # calculate Lipschitz constant (run once to initialise)
 
-    _algorithm_ = {"iterations": 20, "lipschitz_const": lc}
 
     # adding regularisation using the CCPi regularisation toolkit
-    _regularisation_ = {
-        "method": "PD_TV_WAVELETS",
-        "regul_param": 0.0000015,  # Regularisation parameter for TV
-        "regul_param2": 0.0000005,  # Regularisation parameter for wavelets
-        "iterations": 80,
-        "device_regulariser": "gpu",
-    }
 
-    FISTA_TV_WV_SWLS = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+    FISTA_TV_WV_SWLS = Rectools.FISTA(
+        projData3D_norm,
+        input_axes=["detY", "angles", "detX"],
+        fidelity=DataFidelity(method="SWLS", beta_swls=0.5),
+        weights=projData3D_noisy / np.max(projData3D_noisy),
+        iterations=20,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(method="PD_TV", strength=1.5e-06, iterations=80),
+    )
 
 .. figure::  ../_static/tutorial/synth/SWLS_TV_WV_recon.png
     :scale: 25 %
@@ -251,5 +239,4 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
   ToMoBAR package.
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-For that one needs to use :mod:`tomobar.methodsIR_CuPy` class instead of :mod:`tomobar.methodsIR`. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
-
+Use :class:`tomobar.methodsIR.RecToolsIR` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.

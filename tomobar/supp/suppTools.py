@@ -420,17 +420,6 @@ def perform_recon_crop(data, croped_size):
         return data[crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop]
 
 
-def _apply_horiz_detector_padding(data, detector_width_pad, cupyrun):
-    """extending the size of the horizontal detector, here
-    assuming the order of the 3D data as: ["detY", "angles", "detX"] and
-    2D data: ["angles", "detX"]"""
-    if detector_width_pad <= 0:
-        return data
-    array_module = xp if cupyrun else np
-    padding = ((0, 0),) * (data.ndim - 1) + ((detector_width_pad, detector_width_pad),)
-    return array_module.pad(data, pad_width=padding, mode="edge")
-
-
 def check_kwargs(reconstruction, **kwargs):
     # Iterating over optional parameters:
     for key, value in kwargs.items():

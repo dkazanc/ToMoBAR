@@ -13,8 +13,7 @@ ToMoBAR Modules
    :glob:
 
    ../api/tomobar.methodsDIR
-   ../api/tomobar.methodsDIR_CuPy
-   ../api/tomobar.methodsIR_CuPy
-   ../api/tomobar.regularisersCuPy
-   ../api/tomobar.supp.dicts
+   ../api/tomobar.methodsIR
+   ../api/tomobar.options
+   ../api/tomobar.regularisers
    ../api/tomobar.supp.suppTools

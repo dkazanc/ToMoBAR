@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
 
 def test_geometry_preserves_axis_and_view_order():
@@ -10,7 +10,7 @@ def test_geometry_preserves_axis_and_view_order():
     projection = Parallel3DGeometry.tomography(
         angles=angles, detector_shape=(7, 11), detector_shifts=shifts
     )
-    volume = VolumeGeometry(shape=(3, 5, 9))
+    volume = Volume3DGeometry(shape=(3, 5, 9))
 
     assert projection.detector_shape == (7, 11)
     assert volume.shape == (3, 5, 9)
@@ -102,7 +102,7 @@ def test_geometry_rejects_invalid_dimensions(shape, error):
     with pytest.raises(error, match="detector_shape"):
         Parallel3DGeometry.tomography(angles=[0.0], detector_shape=shape)
     with pytest.raises(error, match="shape"):
-        VolumeGeometry(shape=(*shape, 7))
+        Volume3DGeometry(shape=(*shape, 7))
 
 
 @pytest.mark.parametrize("view_count", [1, 5, 8])

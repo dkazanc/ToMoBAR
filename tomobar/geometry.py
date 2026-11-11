@@ -156,7 +156,7 @@ class Parallel3DGeometry:
 
 
 @dataclass(frozen=True)
-class VolumeGeometry:
+class Volume3DGeometry:
     """A centred, unit-spaced 3D voxel grid with shape (z, y, x)."""
 
     shape: tuple[int, int, int]

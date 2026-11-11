@@ -9,7 +9,7 @@ from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
     Volume2DGeometry,
-    VolumeGeometry,
+    Volume3DGeometry,
 )
 
 

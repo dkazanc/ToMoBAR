@@ -8,7 +8,7 @@ from tomobar.astra_wrappers.geometry import (
     projection_geometry,
     volume_geometry,
 )
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
 
 def test_conversion_preserves_view_order_and_shift_directions():
@@ -34,7 +34,7 @@ def test_conversion_preserves_view_order_and_shift_directions():
 
 
 def test_non_cubic_volume_axes_and_extents():
-    converted = volume_geometry(VolumeGeometry(shape=(3, 5, 9)))
+    converted = volume_geometry(Volume3DGeometry(shape=(3, 5, 9)))
     assert converted == {
         "GridRowCount": 5,
         "GridColCount": 9,
@@ -58,7 +58,7 @@ def test_dictionaries_match_astra_factories():
     expected = astra.create_proj_geom("parallel3d_vec", 7, 11, vectors)
     np.testing.assert_array_equal(actual.pop("Vectors"), expected.pop("Vectors"))
     assert actual == expected
-    assert volume_geometry(VolumeGeometry(shape=(3, 5, 9))) == astra.create_vol_geom(
+    assert volume_geometry(Volume3DGeometry(shape=(3, 5, 9))) == astra.create_vol_geom(
         5, 9, 3
     )
 

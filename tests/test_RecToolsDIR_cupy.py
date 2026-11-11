@@ -8,9 +8,9 @@ from cupy import float32
 from cupyx.profiler import time_range
 import pytest
 
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.cuda_kernels import load_cuda_module
-from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+from tomobar.methodsDIR import RecToolsDIR
 
 eps = 2e-06
 
@@ -32,7 +32,7 @@ eps = 2e-06
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2])
 @pytest.mark.parametrize(
     "center_size", [256, 512, 1024]
-)  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
+)  # must be greater than or equal to methodsDIR._CENTER_SIZE_MIN
 def test_Fourier3D_inv_prune(
     projection_count,
     theta_range,
@@ -76,7 +76,7 @@ def test_Fourier3D_inv_prune(
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
 @pytest.mark.parametrize(
     "center_size", [256, 512, 1024, 2048, 6144]
-)  # must be greater than or equal to methodsDIR_CuPy._CENTER_SIZE_MIN
+)  # must be greater than or equal to methodsDIR._CENTER_SIZE_MIN
 def test_Fourier3D_inv_prune_full(
     projection_count,
     theta_range,
@@ -228,11 +228,11 @@ def test_Fourier3D_inv(data_cupy, angles):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
@@ -257,11 +257,11 @@ def test_Fourier3D_inv_vert_blocks(data_cupy, angles, blocks):
     block_size = blocks
     index_start = 0
     index_end = block_size
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(block_size, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(block_size, detX, detX)),
+        volume_geometry=Volume3DGeometry(shape=(block_size, detX, detX)),
         device_index=0,
     ) as RecToolsCP:
         for block_index in range(0, detY // block_size):
@@ -291,13 +291,15 @@ def test_Fourier3D_inv_vert_blocks_last_odd(data_cupy, angles):
     recon_vol_block_size = cp.empty((detY, detX, detX), dtype=cp.float32)
 
     odd_block_size_last = 3
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles,
             detector_shape=(detY - odd_block_size_last, detX),
             centre_of_rotation=0.0,
         ),
-        volume_geometry=VolumeGeometry(shape=(detY - odd_block_size_last, detX, detX)),
+        volume_geometry=Volume3DGeometry(
+            shape=(detY - odd_block_size_last, detX, detX)
+        ),
         device_index=0,
     ) as RecToolsCP:
         lprec_block_recon1 = RecToolsCP.FOURIER_INV(
@@ -306,13 +308,13 @@ def test_Fourier3D_inv_vert_blocks_last_odd(data_cupy, angles):
             data_axes_labels_order=["angles", "detY", "detX"],
         )
 
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles,
             detector_shape=(odd_block_size_last, detX),
             centre_of_rotation=0.0,
         ),
-        volume_geometry=VolumeGeometry(shape=(odd_block_size_last, detX, detX)),
+        volume_geometry=Volume3DGeometry(shape=(odd_block_size_last, detX, detX)),
         device_index=0,
     ) as RecToolsCP:
         lprec_block_recon2 = RecToolsCP.FOURIER_INV(
@@ -342,11 +344,11 @@ def test_Fourier3D_Y_odd_to_even(ensure_clean_memory):
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
     N_size = 1300
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
@@ -366,11 +368,11 @@ def test_Fourier3D_Y_even_to_odd(ensure_clean_memory):
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
     N_size = 1333
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
@@ -390,11 +392,11 @@ def test_Fourier3D_Y_even_to_even(ensure_clean_memory):
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
     N_size = 1340
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
@@ -414,11 +416,11 @@ def test_Fourier3D_Y_odd_to_odd(ensure_clean_memory):
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
     N_size = 1331
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
@@ -439,11 +441,11 @@ def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
     detX = cp.shape(data)[2]
     detY = cp.shape(data)[1]
     angles = np.linspace(0, math.pi, data.shape[0])
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, detX, detX)),
+        volume_geometry=Volume3DGeometry(shape=(detY, detX, detX)),
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
@@ -464,7 +466,7 @@ def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
 #     detY = cp.shape(data)[1]
 #     angles = np.linspace(0, math.pi, data.shape[0])
 #     N_size = detX
-#     RecToolsCP = RecToolsDIRCuPy(
+#     RecToolsCP = RecToolsDIR(
 #         DetectorsDimH=detX,  # Horizontal detector dimension
 #         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
 #         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
@@ -496,7 +498,7 @@ def test_Fourier3D_Y_Z_variations(ensure_clean_memory, slices, detectorX):
 #     detY = cp.shape(data)[1]
 #     angles = np.linspace(0, math.pi, data.shape[0])
 #     N_size = detX
-#     RecToolsCP = RecToolsDIRCuPy(
+#     RecToolsCP = RecToolsDIR(
 #         DetectorsDimH=detX,  # Horizontal detector dimension
 #         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
 #         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
@@ -529,15 +531,16 @@ def test_FBP3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         FBPrec_cupy = RecToolsCP.FBP(
             data_cupy,
+            filter_type="SINC_CuPy",
             data_axes_labels_order=["angles", "detY", "detX"],
             cutoff_freq=1.1,
         )
@@ -552,16 +555,17 @@ def test_FBP3D_pad(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         detector_padding=20,
         device_index=0,
     ) as RecToolsCP:
         FBPrec_cupy = RecToolsCP.FBP(
             data_cupy,
+            filter_type="SINC_CuPy",
             data_axes_labels_order=["angles", "detY", "detX"],
             cutoff_freq=1.1,
         )
@@ -579,16 +583,17 @@ def test_FBP3D_swaped_axis_pad(data_cupy, angles, ensure_clean_memory):
     detY = cp.shape(data_cupy)[2]
     N_size = detX
     axis_labels = ["detX", "angles", "detY"]
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         detector_padding=45,
         device_index=0,
     ) as RecToolsCP:
         FBPrec_cupy = RecToolsCP.FBP(
             data_cupy,
+            filter_type="SINC_CuPy",
             data_axes_labels_order=axis_labels,
             cutoff_freq=1.1,
         )
@@ -607,7 +612,7 @@ def test_FBP3D_swaped_axis_pad(data_cupy, angles, ensure_clean_memory):
 #     detX = cp.shape(data)[2]
 #     detY = cp.shape(data)[1]
 #     N_size = detX
-#     RecToolsCP = RecToolsDIRCuPy(
+#     RecToolsCP = RecToolsDIR(
 #         DetectorsDimH=detX,  # Horizontal detector dimension
 #         DetectorsDimV=detY,  # Vertical detector dimension (3D case)
 #         CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
@@ -627,15 +632,16 @@ def test_FBP3D_mask(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         FBPrec_cupy = RecToolsCP.FBP(
             data_cupy,
+            filter_type="SINC_CuPy",
             recon_mask_radius=0.7,
             data_axes_labels_order=["angles", "detY", "detX"],
             cutoff_freq=1.1,
@@ -653,11 +659,11 @@ def test_forwproj3D(data_cupy, angles, ensure_clean_memory):
     N_size = detX
     phantom = cp.ones((detY, N_size, N_size), dtype=float32, order="C")
 
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         frw_proj = RecToolsCP.forward(
@@ -674,11 +680,11 @@ def test_backproj3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsDIRCuPy(
+    with RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
         rec_cupy = RecToolsCP.backproject(

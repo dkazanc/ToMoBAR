@@ -3,14 +3,14 @@ Geometry objects and projector lifetime
 
 The reconstruction constructors take explicit geometry objects. For 3D,
 ``Parallel3DGeometry`` describes acquisition angles in radians, the detector
-shape ``(rows, columns)``, and optional detector shifts. ``VolumeGeometry``
+shape ``(rows, columns)``, and optional detector shifts. ``Volume3DGeometry``
 describes the reconstruction grid as ``(z, y, x)``; its dimensions are independent
 of the detector dimensions.
 
 .. code-block:: python
 
     import numpy as np
-    from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     scan = Parallel3DGeometry.tomography(
@@ -19,7 +19,7 @@ of the detector dimensions.
         centre_of_rotation=0.75,
         detector_shifts=np.zeros((180, 2)),
     )
-    grid = VolumeGeometry(shape=(48, 192, 224))
+    grid = Volume3DGeometry(shape=(48, 192, 224))
 
     with RecToolsDIR(
         projection_geometry=scan,
@@ -54,20 +54,17 @@ ADMM and OSEM:
 .. code-block:: python
 
     import cupy as cp
-    from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+    from tomobar.methodsIR import RecToolsIR
 
-    working_grid = VolumeGeometry(shape=(64, 288, 288))
-    with RecToolsIRCuPy(
+    working_grid = Volume3DGeometry(shape=(64, 288, 288))
+    with RecToolsIR(
         projection_geometry=scan,
         volume_geometry=working_grid,
         detector_padding=16,
         output_shape=(64, 256, 256),
         device_index=0,
     ) as rec:
-        reconstructed = rec.CGLS(
-            {"projection_data": cp.asarray(projected)},
-            {"iterations": 15},
-        )
+        reconstructed = rec.CGLS(cp.asarray(projected), iterations=15)
         # reconstructed.shape == (64, 256, 256)
 
 ``output_shape`` defaults to the full working volume and must contain three
@@ -82,15 +79,43 @@ continue to use the working grid; ``output_shape`` affects only the final
 iterative reconstruction result. Detector padding and output cropping are
 independent options.
 
-``RecToolsDIRCuPy`` takes the same geometry arguments for CuPy operations.
-``RecToolsIRCuPy`` also accepts ``OS_number`` for interleaved ordered subsets:
+``RecToolsDIR`` accepts both NumPy and CuPy arrays for ``forward``,
+``backproject`` and ``FBP``; results use the input array library. All three
+methods default to ``(detY, angles, detX)`` in 3D, with ``input_axes`` or
+``output_axes`` available for other layouts. Array type does not change the
+axis convention or select the filter.
+
+3D ``FBP`` defaults to ``filter_type="SINC"``. Choose
+``filter_type="SINC_CuPy"`` to use the custom CUDA real-FFT filter formerly
+provided by ``RecToolsDIRCuPy``. Both filters execute on the GPU. The custom
+filter accepts ``cutoff_freq`` (default 0.35); the established SINC coefficients
+are fixed. Padding is applied to detector X before filtering. Internally, SINC
+uses ``(detY, angles, detX)`` and SINC_CuPy uses ``(angles, detY, detX)`` so
+its normalization uses the number of views; its result is transposed back
+before ASTRA backprojection. For example:
+
+.. code-block:: python
+
+    with RecToolsDIR(projection_geometry=scan, volume_geometry=grid) as rec:
+        result = rec.FBP(
+            projections,
+            filter_type="SINC_CuPy",
+            input_axes=("angles", "detY", "detX"),
+            cutoff_freq=1.1,
+        )
+
+2D ``FBP`` uses ASTRA ``FBP_CUDA`` filters (default ``ram-lak``). CuPy inputs
+are transferred through ASTRA's host data API and the result returns to the
+selected GPU. ``FOURIER_INV`` remains available on ``RecToolsDIR`` and accepts
+CuPy arrays or shape tuples for memory estimation.
+``RecToolsIR`` also accepts ``OS_number`` for interleaved ordered subsets:
 
 .. code-block:: python
 
     import cupy as cp
-    from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+    from tomobar.methodsIR import RecToolsIR
 
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=scan,
         volume_geometry=grid,
         device_index=0,
@@ -163,3 +188,102 @@ CuPy methods enter the selected device context for filtering, working-array
 allocation and reconstruction, then restore the caller's device. CuPy input
 arrays must already reside on that device. NumPy inputs remain supported through
 CUDA projection and reconstruction; 3D FBP FFT filtering also runs on the GPU.
+
+Projection preparation and memory use
+------------------------------------
+
+Direct and iterative entry points share projection shape, numeric dtype and GPU
+device validation, axis normalization and detector padding. Axis changes are
+views; padding allocates only when requested. Contiguous ``float32`` storage is
+created when required by a filter or ASTRA. Suitable CuPy storage is reused.
+``SINC_CuPy`` receives angles-first data directly, avoiding an intermediate copy
+into ASTRA's projection layout before filtering. Fourier inversion validates
+through the same layer but applies its padding inside the FFT implementation.
+
+``RecToolsIR`` accepts projection arrays directly. ``input_axes`` describes
+both projections and optional raw-data weights. Preparation preserves caller
+arrays, so they can be reused for another reconstruction. NumPy projection
+inputs are transferred to the selected GPU; iterative results are CuPy arrays.
+CGLS keeps a separate mutable residual buffer.
+
+Reconstructed volumes retain native ``(z, y, x)`` axes. Output axis swapping and
+contiguous copies for other consumers are not performed automatically.
+
+Typed iterative API
+-------------------
+
+Solver parameters are keyword arguments. There are no reconstruction parameter
+dictionaries or ``dicts_check``. For example:
+
+.. code-block:: python
+
+    from tomobar.options import DataFidelity, Regularisation
+
+    with RecToolsIR(
+        projection_geometry=scan, volume_geometry=grid, OS_number=4, device_index=0
+    ) as rec:
+        tv = Regularisation(method="PD_TV", strength=0.001, iterations=50)
+        result = rec.FISTA(
+            projections,
+            input_axes=("angles", "detY", "detX"),
+            weights=raw_counts,
+            fidelity=DataFidelity("PWLS"),
+            regularisation=tv,
+            iterations=20,
+            nonnegativity=True,
+            lipschitz_constant=rec.powermethod(),
+        )
+
+``Landweber``, ``SIRT`` and ``CGLS`` accept ``iterations``, ``initial``,
+``input_axes``, ``nonnegativity`` and ``recon_mask_radius``. Landweber also takes
+``step_size``. These three solvers require ``OS_number=None`` or 1.
+
+``FISTA`` and ``ADMM`` additionally take ``fidelity``, ``weights``,
+``regularisation`` and ``lipschitz_constant``. ADMM takes ``rho``, ``relaxation``
+and ``verbose``. ``OSEM`` accepts the common solver arguments and optional
+``regularisation``. Defaults for iterations remain method dependent; FISTA,
+ADMM and OSEM use their previous ordered-subset defaults when subsets are active.
+
+``DataFidelity`` supports LS, PWLS, SWLS and KL. PWLS/SWLS require ``weights``;
+``beta_swls`` controls the SWLS stripe penalty. ``Regularisation`` supports
+PD_TV and ROF_TV. Pass ``None`` to disable regularisation. Settings are immutable
+and reusable: ADMM scales a local copy of the regularisation strength by rho.
+The reconstructor's ``device_index`` also selects the regulariser's device.
+
+Without ``initial``, SIRT and OSEM start from ones; the other solvers start from
+zeros. ``initial`` must match the working volume, not the final output crop, and is
+copied before iteration. Invalid shapes and settings raise errors. Previously
+ignored dictionary entries such as solver ``tolerance`` are not accepted.
+``powermethod(iterations=15)`` uses geometry alone and estimates the unweighted
+operator, using subset zero when ordered subsets are enabled.
+
+Subset storage
+--------------
+
+FISTA, ADMM and OSEM select interleaved views using slices of the prepared
+projection arrays: ``data[:, subset_index::OS_number, :]``. Subsets include
+view zero, preserve acquisition order and may contain different numbers of
+views. No lists of copied 3D projection or weight subsets are retained.
+
+LS, PWLS and KL consume the slicing views directly. SWLS computes a
+``(detY, detX)`` weight sum when a subset is first used and reuses that sum in
+later iterations. Its custom CUDA kernel reads weights directly using signed
+64-bit element strides, so interleaved weight subsets are consumed without a
+contiguous copy. Residual and reduction buffers remain contiguous. Projector
+handle caching and reconstruction axes are unchanged.
+
+Data-fidelity workspaces
+------------------------
+
+Data-fidelity gradients reuse the freshly allocated ASTRA forward-projection
+result as their residual buffer. LS subtracts the measured data in place, PWLS
+also applies weights in place, and KL clips, divides and subtracts in the same
+buffer. SWLS weights that residual in place, computes its two-dimensional sum,
+and applies the stripe correction directly to it. There is no separate 3D
+weighted-residual array.
+
+Only the owned forward output is overwritten. Input volumes, measured
+projections, weights and cached weight sums remain unchanged. The internal
+``_Ax`` operation must return fresh, writable, contiguous float32 storage, as
+the ASTRA wrapper does. The public reconstruction API and output axes are
+unchanged.

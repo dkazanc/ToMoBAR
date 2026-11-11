@@ -10,7 +10,7 @@ from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
     Volume2DGeometry,
-    VolumeGeometry,
+    Volume3DGeometry,
 )
 
 
@@ -63,7 +63,7 @@ def projection_geometry(
     }
 
 
-def volume_geometry(geometry: Volume2DGeometry | VolumeGeometry) -> dict:
+def volume_geometry(geometry: Volume2DGeometry | Volume3DGeometry) -> dict:
     """Convert (y, x) or (z, y, x) voxels to a centred ASTRA volume."""
     y, x = geometry.shape[-2:]
     converted = {
@@ -76,7 +76,7 @@ def volume_geometry(geometry: Volume2DGeometry | VolumeGeometry) -> dict:
             "WindowMaxY": y / 2,
         },
     }
-    if isinstance(geometry, VolumeGeometry):
+    if isinstance(geometry, Volume3DGeometry):
         z = geometry.shape[0]
         converted["GridSliceCount"] = z
         converted["option"].update(WindowMinZ=-z / 2, WindowMaxZ=z / 2)

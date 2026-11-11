@@ -7,7 +7,7 @@ from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
     Volume2DGeometry,
-    VolumeGeometry,
+    Volume3DGeometry,
 )
 from tomobar.reconstruction_geometry import GeometryReconstruction
 from tests import test_astra_resource_lifecycle as resources
@@ -20,7 +20,7 @@ def harness():
     wrapper.setUp()
     direct = axes.TestAxisConventions()
     direct.setUp()
-    direct.numpy_module.AstraTools3D = wrapper.tools3d.AstraTools3D
+    direct.direct_module.AstraTools3D = wrapper.tools3d.AstraTools3D
 
     def size(geometry):
         if "GridSliceCount" in geometry:
@@ -48,22 +48,12 @@ def harness():
     wrapper.astra.projector3d.direct_FP.side_effect = execute
     wrapper.astra.projector3d.direct_BP.side_effect = execute
 
-    def pad(data, amount, cupyrun):
-        return (
-            np.pad(data, ((0, 0), (0, 0), (amount, amount)), mode="edge")
-            if amount
-            else data
-        )
-
-    direct.numpy_module._apply_horiz_detector_padding = pad
-    direct.cupy_module._apply_horiz_detector_padding = pad
     iterative = wrapper.load_iterative_module()
-    iterative._apply_horiz_detector_padding = pad
     yield wrapper, direct, iterative
     wrapper.doCleanups()
 
 
-@pytest.mark.parametrize("kind", ["numpy", "cupy", "iterative"])
+@pytest.mark.parametrize("kind", ["direct", "iterative"])
 @pytest.mark.parametrize("padding", [0, 2])
 def test_public_objects_flow_to_wrapper_and_padding_preserves_volume(
     harness, kind, padding
@@ -75,11 +65,10 @@ def test_public_objects_flow_to_wrapper_and_padding_preserves_volume(
         centre_of_rotation=0.75,
         detector_shifts=[[1, 2], [-3, 4], [5, 6]],
     )
-    volume = VolumeGeometry(shape=(2, 4, 6))
+    volume = Volume3DGeometry(shape=(2, 4, 6))
     cls = {
-        "numpy": direct.numpy_module.RecToolsDIR,
-        "cupy": direct.cupy_module.RecToolsDIRCuPy,
-        "iterative": iterative.RecToolsIRCuPy,
+        "direct": direct.direct_module.RecToolsDIR,
+        "iterative": iterative.RecToolsIR,
     }[kind]
     with cls(
         projection_geometry=scan, volume_geometry=volume, detector_padding=padding
@@ -117,8 +106,8 @@ def test_public_objects_flow_to_wrapper_and_padding_preserves_volume(
 def test_numpy_direct_full_and_uneven_subsets_share_handles_between_operations(harness):
     backend, _, iterative = harness
     scan = Parallel3DGeometry(angles=[1.4, 0.3, -0.5, 0.0, 0.7], detector_shape=(2, 7))
-    volume = VolumeGeometry(shape=(3, 4, 6))
-    with iterative.RecToolsIRCuPy(
+    volume = Volume3DGeometry(shape=(3, 4, 6))
+    with iterative.RecToolsIR(
         projection_geometry=scan, volume_geometry=volume, OS_number=2
     ) as rec:
         for subset, views in ((None, 5), (1, 2), (0, 3), (1, 2), (None, 5)):
@@ -157,22 +146,21 @@ def test_padding_is_validated_before_binding(padding, error):
     scan = Parallel3DGeometry(angles=[0.0], detector_shape=(2, 7))
     with pytest.raises(error, match="detector_padding"):
         GeometryReconstruction()._init_geometry(
-            scan, VolumeGeometry(shape=(3, 4, 6)), padding
+            scan, Volume3DGeometry(shape=(3, 4, 6)), padding
         )
 
 
-@pytest.mark.parametrize("kind", ["numpy", "cupy", "iterative"])
+@pytest.mark.parametrize("kind", ["direct", "iterative"])
 def test_public_constructors_reject_removed_dimension_arguments(harness, kind):
     _, direct, iterative = harness
     cls = {
-        "numpy": direct.numpy_module.RecToolsDIR,
-        "cupy": direct.cupy_module.RecToolsDIRCuPy,
-        "iterative": iterative.RecToolsIRCuPy,
+        "direct": direct.direct_module.RecToolsDIR,
+        "iterative": iterative.RecToolsIR,
     }[kind]
     with pytest.raises(TypeError, match="DetectorsDimH"):
         cls(
             projection_geometry=Parallel3DGeometry(angles=[0.0], detector_shape=(2, 7)),
-            volume_geometry=VolumeGeometry(shape=(3, 4, 6)),
+            volume_geometry=Volume3DGeometry(shape=(3, 4, 6)),
             DetectorsDimH=7,
         )
 
@@ -188,7 +176,7 @@ def test_invalid_numpy_input_creates_no_handle(harness, data, error):
     backend, _, _ = harness
     with backend.tools3d.AstraTools3D(
         projection_geometry=Parallel3DGeometry(angles=[0.0], detector_shape=(2, 7)),
-        volume_geometry=VolumeGeometry(shape=(3, 4, 6)),
+        volume_geometry=Volume3DGeometry(shape=(3, 4, 6)),
     ) as wrapper:
         with pytest.raises(error):
             wrapper.forward(data)
@@ -204,7 +192,7 @@ def test_failed_subset_creation_keeps_other_handle_and_context_exception_closes(
             projection_geometry=Parallel3DGeometry(
                 angles=[0.0, 0.5, 1.0], detector_shape=(2, 7)
             ),
-            volume_geometry=VolumeGeometry(shape=(3, 4, 6)),
+            volume_geometry=Volume3DGeometry(shape=(3, 4, 6)),
             ordsub_number=2,
         ) as wrapper:
             wrapper.forward(np.ones((3, 4, 6)))
@@ -254,29 +242,25 @@ def test_admm_keeps_volume_sized_warm_start_when_detector_padding_is_enabled(
 ):
     _, _, iterative = harness
     scan = Parallel3DGeometry(angles=[0.0, 0.5, 1.0], detector_shape=(3, 7))
-    grid = VolumeGeometry(shape=(2, 4, 6))
+    grid = Volume3DGeometry(shape=(2, 4, 6))
     warm_start = np.arange(np.prod(grid.shape), dtype=np.float32).reshape(grid.shape)
-    data = {
-        "projection_data": np.ones((3, 3, 7), dtype=np.float32),
-        "data_fidelity": "LS",
-    }
-    algorithm = {"initialise": warm_start, "lipschitz_const": 1.0}
-    iterative.dicts_check.return_value = (data, algorithm, {"method": None})
-    with iterative.RecToolsIRCuPy(
+    data = np.ones((3, 3, 7), dtype=np.float32)
+    with iterative.RecToolsIR(
         projection_geometry=scan,
         volume_geometry=grid,
         detector_padding=2,
         output_shape=(1, 2, 4),
         OS_number=2,
     ) as rec:
-        _, _, _, initial, _, use_os = rec._RecToolsIRCuPy__common_initialisation(
-            data, algorithm, {"method": None}, method_run="ADMM"
-        )
-        assert initial is warm_start
+        prepared, _ = rec._prepare_inputs(data)
+        initial = rec._initial_volume(warm_start)
+        np.testing.assert_array_equal(initial, warm_start)
+        assert initial is not warm_start
         assert initial.shape == grid.shape
         assert rec.output_shape == (1, 2, 4)
-        assert use_os
-        assert data["projection_data"].shape == (3, 3, 11)
+        assert rec.OS_number == 2
+        assert prepared.shape == (3, 3, 11)
+        assert data.shape == scan.projection_shape
     assert "incorrect dimensions" not in capsys.readouterr().out
 
 
@@ -295,9 +279,9 @@ def test_admm_keeps_volume_sized_warm_start_when_detector_padding_is_enabled(
 def test_output_shape_is_validated_before_binding(harness, shape, error):
     backend, _, iterative = harness
     with pytest.raises(error, match="output_shape"):
-        iterative.RecToolsIRCuPy(
+        iterative.RecToolsIR(
             projection_geometry=Parallel3DGeometry(angles=[0.0], detector_shape=(3, 7)),
-            volume_geometry=VolumeGeometry(shape=(3, 8, 10)),
+            volume_geometry=Volume3DGeometry(shape=(3, 8, 10)),
             output_shape=shape,
         )
     backend.astra.create_projector.assert_not_called()
@@ -306,9 +290,9 @@ def test_output_shape_is_validated_before_binding(harness, shape, error):
 @pytest.mark.parametrize("output_shape", [None, (4, 8, 10), (2, 4, 6), (3, 5, 7)])
 def test_output_crop_indices_storage_and_working_operators(harness, output_shape):
     _, _, iterative = harness
-    grid = VolumeGeometry(shape=(4, 8, 10))
+    grid = Volume3DGeometry(shape=(4, 8, 10))
     volume = np.arange(np.prod(grid.shape), dtype=np.float32).reshape(grid.shape)
-    with iterative.RecToolsIRCuPy(
+    with iterative.RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=[0.0, 0.5], detector_shape=(3, 7)
         ),
@@ -348,7 +332,7 @@ def test_iterative_algorithms_only_require_projection_operations(
 
     _, _, iterative = harness
     scan = Parallel3DGeometry(angles=[0.0, 0.2, 0.5, 0.9, 1.5], detector_shape=(3, 7))
-    grid = VolumeGeometry(shape=(2, 4, 6))
+    grid = Volume3DGeometry(shape=(2, 4, 6))
     count = 2 if method in ("FISTA", "ADMM", "OSEM") else 1
     subsets = interleaved_view_indices(5, count)
 
@@ -369,24 +353,8 @@ def test_iterative_algorithms_only_require_projection_operations(
         close=Mock(),
     )
     monkeypatch.setattr(iterative, "AstraTools3D", lambda **kwargs: projector)
-    data = {
-        "projection_data": np.ones(scan.projection_shape, dtype=np.float32),
-        "data_fidelity": "LS",
-    }
-    algorithm = {
-        "iterations": 1,
-        "lipschitz_const": 1.0,
-        "initialise": None,
-        "nonnegativity": False,
-        "recon_mask_radius": 1.0,
-        "tau_step_lanweber": 0.01,
-        "ADMM_rho_const": 1.0,
-        "ADMM_relax_par": 1.0,
-        "verbose": False,
-    }
-    regularisation = {"method": None, "regul_param": 1.0}
-    iterative.dicts_check.return_value = (data, algorithm, regularisation)
-    with iterative.RecToolsIRCuPy(
+    data = np.ones(scan.projection_shape, dtype=np.float32)
+    with iterative.RecToolsIR(
         projection_geometry=scan,
         volume_geometry=grid,
         detector_padding=2,
@@ -395,17 +363,18 @@ def test_iterative_algorithms_only_require_projection_operations(
     ) as rec:
         for actual, expected in zip(rec.subset_indices, subsets):
             np.testing.assert_array_equal(actual, expected)
-        result = getattr(rec, method)(data, algorithm)
+        if method in ("FISTA", "ADMM"):
+            result = getattr(rec, method)(data, iterations=1, lipschitz_constant=1.0)
+        else:
+            result = getattr(rec, method)(data, iterations=1)
         assert result.shape == (1, 2, 4)
         assert np.isfinite(result).all()
         # Power iteration also allocates from geometry, using only FP/BP.
-        assert np.isfinite(rec.powermethod({"data_fidelity": "LS"}))
+        assert np.isfinite(rec.powermethod())
     projector.close.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "kind", ["numpy", "cupy", "iterative", "wrapper2d", "wrapper3d"]
-)
+@pytest.mark.parametrize("kind", ["direct", "iterative", "wrapper2d", "wrapper3d"])
 @pytest.mark.parametrize(
     "keyword,value",
     [
@@ -418,9 +387,8 @@ def test_iterative_algorithms_only_require_projection_operations(
 def test_gpu_only_constructors_reject_old_device_api(harness, kind, keyword, value):
     backend, direct, iterative = harness
     classes = {
-        "numpy": direct.numpy_module.RecToolsDIR,
-        "cupy": direct.cupy_module.RecToolsDIRCuPy,
-        "iterative": iterative.RecToolsIRCuPy,
+        "direct": direct.direct_module.RecToolsDIR,
+        "iterative": iterative.RecToolsIR,
         "wrapper2d": backend.tools2d.AstraTools2D,
         "wrapper3d": backend.tools3d.AstraTools3D,
     }
@@ -432,7 +400,7 @@ def test_gpu_only_constructors_reject_old_device_api(harness, kind, keyword, val
     grid = (
         Volume2DGeometry(shape=(4, 6))
         if kind == "wrapper2d"
-        else VolumeGeometry(shape=(2, 4, 6))
+        else Volume3DGeometry(shape=(2, 4, 6))
     )
     error = ValueError if keyword == "device_index" and value == -1 else TypeError
     with pytest.raises(error, match=keyword):

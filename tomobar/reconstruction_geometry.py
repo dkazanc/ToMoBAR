@@ -2,13 +2,14 @@
 
 from dataclasses import replace
 from tomobar.supp.device import _validate_device_index
+from tomobar.supp.array_prepare import prepare_projection
 import numpy as np
 
 from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
     Volume2DGeometry,
-    VolumeGeometry,
+    Volume3DGeometry,
 )
 
 
@@ -17,7 +18,7 @@ class GeometryReconstruction:
 
     def _init_geometry(self, projection_geometry, volume_geometry, detector_padding):
         if isinstance(projection_geometry, Parallel3DGeometry):
-            expected = VolumeGeometry
+            expected = Volume3DGeometry
             self.geom = "3D"
         elif isinstance(projection_geometry, Parallel2DGeometry):
             expected = Volume2DGeometry
@@ -70,6 +71,47 @@ class GeometryReconstruction:
     @property
     def detector_padding(self):
         return self._detector_padding
+
+    def _prepare_projection(
+        self,
+        data,
+        *,
+        array_module,
+        input_axes=None,
+        legacy_axes=None,
+        subset_index=None,
+        gpu=False,
+        pack=False,
+        allow_single_row=False,
+        target_axes=None,
+        pad_detector=True,
+        name="data",
+    ):
+        """Prepare acquired columns for one projection consumer."""
+        self._ensure_open()
+        shape = self.projection_geometry.projection_shape
+        if subset_index is not None:
+            if isinstance(subset_index, (bool, np.bool_)) or not isinstance(
+                subset_index, (int, np.integer)
+            ):
+                raise TypeError("subset_index must be an integer or None")
+            if not 0 <= subset_index < len(self.subset_indices):
+                raise ValueError("subset_index is out of range")
+            shape = (shape[0], len(self.subset_indices[subset_index]), shape[2])
+        return prepare_projection(
+            data,
+            shape=shape,
+            device_index=self.device_index,
+            array_module=array_module,
+            input_axes=input_axes,
+            legacy_axes=legacy_axes,
+            padding=self.detector_padding if pad_detector else 0,
+            gpu=gpu,
+            pack=pack,
+            allow_single_row=allow_single_row,
+            target_axes=target_axes,
+            name=name,
+        )
 
     def _crop_projection(self, data):
         padding = self.detector_padding

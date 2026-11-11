@@ -10,6 +10,7 @@ This demo demonstrates frequent inaccuracies which are accosiated with X-ray ima
 zingers, rings and noise
 """
 
+from tomobar.options import DataFidelity, Regularisation
 import numpy as np
 import matplotlib.pyplot as plt
 from tomophantom import TomoP2D
@@ -94,24 +95,23 @@ from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
     Volume2DGeometry,
-    VolumeGeometry,
+    Volume3DGeometry,
 )
 from tomobar.methodsDIR import RecToolsDIR
 
-Rectools = RecToolsDIR(
+with RecToolsDIR(
     projection_geometry=Parallel2DGeometry(
         angles=angles_rad, detector_shape=(P,), centre_of_rotation=0.0
     ),
     volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
     device_index=0,
-)
-
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing analytical sinogram using FBP (tomobar)...")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-FBPrec_ideal = Rectools.FBP(sino_an)  # ideal reconstruction
-FBPrec_error = Rectools.FBP(sino_artifacts)  # reconstruction with artifacts
-FBPrec_misalign = Rectools.FBP(sino_misalign)  # reconstruction with misalignment
+) as Rectools:
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    print("Reconstructing analytical sinogram using FBP (tomobar)...")
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    FBPrec_ideal = Rectools.FBP(sino_an)  # ideal reconstruction
+    FBPrec_error = Rectools.FBP(sino_artifacts)  # reconstruction with artifacts
+    FBPrec_misalign = Rectools.FBP(sino_misalign)  # reconstruction with misalignment
 
 plt.figure()
 plt.subplot(131)
@@ -136,15 +136,14 @@ plt.title("FBP reconstruction differences")
 # One can correct shifts by providing correct shift values
 from tomobar.methodsDIR import RecToolsDIR
 
-Rectools = RecToolsDIR(
+with RecToolsDIR(
     projection_geometry=Parallel2DGeometry(
         angles=angles_rad, detector_shape=(P,), detector_shifts=-shifts
     ),
     volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
     device_index=0,
-)
-
-FBPrec_misalign = Rectools.FBP(sino_misalign)  # reconstruction with misalignment
+) as Rectools:
+    FBPrec_misalign = Rectools.FBP(sino_misalign)  # reconstruction with misalignment
 
 plt.figure()
 plt.imshow(FBPrec_misalign, vmin=0, vmax=1, cmap="gray")
@@ -157,37 +156,33 @@ sino_artifacts_cp = cp.asarray(sino_artifacts, order="C")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing using FISTA method (tomobar)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+from tomobar.methodsIR import RecToolsIR
 
-RectoolsIR = RecToolsIRCuPy(
+with RecToolsIR(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad, detector_shape=(1, P), centre_of_rotation=0.0
     ),
-    volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
+    volume_geometry=Volume3DGeometry(shape=(1, N_size, N_size)),
     device_index=0,
     OS_number=6,
-)
+) as RectoolsIR:
+    lc = (
+        RectoolsIR.powermethod()
+    )  # calculate Lipschitz constant (run once to initialise)
 
-# data dictionary
-_data_ = {
-    "projection_data": sino_artifacts_cp,
-    "data_fidelity": "LS",
-}
-lc = RectoolsIR.powermethod(
-    _data_
-)  # calculate Lipschitz constant (run once to initialise)
-_algorithm_ = {"iterations": 25, "mask_diameter": 1.3, "lipschitz_const": lc}
+    # adding regularisation using the CCPi regularisation toolkit
 
-# adding regularisation using the CCPi regularisation toolkit
-_regularisation_ = {
-    "method": "PD_TV",
-    "regul_param": 0.002,
-    "iterations": 80,
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-print("Run FISTA reconstrucion algorithm with regularisation...")
-RecFISTA_LS_reg = RectoolsIR.FISTA(_data_, _algorithm_, _regularisation_)
+    print("Run FISTA reconstrucion algorithm with regularisation...")
+    RecFISTA_LS_reg = RectoolsIR.FISTA(
+        sino_artifacts_cp,
+        fidelity=DataFidelity(method="LS"),
+        iterations=25,
+        recon_mask_radius=1.3,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(
+            method="PD_TV", strength=0.002, iterations=80, half_precision=True
+        ),
+    )
 RecFISTA_LS_reg = cp.asnumpy(RecFISTA_LS_reg[0, :, :])
 
 plt.figure()

@@ -1,10 +1,11 @@
+from tomobar.options import DataFidelity, Regularisation
 import cupy as cp
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+from tomobar.methodsIR import RecToolsIR
 from tomobar.supp.suppTools import normaliser
 
 eps = 1e-06
@@ -14,21 +15,17 @@ def test_Landweber_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=None,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-
-        _algorithm_ = {"iterations": 10}
-        Iter_rec = RecTools.Landweber(_data_, _algorithm_)
+        Iter_rec = RecTools.Landweber(
+            data_cupy, input_axes=["angles", "detY", "detX"], iterations=10
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.00026702078, rtol=eps)
@@ -41,21 +38,17 @@ def test_Landweber_cp_2D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     sinogram = data_cupy[:, 64, :]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(1, N_size, N_size)),
         device_index=0,
         OS_number=None,
     ) as RecTools:
-        _data_ = {
-            "projection_data": sinogram,
-            "data_axes_labels_order": ["angles", "detX"],
-        }
-
-        _algorithm_ = {"iterations": 200}
-        Iter_rec = RecTools.Landweber(_data_, _algorithm_)
+        Iter_rec = RecTools.Landweber(
+            sinogram, input_axes=["angles", "detX"], iterations=200
+        )
 
     assert Iter_rec.shape == (1, 160, 160)
     Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
@@ -68,22 +61,18 @@ def test_Landweber_pad_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 1, detX + 2 * 1)),
+        volume_geometry=Volume3DGeometry(shape=(detY, detX + 2 * 1, detX + 2 * 1)),
         output_shape=(detY, N_size, N_size),
         detector_padding=1,
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-
-        _algorithm_ = {"iterations": 5}
-        Iter_rec = RecTools.Landweber(_data_, _algorithm_)
+        Iter_rec = RecTools.Landweber(
+            data_cupy, input_axes=["angles", "detY", "detX"], iterations=5
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.mean(Iter_rec), 0.0015990591, atol=1e-03)
@@ -95,20 +84,16 @@ def test_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-
-        _algorithm_ = {"iterations": 5}
-        Iter_rec = RecTools.SIRT(_data_, _algorithm_)
+        Iter_rec = RecTools.SIRT(
+            data_cupy, input_axes=["angles", "detY", "detX"], iterations=5
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.0011388711, rtol=eps)
@@ -121,20 +106,16 @@ def test_CGLS_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-
-        _algorithm_ = {"iterations": 15}
-        Iter_rec = RecTools.CGLS(_data_, _algorithm_)
+        Iter_rec = RecTools.CGLS(
+            data_cupy, input_axes=["angles", "detY", "detX"], iterations=15
+        )
 
     Iter_rec = Iter_rec.get()
     slice2d = Iter_rec[64, :, :]
@@ -148,25 +129,21 @@ def test_CGLS_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 50, detX + 2 * 50)),
+        volume_geometry=Volume3DGeometry(shape=(detY, detX + 2 * 50, detX + 2 * 50)),
         output_shape=(detY, N_size, N_size),
         detector_padding=50,
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-
-        _algorithm_ = {
-            "iterations": 15,
-            "recon_mask_radius": 2.0,
-        }
-        Iter_rec = RecTools.CGLS(_data_, _algorithm_)
+        Iter_rec = RecTools.CGLS(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=15,
+            recon_mask_radius=2.0,
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.011976417, rtol=1e-04)
@@ -179,22 +156,19 @@ def test_CGLS_after_SIRT_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-
-        _algorithm_ = {"iterations": 3}
-
-        Iter_recSIRT = RecTools.SIRT(_data_, _algorithm_)
-        Iter_rec = RecTools.CGLS(_data_, _algorithm_)
+        Iter_recSIRT = RecTools.SIRT(
+            data_cupy, input_axes=["angles", "detY", "detX"], iterations=3
+        )
+        Iter_rec = RecTools.CGLS(
+            data_cupy, input_axes=["angles", "detY", "detX"], iterations=3
+        )
 
     Iter_rec = Iter_rec.get()
     Iter_recS = Iter_recSIRT.get()
@@ -210,20 +184,15 @@ def test_power_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "LS",
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
+        lc = RecTools.powermethod()
     assert 27200 <= lc <= 27800
 
 
@@ -231,21 +200,16 @@ def test_power_cp_OS_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=5,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "LS",
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
+        lc = RecTools.powermethod()
     assert 5200 <= lc <= 5700
 
 
@@ -253,23 +217,18 @@ def test_power_cp_OS_PWLS_pad_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 50, detX + 2 * 50)),
+        volume_geometry=Volume3DGeometry(shape=(detY, detX + 2 * 50, detX + 2 * 50)),
         output_shape=(detY, N_size, N_size),
         detector_padding=50,
         device_index=0,
         OS_number=5,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "PWLS",
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
+        lc = RecTools.powermethod()
     assert 8000 <= lc <= 9000
 
 
@@ -277,19 +236,19 @@ def test_FISTA_cp_lc_known_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }  # data dictionary
-        _algorithm_ = {"iterations": 10, "lipschitz_const": 27550.463}
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=10,
+            lipschitz_constant=27550.463,
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.00214, rtol=1e-04)
@@ -302,24 +261,23 @@ def test_FISTA_SWLS_cp_3D(data_cupy, raw_data_cupy, angles, ensure_clean_memory)
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "SWLS",
-            "projection_data": data_cupy,
-            "projection_raw_data": raw_data_cupy,
-            "beta_SWLS": 1.0,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }  # data dictionary
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+        lc = RecTools.powermethod()
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            fidelity=DataFidelity(method="SWLS", beta_swls=1.0),
+            weights=raw_data_cupy,
+            iterations=10,
+            lipschitz_constant=lc,
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.0061533, rtol=1e-04)
@@ -332,22 +290,22 @@ def test_FISTA_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "LS",
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }  # data dictionary
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+        lc = RecTools.powermethod()
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            fidelity=DataFidelity(method="LS"),
+            iterations=10,
+            lipschitz_constant=lc,
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.00214, rtol=1e-04)
@@ -360,24 +318,24 @@ def test_FISTA_cp_2D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     sinogram = data_cupy[:, 64, :]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(1, N_size, N_size)),
         device_index=0,
         OS_number=None,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "LS",
-            "projection_data": sinogram,
-            "data_axes_labels_order": ["angles", "detX"],
-        }  # data dictionary
         # calculate Lipschitz constant
 
-        lc = RecTools.powermethod(_data_)
-        _algorithm_ = {"iterations": 50, "lipschitz_const": lc}
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+        lc = RecTools.powermethod()
+        Iter_rec = RecTools.FISTA(
+            sinogram,
+            input_axes=["angles", "detX"],
+            fidelity=DataFidelity(method="LS"),
+            iterations=50,
+            lipschitz_constant=lc,
+        )
 
     assert Iter_rec.shape == (1, 160, 160)
     Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
@@ -390,27 +348,24 @@ def test_FISTA_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 60, detX + 2 * 60)),
+        volume_geometry=Volume3DGeometry(shape=(detY, detX + 2 * 60, detX + 2 * 60)),
         output_shape=(detY, N_size, N_size),
         detector_padding=60,
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }  # data dictionary
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
-        _algorithm_ = {
-            "iterations": 20,
-            "lipschitz_const": lc,
-            "recon_mask_radius": 2.0,
-        }
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+        lc = RecTools.powermethod()
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=20,
+            lipschitz_constant=lc,
+            recon_mask_radius=2.0,
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.004563322, rtol=1e-04)
@@ -423,30 +378,27 @@ def test_FISTA_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
+        lc = RecTools.powermethod()
 
         # adding regularisation using the CCPi regularisation toolkit
-        _regularisation_ = {
-            "method": "PD_TV",
-            "regul_param": 0.0005,
-            "iterations": 10,
-            "device_regulariser": 0,
-        }
 
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=10,
+            lipschitz_constant=lc,
+            regularisation=Regularisation(
+                method="PD_TV", strength=0.0005, iterations=10
+            ),
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.0003926696, rtol=1e-04)
@@ -459,33 +411,29 @@ def test_FISTA_regul_PDTV_cp_2D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     sinogram = data_cupy[:, 64, :]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(1, N_size, N_size)),
         device_index=0,
         OS_number=None,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "LS",
-            "projection_data": sinogram,
-            "data_axes_labels_order": ["angles", "detX"],
-        }  # data dictionary
-
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
-        _algorithm_ = {"iterations": 100, "lipschitz_const": lc}
+        lc = RecTools.powermethod()
 
         # adding regularisation using the CCPi regularisation toolkit
-        _regularisation_ = {
-            "method": "PD_TV",
-            "regul_param": 0.0005,
-            "iterations": 50,
-            "device_regulariser": 0,
-        }
 
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.FISTA(
+            sinogram,
+            input_axes=["angles", "detX"],
+            fidelity=DataFidelity(method="LS"),
+            iterations=100,
+            lipschitz_constant=lc,
+            regularisation=Regularisation(
+                method="PD_TV", strength=0.0005, iterations=50
+            ),
+        )
 
     assert Iter_rec.shape == (1, 160, 160)
     Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
@@ -498,32 +446,28 @@ def test_FISTA_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=None,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
-        _algorithm_ = {"iterations": 50, "lipschitz_const": lc}
+        lc = RecTools.powermethod()
 
         # adding regularisation using the CCPi regularisation toolkit
-        _regularisation_ = {
-            "method": "ROF_TV",
-            "regul_param": 0.0005,
-            "iterations": 50,
-            "time_marching_step": 0.001,
-            "device_regulariser": 0,
-        }
 
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=50,
+            lipschitz_constant=lc,
+            regularisation=Regularisation(
+                method="ROF_TV", strength=0.0005, iterations=50, time_step=0.001
+            ),
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), -0.0006241638, rtol=1e-04)
@@ -536,24 +480,24 @@ def test_FISTA_OS_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
+        lc = RecTools.powermethod()
 
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=10,
+            lipschitz_constant=lc,
+        )
 
     Iter_rec = Iter_rec.get()
 
@@ -568,24 +512,24 @@ def test_FISTA_OS_cp_2D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     sinogram = data_cupy[:, 64, :]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(1, N_size, N_size)),
         device_index=0,
         OS_number=5,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "LS",
-            "projection_data": sinogram,
-            "data_axes_labels_order": ["angles", "detX"],
-        }  # data dictionary
         # calculate Lipschitz constant
 
-        lc = RecTools.powermethod(_data_)
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+        lc = RecTools.powermethod()
+        Iter_rec = RecTools.FISTA(
+            sinogram,
+            input_axes=["angles", "detX"],
+            fidelity=DataFidelity(method="LS"),
+            iterations=10,
+            lipschitz_constant=lc,
+        )
 
     assert Iter_rec.shape == (1, 160, 160)
     Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
@@ -598,30 +542,27 @@ def test_FISTA_OS_detH_padding_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, detX + 2 * 60, detX + 2 * 60)),
+        volume_geometry=Volume3DGeometry(shape=(detY, detX + 2 * 60, detX + 2 * 60)),
         output_shape=(detY, N_size, N_size),
         detector_padding=60,
         device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
+        lc = RecTools.powermethod()
 
-        _algorithm_ = {
-            "iterations": 10,
-            "lipschitz_const": lc,
-            "recon_mask_radius": 2.0,
-        }
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_)
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=10,
+            lipschitz_constant=lc,
+            recon_mask_radius=2.0,
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(lc, 9644.283, rtol=1e-05)
@@ -635,32 +576,27 @@ def test_FISTA_OS_regul_PDTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
+        lc = RecTools.powermethod()
 
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
-
-        _regularisation_ = {
-            "method": "PD_TV",
-            "regul_param": 0.0005,
-            "iterations": 10,
-            "device_regulariser": 0,
-        }
-
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=10,
+            lipschitz_constant=lc,
+            regularisation=Regularisation(
+                method="PD_TV", strength=0.0005, iterations=10
+            ),
+        )
 
     Iter_rec = Iter_rec.get()
 
@@ -675,33 +611,27 @@ def test_FISTA_OS_regul_PDTV_cp_2D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     sinogram = data_cupy[:, 64, :]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(1, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(1, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(1, N_size, N_size)),
         device_index=0,
         OS_number=6,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "LS",
-            "projection_data": sinogram,
-            "data_axes_labels_order": ["angles", "detX"],
-        }  # data dictionary
-
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
+        lc = RecTools.powermethod()
 
-        _algorithm_ = {"iterations": 20, "lipschitz_const": lc}
-
-        _regularisation_ = {
-            "method": "PD_TV",
-            "regul_param": 0.0005,
-            "iterations": 30,
-            "device_regulariser": 0,
-        }
-
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.FISTA(
+            sinogram,
+            input_axes=["angles", "detX"],
+            fidelity=DataFidelity(method="LS"),
+            iterations=20,
+            lipschitz_constant=lc,
+            regularisation=Regularisation(
+                method="PD_TV", strength=0.0005, iterations=30
+            ),
+        )
 
     assert Iter_rec.shape == (1, 160, 160)
     Iter_rec = cp.asnumpy(Iter_rec[0, :, :])
@@ -715,35 +645,29 @@ def test_FISTA_OS_regul_ROFTV_cp_3D(data_cupy, angles, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
-        _data_ = {
-            "projection_data": data_cupy,
-            "OS_number": 5,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
-
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
+        lc = RecTools.powermethod()
 
         # adding regularisation using the CCPi regularisation toolkit
-        _regularisation_ = {
-            "method": "ROF_TV",
-            "regul_param": 0.0005,
-            "iterations": 20,
-            "time_marching_step": 0.001,
-            "device_regulariser": 0,
-        }
 
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.FISTA(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=10,
+            lipschitz_constant=lc,
+            regularisation=Regularisation(
+                method="ROF_TV", strength=0.0005, iterations=20, time_step=0.001
+            ),
+        )
 
     Iter_rec = Iter_rec.get()
 
@@ -762,35 +686,31 @@ def test_FISTA_OS_PWLS_regul_PDTV_cp_3D(angles, raw_data, flats, darks):
     detX = cp.shape(normalised_cp)[2]
     detY = cp.shape(normalised_cp)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=6,
     ) as RecTools:
         # data dictionary
-        _data_ = {
-            "data_fidelity": "PWLS",
-            "projection_data": normalised_cp,
-            "projection_raw_data": raw_data_cp,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
-
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
+        lc = RecTools.powermethod()
 
         # adding regularisation using the CCPi regularisation toolkit
-        _regularisation_ = {
-            "method": "PD_TV",
-            "regul_param": 0.00001,
-            "iterations": 10,
-            "device_regulariser": 0,
-        }
 
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.FISTA(
+            normalised_cp,
+            input_axes=["angles", "detY", "detX"],
+            fidelity=DataFidelity(method="PWLS"),
+            weights=raw_data_cp,
+            iterations=10,
+            lipschitz_constant=lc,
+            regularisation=Regularisation(
+                method="PD_TV", strength=1e-05, iterations=10
+            ),
+        )
 
     Iter_rec = Iter_rec.get()
 
@@ -808,35 +728,29 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
     detX = cp.shape(normalised_cp)[2]
     detY = cp.shape(normalised_cp)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=5,
     ) as RecTools:
         # data dictionary
-        _data_ = {
-            "data_fidelity": "PWLS",
-            "projection_raw_data": raw_data_cp,
-            "projection_data": normalised_cp,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
         # calculate Lipschitz constant
-        lc = RecTools.powermethod(_data_)
+        lc = RecTools.powermethod()
 
-        _algorithm_ = {"iterations": 10, "lipschitz_const": lc}
-
-        _regularisation_ = {
-            "method": "ROF_TV",
-            "regul_param": 0.0005,
-            "iterations": 10,
-            "time_marching_step": 0.001,
-            "device_regulariser": 0,
-        }
-
-        Iter_rec = RecTools.FISTA(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.FISTA(
+            normalised_cp,
+            input_axes=["angles", "detY", "detX"],
+            fidelity=DataFidelity(method="PWLS"),
+            weights=raw_data_cp,
+            iterations=10,
+            lipschitz_constant=lc,
+            regularisation=Regularisation(
+                method="ROF_TV", strength=0.0005, iterations=10, time_step=0.001
+            ),
+        )
 
     Iter_rec = Iter_rec.get()
 
@@ -848,19 +762,8 @@ def test_FISTA_OS_PWLS_regul_ROFTV_cp_3D(angles, raw_data, flats, darks):
 
 ADMM_TEST_CASES = [
     None,
-    {
-        "method": "ROF_TV",
-        "regul_param": 0.0005,
-        "iterations": 10,
-        "time_marching_step": 0.001,
-        "device_regulariser": 0,
-    },
-    {
-        "method": "PD_TV",
-        "regul_param": 0.0005,
-        "iterations": 10,
-        "device_regulariser": 0,
-    },
+    Regularisation(method="ROF_TV", strength=0.0005, iterations=10, time_step=0.001),
+    Regularisation(method="PD_TV", strength=0.0005, iterations=10),
 ]
 ADMM_TEST_IDS = ["no-regularization", "ROF_TV", "PD_TV"]
 
@@ -887,24 +790,21 @@ def test_ADMM_cp_3D(data_cupy, test_case, angles):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-        _algorithm_ = {
-            "iterations": 2,
-            "ADMM_rho_const": 1.0,
-            "ADMM_relax_par": 1.6,
-        }
-
-        Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularization)
+        Iter_rec = RecTools.ADMM(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=2,
+            rho=1.0,
+            relaxation=1.6,
+            regularisation=regularization,
+        )
 
     assert_allclose(cp.min(Iter_rec).get(), expected_min, rtol=0, atol=eps)
     assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
@@ -934,25 +834,22 @@ def test_ADMM_OS_cp_3D(data_cupy, angles, test_case, ensure_clean_memory):
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=2,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cupy,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-        _algorithm_ = {
-            "iterations": 2,
-            "ADMM_rho_const": 1.0,
-            "ADMM_relax_par": 1.6,
-        }
-
-        Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularization)
+        Iter_rec = RecTools.ADMM(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            iterations=2,
+            rho=1.0,
+            relaxation=1.6,
+            regularisation=regularization,
+        )
 
     assert_allclose(cp.min(Iter_rec).get(), expected_min, rtol=0, atol=eps)
     assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
@@ -969,11 +866,11 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(
 
     N_size = 128
     pad_value = 17
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(
+        volume_geometry=Volume3DGeometry(
             shape=(detY, detX + 2 * pad_value, detX + 2 * pad_value)
         ),
         output_shape=(detY, N_size, N_size),
@@ -985,26 +882,19 @@ def test_ADMM_OS_PWLS_warmstart_pad_cp_3D(
             RecTools.volume_geometry.shape, dtype=cp.float32
         )
 
-        _data_ = {
-            "data_fidelity": "PWLS",
-            "projection_data": data_cupy,
-            "projection_raw_data": raw_data_cp,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-        _algorithm_ = {
-            "initialise": initialisation_dummy,
-            "iterations": 8,
-            "ADMM_rho_const": 1.0,
-            "ADMM_relax_par": 1.6,
-        }
-
-        _regularisation_ = {
-            "method": "PD_TV",
-            "regul_param": 0.001,
-            "iterations": 10,
-        }
-
-        Iter_rec = RecTools.ADMM(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.ADMM(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            fidelity=DataFidelity(method="PWLS"),
+            weights=raw_data_cp,
+            initial=initialisation_dummy,
+            iterations=8,
+            rho=1.0,
+            relaxation=1.6,
+            regularisation=Regularisation(
+                method="PD_TV", strength=0.001, iterations=10
+            ),
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.max(Iter_rec), 0.02733, rtol=1e-03)
@@ -1036,27 +926,23 @@ def test_ADMM_SWLS_cp_3D(
     detX = cp.shape(data_cupy)[2]
     detY = cp.shape(data_cupy)[1]
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
-        _data_ = {
-            "data_fidelity": "SWLS",
-            "projection_data": data_cupy,
-            "projection_raw_data": raw_data_cupy,
-            "beta_SWLS": 1.0,
-            "data_axes_labels_order": ["angles", "detY", "detX"],
-        }
-        _algorithm_ = {
-            "iterations": 2,
-            "ADMM_rho_const": 1.0,
-            "ADMM_relax_par": 1.6,
-        }
-
-        Iter_rec = RecTools.ADMM(_data_, _algorithm_, regularization)
+        Iter_rec = RecTools.ADMM(
+            data_cupy,
+            input_axes=["angles", "detY", "detX"],
+            fidelity=DataFidelity(method="SWLS", beta_swls=1.0),
+            weights=raw_data_cupy,
+            iterations=2,
+            rho=1.0,
+            relaxation=1.6,
+            regularisation=regularization,
+        )
 
     assert_allclose(cp.min(Iter_rec).get(), expected_min, rtol=0, atol=eps)
     assert_allclose(cp.max(Iter_rec).get(), expected_max, rtol=0, atol=eps)
@@ -1071,27 +957,23 @@ def test_MLEM_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
     data_labels3D = ["angles", "detY", "detX"]
 
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles_rad, detector_shape=(detY, detX), centre_of_rotation=-0.5
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=1,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cp,
-            "data_axes_labels_order": data_labels3D,
-        }
-
         ####################### Creating the algorithm dictionary: #######################
-        _algorithm_ = {
-            "iterations": 5,
-            "recon_mask_radius": 2.0,
-            "nonnegativity": True,
-        }  # The number of iterations
 
-        Iter_rec = RecTools.OSEM(_data_, _algorithm_)
+        Iter_rec = RecTools.OSEM(
+            data_cp,
+            input_axes=data_labels3D,
+            iterations=5,
+            recon_mask_radius=2.0,
+            nonnegativity=True,
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), 0.06285925, rtol=1e-04)
@@ -1107,27 +989,23 @@ def test_OSEM_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
     data_labels3D = ["angles", "detY", "detX"]
 
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles_rad, detector_shape=(detY, detX), centre_of_rotation=-0.5
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=12,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cp,
-            "data_axes_labels_order": data_labels3D,
-        }
-
         ####################### Creating the algorithm dictionary: #######################
-        _algorithm_ = {
-            "iterations": 5,
-            "recon_mask_radius": 2.0,
-            "nonnegativity": True,
-        }  # The number of iterations
 
-        Iter_rec = RecTools.OSEM(_data_, _algorithm_)
+        Iter_rec = RecTools.OSEM(
+            data_cp,
+            input_axes=data_labels3D,
+            iterations=5,
+            recon_mask_radius=2.0,
+            nonnegativity=True,
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), 0.0, rtol=1e-04)
@@ -1143,34 +1021,26 @@ def test_OSEM_PDTV_cp_3D(raw_data_Xrf, angles_data_Xrf, ensure_clean_memory):
     data_labels3D = ["angles", "detY", "detX"]
 
     N_size = detX
-    with RecToolsIRCuPy(
+    with RecToolsIR(
         projection_geometry=Parallel3DGeometry(
             angles=angles_rad, detector_shape=(detY, detX), centre_of_rotation=-0.5
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
         OS_number=12,
     ) as RecTools:
-        _data_ = {
-            "projection_data": data_cp,
-            "data_axes_labels_order": data_labels3D,
-        }
-
         ####################### Creating the algorithm dictionary: #######################
-        _algorithm_ = {
-            "iterations": 3,
-            "recon_mask_radius": 2.0,
-            "nonnegativity": True,
-        }  # The number of iterations
 
-        _regularisation_ = {
-            "method": "PD_TV",  # Selected regularisation method
-            "regul_param": 1.5,  # Regularisation parameter
-            "iterations": 5,  # The number of regularisation iterations
-            "half_precision": True,  # enabling half-precision calculation
-        }
-
-        Iter_rec = RecTools.OSEM(_data_, _algorithm_, _regularisation_)
+        Iter_rec = RecTools.OSEM(
+            data_cp,
+            input_axes=data_labels3D,
+            iterations=3,
+            recon_mask_radius=2.0,
+            nonnegativity=True,
+            regularisation=Regularisation(
+                method="PD_TV", strength=1.5, iterations=5, half_precision=True
+            ),
+        )
 
     Iter_rec = Iter_rec.get()
     assert_allclose(np.min(Iter_rec), 3.274282e-07, atol=1e-04)

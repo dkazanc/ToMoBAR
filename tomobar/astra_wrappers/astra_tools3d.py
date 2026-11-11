@@ -5,7 +5,11 @@ from tomobar.astra_wrappers.geometry import (
     projection_geometry as to_astra_projection_geometry,
     volume_geometry as to_astra_volume_geometry,
 )
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry, _validate_ordsub_number
+from tomobar.geometry import (
+    Parallel3DGeometry,
+    Volume3DGeometry,
+    _validate_ordsub_number,
+)
 
 import astra
 import numpy as np
@@ -36,15 +40,15 @@ class AstraTools3D(AstraBase):
         self,
         *,
         projection_geometry: Parallel3DGeometry,
-        volume_geometry: VolumeGeometry,
+        volume_geometry: Volume3DGeometry,
         device_index: int = 0,
         ordsub_number: Optional[int] = None,
         verbosity: bool = False,
     ):
         if not isinstance(projection_geometry, Parallel3DGeometry):
             raise TypeError("projection_geometry must be a Parallel3DGeometry")
-        if not isinstance(volume_geometry, VolumeGeometry):
-            raise TypeError("volume_geometry must be a VolumeGeometry")
+        if not isinstance(volume_geometry, Volume3DGeometry):
+            raise TypeError("volume_geometry must be a Volume3DGeometry")
         self._projection_geometry = projection_geometry
         self._volume_geometry = volume_geometry
         self._ordsub_number = _validate_ordsub_number(
@@ -71,7 +75,7 @@ class AstraTools3D(AstraBase):
         return self._projection_geometry
 
     @property
-    def volume_geometry(self) -> VolumeGeometry:
+    def volume_geometry(self) -> Volume3DGeometry:
         return self._volume_geometry
 
     @property

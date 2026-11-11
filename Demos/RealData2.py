@@ -5,14 +5,15 @@ A script to reconstruct tomographic X-ray data that is simulated using Geant4
 Get the geant4_dataset1.npz file from https://zenodo.org/records/17252190
 """
 
+from tomobar.options import DataFidelity, Regularisation
 import timeit
 import numpy as np
 import matplotlib.pyplot as plt
 import cupy as cp
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.supp.suppTools import normaliser
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
-from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsDIR import RecToolsDIR
 
 # Load the downloaded dataset
 data = np.load("/path/to/geant4_dataset1.npz")
@@ -39,17 +40,20 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsDIR_cp = RecToolsDIRCuPy(
+with RecToolsDIR(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=0.0,
     ),
-    volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
+    volume_geometry=Volume3DGeometry(
+        shape=(detectorVert, detectorHoriz, detectorHoriz)
+    ),
     device_index=0,
-)
-
-FBPrec_cupy = RectoolsDIR_cp.FBP(data_norm_cupy, data_axes_labels_order=data_labels3D)
+) as RectoolsDIR_cp:
+    FBPrec_cupy = RectoolsDIR_cp.FBP(
+        data_norm_cupy, filter_type="SINC_CuPy", data_axes_labels_order=data_labels3D
+    )
 
 FBPrec_np = cp.asnumpy(FBPrec_cupy)
 
@@ -63,44 +67,36 @@ print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # The FBP warm start must match the explicitly requested volume geometry.
 
-RectoolsCuPy = RecToolsIRCuPy(
+with RecToolsIR(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=0.0,
     ),
-    volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
+    volume_geometry=Volume3DGeometry(
+        shape=(detectorVert, detectorHoriz, detectorHoriz)
+    ),
     device_index=0,
     OS_number=24,
-)
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "data_fidelity": "PWLS",
-    "projection_data": data_norm_cupy,  # Normalised projection data
-    "data_axes_labels_order": data_labels3D,
-}
-#################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "initialise": FBPrec_cupy,
-    "iterations": 2,
-    "ADMM_rho_const": 0.9,
-    "ADMM_relax_par": 1.7,
-    "recon_mask_radius": 2.0,
-    "nonnegativity": True,
-}  # The number of iterations
-
-##### creating regularisation dictionary: #####
-_regularisation_ = {
-    "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.0025,  # Regularisation parameter
-    "iterations": 40,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-# RUN THE ADMM-OS-TV METHOD:
-tic = timeit.default_timer()
-RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
-toc = timeit.default_timer()
+) as RectoolsCuPy:
+    # RUN THE ADMM-OS-TV METHOD:
+    tic = timeit.default_timer()
+    RecADMM_os_tv = RectoolsCuPy.ADMM(
+        data_norm_cupy,
+        input_axes=data_labels3D,
+        fidelity=DataFidelity(method="PWLS"),
+        weights=cp.asarray(projdata[:, 100:300, 100:-100]),
+        initial=FBPrec_cupy,
+        iterations=2,
+        rho=0.9,
+        relaxation=1.7,
+        recon_mask_radius=2.0,
+        nonnegativity=True,
+        regularisation=Regularisation(
+            method="PD_TV", strength=0.0025, iterations=40, half_precision=True
+        ),
+    )
+    toc = timeit.default_timer()
 Run_time = toc - tic
 print("ADMM-OS-TV (PD) reconstruction done in {} seconds".format(Run_time))
 

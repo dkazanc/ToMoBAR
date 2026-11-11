@@ -6,7 +6,7 @@ from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
     Volume2DGeometry,
-    VolumeGeometry,
+    Volume3DGeometry,
 )
 from tomobar.methodsDIR import RecToolsDIR
 from tomobar.supp.suppTools import normaliser
@@ -182,7 +182,7 @@ def test_backproj3D(data, angles):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
         backproj = RecTools.backproject(
@@ -202,7 +202,7 @@ def test_backproj3D_pad(data, angles):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         detector_padding=20,
         device_index=0,
     ) as RecTools:
@@ -223,7 +223,7 @@ def test_FBP3D_1(data, angles):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
         FBPrec = RecTools.FBP(data, data_axes_labels_order=["angles", "detY", "detX"])
@@ -241,7 +241,7 @@ def test_FBP3D_1_pad(data, angles):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         detector_padding=20,
         device_index=0,
     ) as RecTools:
@@ -261,7 +261,7 @@ def test_FBP3D_normalisation(angles, raw_data, flats, darks):
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
-        volume_geometry=VolumeGeometry(shape=(detY, N_size, N_size)),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecTools:
         FBPrec = RecTools.FBP(

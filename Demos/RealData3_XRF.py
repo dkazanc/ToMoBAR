@@ -4,12 +4,13 @@
 # In this demo XRF tomographic data from I14 beamline at Diamond Light Source (UK synchrotron) is reconstructed
 
 
+from tomobar.options import DataFidelity, Regularisation
 import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
-from tomobar.geometry import Parallel3DGeometry, VolumeGeometry
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
-from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsDIR import RecToolsDIR
 
 data_npz = np.load(
     "../tests/test_data/Ga-Ka_aligned.npz"
@@ -26,18 +27,21 @@ data_cp = cp.asarray(np.float32(data), order="C")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsDIR_cp = RecToolsDIRCuPy(
+with RecToolsDIR(
     projection_geometry=Parallel3DGeometry(
         angles=np.deg2rad(angles),
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=-0.5,
     ),
-    volume_geometry=VolumeGeometry(shape=(detectorVert, detectorHoriz, detectorHoriz)),
+    volume_geometry=Volume3DGeometry(
+        shape=(detectorVert, detectorHoriz, detectorHoriz)
+    ),
     detector_padding=padding_value,
     device_index=0,
-)
-
-FBPrec_cupy = RectoolsDIR_cp.FBP(data_cp, data_axes_labels_order=data_labels3D)
+) as RectoolsDIR_cp:
+    FBPrec_cupy = RectoolsDIR_cp.FBP(
+        data_cp, filter_type="SINC_CuPy", data_axes_labels_order=data_labels3D
+    )
 
 FBPrec_np = cp.asnumpy(FBPrec_cupy)
 
@@ -54,13 +58,13 @@ plt.title("FBP saggital")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with OSEM-TV method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsIR_cp = RecToolsIRCuPy(
+with RecToolsIR(
     projection_geometry=Parallel3DGeometry(
         angles=np.deg2rad(angles),
         detector_shape=(detectorVert, detectorHoriz),
         centre_of_rotation=-0.5,
     ),
-    volume_geometry=VolumeGeometry(
+    volume_geometry=Volume3DGeometry(
         shape=(
             detectorVert,
             detectorHoriz + 2 * padding_value,
@@ -71,32 +75,18 @@ RectoolsIR_cp = RecToolsIRCuPy(
     detector_padding=padding_value,
     device_index=0,
     OS_number=12,
-)
-
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "projection_data": data_cp,
-    "data_axes_labels_order": data_labels3D,
-}
-
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "iterations": 20,
-    "recon_mask_radius": 2.0,
-    "nonnegativity": True,
-}  # The number of iterations
-
-##### creating regularisation dictionary: #####
-_regularisation_ = {
-    "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 1.5,  # Regularisation parameter
-    "iterations": 35,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-
-# RUN MLEM/OSEM METHOD:
-Rec_OSEM = RectoolsIR_cp.OSEM(_data_, _algorithm_, _regularisation_)
+) as RectoolsIR_cp:
+    # RUN MLEM/OSEM METHOD:
+    Rec_OSEM = RectoolsIR_cp.OSEM(
+        data_cp,
+        input_axes=data_labels3D,
+        iterations=20,
+        recon_mask_radius=2.0,
+        nonnegativity=True,
+        regularisation=Regularisation(
+            method="PD_TV", strength=1.5, iterations=35, half_precision=True
+        ),
+    )
 
 
 Rec_OSEM_np = cp.asnumpy(Rec_OSEM)
