@@ -334,3 +334,112 @@ recomputes sensitivity for the current subset at each update and releases it
 before regularisation, trading an extra subset backprojection per update for
 GPU storage bounded by one sensitivity volume instead of ``OS_number`` volumes.
 Projector handles remain cached and are reused for these extra backprojections.
+
+General parallel trajectories and laminography
+----------------------------------------------
+
+``Parallel3DGeometry`` accepts either conventional scan angles or explicit
+parallel vectors. The existing angle-based constructor and ``tomography()``
+retain their previous conventions. All 3D parallel geometries expose
+``view_count`` and ``projection_shape``; general vector scans have
+``angles=None``. Acquisition order is preserved, including for subsets.
+
+For example, a parallel laminography scan with a 60-degree angle between the
+beam and rotation axis can be constructed as follows::
+
+    import numpy as np
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.methodsIR import RecToolsIR
+
+    scan = Parallel3DGeometry.laminography(
+        angles=np.linspace(0, 2 * np.pi, 180, endpoint=False),
+        detector_shape=(128, 256),
+        tilt_angle=np.deg2rad(60),
+        rotation_axis=(0, 0, 1),
+    )
+    with RecToolsIR(
+        projection_geometry=scan,
+        volume_geometry=Volume3DGeometry(shape=(128, 256, 256)),
+    ) as rec:
+        image = rec.FISTA(projections, iterations=50)
+
+Tilt angle is in radians, in ``(0, pi/2]``. A tilt angle of ``pi/2`` with
+axis ``(0, 0, 1)`` reproduces conventional tomography exactly. The rotation axis
+passes through the volume origin. Vectors describe the acquisition in a fixed
+sample frame; positive scan angles rotate that acquisition frame right-handed
+about the axis. At angle zero, the detector column direction is +X projected
+onto the plane normal to the axis (using +Y instead when the axis is nearly
+parallel to X). The detector has orthogonal, unit-spaced pixels.
+
+For calibrated or arbitrary trajectories, supply an ``(n_views, 12)`` array::
+
+    scan = Parallel3DGeometry.from_vectors(
+        vectors=vectors,
+        detector_shape=(128, 256),
+    )
+
+Each row contains four XYZ vectors: ray direction, detector centre, detector
+column step, detector row step. Positions and pixel step lengths use the same
+unit-voxel coordinate system as ``Volume3DGeometry``. Directions must be
+nonzero; the detector basis must span a plane that the rays intersect.
+Vectors are copied into immutable storage. ``to_vectors()`` returns a fresh
+array with all detector shifts and CoR corrections applied.
+
+``detector_shifts`` remain per-view (horizontal, vertical) offsets in detector
+pixels, including for non-unit or tilted detector bases. They add to the
+supplied detector centres. The scalar CoR correction remains an additional
+horizontal detector-pixel offset; it does not move a physical rotation axis.
+Padding changes detector dimensions without changing detector centres or
+pixel basis vectors.
+
+``scan.transformed(rotation=R, translation=t)`` rigidly transforms the acquisition
+frame about the volume origin. ``R`` is a proper 3x3 rotation on XYZ column
+vectors, and ``t`` moves detector centres in voxel units. Existing shifts are
+incorporated once. The returned geometry uses explicit vectors. Use the returned geometry with ``replace_geometry()`` between reconstruction
+calls; changing geometry during a running solver is not supported.
+
+Forward/backprojection and iterative reconstruction accept general parallel
+vectors. Existing FBP and Fourier inversion require angle-based standard
+Z-axis tomography and reject explicit-vector trajectories, even if supplied
+vectors happen to describe a conventional scan.
+
+Replacing geometry between reconstruction calls
+-----------------------------------------------
+
+Both ``RecToolsIR`` and ``RecToolsDIR`` support ``replace_geometry(new_scan)``.
+For example, an external alignment loop can update per-view detector shifts::
+
+    from dataclasses import replace
+
+    image = rec.FISTA(projections, iterations=10, recon_mask_radius=None)
+    corrected_scan = replace(rec.projection_geometry,
+                             detector_shifts=estimated_shifts)
+    rec.replace_geometry(corrected_scan)
+    image = rec.FISTA(projections, initial=image, iterations=10,
+                     recon_mask_radius=None)
+
+``estimated_shifts`` contains absolute offsets for the new geometry, rather
+than increments to the previous shifts. Keep projections in the same acquisition
+order. The geometry class, detector shape and view count must remain unchanged;
+angles, shifts, CoR and explicit vectors may change. Standard tomography can
+also be replaced by a laminography or explicit-vector scan of matching shape.
+Volume geometry, device, detector padding, output crop and subset count/order
+are preserved. For warm starts, retain a full working-grid image: an image
+returned with a smaller ``output_shape`` cannot be supplied as ``initial``.
+
+Replacement releases every cached full-view and subset projector. New handles
+are created lazily by subsequent projections; replacing geometry itself does
+not create CUDA projectors or copy projection data or image arrays. The next
+solver call recomputes its SIRT normalisation, OSEM sensitivity and automatic
+operator norm estimate. User-supplied Lipschitz constants and step sizes are
+not adjusted automatically. One-call solvers restart algorithm variables on each call, even with
+``initial``. For continuation, use ``initialise_solver`` and ``run``; those
+states preserve variables until geometry changes, then restart them safely.
+
+``rec.geometry_version`` starts at zero and increments after each replacement.
+Passing the current geometry object is a no-op. Geometry validation or wrapper
+construction failures preserve the previous geometry and projectors; actual
+CUDA handle construction is still deferred until first use. Calls on closed
+reconstructors fail. Replacement must happen between calls, with no concurrent
+projection or reconstruction using the same object. Existing direct-method
+capability checks apply to the replacement geometry.

@@ -69,30 +69,41 @@ _noise_ = {
     "noise_seed": 0,
 }
 
-projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_)
-projData3D_analyt_cupy = cp.asarray(projData3D_analyt_noise, order="C")
+# misalignment dictionary
+_datashifts_ = {"datashifts_maxamplitude_pixel": 10}
+
+projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_, **_datashifts_)
+
+projData3D_analyt_noise_shifted = projData3D_analyt_noise[0]
+exact_shifts = projData3D_analyt_noise[1]
+
+projData3D_analyt_cupy = cp.asarray(projData3D_analyt_noise_shifted, order="C")
 input_data_labels = ["detY", "angles", "detX"]
 
 intens_max = 45
 sliceSel = int(0.5 * N_size)
 plt.figure()
 plt.subplot(131)
-plt.imshow(projData3D_analyt_noise[:, sliceSel, :], vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise_shifted[:, sliceSel, :], vmin=0, vmax=intens_max)
 plt.title("2D Projection (analytical)")
 plt.subplot(132)
-plt.imshow(projData3D_analyt_noise[sliceSel, :, :], vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise_shifted[sliceSel, :, :], vmin=0, vmax=intens_max)
 plt.title("Sinogram view")
 plt.subplot(133)
-plt.imshow(projData3D_analyt_noise[:, :, sliceSel], vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise_shifted[:, :, sliceSel], vmin=0, vmax=intens_max)
 plt.title("Tangentogram view")
 plt.show()
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%Reconstructing with 3D FBP-CuPy method %%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# Note that we provide exact (known shifts) here to compensate for misalignment
 with RecToolsDIR(
     projection_geometry=Parallel3DGeometry(
-        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
     ),
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
@@ -142,61 +153,14 @@ RMSE = Qtools.rmse()
 print("Root Mean Square Error is {} for FBP".format(RMSE))
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("%%%%%%%%%Reconstructing with 3D Fourier-CuPy method %%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsDIR(
-    projection_geometry=Parallel3DGeometry(
-        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
-    ),
-    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
-    device_index=0,
-) as RecToolsCP:
-    tic = timeit.default_timer()
-    Fourier_cupy = RecToolsCP.FOURIER_INV(
-        projData3D_analyt_cupy,
-        recon_mask_radius=0.95,
-        data_axes_labels_order=input_data_labels,
-        filter_type="shepp",
-        cutoff_freq=1.0,
-    )
-    toc = timeit.default_timer()
-Run_time = toc - tic
-print("Fourier 3D reconstruction using CuPy (GPU) in {} seconds".format(Run_time))
-
-# bring data from the device to the host
-Fourier_cupy = cp.asnumpy(Fourier_cupy)
-
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-plt.imshow(Fourier_cupy[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, axial view")
-
-plt.subplot(132)
-plt.imshow(Fourier_cupy[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, coronal view")
-
-plt.subplot(133)
-plt.imshow(Fourier_cupy[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, sagittal view")
-plt.show()
-
-print(
-    "Min {} and Max {} of the volume".format(np.min(FBPrec_cupy), np.max(FBPrec_cupy))
-)
-
-# calculate errors
-Qtools = QualityTools(phantom_tm, Fourier_cupy)
-RMSE = Qtools.rmse()
-print("Root Mean Square Error is {} for Fourier inversion".format(RMSE))
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 with RecToolsIR(
     projection_geometry=Parallel3DGeometry(
-        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
     ),
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
@@ -214,7 +178,7 @@ with RecToolsIR(
         lipschitz_constant=lc,
         recon_mask_radius=2.0,
         regularisation=Regularisation(
-            method="PD_TV", strength=0.0003, iterations=50, half_precision=True
+            method="PD_TV", strength=0.0001, iterations=50, half_precision=True
         ),
     )
     toc = timeit.default_timer()
@@ -249,7 +213,10 @@ print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 with RecToolsIR(
     projection_geometry=Parallel3DGeometry(
-        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
     ),
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
@@ -267,7 +234,7 @@ with RecToolsIR(
         relaxation=1.7,
         recon_mask_radius=2.0,
         regularisation=Regularisation(
-            method="PD_TV", strength=0.13, iterations=30, half_precision=True
+            method="PD_TV", strength=0.1, iterations=30, half_precision=True
         ),
     )
     toc = timeit.default_timer()

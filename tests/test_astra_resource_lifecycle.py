@@ -21,7 +21,10 @@ from tomobar.geometry import (
     Volume2DGeometry,
     Volume3DGeometry,
 )
-from tomobar.astra_wrappers.geometry import parallel2d_vectors, parallel3d_vectors
+from tomobar.astra_wrappers.geometry_adapter import (
+    parallel2d_vectors,
+    parallel3d_vectors,
+)
 
 ROOT = Path(__file__).resolve().parents[1] / "tomobar"
 
@@ -907,6 +910,13 @@ class TestAstraResourceLifecycle(unittest.TestCase):
         fidelities.grad_data_term = Mock(
             side_effect=lambda rec, x, *args, **kwargs: np.zeros_like(x)
         )
+        # Preload state/options outside patch.dict: newly imported dependencies
+        # would otherwise be removed from sys.modules while remaining attached
+        # to the tomobar package, creating inconsistent option class identities.
+        import importlib
+
+        importlib.import_module("tomobar.solver_state")
+
         with patch.dict(
             "sys.modules",
             {

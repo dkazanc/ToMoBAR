@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from tomobar.astra_wrappers.geometry import (
+from tomobar.astra_wrappers.geometry_adapter import (
     parallel3d_vectors,
     projection_geometry,
     volume_geometry,
@@ -65,7 +65,7 @@ def test_dictionaries_match_astra_factories():
 
 def test_2d_vectors_preserve_cor_shifts_and_view_order():
     from tomobar.geometry import Parallel2DGeometry
-    from tomobar.astra_wrappers.geometry import parallel2d_vectors
+    from tomobar.astra_wrappers.geometry_adapter import parallel2d_vectors
 
     scan = Parallel2DGeometry(
         angles=[np.pi / 2, 0.0],
@@ -85,7 +85,7 @@ def test_2d_vectors_preserve_cor_shifts_and_view_order():
 def test_2d_dictionaries_match_astra_factories():
     astra = pytest.importorskip("astra")
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.astra_wrappers.geometry import parallel2d_vectors
+    from tomobar.astra_wrappers.geometry_adapter import parallel2d_vectors
 
     scan = Parallel2DGeometry(angles=[0.3, -1.2], detector_shape=(7,))
     vectors = parallel2d_vectors(scan)

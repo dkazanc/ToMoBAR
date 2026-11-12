@@ -48,6 +48,7 @@ class GeometryReconstruction:
             else projection_geometry
         )
         self._closed = False
+        self._geometry_version = 0
 
     def _init_device(self, device_index):
         self._device_index = _validate_device_index(device_index)
@@ -71,6 +72,69 @@ class GeometryReconstruction:
     @property
     def detector_padding(self):
         return self._detector_padding
+
+    @property
+    def geometry_version(self) -> int:
+        """Number of successful geometry replacements (initial geometry is zero)."""
+        return self._geometry_version
+
+    def replace_geometry(self, projection_geometry):
+        """Replace acquisition geometry between reconstruction calls.
+
+        The geometry type, detector dimensions and view count must stay fixed;
+        data must retain the same acquisition ordering. Volume grid, device,
+        padding, output crop and ordered-subset configuration are preserved.
+        An identical geometry object is a no-op.
+
+        Build and validate the replacement before releasing the old wrapper.
+        All old full-view/subset projectors are then released, and replacement
+        handles are created lazily on the next projection. Validation or wrapper
+        construction failure leaves the current geometry and handles unchanged.
+        Actual CUDA projector construction still occurs on first use.
+
+        Solver normalisation, sensitivity and automatic Lipschitz estimates
+        are local to each call and are recomputed on the next reconstruction.
+        Caller-supplied step sizes or Lipschitz constants must be reconsidered
+        after a geometry change. No reconstruction images or measured data are
+        owned or modified here; pass an existing full-grid image via ``initial``
+        to warm-start the next solver call. This method must not run concurrently
+        with projection or reconstruction on the same object.
+        """
+        self._ensure_open()
+        current = self.projection_geometry
+        if type(projection_geometry) is not type(current):
+            raise TypeError(f"projection_geometry must be a {type(current).__name__}")
+        if projection_geometry.projection_shape != current.projection_shape:
+            raise ValueError(
+                "replacement geometry must preserve detector shape and view count"
+            )
+        if projection_geometry is current:
+            return
+        shape = projection_geometry.detector_shape
+        padded = (
+            replace(
+                projection_geometry,
+                detector_shape=(*shape[:-1], shape[-1] + 2 * self.detector_padding),
+            )
+            if self.detector_padding
+            else projection_geometry
+        )
+        previous = self.Atools
+        replacement = type(previous)(
+            projection_geometry=padded,
+            volume_geometry=self.volume_geometry,
+            device_index=self.device_index,
+            ordsub_number=previous.ordsub_number,
+        )
+        # Keep user-selected 2D FBP filter settings across wrapper replacement.
+        for name in ("fbp_filter_type", "fbp_filter_parameter", "fbp_filter_d"):
+            if hasattr(previous, name):
+                setattr(replacement, name, getattr(previous, name))
+        self._projection_geometry = projection_geometry
+        self._padded_projection_geometry = padded
+        self.Atools = replacement
+        self._geometry_version += 1
+        previous.close()
 
     def _prepare_projection(
         self,

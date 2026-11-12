@@ -11,7 +11,6 @@
 from tomobar.supp.device import _on_device
 import numpy as np
 from typing import Optional
-from dataclasses import replace
 
 import cupy as cp
 
@@ -26,7 +25,6 @@ from tomobar.options import (
     _boolean,
 )
 from tomobar.supp.array_prepare import prepare_array
-from tomobar.supp.subsets import ProjectionSubsets
 from tomobar.regularisers import prox_regul
 from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
 from tomobar.geometry import (
@@ -37,7 +35,8 @@ from tomobar.geometry import (
 )
 from tomobar.reconstruction_geometry import GeometryReconstruction
 from tomobar.data_fidelities import grad_data_term
-from tomobar.energy import EnergyHistory
+from tomobar import solver_state
+from tomobar.solver_state import SolverState
 
 
 class RecToolsIR(GeometryReconstruction):
@@ -76,7 +75,7 @@ class RecToolsIR(GeometryReconstruction):
         ):
             raise ValueError("output_shape must fit inside volume_geometry.shape")
         self._subset_indices = interleaved_view_indices(
-            projection_geometry.angles.size, OS_number
+            projection_geometry.view_count, OS_number
         )
         self.Atools = AstraTools3D(
             projection_geometry=self.padded_projection_geometry,
@@ -221,6 +220,75 @@ class RecToolsIR(GeometryReconstruction):
         return self.Atools.backproject(b, subset_index=sub_ind if os else None)
 
     @_on_device(cp)
+    def initialise_solver(self, method, projections, **options) -> SolverState:
+        """Prepare a paused solver with an owned full-grid image and data.
+
+        ``method`` is Landweber, SIRT, CGLS, FISTA, ADMM or OSEM. Options match
+        that reconstruction method except iterations and recon_mask_radius;
+        masks/crops are applied only to independent solver_image() snapshots.
+        """
+        from inspect import signature
+
+        self._ensure_open()
+        if method not in ("Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM"):
+            raise ValueError("unknown iterative method")
+        if "iterations" in options or "recon_mask_radius" in options:
+            raise TypeError(
+                "set iterations in run(); set recon_mask_radius in solver_image()"
+            )
+        signature(getattr(self, method)).bind(projections, **options)
+        return solver_state.initialise(self, method, projections, xp=cp, **options)
+
+    @_on_device(cp)
+    def run(self, state: SolverState, *, iterations: int = 1) -> SolverState:
+        """Advance an owned state in place by complete outer iterations.
+
+        A geometry change preserves the image and prepared data, resets solver
+        variables, and recomputes geometry-dependent quantities. Total iteration
+        count is retained; segment_iteration restarts at zero. Explicitly supplied
+        Lipschitz constants / step sizes remain the caller's responsibility.
+        """
+        return solver_state.run(
+            self, state, iterations, xp=cp, gradient=grad_data_term, proximal=prox_regul
+        )
+
+    @_on_device(cp)
+    def solver_image(self, state: SolverState, *, recon_mask_radius=1.0):
+        """Return a masked/cropped copy without modifying continuation state."""
+        self._ensure_open()
+        if not isinstance(state, SolverState) or state._owner() is not self:
+            raise ValueError("state must belong to this reconstructor")
+        if recon_mask_radius is not None:
+            _real(recon_mask_radius, "recon_mask_radius")
+        return self._finish_reconstruction(
+            state.image.copy(), recon_mask_radius=recon_mask_radius
+        )
+
+    def _solve(self, method, projections, *, iterations, recon_mask_radius, **options):
+        defaults = {
+            "Landweber": 1500,
+            "SIRT": 200,
+            "CGLS": 30,
+            "FISTA": 20 if self.OS_number > 1 else 400,
+            "ADMM": 10 if self.OS_number > 1 else 400,
+            "OSEM": 15 if self.OS_number > 1 else 300,
+        }
+        iterations = self._run_options(
+            iterations,
+            default=defaults[method],
+            nonnegativity=options.get("nonnegativity", False),
+            recon_mask_radius=recon_mask_radius,
+            allow_subsets=method not in ("Landweber", "SIRT", "CGLS"),
+        )
+        state = self.initialise_solver(method, projections, **options)
+        self.run(state, iterations=iterations)
+        # One-shot calls relinquish their state, so no output snapshot is needed.
+        image = self._finish_reconstruction(
+            state.image, recon_mask_radius=recon_mask_radius
+        )
+        return state._history.finish(image)
+
+    @_on_device(cp)
     def Landweber(
         self,
         projections: np.ndarray | cp.ndarray,
@@ -238,30 +306,16 @@ class RecToolsIR(GeometryReconstruction):
         Projections default to (detY, angles, detX). ``initial`` must match
         volume_geometry.shape. ``output_shape`` is applied after reconstruction.
         """
-        iterations = self._run_options(
-            iterations,
-            default=1500,
+        return self._solve(
+            "Landweber",
+            projections,
+            iterations=iterations,
+            initial=initial,
+            input_axes=input_axes,
             nonnegativity=nonnegativity,
+            return_energy=return_energy,
             recon_mask_radius=recon_mask_radius,
-            allow_subsets=False,
-        )
-        step_size = _real(step_size, "step_size")
-        projections, _ = self._prepare_inputs(projections, input_axes=input_axes)
-        x_rec = self._initial_volume(initial)  # initialisation
-
-        history = EnergyHistory(return_energy, self, projections, array_module=cp)
-        history.record(x_rec)
-
-        for _ in range(iterations):
-            residual = self._Ax(x_rec) - projections  # Ax - b term
-            x_rec -= step_size * self._Atb(residual)
-            if nonnegativity:
-                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
-
-            history.record(x_rec)
-
-        return history.finish(
-            self._finish_reconstruction(x_rec, recon_mask_radius=recon_mask_radius)
+            step_size=step_size,
         )
 
     @_on_device(cp)
@@ -281,41 +335,15 @@ class RecToolsIR(GeometryReconstruction):
         Projections default to (detY, angles, detX). ``initial`` must match
         volume_geometry.shape. ``output_shape`` is applied after reconstruction.
         """
-        iterations = self._run_options(
-            iterations,
-            default=200,
+        return self._solve(
+            "SIRT",
+            projections,
+            iterations=iterations,
+            initial=initial,
+            input_axes=input_axes,
             nonnegativity=nonnegativity,
+            return_energy=return_energy,
             recon_mask_radius=recon_mask_radius,
-            allow_subsets=False,
-        )
-        projections, _ = self._prepare_inputs(projections, input_axes=input_axes)
-        R = 1.0 / self.Atools.forward(
-            cp.ones(self.volume_geometry.shape, dtype=np.float32)
-        )
-        R = cp.nan_to_num(R, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
-
-        C = 1.0 / self.Atools.backproject(
-            cp.ones(self.padded_projection_geometry.projection_shape, dtype=np.float32)
-        )
-        C = cp.nan_to_num(C, copy=False, nan=1.0, posinf=1.0, neginf=1.0)
-
-        x_rec = self._initial_volume(initial, ones=True)  # initialisation
-
-        history = EnergyHistory(return_energy, self, projections, array_module=cp)
-        history.record(x_rec)
-
-        # perform SIRT iterations
-        for _ in range(iterations):
-            x_rec += C * self.Atools.backproject(
-                R * (projections - self.Atools.forward(x_rec))
-            )
-            if nonnegativity:
-                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
-
-            history.record(x_rec)
-
-        return history.finish(
-            self._finish_reconstruction(x_rec, recon_mask_radius=recon_mask_radius)
         )
 
     @_on_device(cp)
@@ -335,72 +363,15 @@ class RecToolsIR(GeometryReconstruction):
         Projections default to (detY, angles, detX). ``initial`` must match
         volume_geometry.shape. ``output_shape`` is applied after reconstruction.
         """
-        iterations = self._run_options(
-            iterations,
-            default=30,
+        return self._solve(
+            "CGLS",
+            projections,
+            iterations=iterations,
+            initial=initial,
+            input_axes=input_axes,
             nonnegativity=nonnegativity,
+            return_energy=return_energy,
             recon_mask_radius=recon_mask_radius,
-            allow_subsets=False,
-        )
-        projections, _ = self._prepare_inputs(projections, input_axes=input_axes)
-        data_shape_3d = cp.shape(projections)
-
-        # Prepare for CG iterations.
-        x_rec = self._initial_volume(initial)  # initialisation
-        history = EnergyHistory(return_energy, self, projections, array_module=cp)
-        history.record(x_rec)
-
-        x_shape_3d = cp.shape(x_rec)
-        x_rec = cp.ravel(x_rec, order="C")  # vectorise
-        residual = (
-            projections
-            if initial is None
-            else projections - self.Atools.forward(x_rec.reshape(x_shape_3d))
-        )
-        d = self.Atools.backproject(residual)
-        d = cp.ravel(d, order="C")
-        normr2 = cp.inner(d, d)
-        r = cp.ravel(residual, order="C").copy()
-        if normr2 == 0:
-            return history.finish(
-                self._finish_reconstruction(
-                    cp.reshape(x_rec, x_shape_3d, order="C"),
-                    recon_mask_radius=recon_mask_radius,
-                )
-            )
-
-        # perform CG iterations
-        for _ in range(iterations):
-            # Update x_rec and r vectors:
-            Ad = self.Atools.forward(cp.reshape(d, x_shape_3d, order="C"))
-            Ad = cp.ravel(Ad, order="C")
-            alpha = normr2 / cp.inner(Ad, Ad)
-            x_rec += alpha * d
-            r -= alpha * Ad
-            s = self.Atools.backproject(cp.reshape(r, data_shape_3d, order="C"))
-            s = cp.ravel(s, order="C")
-            # Update d vector
-            normr2_new = cp.inner(s, s)
-            if normr2_new == 0:
-                if nonnegativity:
-                    cp.maximum(x_rec, 0, out=x_rec)
-                history.record(x_rec.reshape(x_shape_3d))
-                break
-            beta = normr2_new / normr2
-            normr2 = normr2_new.copy()
-            d = s + beta * d
-            if nonnegativity:
-                cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
-
-            history.record(x_rec.reshape(x_shape_3d))
-
-        del d, s, r, alpha, Ad, normr2_new, normr2
-
-        return history.finish(
-            self._finish_reconstruction(
-                cp.reshape(x_rec, x_shape_3d, order="C"),
-                recon_mask_radius=recon_mask_radius,
-            )
         )
 
     @_on_device(cp)
@@ -442,83 +413,19 @@ class RecToolsIR(GeometryReconstruction):
         Projection axes default to (detY, angles, detX); weights use input_axes too.
         ``initial`` uses the full working grid, before the optional output crop.
         """
-        iterations = self._run_options(
-            iterations,
-            default=20 if self.OS_number > 1 else 400,
-            nonnegativity=nonnegativity,
-            recon_mask_radius=recon_mask_radius,
-        )
-        self._regularisation_options(regularisation)
-        if lipschitz_constant is not None:
-            lipschitz_constant = _real(lipschitz_constant, "lipschitz_constant")
-        projections, w = self._prepare_inputs(
-            projections, weights=weights, input_axes=input_axes, fidelity=fidelity
-        )
-        x0 = self._initial_volume(initial)
-        if lipschitz_constant is None:
-            lipschitz_constant = self.powermethod()
-        use_os = self.OS_number > 1
-        L_const_inv = 1.0 / lipschitz_constant
-
-        t = cp.float32(1.0)
-        X_t = cp.copy(x0)
-        X = x0
-        subsets = ProjectionSubsets(
+        return self._solve(
+            "FISTA",
             projections,
-            subset_count=self.OS_number,
-            array_module=cp,
-            weights=w,
-            beta_swls=fidelity.beta_swls if fidelity.method == "SWLS" else None,
-        )
-
-        history = EnergyHistory(
-            return_energy,
-            self,
-            projections,
-            fidelity=fidelity,
-            weights=w,
+            iterations=iterations,
+            initial=initial,
+            input_axes=input_axes,
             regularisation=regularisation,
-            array_module=cp,
-        )
-        history.record(X)
-
-        # FISTA iterations
-        for _ in range(iterations):
-            # loop over subsets (OS)
-            for sub_ind in range(self.OS_number):
-                X_old = X
-                t_old = t
-                proj_data_subset, weight_subset, weight_subset_sum = subsets[sub_ind]
-
-                grad_data = grad_data_term(
-                    self,
-                    X_t,
-                    proj_data_subset,
-                    use_os,
-                    sub_ind,
-                    weight_subset,
-                    weight_subset_sum,
-                    fidelity=fidelity.method,
-                )
-
-                X = X_t - L_const_inv * grad_data
-
-                del X_t, grad_data
-
-                if nonnegativity:
-                    cp.maximum(X, 0, out=X)  # non-negativity projection
-
-                if regularisation is not None:
-                    ##### The proximal operator of the chosen regulariser #####
-                    X = prox_regul(self, X, regularisation, nonnegativity=nonnegativity)
-
-                t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
-                X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
-
-            history.record(X)
-
-        return history.finish(
-            self._finish_reconstruction(X, recon_mask_radius=recon_mask_radius)
+            fidelity=fidelity,
+            weights=weights,
+            lipschitz_constant=lipschitz_constant,
+            nonnegativity=nonnegativity,
+            return_energy=return_energy,
+            recon_mask_radius=recon_mask_radius,
         )
 
     @_on_device(cp)
@@ -545,111 +452,22 @@ class RecToolsIR(GeometryReconstruction):
         Projection axes default to (detY, angles, detX); weights use input_axes too.
         ``initial`` uses the full working grid, before the optional output crop.
         """
-        iterations = self._run_options(
-            iterations,
-            default=10 if self.OS_number > 1 else 400,
-            nonnegativity=nonnegativity,
-            recon_mask_radius=recon_mask_radius,
-        )
-        self._regularisation_options(regularisation)
-        rho = _real(rho, "rho")
-        relaxation = _real(relaxation, "relaxation")
-        if relaxation >= 2:
-            raise ValueError("relaxation must be between 0 and 2")
-        _boolean(verbose, "verbose")
-        if lipschitz_constant is not None:
-            lipschitz_constant = _real(lipschitz_constant, "lipschitz_constant")
-        projections, w = self._prepare_inputs(
-            projections, weights=weights, input_axes=input_axes, fidelity=fidelity
-        )
-        x0 = self._initial_volume(initial)
-        if lipschitz_constant is None:
-            lipschitz_constant = self.powermethod()
-        use_os = self.OS_number > 1
-        subsets = ProjectionSubsets(
+        return self._solve(
+            "ADMM",
             projections,
-            subset_count=self.OS_number,
-            array_module=cp,
-            weights=w,
-            beta_swls=fidelity.beta_swls if fidelity.method == "SWLS" else None,
-        )
-
-        x = x0
-        z = x0.copy()
-        z_old = 0
-        u = cp.zeros_like(x0)
-
-        history = EnergyHistory(
-            return_energy,
-            self,
-            projections,
-            fidelity=fidelity,
-            weights=w,
+            iterations=iterations,
+            initial=initial,
+            input_axes=input_axes,
             regularisation=regularisation,
-            array_module=cp,
-        )
-        history.record(x)
-
-        tau = 0.9 / (lipschitz_constant + rho)
-        if regularisation is not None:
-            regularisation = replace(
-                regularisation, strength=regularisation.strength / rho
-            )
-
-        # ADMM iterations
-        for iter_no in range(iterations):
-            for sub_ind in range(self.OS_number):
-                proj_data_subset, weight_subset, weight_subset_sum = subsets[sub_ind]
-
-                # ---- z-update (linearized data term) ----
-                grad_data = grad_data_term(
-                    self,
-                    z,
-                    proj_data_subset,
-                    use_os,
-                    sub_ind,
-                    weight_subset,
-                    weight_subset_sum,
-                    fidelity=fidelity.method,
-                )
-
-                grad_admm = rho * (z - x + u)
-                z -= tau * (grad_data + grad_admm)
-
-                if nonnegativity:
-                    cp.maximum(z, 0, out=z)  # non-negativity projection
-                # z-update with relaxation
-                if iter_no > 1:
-                    z = (1.0 - relaxation) * z_old + relaxation * z
-                z_old = z.copy()
-
-                x_prox_reg = z + u
-
-                # X-update (proximal regularisation)
-                if regularisation is not None:
-                    x = prox_regul(
-                        self, x_prox_reg, regularisation, nonnegativity=nonnegativity
-                    )
-                else:
-                    x = x_prox_reg
-
-            # update u variable (dual update)
-            u = u + (z - x)
-
-            if verbose:
-                if np.mod(iter_no, (round)(iterations / 5) + 1) == 0:
-                    print(
-                        "ADMM iteration (",
-                        iter_no + 1,
-                        ") using",
-                        None if regularisation is None else regularisation.method,
-                        "regularisation",
-                    )
-
-            history.record(x)
-
-        return history.finish(
-            self._finish_reconstruction(x, recon_mask_radius=recon_mask_radius)
+            fidelity=fidelity,
+            weights=weights,
+            lipschitz_constant=lipschitz_constant,
+            rho=rho,
+            relaxation=relaxation,
+            verbose=verbose,
+            nonnegativity=nonnegativity,
+            return_energy=return_energy,
+            recon_mask_radius=recon_mask_radius,
         )
 
     @_on_device(cp)
@@ -673,67 +491,14 @@ class RecToolsIR(GeometryReconstruction):
         ``initial`` uses the full working grid before the optional output crop.
         MLEM caches one sensitivity volume; OSEM retains only the current one.
         """
-        iterations = self._run_options(
-            iterations,
-            default=15 if self.OS_number > 1 else 300,
-            nonnegativity=nonnegativity,
-            recon_mask_radius=recon_mask_radius,
-        )
-        self._regularisation_options(regularisation)
-        projections, _ = self._prepare_inputs(projections, input_axes=input_axes)
-        x = self._initial_volume(initial, ones=True)
-        use_os = self.OS_number > 1
-        eps = 1e-8
-        subsets = ProjectionSubsets(
-            projections, subset_count=self.OS_number, array_module=cp
-        )
-        # MLEM reuses its single sensitivity. OSEM recomputes one subset at
-        # a time instead of retaining OS_number full-volume GPU arrays.
-        sensitivity = None
-
-        history = EnergyHistory(
-            return_energy,
-            self,
+        return self._solve(
+            "OSEM",
             projections,
-            fidelity=DataFidelity(method="KL"),
+            iterations=iterations,
+            initial=initial,
+            input_axes=input_axes,
             regularisation=regularisation,
-            array_module=cp,
-        )
-        history.record(x)
-
-        # OSEM/MLEM iterations
-        for iter_no in range(iterations):
-            for sub_ind in range(self.OS_number):
-                proj_data, _, _ = subsets[sub_ind]
-                if sensitivity is None:
-                    sensitivity = self._Atb(
-                        cp.ones_like(proj_data, dtype=cp.float32, order="C"),
-                        sub_ind,
-                        use_os,
-                    )
-                    cp.maximum(sensitivity, eps, out=sensitivity)
-
-                Ax = self._Ax(x, sub_ind, use_os)
-                Ax = cp.clip(Ax, eps, None)
-                ratio = proj_data / Ax
-                backproj = self._Atb(ratio, sub_ind, use_os)
-
-                # EM divides by the sensitivity A_s.T(1) of this subset.
-                # Unobserved voxels have zero backprojection and update to zero.
-                cp.divide(backproj, sensitivity, out=backproj)
-                x *= backproj
-                del Ax, ratio, backproj
-                if use_os:
-                    sensitivity = None
-                if nonnegativity:
-                    cp.maximum(x, 0, out=x)
-
-                # proximal regularisation
-                if regularisation is not None:
-                    x = prox_regul(self, x, regularisation, nonnegativity=nonnegativity)
-
-            history.record(x)
-
-        return history.finish(
-            self._finish_reconstruction(x, recon_mask_radius=recon_mask_radius)
+            nonnegativity=nonnegativity,
+            return_energy=return_energy,
+            recon_mask_radius=recon_mask_radius,
         )

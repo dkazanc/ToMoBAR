@@ -2,7 +2,7 @@ from tomobar.supp.device import _validate_device_index
 from contextlib import ExitStack
 import astra
 from tomobar.astra_wrappers.astra_base import AstraBase
-from tomobar.astra_wrappers.geometry import (
+from tomobar.astra_wrappers.geometry_adapter import (
     parallel2d_vectors,
     projection_geometry as to_astra_projection_geometry,
     volume_geometry as to_astra_volume_geometry,

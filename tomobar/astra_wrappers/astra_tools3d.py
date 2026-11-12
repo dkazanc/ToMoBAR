@@ -1,6 +1,6 @@
 from tomobar.supp.device import _validate_device_index
 from tomobar.astra_wrappers.astra_base import AstraBase
-from tomobar.astra_wrappers.geometry import (
+from tomobar.astra_wrappers.geometry_adapter import (
     parallel3d_vectors,
     projection_geometry as to_astra_projection_geometry,
     volume_geometry as to_astra_volume_geometry,
@@ -52,9 +52,9 @@ class AstraTools3D(AstraBase):
         self._projection_geometry = projection_geometry
         self._volume_geometry = volume_geometry
         self._ordsub_number = _validate_ordsub_number(
-            ordsub_number, projection_geometry.angles.size
+            ordsub_number, projection_geometry.view_count
         )
-        self._setOS_indices(projection_geometry.angles.size)
+        self._setOS_indices(projection_geometry.view_count)
         self._device_index = _validate_device_index(device_index)
         self._init_projector_resources()
 

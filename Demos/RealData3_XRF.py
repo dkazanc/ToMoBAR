@@ -84,7 +84,7 @@ with RecToolsIR(
         recon_mask_radius=2.0,
         nonnegativity=True,
         regularisation=Regularisation(
-            method="PD_TV", strength=1.5, iterations=35, half_precision=True
+            method="PD_TV", strength=0.1, iterations=35, half_precision=True
         ),
     )
 

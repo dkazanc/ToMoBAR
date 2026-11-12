@@ -100,6 +100,32 @@ def data_XRFfile(test_data_path):
         yield archive
 
 
+@pytest.fixture(scope="session")
+def data_shifted_file(test_data_path):
+    """Analytical misaligned projections and per-view shift vectors."""
+    in_file = os.path.join(test_data_path, "projData3D_analyt_shifted.npz")
+    with np.load(in_file, allow_pickle=False) as archive:
+        yield archive
+
+
+@pytest.fixture
+def data_shifted(data_shifted_file):
+    """Independent float32 projections, stored in archive order (128, 100, 181)."""
+    return np.copy(data_shifted_file["array"])
+
+
+@pytest.fixture
+def synth_data_shifts(data_shifted_file):
+    """Independent per-view shifts, stored as (100, 2) int8 vectors."""
+    return np.copy(data_shifted_file["vectors"])
+
+
+@pytest.fixture
+def data_shifted_cupy(data_shifted, gpu):
+    """Misaligned projections on the GPU; skip when CUDA is unavailable."""
+    return gpu.asarray(data_shifted)
+
+
 @pytest.fixture
 def raw_data(data_raw_file):
     return np.float32(np.copy(data_raw_file["data"]))

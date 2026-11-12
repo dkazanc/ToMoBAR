@@ -21,6 +21,7 @@ Submodules
    tomobar.methodsDIR
    tomobar.methodsIR
    tomobar.options
+   tomobar.solver_state
    tomobar.regularisers
 
 Module contents

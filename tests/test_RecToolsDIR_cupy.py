@@ -7,6 +7,7 @@ from cupy import float32
 from cupyx.profiler import time_range
 import pytest
 
+from tests.conftest import data_cupy
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.cuda_kernels import load_cuda_module
 from tomobar.methodsDIR import RecToolsDIR
@@ -476,6 +477,39 @@ def test_FBP3D(data_cupy, angles, ensure_clean_memory):
     assert_allclose(np.max(recon_data), 0.0340156, rtol=eps)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
+
+
+def test_FBP3D_synth_misaligned(data_shifted_cupy, synth_data_shifts):
+    angles = np.linspace(0.0, 179.9, 100, dtype="float32")  # in degrees
+    angles_rad = angles * (np.pi / 180.0)
+
+    input_data_labels = ["detY", "angles", "detX"]
+
+    detX = cp.shape(data_shifted_cupy)[2]
+    detY = cp.shape(data_shifted_cupy)[0]
+    N_size = detX
+
+    with RecToolsDIR(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad,
+            detector_shape=(detY, detX),
+            centre_of_rotation=0.0,
+            detector_shifts=-synth_data_shifts,
+        ),
+        volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
+        device_index=0,
+    ) as RecToolsCP:
+        FBPrec_cupy = RecToolsCP.FBP(
+            data_shifted_cupy,
+            filter_type="SINC_CuPy",
+            data_axes_labels_order=input_data_labels,
+            cutoff_freq=1.1,
+        )
+    recon_data = cp.asnumpy(FBPrec_cupy)
+    assert_allclose(np.min(recon_data), -0.15432394, rtol=eps)
+    assert_allclose(np.max(recon_data), 1.3973932, rtol=eps)
+    assert recon_data.dtype == np.float32
+    assert recon_data.shape == (128, 181, 181)
 
 
 def test_FBP3D_pad(data_cupy, angles, ensure_clean_memory):

@@ -133,6 +133,13 @@ class RecToolsDIR(GeometryReconstruction):
         In 2D, filter_type defaults to "ram-lak" and accepts ASTRA FBP_CUDA
         filter names, with filter_parameter and filter_d passed to ASTRA.
         """
+        if (
+            isinstance(self.projection_geometry, Parallel3DGeometry)
+            and not self.projection_geometry.is_standard_tomography
+        ):
+            raise ValueError(
+                "This analytical method requires standard Z-axis tomography; use iterative reconstruction for general vectors or laminography"
+            )
         self._ensure_open()
         cupyrun = not isinstance(data, np.ndarray) and isinstance(data, cp.ndarray)
         kwargs["cupyrun"] = cupyrun
@@ -211,6 +218,13 @@ class RecToolsDIR(GeometryReconstruction):
         Returns:
             cp.ndarray: The NUFFT reconstructed volume as a CuPy array.
         """
+        if (
+            isinstance(self.projection_geometry, Parallel3DGeometry)
+            and not self.projection_geometry.is_standard_tomography
+        ):
+            raise ValueError(
+                "This analytical method requires standard Z-axis tomography; use iterative reconstruction for general vectors or laminography"
+            )
         if isinstance(data, tuple):
             # Estimator shapes carry no storage to validate or pack.
             native_axes = ("detY", "angles", "detX")

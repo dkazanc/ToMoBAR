@@ -24,21 +24,8 @@ def parallel2d_vectors(geometry: Parallel2DGeometry) -> np.ndarray:
 
 
 def parallel3d_vectors(geometry: Parallel3DGeometry) -> np.ndarray:
-    """Build all views in acquisition order with unit detector pixel spacing."""
-    sine = np.sin(geometry.angles)
-    cosine = np.cos(geometry.angles)
-    horizontal, vertical = geometry.detector_shifts.T
-    horizontal = horizontal + geometry.centre_of_rotation
-    vectors = np.zeros((geometry.angles.size, 12), dtype=np.float64)
-    vectors[:, 0] = sine
-    vectors[:, 1] = -cosine
-    vectors[:, 3] = horizontal * cosine
-    vectors[:, 4] = horizontal * sine
-    vectors[:, 5] = vertical
-    vectors[:, 6] = cosine
-    vectors[:, 7] = sine
-    vectors[:, 11] = 1.0
-    return vectors
+    """Convert all views, including general parallel trajectories."""
+    return geometry.to_vectors()
 
 
 def projection_geometry(
