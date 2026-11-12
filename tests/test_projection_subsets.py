@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 
 from tomobar.supp.subsets import ProjectionSubsets
-from tests.test_direct_filters import gpu
 
 
 @pytest.mark.parametrize("views,count", [(1, 1), (5, 1), (5, 2), (7, 3), (4, 4)])

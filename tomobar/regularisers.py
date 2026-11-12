@@ -58,7 +58,6 @@ def ROF_TV_cupy(
         cp.cuda.Device(gpu_id).use()
     else:
         raise ValueError("The gpu_device must be a positive integer or zero")
-    cp.get_default_memory_pool().free_all_blocks()
 
     input_type = data.dtype
 
@@ -192,9 +191,6 @@ def PD_TV_cupy(
         cp.cuda.Device(gpu_id).use()
     else:
         raise ValueError("The gpu_device must be a positive integer or zero")
-
-    # with cp.cuda.Device(gpu_id):
-    cp.get_default_memory_pool().free_all_blocks()
 
     input_type = data.dtype
     if input_type != "float32":

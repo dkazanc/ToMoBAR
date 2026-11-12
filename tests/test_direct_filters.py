@@ -6,19 +6,6 @@ import numpy as np
 import pytest
 
 
-@pytest.fixture
-def gpu():
-    astra = pytest.importorskip("astra")
-    if not astra.use_cuda():
-        pytest.skip("ASTRA CUDA is unavailable")
-    cp = pytest.importorskip("cupy")
-    try:
-        cp.cuda.Device(0).compute_capability
-    except cp.cuda.runtime.CUDARuntimeError:
-        pytest.skip("CuPy CUDA is unavailable")
-    return cp
-
-
 @pytest.mark.parametrize("filter_type", ["SINC", "SINC_CuPy"])
 @pytest.mark.parametrize("padding", [0, 2])
 def test_fbp_filters_layout_storage_and_normalization(gpu, filter_type, padding):

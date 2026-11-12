@@ -10,55 +10,16 @@ from tomobar.geometry import (
     Volume3DGeometry,
 )
 from tomobar.reconstruction_geometry import GeometryReconstruction
-from tests import test_astra_resource_lifecycle as resources
-from tests import test_axis_conventions as axes
-
-
-@pytest.fixture
-def harness():
-    wrapper = resources.TestAstraResourceLifecycle()
-    wrapper.setUp()
-    direct = axes.TestAxisConventions()
-    direct.setUp()
-    direct.direct_module.AstraTools3D = wrapper.tools3d.AstraTools3D
-
-    def size(geometry):
-        if "GridSliceCount" in geometry:
-            return (
-                geometry["GridSliceCount"],
-                geometry["GridRowCount"],
-                geometry["GridColCount"],
-            )
-        return (
-            geometry["DetectorRowCount"],
-            len(geometry["Vectors"]),
-            geometry["DetectorColCount"],
-        )
-
-    wrapper.astra.geom_size.side_effect = size
-    wrapper.direct_arrays = []
-
-    def execute(handle, data, *, out):
-        assert handle in wrapper.backend.live["projector3d"]
-        assert data.flags.c_contiguous
-        assert data.dtype == np.float32
-        wrapper.direct_arrays.append(data.copy())
-        out[:] = 1
-
-    wrapper.astra.projector3d.direct_FP.side_effect = execute
-    wrapper.astra.projector3d.direct_BP.side_effect = execute
-
-    iterative = wrapper.load_iterative_module()
-    yield wrapper, direct, iterative
-    wrapper.doCleanups()
 
 
 @pytest.mark.parametrize("kind", ["direct", "iterative"])
 @pytest.mark.parametrize("padding", [0, 2])
 def test_public_objects_flow_to_wrapper_and_padding_preserves_volume(
-    harness, kind, padding
+    mock_reconstruction, kind, padding
 ):
-    backend, direct, iterative = harness
+    backend = mock_reconstruction.backend
+    direct = mock_reconstruction.direct
+    iterative = mock_reconstruction.iterative
     scan = Parallel3DGeometry(
         angles=[0.3, -0.2, 1.4],
         detector_shape=(3, 7),
@@ -67,7 +28,7 @@ def test_public_objects_flow_to_wrapper_and_padding_preserves_volume(
     )
     volume = Volume3DGeometry(shape=(2, 4, 6))
     cls = {
-        "direct": direct.direct_module.RecToolsDIR,
+        "direct": direct.RecToolsDIR,
         "iterative": iterative.RecToolsIR,
     }[kind]
     with cls(
@@ -103,8 +64,11 @@ def test_public_objects_flow_to_wrapper_and_padding_preserves_volume(
         rec.forward(np.ones(volume.shape))
 
 
-def test_numpy_direct_full_and_uneven_subsets_share_handles_between_operations(harness):
-    backend, _, iterative = harness
+def test_numpy_direct_full_and_uneven_subsets_share_handles_between_operations(
+    mock_reconstruction,
+):
+    backend = mock_reconstruction.backend
+    iterative = mock_reconstruction.iterative
     scan = Parallel3DGeometry(angles=[1.4, 0.3, -0.5, 0.0, 0.7], detector_shape=(2, 7))
     volume = Volume3DGeometry(shape=(3, 4, 6))
     with iterative.RecToolsIR(
@@ -131,8 +95,10 @@ def test_numpy_direct_full_and_uneven_subsets_share_handles_between_operations(h
     "index,error",
     [(-1, ValueError), (2, ValueError), (True, TypeError), (0.5, TypeError)],
 )
-def test_invalid_subsets_fail_before_creating_handles(harness, index, error):
-    backend, _, _ = harness
+def test_invalid_subsets_fail_before_creating_handles(
+    mock_reconstruction, index, error
+):
+    backend = mock_reconstruction.backend
     with backend.make_wrapper(3, subsets=2) as wrapper:
         with pytest.raises(error, match="subset_index"):
             wrapper.forward(np.ones((2, 2, 2)), subset_index=index)
@@ -151,10 +117,13 @@ def test_padding_is_validated_before_binding(padding, error):
 
 
 @pytest.mark.parametrize("kind", ["direct", "iterative"])
-def test_public_constructors_reject_removed_dimension_arguments(harness, kind):
-    _, direct, iterative = harness
+def test_public_constructors_reject_removed_dimension_arguments(
+    mock_reconstruction, kind
+):
+    direct = mock_reconstruction.direct
+    iterative = mock_reconstruction.iterative
     cls = {
-        "direct": direct.direct_module.RecToolsDIR,
+        "direct": direct.RecToolsDIR,
         "iterative": iterative.RecToolsIR,
     }[kind]
     with pytest.raises(TypeError, match="DetectorsDimH"):
@@ -172,8 +141,8 @@ def test_public_constructors_reject_removed_dimension_arguments(harness, kind):
         (np.ones((3, 4, 6), dtype=np.complex64), TypeError),
     ],
 )
-def test_invalid_numpy_input_creates_no_handle(harness, data, error):
-    backend, _, _ = harness
+def test_invalid_numpy_input_creates_no_handle(mock_reconstruction, data, error):
+    backend = mock_reconstruction.backend
     with backend.tools3d.AstraTools3D(
         projection_geometry=Parallel3DGeometry(angles=[0.0], detector_shape=(2, 7)),
         volume_geometry=Volume3DGeometry(shape=(3, 4, 6)),
@@ -184,9 +153,9 @@ def test_invalid_numpy_input_creates_no_handle(harness, data, error):
 
 
 def test_failed_subset_creation_keeps_other_handle_and_context_exception_closes(
-    harness,
+    mock_reconstruction,
 ):
-    backend, _, _ = harness
+    backend = mock_reconstruction.backend
     with pytest.raises(RuntimeError, match="body failed"):
         with backend.tools3d.AstraTools3D(
             projection_geometry=Parallel3DGeometry(
@@ -238,9 +207,9 @@ def test_rectangular_reconstruction_mask_preserves_shape():
 
 
 def test_admm_keeps_volume_sized_warm_start_when_detector_padding_is_enabled(
-    harness, capsys
+    mock_reconstruction, capsys
 ):
-    _, _, iterative = harness
+    iterative = mock_reconstruction.iterative
     scan = Parallel3DGeometry(angles=[0.0, 0.5, 1.0], detector_shape=(3, 7))
     grid = Volume3DGeometry(shape=(2, 4, 6))
     warm_start = np.arange(np.prod(grid.shape), dtype=np.float32).reshape(grid.shape)
@@ -276,8 +245,9 @@ def test_admm_keeps_volume_sized_warm_start_when_detector_padding_is_enabled(
         ((1, 2, 11), ValueError),
     ],
 )
-def test_output_shape_is_validated_before_binding(harness, shape, error):
-    backend, _, iterative = harness
+def test_output_shape_is_validated_before_binding(mock_reconstruction, shape, error):
+    backend = mock_reconstruction.backend
+    iterative = mock_reconstruction.iterative
     with pytest.raises(error, match="output_shape"):
         iterative.RecToolsIR(
             projection_geometry=Parallel3DGeometry(angles=[0.0], detector_shape=(3, 7)),
@@ -288,8 +258,10 @@ def test_output_shape_is_validated_before_binding(harness, shape, error):
 
 
 @pytest.mark.parametrize("output_shape", [None, (4, 8, 10), (2, 4, 6), (3, 5, 7)])
-def test_output_crop_indices_storage_and_working_operators(harness, output_shape):
-    _, _, iterative = harness
+def test_output_crop_indices_storage_and_working_operators(
+    mock_reconstruction, output_shape
+):
+    iterative = mock_reconstruction.iterative
     grid = Volume3DGeometry(shape=(4, 8, 10))
     volume = np.arange(np.prod(grid.shape), dtype=np.float32).reshape(grid.shape)
     with iterative.RecToolsIR(
@@ -324,13 +296,13 @@ def test_output_crop_indices_storage_and_working_operators(harness, output_shape
     "method", ["Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM"]
 )
 def test_iterative_algorithms_only_require_projection_operations(
-    harness, monkeypatch, method
+    mock_reconstruction, monkeypatch, method
 ):
     from types import SimpleNamespace
     from unittest.mock import Mock
     from tomobar.geometry import interleaved_view_indices
 
-    _, _, iterative = harness
+    iterative = mock_reconstruction.iterative
     scan = Parallel3DGeometry(angles=[0.0, 0.2, 0.5, 0.9, 1.5], detector_shape=(3, 7))
     grid = Volume3DGeometry(shape=(2, 4, 6))
     count = 2 if method in ("FISTA", "ADMM", "OSEM") else 1
@@ -384,10 +356,14 @@ def test_iterative_algorithms_only_require_projection_operations(
         ("device_index", -1),
     ],
 )
-def test_gpu_only_constructors_reject_old_device_api(harness, kind, keyword, value):
-    backend, direct, iterative = harness
+def test_gpu_only_constructors_reject_old_device_api(
+    mock_reconstruction, kind, keyword, value
+):
+    backend = mock_reconstruction.backend
+    direct = mock_reconstruction.direct
+    iterative = mock_reconstruction.iterative
     classes = {
-        "direct": direct.direct_module.RecToolsDIR,
+        "direct": direct.RecToolsDIR,
         "iterative": iterative.RecToolsIR,
         "wrapper2d": backend.tools2d.AstraTools2D,
         "wrapper3d": backend.tools3d.AstraTools3D,

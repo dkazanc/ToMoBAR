@@ -8,8 +8,6 @@ import numpy as np
 import pytest
 
 from tomobar.options import DataFidelity, Regularisation
-from tests.test_reconstruction_geometry import harness
-from tests.test_direct_filters import gpu
 
 
 @pytest.mark.parametrize(
@@ -58,8 +56,11 @@ def test_settings_are_immutable_and_reject_unknown_fields():
         ("ADMM", {"tolerance": 0.1}, TypeError),
     ],
 )
-def test_invalid_solver_options_create_no_projector(harness, method, kwargs, error):
-    backend, _, iterative = harness
+def test_invalid_solver_options_create_no_projector(
+    mock_reconstruction, method, kwargs, error
+):
+    backend = mock_reconstruction.backend
+    iterative = mock_reconstruction.iterative
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(angles=[0.0, 0.5, 1.0], detector_shape=(2, 7))
@@ -73,8 +74,10 @@ def test_invalid_solver_options_create_no_projector(harness, method, kwargs, err
         assert not rec.Atools._projector_handles
 
 
-def test_cgls_warm_start_uses_its_residual_and_preserves_storage(harness, monkeypatch):
-    _, _, iterative = harness
+def test_cgls_warm_start_uses_its_residual_and_preserves_storage(
+    mock_reconstruction, monkeypatch
+):
+    iterative = mock_reconstruction.iterative
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(angles=[0.0, 0.5, 1.0], detector_shape=(1, 5))

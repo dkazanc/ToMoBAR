@@ -121,3 +121,39 @@ data inaccuracies? See an example in :ref:`examples_synth_iter`.
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
 Use :class:`tomobar.methodsIR.RecToolsIR` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.
+
+Recording the reconstruction energy
+-----------------------------------
+
+All six iterative methods accept ``return_energy=True``::
+
+    image, energy = rectools.FISTA(
+        projections,
+        fidelity=DataFidelity(method="LS"),
+        regularisation=Regularisation(method="PD_TV", strength=0.001),
+        iterations=50,
+        return_energy=True,
+    )
+
+The image remains a CuPy array. ``energy`` is a NumPy float64 vector containing
+an initial value followed by one value after each completed outer iteration
+(after all ordered subsets). CGLS can terminate early, producing a shorter
+vector. With the default ``return_energy=False``, the return value remains the
+image alone and no objective evaluations are performed.
+
+Each evaluation requires an additional full forward projection. Values use the
+full working volume and padded data, before the final mask and output crop.
+They therefore describe the iterates rather than the masked/cropped image.
+Landweber, SIRT and CGLS report half the squared residual norm. OSEM reports
+generalised KL divergence. FISTA and ADMM use the selected LS, PWLS, SWLS or KL
+term, plus the original regularisation strength times TV (before ADMM's internal
+rho scaling). PWLS/SWLS use the solver's prepared weights; SWLS evaluates the
+full-view stripe correction, rather than summing subset costs.
+
+TV uses forward voxel differences, unit spacing and zero normal derivative at
+the boundary. PD_TV follows ``tv_type``; ROF_TV reports nominal isotropic TV,
+which is a diagnostic rather than the exact smoothed ROF kernel discretisation.
+KL uses the same positive prediction floor as the solvers. These are raw sums,
+not averages; monotonic decrease is not guaranteed for accelerated, constrained,
+or ordered-subset iterations. Standalone objective functions are available in
+``tomobar.energy`` for NumPy or CuPy arrays via ``array_module``.

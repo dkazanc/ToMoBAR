@@ -99,10 +99,12 @@ def test_fbp2D_pad(data, angles):
     assert FBPrec.shape == (160, 160)
 
 
-@pytest.mark.parametrize("filters_type", ["shepp-logan", "cosine", "hamming"])
-@pytest.mark.parametrize("filter_parameter", [None, 0.1, 1.0])
-@pytest.mark.parametrize("filter_d", [None, 0.1, 1.0])
-def test_fbp2D_astra_gpu(data, angles, filters_type, filter_parameter, filter_d):
+# These filters use filter_d; ASTRA ignores filter_parameter for them.
+@pytest.mark.parametrize("filter_type", ["shepp-logan", "cosine", "hamming"])
+@pytest.mark.parametrize(
+    "filter_d", [None, 0.1, 1.0], ids=["default-cutoff", "low-cutoff", "full-cutoff"]
+)
+def test_fbp2D_astra_gpu(data, angles, filter_type, filter_d):
     detX = np.shape(data)[2]
     data2D = data[:, 60, :]
     N_size = detX
@@ -117,8 +119,7 @@ def test_fbp2D_astra_gpu(data, angles, filters_type, filter_parameter, filter_d)
         FBPrec = RecTools.FBP(
             data2D,
             data_axes_labels_order=["angles", "detX"],
-            filter_type=filters_type,
-            filter_parameter=filter_parameter,
+            filter_type=filter_type,
             filter_d=filter_d,
         )
 

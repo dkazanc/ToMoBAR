@@ -1,6 +1,8 @@
 # Defines common fixtures and makes them available to all tests
 
 import os
+from contextlib import ExitStack
+from types import SimpleNamespace
 import numpy as np
 import pytest
 
@@ -80,19 +82,22 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture(scope="session")
 def data_file(test_data_path):
     in_file = os.path.join(test_data_path, "normalised_data.npz")
-    return np.load(in_file)
+    with np.load(in_file) as archive:
+        yield archive
 
 
 @pytest.fixture(scope="session")
 def data_raw_file(test_data_path):
     in_file = os.path.join(test_data_path, "tomo_standard.npz")
-    return np.load(in_file)
+    with np.load(in_file) as archive:
+        yield archive
 
 
 @pytest.fixture(scope="session")
 def data_XRFfile(test_data_path):
     in_file = os.path.join(test_data_path, "Ga-Ka_aligned.npz")
-    return np.load(in_file)
+    with np.load(in_file) as archive:
+        yield archive
 
 
 @pytest.fixture
@@ -143,3 +148,63 @@ def angles(data_file):
 @pytest.fixture
 def angles_cupy(angles):
     return cp.asarray(angles)
+
+
+@pytest.fixture
+def gpu():
+    astra = pytest.importorskip("astra")
+    if not astra.use_cuda():
+        pytest.skip("ASTRA CUDA is unavailable")
+    cp = pytest.importorskip("cupy")
+    try:
+        cp.cuda.Device(0).compute_capability
+    except cp.cuda.runtime.CUDARuntimeError:
+        pytest.skip("CuPy CUDA is unavailable")
+    return cp
+
+
+@pytest.fixture
+def mock_reconstruction():
+    """Isolated ASTRA/CuPy doubles exposing the backend and public modules."""
+    from tests import test_astra_resource_lifecycle as resources
+    from tests import test_axis_conventions as axes
+
+    with ExitStack() as cleanup:
+        wrapper = resources.TestAstraResourceLifecycle()
+        cleanup.callback(wrapper.doCleanups)
+        wrapper.setUp()
+        direct = axes.TestAxisConventions()
+        cleanup.callback(direct.doCleanups)
+        direct.setUp()
+        direct.direct_module.AstraTools3D = wrapper.tools3d.AstraTools3D
+
+        def size(geometry):
+            if "GridSliceCount" in geometry:
+                return (
+                    geometry["GridSliceCount"],
+                    geometry["GridRowCount"],
+                    geometry["GridColCount"],
+                )
+            return (
+                geometry["DetectorRowCount"],
+                len(geometry["Vectors"]),
+                geometry["DetectorColCount"],
+            )
+
+        wrapper.astra.geom_size.side_effect = size
+        wrapper.direct_arrays = []
+
+        def execute(handle, data, *, out):
+            assert handle in wrapper.backend.live["projector3d"]
+            assert data.flags.c_contiguous
+            assert data.dtype == np.float32
+            wrapper.direct_arrays.append(data.copy())
+            out[:] = 1
+
+        wrapper.astra.projector3d.direct_FP.side_effect = execute
+        wrapper.astra.projector3d.direct_BP.side_effect = execute
+
+        iterative = wrapper.load_iterative_module()
+        yield SimpleNamespace(
+            backend=wrapper, direct=direct.direct_module, iterative=iterative
+        )

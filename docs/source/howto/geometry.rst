@@ -287,3 +287,50 @@ projections, weights and cached weight sums remain unchanged. The internal
 ``_Ax`` operation must return fresh, writable, contiguous float32 storage, as
 the ASTRA wrapper does. The public reconstruction API and output axes are
 unchanged.
+
+Memory-pool ownership
+---------------------
+
+TV regularizers leave CuPy's memory pool intact. Freed scratch arrays can be
+reused by the next proximal call in FISTA, ADMM or OSEM. The regularizers do not
+flush the global pool or override the caller's allocator.
+
+This reduces repeated device allocation work. Active array memory is not
+reduced by caching, and reserved pool memory can remain higher. To make unused
+cached blocks available to ASTRA or another CUDA library between pipeline
+stages, the caller can explicitly release them after discarding unwanted
+arrays:
+
+.. code-block:: python
+
+    import cupy as cp
+
+    # After completing a pipeline stage and dropping its unwanted arrays:
+    cp.get_default_memory_pool().free_all_blocks()
+
+Only unused cached blocks are released; live reconstruction arrays remain valid.
+The reproducible comparison script is ``benchmarks/regulariser_memory_pool.py``.
+
+Emission normalization
+----------------------
+
+``OSEM`` performs MLEM when ``OS_number`` is 1. Each unregularized subset update
+uses the current subset's sensitivity as a denominator:
+
+.. code-block:: text
+
+    sensitivity = A_s.T(ones)
+    x *= A_s.T(data_s / max(A_s(x), epsilon)) / max(sensitivity, epsilon)
+
+The previous implementation multiplied by sensitivity and reused subset zero's
+sensitivity. Both errors are corrected. MLEM/OSEM intensity scaling and existing
+numerical reference values therefore change. Regularisation strengths tuned to
+the previous scaling may need adjustment.
+
+Sensitivity is guarded at ``epsilon=1e-8``. A voxel with zero sensitivity has a
+zero backprojection and receives zero multiplicative correction, avoiding
+NaNs or infinities. MLEM computes its single sensitivity once per call. OSEM
+recomputes sensitivity for the current subset at each update and releases it
+before regularisation, trading an extra subset backprojection per update for
+GPU storage bounded by one sensitivity volume instead of ``OS_number`` volumes.
+Projector handles remain cached and are reused for these extra backprojections.

@@ -37,6 +37,7 @@ from tomobar.geometry import (
 )
 from tomobar.reconstruction_geometry import GeometryReconstruction
 from tomobar.data_fidelities import grad_data_term
+from tomobar.energy import EnergyHistory
 
 
 class RecToolsIR(GeometryReconstruction):
@@ -228,9 +229,10 @@ class RecToolsIR(GeometryReconstruction):
         initial: np.ndarray | cp.ndarray | None = None,
         input_axes: tuple[str, ...] | list[str] | None = None,
         nonnegativity: bool = False,
+        return_energy: bool = False,
         recon_mask_radius: float | None = 1.0,
         step_size: float = 1e-5,
-    ) -> cp.ndarray:
+    ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
         """Landweber reconstruction on the working grid, returning a (z, y, x) CuPy array.
 
         Projections default to (detY, angles, detX). ``initial`` must match
@@ -247,13 +249,20 @@ class RecToolsIR(GeometryReconstruction):
         projections, _ = self._prepare_inputs(projections, input_axes=input_axes)
         x_rec = self._initial_volume(initial)  # initialisation
 
+        history = EnergyHistory(return_energy, self, projections, array_module=cp)
+        history.record(x_rec)
+
         for _ in range(iterations):
             residual = self._Ax(x_rec) - projections  # Ax - b term
             x_rec -= step_size * self._Atb(residual)
             if nonnegativity:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
-        return self._finish_reconstruction(x_rec, recon_mask_radius=recon_mask_radius)
+            history.record(x_rec)
+
+        return history.finish(
+            self._finish_reconstruction(x_rec, recon_mask_radius=recon_mask_radius)
+        )
 
     @_on_device(cp)
     def SIRT(
@@ -264,8 +273,9 @@ class RecToolsIR(GeometryReconstruction):
         initial: np.ndarray | cp.ndarray | None = None,
         input_axes: tuple[str, ...] | list[str] | None = None,
         nonnegativity: bool = False,
+        return_energy: bool = False,
         recon_mask_radius: float | None = 1.0,
-    ) -> cp.ndarray:
+    ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
         """SIRT reconstruction on the working grid, returning a (z, y, x) CuPy array.
 
         Projections default to (detY, angles, detX). ``initial`` must match
@@ -291,6 +301,9 @@ class RecToolsIR(GeometryReconstruction):
 
         x_rec = self._initial_volume(initial, ones=True)  # initialisation
 
+        history = EnergyHistory(return_energy, self, projections, array_module=cp)
+        history.record(x_rec)
+
         # perform SIRT iterations
         for _ in range(iterations):
             x_rec += C * self.Atools.backproject(
@@ -299,7 +312,11 @@ class RecToolsIR(GeometryReconstruction):
             if nonnegativity:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
-        return self._finish_reconstruction(x_rec, recon_mask_radius=recon_mask_radius)
+            history.record(x_rec)
+
+        return history.finish(
+            self._finish_reconstruction(x_rec, recon_mask_radius=recon_mask_radius)
+        )
 
     @_on_device(cp)
     def CGLS(
@@ -310,8 +327,9 @@ class RecToolsIR(GeometryReconstruction):
         initial: np.ndarray | cp.ndarray | None = None,
         input_axes: tuple[str, ...] | list[str] | None = None,
         nonnegativity: bool = False,
+        return_energy: bool = False,
         recon_mask_radius: float | None = 1.0,
-    ) -> cp.ndarray:
+    ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
         """CGLS reconstruction on the working grid, returning a (z, y, x) CuPy array.
 
         Projections default to (detY, angles, detX). ``initial`` must match
@@ -329,6 +347,9 @@ class RecToolsIR(GeometryReconstruction):
 
         # Prepare for CG iterations.
         x_rec = self._initial_volume(initial)  # initialisation
+        history = EnergyHistory(return_energy, self, projections, array_module=cp)
+        history.record(x_rec)
+
         x_shape_3d = cp.shape(x_rec)
         x_rec = cp.ravel(x_rec, order="C")  # vectorise
         residual = (
@@ -341,9 +362,11 @@ class RecToolsIR(GeometryReconstruction):
         normr2 = cp.inner(d, d)
         r = cp.ravel(residual, order="C").copy()
         if normr2 == 0:
-            return self._finish_reconstruction(
-                cp.reshape(x_rec, x_shape_3d, order="C"),
-                recon_mask_radius=recon_mask_radius,
+            return history.finish(
+                self._finish_reconstruction(
+                    cp.reshape(x_rec, x_shape_3d, order="C"),
+                    recon_mask_radius=recon_mask_radius,
+                )
             )
 
         # perform CG iterations
@@ -361,6 +384,7 @@ class RecToolsIR(GeometryReconstruction):
             if normr2_new == 0:
                 if nonnegativity:
                     cp.maximum(x_rec, 0, out=x_rec)
+                history.record(x_rec.reshape(x_shape_3d))
                 break
             beta = normr2_new / normr2
             normr2 = normr2_new.copy()
@@ -368,11 +392,15 @@ class RecToolsIR(GeometryReconstruction):
             if nonnegativity:
                 cp.maximum(x_rec, 0, out=x_rec)  # non-negativity projection
 
+            history.record(x_rec.reshape(x_shape_3d))
+
         del d, s, r, alpha, Ad, normr2_new, normr2
 
-        return self._finish_reconstruction(
-            cp.reshape(x_rec, x_shape_3d, order="C"),
-            recon_mask_radius=recon_mask_radius,
+        return history.finish(
+            self._finish_reconstruction(
+                cp.reshape(x_rec, x_shape_3d, order="C"),
+                recon_mask_radius=recon_mask_radius,
+            )
         )
 
     @_on_device(cp)
@@ -406,8 +434,9 @@ class RecToolsIR(GeometryReconstruction):
         weights: np.ndarray | cp.ndarray | None = None,
         lipschitz_constant: float | None = None,
         nonnegativity: bool = False,
+        return_energy: bool = False,
         recon_mask_radius: float | None = 1.0,
-    ) -> cp.ndarray:
+    ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
         """FISTA reconstruction with explicit solver parameters and immutable TV settings.
 
         Projection axes default to (detY, angles, detX); weights use input_axes too.
@@ -442,6 +471,17 @@ class RecToolsIR(GeometryReconstruction):
             beta_swls=fidelity.beta_swls if fidelity.method == "SWLS" else None,
         )
 
+        history = EnergyHistory(
+            return_energy,
+            self,
+            projections,
+            fidelity=fidelity,
+            weights=w,
+            regularisation=regularisation,
+            array_module=cp,
+        )
+        history.record(X)
+
         # FISTA iterations
         for _ in range(iterations):
             # loop over subsets (OS)
@@ -475,7 +515,11 @@ class RecToolsIR(GeometryReconstruction):
                 t = cp.float32((1.0 + np.sqrt(1.0 + 4.0 * t**2)) * 0.5)
                 X_t = X + cp.float32((t_old - 1.0) / t) * (X - X_old)
 
-        return self._finish_reconstruction(X, recon_mask_radius=recon_mask_radius)
+            history.record(X)
+
+        return history.finish(
+            self._finish_reconstruction(X, recon_mask_radius=recon_mask_radius)
+        )
 
     @_on_device(cp)
     def ADMM(
@@ -493,8 +537,9 @@ class RecToolsIR(GeometryReconstruction):
         relaxation: float = 1.6,
         verbose: bool = False,
         nonnegativity: bool = False,
+        return_energy: bool = False,
         recon_mask_radius: float | None = 1.0,
-    ) -> cp.ndarray:
+    ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
         """ADMM reconstruction with explicit solver parameters and immutable TV settings.
 
         Projection axes default to (detY, angles, detX); weights use input_axes too.
@@ -533,6 +578,17 @@ class RecToolsIR(GeometryReconstruction):
         z = x0.copy()
         z_old = 0
         u = cp.zeros_like(x0)
+
+        history = EnergyHistory(
+            return_energy,
+            self,
+            projections,
+            fidelity=fidelity,
+            weights=w,
+            regularisation=regularisation,
+            array_module=cp,
+        )
+        history.record(x)
 
         tau = 0.9 / (lipschitz_constant + rho)
         if regularisation is not None:
@@ -590,7 +646,11 @@ class RecToolsIR(GeometryReconstruction):
                         "regularisation",
                     )
 
-        return self._finish_reconstruction(x, recon_mask_radius=recon_mask_radius)
+            history.record(x)
+
+        return history.finish(
+            self._finish_reconstruction(x, recon_mask_radius=recon_mask_radius)
+        )
 
     @_on_device(cp)
     def OSEM(
@@ -602,12 +662,16 @@ class RecToolsIR(GeometryReconstruction):
         input_axes: tuple[str, ...] | list[str] | None = None,
         regularisation: Regularisation | None = None,
         nonnegativity: bool = False,
+        return_energy: bool = False,
         recon_mask_radius: float | None = 1.0,
-    ) -> cp.ndarray:
-        """OSEM reconstruction with explicit solver parameters and immutable TV settings.
+    ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
+        """Emission OSEM, or MLEM when OS_number is one.
 
-        Projection axes default to (detY, angles, detX); weights use input_axes too.
-        ``initial`` uses the full working grid, before the optional output crop.
+        Projection axes default to (detY, angles, detX). Each subset update is
+        divided by its own sensitivity A_s.T(1). Zero sensitivity is guarded
+        by epsilon; unobserved voxels receive zero multiplicative correction.
+        ``initial`` uses the full working grid before the optional output crop.
+        MLEM caches one sensitivity volume; OSEM retains only the current one.
         """
         iterations = self._run_options(
             iterations,
@@ -623,27 +687,44 @@ class RecToolsIR(GeometryReconstruction):
         subsets = ProjectionSubsets(
             projections, subset_count=self.OS_number, array_module=cp
         )
-        first_subset, _, _ = subsets[0]
-        normalisation = self._Atb(
-            cp.ones_like(first_subset, dtype=cp.float32, order="C"),
-            0,
-            use_os,
+        # MLEM reuses its single sensitivity. OSEM recomputes one subset at
+        # a time instead of retaining OS_number full-volume GPU arrays.
+        sensitivity = None
+
+        history = EnergyHistory(
+            return_energy,
+            self,
+            projections,
+            fidelity=DataFidelity(method="KL"),
+            regularisation=regularisation,
+            array_module=cp,
         )
-        normalisation = cp.clip(normalisation, eps, None)
-        normalisation /= 1
+        history.record(x)
 
         # OSEM/MLEM iterations
         for iter_no in range(iterations):
             for sub_ind in range(self.OS_number):
                 proj_data, _, _ = subsets[sub_ind]
+                if sensitivity is None:
+                    sensitivity = self._Atb(
+                        cp.ones_like(proj_data, dtype=cp.float32, order="C"),
+                        sub_ind,
+                        use_os,
+                    )
+                    cp.maximum(sensitivity, eps, out=sensitivity)
 
                 Ax = self._Ax(x, sub_ind, use_os)
                 Ax = cp.clip(Ax, eps, None)
                 ratio = proj_data / Ax
                 backproj = self._Atb(ratio, sub_ind, use_os)
 
-                # multiplicative update
-                x *= backproj * normalisation
+                # EM divides by the sensitivity A_s.T(1) of this subset.
+                # Unobserved voxels have zero backprojection and update to zero.
+                cp.divide(backproj, sensitivity, out=backproj)
+                x *= backproj
+                del Ax, ratio, backproj
+                if use_os:
+                    sensitivity = None
                 if nonnegativity:
                     cp.maximum(x, 0, out=x)
 
@@ -651,4 +732,8 @@ class RecToolsIR(GeometryReconstruction):
                 if regularisation is not None:
                     x = prox_regul(self, x, regularisation, nonnegativity=nonnegativity)
 
-        return self._finish_reconstruction(x, recon_mask_radius=recon_mask_radius)
+            history.record(x)
+
+        return history.finish(
+            self._finish_reconstruction(x, recon_mask_radius=recon_mask_radius)
+        )

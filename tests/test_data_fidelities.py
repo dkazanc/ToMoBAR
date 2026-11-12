@@ -5,8 +5,6 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from tests.test_direct_filters import gpu
-
 
 @pytest.mark.parametrize("fidelity", ["LS", "PWLS", "KL", "SWLS"])
 def test_gpu_residual_reuses_forward_storage_and_bounds_peak_allocations(gpu, fidelity):

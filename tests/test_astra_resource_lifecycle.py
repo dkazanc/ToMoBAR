@@ -992,8 +992,12 @@ class TestAstraResourceLifecycle(unittest.TestCase):
             rec._Atb = Mock(side_effect=lambda *args: np.ones((1, 2, 2)))
             rec.OSEM(data, iterations=1)
             self.assertEqual(rec._Ax.call_count, count)
-            self.assertEqual(rec._Atb.call_count, count + 1)
-            for subset, call in enumerate(rec._Atb.call_args_list[1:]):
+            self.assertEqual(rec._Atb.call_count, 2 * count)
+            for subset, call in enumerate(rec._Atb.call_args_list[::2]):
+                expected = np.ones_like(data[:, subset::count, :])
+                np.testing.assert_array_equal(call.args[0], expected)
+                self.assertEqual(call.args[1], subset)
+            for subset, call in enumerate(rec._Atb.call_args_list[1::2]):
                 np.testing.assert_array_equal(call.args[0], data[:, subset::count, :])
                 self.assertEqual(call.args[1], subset)
             rec.close()

@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from tomobar.supp.array_prepare import prepare_array, prepare_projection
-from tests.test_direct_filters import gpu
 
 
 def test_numpy_storage_reuse_and_deferred_packing():
