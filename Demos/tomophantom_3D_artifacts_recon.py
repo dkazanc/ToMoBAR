@@ -7,6 +7,7 @@ together with normalisation errors. This simulates more challeneging data for
 the reconstruction.
 """
 
+from tomobar.options import DataFidelity, Regularisation
 import timeit
 import os
 import matplotlib.pyplot as plt
@@ -16,6 +17,7 @@ import tomophantom
 from tomophantom import TomoP3D
 from tomophantom.qualitymetrics import QualityTools
 from tomophantom.flatsgen import synth_flats
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.supp.suppTools import normaliser
 
 print("Building 3D phantom using TomoPhantom software")
@@ -125,25 +127,23 @@ projData3D_norm_cp = cp.asarray(projData3D_norm, order="C")
 input_data_labels = ["detY", "angles", "detX"]
 # %%
 # initialise tomobar DIRECT reconstruction class
-from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+from tomobar.methodsDIR import RecToolsDIR
 
-RecToolsDIRCuPy = RecToolsDIRCuPy(
-    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=None,  # Center of Rotation (CoR) scalar (for 3D case only)
-    AnglesVec=angles_rad,  # array of angles in radians
-    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
-    device_projector="gpu",
-)
-
-print("Reconstruction using FBP from tomobar")
-recNumerical_conventional = RecToolsDIRCuPy.FBP(
-    projData3D_norm_cp,
-    recon_mask_radius=0.95,
-    data_axes_labels_order=input_data_labels,
-    cutoff_freq=0.3,
-)
+with RecToolsDIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+) as direct_reconstructor:
+    print("Reconstruction using FBP from tomobar")
+    recNumerical_conventional = direct_reconstructor.FBP(
+        projData3D_norm_cp,
+        filter_type="SINC_CuPy",
+        recon_mask_radius=0.95,
+        data_axes_labels_order=input_data_labels,
+        cutoff_freq=0.3,
+    )
 recNumerical_conventional *= intens_max_clean
 
 recNumerical_conventional = cp.asnumpy(recNumerical_conventional)
@@ -173,39 +173,28 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA-PWLS-OS-TV method using tomobar")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # initialise tomobar ITERATIVE reconstruction class
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+from tomobar.methodsIR import RecToolsIR
 
-Rectools = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=None,  # Center of Rotation (CoR) scalar (for 3D case only)
-    AnglesVec=angles_rad,  # array of angles in radians
-    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
-    device_projector=0,
-    OS_number=8,  # The number of ordered subsets
-)
+with RecToolsIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+    OS_number=8,
+) as Rectools:
+    lc = Rectools.powermethod()  # calculate Lipschitz constant (run once to initialise)
+    # %%
+    # algorithm parameters
 
-# prepare dictionaries with parameters:
-_data_ = {
-    "projection_data": projData3D_norm_cp,
-    "data_fidelity": "LS",
-}  # data dictionary
-lc = Rectools.powermethod(
-    _data_
-)  # calculate Lipschitz constant (run once to initialise)
-# %%
-# algorithm parameters
-_algorithm_ = {"iterations": 12, "lipschitz_const": lc, "recon_mask_radius": 2.0}
-
-_regularisation_ = {
-    "method": "PD_TV",
-    "regul_param": 0.0000035,
-    "iterations": 35,
-    "device_regulariser": "gpu",
-}
-
-RecFISTA_os_reg = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+    RecFISTA_os_reg = Rectools.FISTA(
+        projData3D_norm_cp,
+        fidelity=DataFidelity(method="LS"),
+        iterations=12,
+        lipschitz_constant=lc,
+        recon_mask_radius=2.0,
+        regularisation=Regularisation(method="PD_TV", strength=3.5e-06, iterations=35),
+    )
 
 RecFISTA_os_reg = cp.asnumpy(RecFISTA_os_reg)
 RecFISTA_os_reg *= intens_max_clean
@@ -236,45 +225,31 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM-PWLS-OS-TV method using tomobar")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+from tomobar.methodsIR import RecToolsIR
 
-Rectools = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # DetectorsDimH # detector dimension (horizontal)
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # DetectorsDimV # detector dimension (vertical) for 3D case only
-    CenterRotOffset=None,  # Center of Rotation (CoR) scalar (for 3D case only)
-    AnglesVec=angles_rad,  # array of angles in radians
-    ObjSize=N_size,  # a scalar to define reconstructed object dimensions
-    device_projector=0,
-    OS_number=24,  # The number of ordered subsets
-)
-# prepare dictionaries with parameters:
-_data_ = {
-    "projection_data": projData3D_norm_cp,
-    "data_fidelity": "LS",
-}  # data dictionary
-lc = Rectools.powermethod(
-    _data_
-)  # calculate Lipschitz constant (run once to initialise)
+with RecToolsIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+    OS_number=24,
+) as Rectools:
+    lc = Rectools.powermethod()  # calculate Lipschitz constant (run once to initialise)
 
-# %%
-# algorithm parameters
-_algorithm_ = {
-    "iterations": 15,
-    "lipschitz_const": lc,
-    "ADMM_rho_const": 1.0,
-    "ADMM_relax_par": 1.7,
-    "recon_mask_radius": 2.0,
-}
+    # %%
+    # algorithm parameters
 
-_regularisation_ = {
-    "method": "PD_TV",
-    "regul_param": 0.01,
-    "iterations": 35,
-    "device_regulariser": "gpu",
-}
-
-RecADMM_os_reg = Rectools.ADMM(_data_, _algorithm_, _regularisation_)
+    RecADMM_os_reg = Rectools.ADMM(
+        projData3D_norm_cp,
+        fidelity=DataFidelity(method="LS"),
+        iterations=15,
+        lipschitz_constant=lc,
+        rho=1.0,
+        relaxation=1.7,
+        recon_mask_radius=2.0,
+        regularisation=Regularisation(method="PD_TV", strength=0.01, iterations=35),
+    )
 
 RecADMM_os_reg = cp.asnumpy(RecADMM_os_reg)
 RecADMM_os_reg *= intens_max_clean

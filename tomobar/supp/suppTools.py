@@ -372,17 +372,15 @@ def apply_circular_mask(data, recon_mask_radius, cupyrun=False):
     Returns:
         cp or np ndarray: recon volume after mask applied
     """
-    axis = 1  # axis to extract the reconstructed data shape, e.g. axis = 1 for 2d and 2 for 3d.
-    if len(data.shape) == 3:
-        axis = 2
-    recon_size = data.shape[axis]
-    half_size = recon_size // 2
+    rows, columns = data.shape[-2:]
+    half_y, half_x = rows // 2, columns // 2
+    half_size = min(half_y, half_x)
     if cupyrun:
-        Y, X = xp.ogrid[:recon_size, :recon_size]
-        dist_from_center = xp.sqrt((X - half_size) ** 2 + (Y - half_size) ** 2)
+        Y, X = xp.ogrid[:rows, :columns]
+        dist_from_center = xp.sqrt((X - half_x) ** 2 + (Y - half_y) ** 2)
     else:
-        Y, X = np.ogrid[:recon_size, :recon_size]
-        dist_from_center = np.sqrt((X - half_size) ** 2 + (Y - half_size) ** 2)
+        Y, X = np.ogrid[:rows, :columns]
+        dist_from_center = np.sqrt((X - half_x) ** 2 + (Y - half_y) ** 2)
 
     if recon_mask_radius <= 1.0:
         mask = dist_from_center <= half_size - abs(
@@ -420,43 +418,6 @@ def perform_recon_crop(data, croped_size):
         ]
     else:
         return data[crop_limit_start:crop_limit_stop, crop_limit_start:crop_limit_stop]
-
-
-def _apply_horiz_detector_padding(data, detector_width_pad, cupyrun):
-    """extending the size of the horizontal detector, here
-    assuming the order of the 3D data as: ["detY", "angles", "detX"] and
-    2D data: ["angles", "detX"]"""
-    if detector_width_pad > 0:
-        if len(data.shape) == 2:
-            # there are no cupy implementions for 2D geometry
-            return np.pad(
-                data,
-                pad_width=((0, 0), (detector_width_pad, detector_width_pad)),
-                mode="edge",
-            )
-        else:
-            if cupyrun:
-                return xp.pad(
-                    data,
-                    pad_width=(
-                        (0, 0),
-                        (0, 0),
-                        (detector_width_pad, detector_width_pad),
-                    ),
-                    mode="edge",
-                )
-            else:
-                return np.pad(
-                    data,
-                    pad_width=(
-                        (0, 0),
-                        (0, 0),
-                        (detector_width_pad, detector_width_pad),
-                    ),
-                    mode="edge",
-                )
-    else:
-        return data
 
 
 def check_kwargs(reconstruction, **kwargs):

@@ -6,6 +6,7 @@ noise and then reconstruct using direct and iterative method implemented using C
 
 """
 
+from tomobar.options import DataFidelity, Regularisation
 import timeit
 import os
 import matplotlib.pyplot as plt
@@ -16,8 +17,9 @@ from tomophantom import TomoP3D
 from tomophantom.qualitymetrics import QualityTools
 from tomophantom.artefacts import artefacts_mix
 
-from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+from tomobar.methodsDIR import RecToolsDIR
+from tomobar.methodsIR import RecToolsIR
 
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()
@@ -67,45 +69,54 @@ _noise_ = {
     "noise_seed": 0,
 }
 
-projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_)
-projData3D_analyt_cupy = cp.asarray(projData3D_analyt_noise, order="C")
+# misalignment dictionary
+_datashifts_ = {"datashifts_maxamplitude_pixel": 10}
+
+projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_, **_datashifts_)
+
+projData3D_analyt_noise_shifted = projData3D_analyt_noise[0]
+exact_shifts = projData3D_analyt_noise[1]
+
+projData3D_analyt_cupy = cp.asarray(projData3D_analyt_noise_shifted, order="C")
 input_data_labels = ["detY", "angles", "detX"]
 
 intens_max = 45
 sliceSel = int(0.5 * N_size)
 plt.figure()
 plt.subplot(131)
-plt.imshow(projData3D_analyt_noise[:, sliceSel, :], vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise_shifted[:, sliceSel, :], vmin=0, vmax=intens_max)
 plt.title("2D Projection (analytical)")
 plt.subplot(132)
-plt.imshow(projData3D_analyt_noise[sliceSel, :, :], vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise_shifted[sliceSel, :, :], vmin=0, vmax=intens_max)
 plt.title("Sinogram view")
 plt.subplot(133)
-plt.imshow(projData3D_analyt_noise[:, :, sliceSel], vmin=0, vmax=intens_max)
+plt.imshow(projData3D_analyt_noise_shifted[:, :, sliceSel], vmin=0, vmax=intens_max)
 plt.title("Tangentogram view")
 plt.show()
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%Reconstructing with 3D FBP-CuPy method %%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsDIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",
-)
-
-tic = timeit.default_timer()
-FBPrec_cupy = RecToolsCP.FBP(
-    projData3D_analyt_cupy,
-    recon_mask_radius=0.95,
-    data_axes_labels_order=input_data_labels,
-    cutoff_freq=0.3,
-)
-toc = timeit.default_timer()
+# Note that we provide exact (known shifts) here to compensate for misalignment
+with RecToolsDIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+) as RecToolsCP:
+    tic = timeit.default_timer()
+    FBPrec_cupy = RecToolsCP.FBP(
+        projData3D_analyt_cupy,
+        filter_type="SINC_CuPy",
+        recon_mask_radius=0.95,
+        data_axes_labels_order=input_data_labels,
+        cutoff_freq=0.3,
+    )
+    toc = timeit.default_timer()
 Run_time = toc - tic
 print(
     "FBP 3D reconstruction with FFT filtering using CuPy (GPU) in {} seconds".format(
@@ -142,99 +153,35 @@ RMSE = Qtools.rmse()
 print("Root Mean Square Error is {} for FBP".format(RMSE))
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("%%%%%%%%%Reconstructing with 3D Fourier-CuPy method %%%%%%%%")
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RecToolsCP = RecToolsDIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector="gpu",
-)
-
-tic = timeit.default_timer()
-Fourier_cupy = RecToolsCP.FOURIER_INV(
-    projData3D_analyt_cupy,
-    recon_mask_radius=0.95,
-    data_axes_labels_order=input_data_labels,
-    filter_type="shepp",
-    cutoff_freq=1.0,
-)
-toc = timeit.default_timer()
-Run_time = toc - tic
-print("Fourier 3D reconstruction using CuPy (GPU) in {} seconds".format(Run_time))
-
-# bring data from the device to the host
-Fourier_cupy = cp.asnumpy(Fourier_cupy)
-
-sliceSel = int(0.5 * N_size)
-max_val = 1
-plt.figure()
-plt.subplot(131)
-plt.imshow(Fourier_cupy[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, axial view")
-
-plt.subplot(132)
-plt.imshow(Fourier_cupy[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, coronal view")
-
-plt.subplot(133)
-plt.imshow(Fourier_cupy[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("3D Fourier Reconstruction, sagittal view")
-plt.show()
-
-print(
-    "Min {} and Max {} of the volume".format(np.min(FBPrec_cupy), np.max(FBPrec_cupy))
-)
-
-# calculate errors
-Qtools = QualityTools(phantom_tm, Fourier_cupy)
-RMSE = Qtools.rmse()
-print("Root Mean Square Error is {} for Fourier inversion".format(RMSE))
-# %%
-print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector=0,
-    OS_number=6,  # The number of ordered subsets
-)
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "data_fidelity": "LS",
-    "projection_data": projData3D_analyt_cupy,  # Normalised projection data
-    "data_axes_labels_order": input_data_labels,
-}
+with RecToolsIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+    OS_number=6,
+) as RectoolsCuPy:
+    lc = RectoolsCuPy.powermethod()  # calculate Lipschitz constant (run once)
 
-lc = RectoolsCuPy.powermethod(_data_)  # calculate Lipschitz constant (run once)
-
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "iterations": 25,
-    "lipschitz_const": lc,
-    "recon_mask_radius": 2.0,
-}  # The number of iterations
-
-##### creating regularisation dictionary: #####
-_regularisation_ = {
-    "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.0003,  # Regularisation parameter
-    "iterations": 50,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-# RUN THE FISTA METHOD:
-tic = timeit.default_timer()
-RecFISTA_os_tv = RectoolsCuPy.FISTA(_data_, _algorithm_, _regularisation_)
-toc = timeit.default_timer()
+    # RUN THE FISTA METHOD:
+    tic = timeit.default_timer()
+    RecFISTA_os_tv = RectoolsCuPy.FISTA(
+        projData3D_analyt_cupy,
+        input_axes=input_data_labels,
+        fidelity=DataFidelity(method="LS"),
+        iterations=25,
+        lipschitz_constant=lc,
+        recon_mask_radius=2.0,
+        regularisation=Regularisation(
+            method="PD_TV", strength=0.0001, iterations=50, half_precision=True
+        ),
+    )
+    toc = timeit.default_timer()
 Run_time = toc - tic
 print("FISTA OS-TV reconstruction done in {} seconds".format(Run_time))
 
@@ -264,44 +211,33 @@ print("Root Mean Square Error is {} for FISTA OS-TV (PD) reconstruction".format(
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsCuPy = RecToolsIRCuPy(
-    DetectorsDimH=Horiz_det,  # Horizontal detector dimension
-    DetectorsDimH_pad=0,  # Padding size of horizontal detector
-    DetectorsDimV=Vert_det,  # Vertical detector dimension (3D case)
-    CenterRotOffset=0.0,  # Center of Rotation scalar or a vector
-    AnglesVec=angles_rad,  # A vector of projection angles in radians
-    ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-    device_projector=0,
-    OS_number=36,  # The number of ordered subsets
-)
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "data_fidelity": "LS",
-    "projection_data": projData3D_analyt_cupy,  # Normalised projection data
-    "data_axes_labels_order": input_data_labels,
-}
-
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "initialise": FBPrec_cupy,
-    "iterations": 10,
-    "ADMM_rho_const": 1.0,
-    "ADMM_relax_par": 1.7,
-    "recon_mask_radius": 2.0,
-}  # The number of iterations
-
-##### creating regularisation dictionary: #####
-_regularisation_ = {
-    "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 0.13,  # Regularisation parameter
-    "iterations": 30,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-# RUN THE ADMM METHOD:
-tic = timeit.default_timer()
-RecADMM_os_tv = RectoolsCuPy.ADMM(_data_, _algorithm_, _regularisation_)
-toc = timeit.default_timer()
+with RecToolsIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+    OS_number=36,
+) as RectoolsCuPy:
+    # RUN THE ADMM METHOD:
+    tic = timeit.default_timer()
+    RecADMM_os_tv = RectoolsCuPy.ADMM(
+        projData3D_analyt_cupy,
+        input_axes=input_data_labels,
+        fidelity=DataFidelity(method="LS"),
+        initial=FBPrec_cupy,
+        iterations=10,
+        rho=1.0,
+        relaxation=1.7,
+        recon_mask_radius=2.0,
+        regularisation=Regularisation(
+            method="PD_TV", strength=0.1, iterations=30, half_precision=True
+        ),
+    )
+    toc = timeit.default_timer()
 Run_time = toc - tic
 print("ADMM OS-TV reconstruction done in {} seconds".format(Run_time))
 

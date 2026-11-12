@@ -17,41 +17,46 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
     data_norm = normaliser(dataRaw, flats, darks, log=True, method="mean", axis=1)
 
-* Instantiate the iterative reconstructor :mod:`tomobar.methodsIR_CuPy`:
+* Instantiate the iterative reconstructor :mod:`tomobar.methodsIR`:
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     import cupy as cp
-    from tomobar.methodsIR_CuPy import RecToolsIRCuPy
+    from tomobar.methodsIR import RecToolsIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
-    Rectools = RecToolsIRCuPy(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=detectorVert,  # Vertical detector dimension
-        CenterRotOffset=0.0,  # Center of Rotation (needs to be found)
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=detectorHoriz,  # The reconstructed object dimensions
-        device_projector=0,  # Device to perform reconstruction on
+    Rectools = RecToolsIR(
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorVert, detectorHoriz),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=Volume3DGeometry(
+            shape=(detectorVert, detectorHoriz, detectorHoriz)
+        ),
+        device_index=0,
     )
 
 * Now we have an access to all methods of this particular reconstructor. Let us use SIRT and CGLS reconstruction algorithms.
 
-     **Please note that the dictionaries needed for all iterative methods with exact
-     keyword arguments defined in** :mod:`tomobar.supp.dicts`.
+     Pass projection arrays and solver options directly. Typed fidelity and
+     regularisation settings are documented in :mod:`tomobar.options`.
 
 .. code-block:: python
 
-    _data_ = {
-        "projection_data": cp.asarray(data_norm),
-        "data_axes_labels_order": ["detY", "angles", "detX"],
-    }  # data dictionary
+    SIRT_Rec = Rectools.SIRT(
+        cp.asarray(data_norm),
+        input_axes=["detY", "angles", "detX"],
+        iterations=300,
+        nonnegativity=True,
+    )
 
-    _algorithm_ = {"iterations": 300, "nonnegativity": True}  # algorithm dict
 
-    SIRT_Rec = Rectools.SIRT(_data_, _algorithm_)
-
-    _algorithm_ = {"iterations": 20, "nonnegativity": True}  # algorithm dict
-
-    CGLS_Rec = Rectools.CGLS(_data_, _algorithm_)
+    CGLS_Rec = Rectools.CGLS(
+        cp.asarray(data_norm),
+        input_axes=["detY", "angles", "detX"],
+        iterations=20,
+        nonnegativity=True,
+    )

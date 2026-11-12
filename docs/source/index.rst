@@ -20,6 +20,7 @@
 
     howto/installation
     howto/use
+    howto/geometry
 
 .. _tutorials:
 
@@ -29,7 +30,7 @@
 
     tutorials/direct_recon
     tutorials/basic_iter_recon
-    tutorials/regul_iter_recon 
+    tutorials/regul_iter_recon
     tutorials/synthetic_recon
     tutorials/real_data_recon
 
@@ -38,5 +39,5 @@
 .. toctree::
     :caption: Reference guides
     :maxdepth: 2
-    
+
     reference/api

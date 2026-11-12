@@ -1,8 +1,9 @@
 import pytest
 
 import numpy as np
-from tomobar.supp.suppTools import normaliser, _apply_horiz_detector_padding
-from tomobar.supp.funcs import _swap_data_axes_to_accepted
+from tomobar.supp.suppTools import normaliser
+from tomobar.supp.array_prepare import prepare_projection
+from tomobar.supp.axis_order import _swap_data_axes_to_accepted
 from numpy.testing import assert_allclose
 
 
@@ -16,8 +17,8 @@ def test_normaliser(raw_data, flats, darks, methods):
 
 def test_detector_padding_numpy(raw_data):
     raw_data = np.swapaxes(raw_data, 0, 1)
-    data_pad = _apply_horiz_detector_padding(
-        raw_data, detector_width_pad=15, cupyrun=False
+    data_pad = prepare_projection(
+        raw_data, shape=raw_data.shape, device_index=0, array_module=np, padding=15
     )
     assert data_pad.shape == (128, 180, 190)
     assert data_pad.dtype == np.float32

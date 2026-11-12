@@ -1,41 +1,34 @@
 import cupy as cp
 from tomobar.cuda_kernels import load_cuda_module
 from typing import Tuple
+from tomobar.options import Regularisation
 
 
-def prox_regul(self, X: cp.ndarray, _regularisation_: dict) -> cp.ndarray:
-    """Enabling proximal operators (regularisers) in iterative reconstruction.
-
-    Args:
-        X (cp.ndarray): 2D or 3D CuPy array.
-        _regularisation_ (dict): Regularisation dictionary with parameters, see :mod:`tomobar.supp.dicts`.
-
-    Returns:
-        cp.ndarray: Filtered 2D or 3D CuPy array.
-    """
-    # The proximal operator of the chosen regulariser
-    if "ROF_TV" in _regularisation_["method"]:
-        # Rudin - Osher - Fatemi Total variation method
-        X_prox = ROF_TV_cupy(
+def prox_regul(
+    self, X: cp.ndarray, regularisation: Regularisation, *, nonnegativity: bool = False
+) -> cp.ndarray:
+    """Apply typed TV settings on the reconstructor's selected GPU."""
+    if regularisation.strength == 0:
+        return X
+    if regularisation.method == "ROF_TV":
+        return ROF_TV_cupy(
             X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["time_marching_step"],
-            self.Atools.device_index,
-            _regularisation_.get("half_precision", False),
+            regularisation.strength,
+            regularisation.iterations,
+            regularisation.time_step,
+            self.device_index,
+            regularisation.half_precision,
         )
-    elif "PD_TV" in _regularisation_["method"]:
-        X_prox = PD_TV_cupy(
-            X,
-            _regularisation_["regul_param"],
-            _regularisation_["iterations"],
-            _regularisation_["methodTV"],
-            self.nonneg_regul,
-            _regularisation_["PD_LipschitzConstant"],
-            self.Atools.device_index,
-            _regularisation_.get("half_precision", False),
-        )
-    return X_prox
+    return PD_TV_cupy(
+        X,
+        regularisation.strength,
+        regularisation.iterations,
+        regularisation.tv_type,
+        int(nonnegativity),
+        regularisation.lipschitz_constant,
+        self.device_index,
+        regularisation.half_precision,
+    )
 
 
 def ROF_TV_cupy(
@@ -65,7 +58,6 @@ def ROF_TV_cupy(
         cp.cuda.Device(gpu_id).use()
     else:
         raise ValueError("The gpu_device must be a positive integer or zero")
-    cp.get_default_memory_pool().free_all_blocks()
 
     input_type = data.dtype
 
@@ -199,9 +191,6 @@ def PD_TV_cupy(
         cp.cuda.Device(gpu_id).use()
     else:
         raise ValueError("The gpu_device must be a positive integer or zero")
-
-    # with cp.cuda.Device(gpu_id):
-    cp.get_default_memory_pool().free_all_blocks()
 
     input_type = data.dtype
     if input_type != "float32":

@@ -1,123 +1,102 @@
+from tomobar.supp.device import _validate_device_index
+from contextlib import ExitStack
+import astra
 from tomobar.astra_wrappers.astra_base import AstraBase
+from tomobar.astra_wrappers.geometry_adapter import (
+    parallel2d_vectors,
+    projection_geometry as to_astra_projection_geometry,
+    volume_geometry as to_astra_volume_geometry,
+)
+from tomobar.geometry import (
+    Parallel2DGeometry,
+    Volume2DGeometry,
+    _validate_ordsub_number,
+)
 
 import numpy as np
-from typing import Union
 
 
 ###########Child class############
 class AstraTools2D(AstraBase):
-    """2D parallel beam projection/backprojection child class.
+    """Bind explicit 2D scan and volume geometry to ASTRA GPU projectors.
 
-    Args:
-        AstraBase (class): the base class.
+    Detector padding is already represented in projection_geometry. Generate
+    full-view vectors once; ordered subsets select rows from those vectors.
+    Forward/backprojection use ASTRA 2.5's direct NumPy/CuPy array API. Handles
+    for all views and each used subset are created lazily and shared until
+    close(). Filtered 2D FBP keeps a separate algorithm path.
     """
 
     def __init__(
         self,
-        detectors_x,
-        detectors_x_pad,
-        angles_vec,
-        centre_of_rotation,
-        recon_size,
-        processing_arch,
-        device_index,
-        ordsub_number=1,
-        verbosity=False,
+        *,
+        projection_geometry: Parallel2DGeometry,
+        volume_geometry: Volume2DGeometry,
+        device_index: int = 0,
+        ordsub_number: int | None = None,
+        verbosity: bool = False,
     ):
-        super().__init__(
-            detectors_x,
-            detectors_x_pad,
-            angles_vec,
-            centre_of_rotation,
-            recon_size,
-            processing_arch,
-            device_index,
-            ordsub_number,
-            detectors_y=None,
+        if not isinstance(projection_geometry, Parallel2DGeometry):
+            raise TypeError("projection_geometry must be a Parallel2DGeometry")
+        if not isinstance(volume_geometry, Volume2DGeometry):
+            raise TypeError("volume_geometry must be a Volume2DGeometry")
+        self._projection_geometry = projection_geometry
+        self._volume_geometry = volume_geometry
+        self._device_index = _validate_device_index(device_index)
+        self._ordsub_number = _validate_ordsub_number(
+            ordsub_number, projection_geometry.angles.size
         )
-
+        self._setOS_indices(projection_geometry.angles.size)
+        self._init_projector_resources()
+        self.fbp_filter_type = "ram-lak"
+        self.fbp_filter_parameter = None
+        self.fbp_filter_d = None
+        self.vol_geom = to_astra_volume_geometry(volume_geometry)
+        self.vectors = parallel2d_vectors(projection_geometry)
+        self.proj_geom = to_astra_projection_geometry(projection_geometry, self.vectors)
+        self.proj_geom_OS = {
+            index: to_astra_projection_geometry(
+                projection_geometry, self.vectors, indices
+            )
+            for index, indices in enumerate(self.subset_indices)
+        }
         if verbosity:
-            print("The shape of the input data has been established...")
-        super()._set_vol2d_geometry()
-        if verbosity:
-            print("2D volume geometry initialised...")
-        if ordsub_number == 1 or ordsub_number is None:
-            if processing_arch == "cpu":
-                super()._set_cpu_projection2d_parallel_geometry()
-            else:
-                super()._set_gpu_projection2d_parallel_geometry()
-            if verbosity:
-                print(
-                    "2D <{}> classical parallel-beam projection geometry initialised...".format(
-                        processing_arch
-                    )
-                )
-        else:
-            super()._setOS_indices()
-            super()._set_projection2d_OS_parallel_geometry()
-            if verbosity:
-                print(
-                    "2D <{}> ordered-subsets parallel-beam projection geometry initialised...".format(
-                        processing_arch
-                    )
-                )
+            print("2D geometry initialised; projectors will be created on first use...")
 
-    def _forwproj(self, image: np.ndarray) -> np.ndarray:
-        astra_method = "FP_CUDA"  # 2d forward projection
-        if self.processing_arch == "cpu":
-            astra_method = "FP"
-        return super()._runAstraProj2D(image, None, astra_method)
+    @property
+    def projection_geometry(self):
+        return self._projection_geometry
 
-    def _forwprojCuPy(self, image: np.ndarray) -> np.ndarray:
-        # TODO: CuPy 2D forward projection is not implemented yet
-        return super()._runAstraProj2D(image, None, "FP_CUDA")
+    @property
+    def volume_geometry(self):
+        return self._volume_geometry
 
-    def _forwprojOS(self, image: np.ndarray, os_index: Union[int, None]) -> np.ndarray:
-        astra_method = "FP_CUDA"  # 2d forward projection
-        if self.processing_arch == "cpu":
-            astra_method = "FP"
-        return super()._runAstraProj2D(image, os_index, astra_method)
+    @property
+    def device_index(self):
+        return self._device_index
 
-    def _forwprojOSCuPy(self, image: np.ndarray, os_index: int) -> np.ndarray:
-        # TODO: CuPy 2D forward projection is not implemented yet
-        return super()._runAstraProj2D(image, os_index, "FP_CUDA")
-
-    def _backproj(self, sinogram: np.ndarray) -> np.ndarray:
-        astra_method = "BP_CUDA"  # 2D back projection
-        if self.processing_arch == "cpu":
-            astra_method = "BP"
-        return super()._runAstraBackproj2D(sinogram, astra_method, 1, None)
-
-    def _backprojCuPy(self, sinogram: np.ndarray) -> np.ndarray:
-        # TODO: CuPy 2D backprojection is not implemented yet
-        return super()._runAstraBackproj2D(sinogram, "BP_CUDA", 1, None)
-
-    def _backprojOS(
-        self, sinogram: np.ndarray, os_index: Union[int, None]
-    ) -> np.ndarray:
-        astra_method = "BP_CUDA"  # 2D back projection
-        if self.processing_arch == "cpu":
-            astra_method = "BP"
-        return super()._runAstraBackproj2D(sinogram, astra_method, 1, os_index)
-
-    def _backprojOSCuPy(self, sinogram: np.ndarray, os_index: int) -> np.ndarray:
-        # TODO: CuPy 2D backprojection is not implemented yet
-        return super()._runAstraBackproj2D(sinogram, "BP_CUDA", 1, os_index)
+    @property
+    def ordsub_number(self):
+        return self._ordsub_number
 
     def _fbp(self, sinogram: np.ndarray) -> np.ndarray:
-        astra_method = "FBP_CUDA"  # 2D FBP reconstruction
-        if self.processing_arch == "cpu":
-            astra_method = "FBP"
-        return super()._runAstraBackproj2D(sinogram, astra_method, 1, None)
-
-    def _sirt(self, sinogram: np.ndarray, iterations: int) -> np.ndarray:
-        astra_method = "SIRT_CUDA"  # perform 2D SIRT reconstruction
-        if self.processing_arch == "cpu":
-            astra_method = "SIRT"
-        return super()._runAstraBackproj2D(sinogram, astra_method, iterations, None)
-
-    def _cgls(self, sinogram: np.ndarray, iterations: int) -> np.ndarray:
-        astra_method = "CGLS_CUDA"  # perform 2D CGLS reconstruction
-        if self.processing_arch == "cpu":
-            astra_method = "CGLS"
-        return super()._runAstraBackproj2D(sinogram, astra_method, iterations, None)
+        """Run ASTRA's filtered 2D reconstruction with scoped temporary data."""
+        self._ensure_open()
+        with ExitStack() as resources:
+            sinogram_id = astra.data2d.create("-sino", self.proj_geom, sinogram)
+            resources.callback(astra.data2d.delete, sinogram_id)
+            rec_id = astra.data2d.create("-vol", self.vol_geom)
+            resources.callback(astra.data2d.delete, rec_id)
+            cfg = astra.astra_dict("FBP_CUDA")
+            cfg["option"] = {"GPUindex": self.device_index}
+            cfg["ReconstructionDataId"] = rec_id
+            cfg["ProjectionDataId"] = sinogram_id
+            cfg["FilterType"] = self.fbp_filter_type
+            if self.fbp_filter_parameter is not None:
+                cfg["FilterParameter"] = self.fbp_filter_parameter
+            if self.fbp_filter_d is not None:
+                cfg["FilterD"] = self.fbp_filter_d
+            alg_id = astra.algorithm.create(cfg)
+            resources.callback(astra.algorithm.delete, alg_id)
+            astra.algorithm.run(alg_id, 1)
+            return astra.data2d.get(rec_id)

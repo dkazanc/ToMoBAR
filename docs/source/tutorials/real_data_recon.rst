@@ -3,7 +3,7 @@
 Real data reconstruction
 ************************
 
-.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. The class `RecToolsIR` is retired starting from version 2026.3.0.0 in favor of `RecToolsIRCuPy`. This demo will be updated soon.
+.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. These examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.methodsIR.RecToolsIR`` with explicit geometry objects. This demo will be updated soon.
 
 .. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
 
@@ -17,16 +17,17 @@ demo.
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     Rectools = RecToolsDIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=None,  # Vertical detector dimension
-        CenterRotOffset=None,  # Center of Rotation scalar
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        projection_geometry=Parallel2DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorHoriz,),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
+        device_index=0,
     )
 
     FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
@@ -39,16 +40,18 @@ demo.
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
     from tomobar.methodsDIR import RecToolsDIR
 
     Rectools = RecToolsDIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=100,  # Padding size of horizontal detector
-        DetectorsDimV=None,  # Vertical detector dimension
-        CenterRotOffset=None,  # Center of Rotation scalar
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        device_projector="gpu",
+        projection_geometry=Parallel2DGeometry(
+            angles=angles_rad,
+            detector_shape=(detectorHoriz,),
+            centre_of_rotation=0.0,
+        ),
+        volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
+        detector_padding=100,
+        device_index=0,
     )
 
     FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
@@ -61,87 +64,83 @@ demo.
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.options import DataFidelity, Regularisation
     from tomobar.methodsIR import RecToolsIR
 
     Rectools = RecToolsIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=None,  # Vertical detector dimension (3D case)
-        CenterRotOffset=None,  # Center of Rotation scalar
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="PWLS",  # Data fidelity term
-        device_projector="gpu",
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad, detector_shape=(1, detectorHoriz), centre_of_rotation=0.0
+        ),
+        volume_geometry=Volume3DGeometry(shape=(1, N_size, N_size)),
+        device_index=0,
+        OS_number=6,
     )
 
-    _data_ = {
-        "projection_norm_data": sinogram,  # Normalised projection data
-        "projection_raw_data": sinogram_raw,  # Raw projection data
-        "OS_number": 6,  # The number of subsets
-        "data_axes_labels_order": ["detX", "angles"],
-    }
-    lc = Rectools.powermethod(_data_)  # calculate Lipschitz constant
+    lc = Rectools.powermethod()  # calculate Lipschitz constant
 
-    _algorithm_ = {"iterations": 25, "lipschitz_const": lc}
 
-    _regularisation_ = {
-        "method": "PD_TV",  # Regularisation method
-        "regul_param": 0.000002,  # Regularisation parameter
-        "iterations": 60,  # The number of regularisation iterations
-        "device_regulariser": "gpu",
-    }
-
-    RecFISTA = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+    RecFISTA = Rectools.FISTA(
+        sinogram,
+        input_axes=["detX", "angles"],
+        fidelity=DataFidelity(method="PWLS"),
+        weights=sinogram_raw,
+        iterations=25,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(method="PD_TV", strength=2e-06, iterations=60),
+    )
 
 .. figure::  ../_static/tutorial/real/FISTA_TV_dendr.jpg
     :scale: 25 %
     :alt: FISTA recon
 
-* Then we will add the Group-Huber data fidelity model [PM2015]_ to minimise the ring artefacts.
-  We need to add new parameters to the `_data_` dictionary.
+* The following historical Group-Huber illustration [PM2015]_ used the retired API.
+  The current API supports LS, PWLS, SWLS and KL; the accompanying call uses PWLS.
 
 .. code-block:: python
 
-    _data_ = {
-        "projection_norm_data": sinogram,  # Normalised projection data
-        "projection_raw_data": sinogram_raw,  # Raw projection data
-        "OS_number": 6,  # The number of subsets
-        "data_axes_labels_order": ["detX", "angles"],
-        "ringGH_lambda": 0.000015,
-        "ringGH_accelerate": 6,
-    }
+    from tomobar.options import DataFidelity, Regularisation
 
-    RecFISTA = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+    RecFISTA = Rectools.FISTA(
+        sinogram,
+        input_axes=["detX", "angles"],
+        fidelity=DataFidelity(method="PWLS"),
+        weights=sinogram_raw,
+        iterations=25,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(method="PD_TV", strength=2e-06, iterations=60),
+    )
 
 .. figure::  ../_static/tutorial/real/FISTA_GH_TV_dendr.jpg
     :scale: 25 %
     :alt: FISTA recon
 
-* We also can try the Stripe-Weighted Least Squares (SWLS) data model [HOA2017]_. As we change the data fidelity, we need to re-initialise the geometry
-  object.
+* We also can try the Stripe-Weighted Least Squares (SWLS) data model [HOA2017]_. Select a different ``DataFidelity`` setting for the same reconstructor.
 
 .. code-block:: python
 
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.options import DataFidelity, Regularisation
+
     Rectools = RecToolsIR(
-        DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-        DetectorsDimH_pad=0,  # Padding size of horizontal detector
-        DetectorsDimV=None,  # Vertical detector dimension (3D case)
-        CenterRotOffset=None,  # Center of Rotation scalar
-        AnglesVec=angles_rad,  # A vector of projection angles in radians
-        ObjSize=N_size,  # Reconstructed object dimensions (scalar)
-        datafidelity="SWLS",  # Data fidelity term
-        device_projector="gpu",
+        projection_geometry=Parallel3DGeometry(
+            angles=angles_rad, detector_shape=(1, detectorHoriz), centre_of_rotation=0.0
+        ),
+        volume_geometry=Volume3DGeometry(shape=(1, N_size, N_size)),
+        device_index=0,
+        OS_number=6,
     )
 
-    _data_ = {
-        "projection_norm_data": sinogram,  # Normalised projection data
-        "projection_raw_data": sinogram_raw,  # Raw projection data
-        "OS_number": 6,  # The number of subsets
-        "beta_SWLS": 0.2,  #  parameter for the SWLS model
-        "data_axes_labels_order": ["detX", "angles"],
-    }
 
-    RecFISTA = Rectools.FISTA(_data_, _algorithm_, _regularisation_)
+    RecFISTA = Rectools.FISTA(
+        sinogram,
+        input_axes=["detX", "angles"],
+        fidelity=DataFidelity(method="SWLS", beta_swls=0.2),
+        weights=sinogram_raw,
+        iterations=25,
+        lipschitz_constant=lc,
+        regularisation=Regularisation(method="PD_TV", strength=2e-06, iterations=60),
+    )
 
 .. figure::  ../_static/tutorial/real/FISTA_SWLS_TV_dendr.jpg
     :scale: 25 %

@@ -31,7 +31,7 @@ efficiency. With the GPU device controlling :ref:`ref_api` exposed it can also s
 
 * Reconstruct parallel-beam projection data in 2D and 3D using GPU-accelerated routines from ASTRA-toolbox [VanAarle2015]_.
 * Access to fast GPU-accelerated direct methods, such as FBP method in :mod:`tomobar.methodsDIR` and very fast CuPy-accelerated Fourier
-  reconstruction :func:`FOURIER_INV` [NIKITIN2017]_ in :mod:`tomobar.methodsDIR_CuPy`.
+  reconstruction :func:`FOURIER_INV` [NIKITIN2017]_ in :mod:`tomobar.methodsDIR`.
 * Use advanced model-based regularised iterative schemes such as FISTA and ADMM proximal splitting algorithms. Note that more
   data fidelities are accessible in the release `2026.2.0.0`` using :mod:`tomobar.methodsIR`. It is possible to construct different combinations of the objective function.
 * The FISTA iterative algorithm [BT2009]_, [Xu2016]_ offers various modifications: convergence acceleration with ordered-subsets,
@@ -39,7 +39,7 @@ efficiency. With the GPU device controlling :ref:`ref_api` exposed it can also s
   to deal with noise and various imaging artefacts, such as, rings, streaks. Regularisers from the CCPi-Regularisation Toolkit [KAZ2019]_ are required.
 * The ADMM iterative algorithm [Boyd2011]_ offers various modifications: relaxation, warm start, and ordered-subsets. The CuPy accelerated version
   is very fast and with enabled OS can converge in 2-3 iterations.
-* Use CuPy accelerated FISTA and ADMM methods in :mod:`tomobar.methodsDIR_CuPy`. This class is actively developed while :mod:`tomobar.methodsIR` is retired.
+* Use CuPy accelerated FISTA and ADMM methods in :mod:`tomobar.methodsIR`. This GPU-only class is actively developed.
 
 .. figure::  ../_static/TomoRec_surf2.jpg
     :scale: 30 %

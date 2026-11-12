@@ -4,11 +4,13 @@
 # In this demo XRF tomographic data from I14 beamline at Diamond Light Source (UK synchrotron) is reconstructed
 
 
+from tomobar.options import DataFidelity, Regularisation
 import numpy as np
 import cupy as cp
 import matplotlib.pyplot as plt
-from tomobar.methodsIR_CuPy import RecToolsIRCuPy
-from tomobar.methodsDIR_CuPy import RecToolsDIRCuPy
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+from tomobar.methodsIR import RecToolsIR
+from tomobar.methodsDIR import RecToolsDIR
 
 data_npz = np.load(
     "../tests/test_data/Ga-Ka_aligned.npz"
@@ -18,23 +20,28 @@ data = data_npz["arr_0"]
 angles = data_npz["arr_1"]
 
 angles_tot, detectorVert, detectorHoriz = np.shape(data)
+padding_value = 45
 data_labels3D = ["angles", "detY", "detX"]
 data_cp = cp.asarray(np.float32(data), order="C")
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsDIR_cp = RecToolsDIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=45,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=-0.5,  # Centre of Rotation scalar
-    AnglesVec=np.deg2rad(angles),  # A vector of projection angles in radians
-    ObjSize=detectorHoriz,  # Reconstructed object dimensions (scalar)
-    device_projector=0,
-)
-
-FBPrec_cupy = RectoolsDIR_cp.FBP(data_cp, data_axes_labels_order=data_labels3D)
+with RecToolsDIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=np.deg2rad(angles),
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=-0.5,
+    ),
+    volume_geometry=Volume3DGeometry(
+        shape=(detectorVert, detectorHoriz, detectorHoriz)
+    ),
+    detector_padding=padding_value,
+    device_index=0,
+) as RectoolsDIR_cp:
+    FBPrec_cupy = RectoolsDIR_cp.FBP(
+        data_cp, filter_type="SINC_CuPy", data_axes_labels_order=data_labels3D
+    )
 
 FBPrec_np = cp.asnumpy(FBPrec_cupy)
 
@@ -51,41 +58,35 @@ plt.title("FBP saggital")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with OSEM-TV method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-RectoolsIR_cp = RecToolsIRCuPy(
-    DetectorsDimH=detectorHoriz,  # Horizontal detector dimension
-    DetectorsDimH_pad=45,  # Padding size of horizontal detector
-    DetectorsDimV=detectorVert,  # Vertical detector dimension (3D case)
-    CenterRotOffset=-0.5,  # Centre of Rotation scalar
-    AnglesVec=np.deg2rad(angles),  # A vector of projection angles in radians
-    ObjSize=detectorHoriz,  # Reconstructed object dimensions (scalar)
-    device_projector=0,
-    OS_number=12,  # The number of ordered subsets
-)
-
-####################### Creating the data dictionary: #######################
-_data_ = {
-    "projection_data": data_cp,
-    "data_axes_labels_order": data_labels3D,
-}
-
-####################### Creating the algorithm dictionary: #######################
-_algorithm_ = {
-    "iterations": 20,
-    "recon_mask_radius": 2.0,
-    "nonnegativity": True,
-}  # The number of iterations
-
-##### creating regularisation dictionary: #####
-_regularisation_ = {
-    "method": "PD_TV",  # Selected regularisation method
-    "regul_param": 1.5,  # Regularisation parameter
-    "iterations": 35,  # The number of regularisation iterations
-    "half_precision": True,  # enabling half-precision calculation
-}
-
-
-# RUN MLEM/OSEM METHOD:
-Rec_OSEM = RectoolsIR_cp.OSEM(_data_, _algorithm_, _regularisation_)
+with RecToolsIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=np.deg2rad(angles),
+        detector_shape=(detectorVert, detectorHoriz),
+        centre_of_rotation=-0.5,
+    ),
+    volume_geometry=Volume3DGeometry(
+        shape=(
+            detectorVert,
+            detectorHoriz + 2 * padding_value,
+            detectorHoriz + 2 * padding_value,
+        )
+    ),
+    output_shape=(detectorVert, detectorHoriz, detectorHoriz),
+    detector_padding=padding_value,
+    device_index=0,
+    OS_number=12,
+) as RectoolsIR_cp:
+    # RUN MLEM/OSEM METHOD:
+    Rec_OSEM = RectoolsIR_cp.OSEM(
+        data_cp,
+        input_axes=data_labels3D,
+        iterations=20,
+        recon_mask_radius=2.0,
+        nonnegativity=True,
+        regularisation=Regularisation(
+            method="PD_TV", strength=0.1, iterations=35, half_precision=True
+        ),
+    )
 
 
 Rec_OSEM_np = cp.asnumpy(Rec_OSEM)
