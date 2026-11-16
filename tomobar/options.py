@@ -34,7 +34,7 @@ class FourierOptions:
     recon_mask_radius: float | None = None
     legacy_scaling: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.filter_type not in (
             "none",
             "ramp",
@@ -99,7 +99,7 @@ class Diagnostics:
     residual_interval: int | None = 1
     convergence_interval: int = 1
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         _positive_integer(self.energy_interval, "energy_interval")
         if self.residual_interval is not None:
             _positive_integer(self.residual_interval, "residual_interval")
@@ -121,7 +121,7 @@ class DataFidelity:
     method: Literal["LS", "PWLS", "SWLS"] = "LS"
     beta_swls: float = 0.1
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.method not in ("LS", "PWLS", "SWLS"):
             raise ValueError("fidelity method must be LS, PWLS or SWLS")
         _real(self.beta_swls, "beta_swls", allow_zero=True)
@@ -227,7 +227,7 @@ class Regularisation:
     sigma: float = 0.01
     penalty_type: Literal[1, 2, 3, 4, 5] = 1
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.method not in ("ROF_TV", "PD_TV", "SB_TV", "FGP_TV", "TGV", "NDF"):
             raise ValueError(
                 "regularisation method must be ROF_TV, PD_TV, SB_TV, FGP_TV, TGV or NDF"
@@ -288,7 +288,7 @@ class Regularisation:
 
 def _standalone_regularisation(
     method, strength, iterations, half_precision, nonneg, **parameters
-):
+) -> Regularisation:
     """Use the public settings contract for standalone regulariser calls.
 
     Legacy ``nonneg`` arguments accept integer 0/1 and Python booleans.

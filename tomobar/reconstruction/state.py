@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 import weakref
 
 import numpy as np
+from numpy.typing import NDArray
 
 from tomobar._solvers.types import (
     Array,
@@ -43,7 +44,7 @@ class SolverState:
     between iterations; separate states never share scratch storage.
     """
 
-    _owner: weakref.ReferenceType = field(repr=False)
+    _owner: weakref.ReferenceType[object] = field(repr=False)
     _method: SolverMethod
     _options: SolverOptions = field(repr=False)
     _projections: Array = field(repr=False)
@@ -58,7 +59,9 @@ class SolverState:
     _history: EnergyHistory = field(init=False, repr=False)
     _energy_iterations: list[int] = field(default_factory=list, repr=False)
     _energy_versions: list[int] = field(default_factory=list, repr=False)
-    _residual_history: list = field(default_factory=list, repr=False)
+    _residual_history: list[tuple[float, float, float, float, float, int, int, int]] = (
+        field(default_factory=list, repr=False)
+    )
 
     def __repr__(self) -> str:
         return (
@@ -126,7 +129,7 @@ class SolverState:
         return self._energy_versions.copy()
 
     @property
-    def residuals(self):
+    def residuals(self) -> dict[str, NDArray[np.float64 | np.int64]] | None:
         """Sampled ADMM diagnostics as independent NumPy arrays.
 
         Dual is rho*||x_new-x_old||. Stationarity is ||grad f(z)+rho*u||;
@@ -167,7 +170,7 @@ class SolverState:
         return StateView(self._work)
 
     @property
-    def energy_times(self):
+    def energy_times(self) -> NDArray[np.float64] | None:
         """Elapsed wall time in seconds for each energy sample, or None.
 
         The first completed objective evaluation is time zero. Later samples
@@ -179,8 +182,8 @@ class SolverState:
         return np.array(self._history.times, dtype=np.float64)
 
     @property
-    def energy(self):
+    def energy(self) -> NDArray[np.float64] | None:
         """Sampled objective values, or None when objective sampling is disabled."""
         if not self._history.enabled:
             return None
-        return self._history.finish(None)[1]
+        return np.asarray(self._history.values, dtype=np.float64)

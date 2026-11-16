@@ -37,3 +37,13 @@ repos:
   hooks:
     - id: nbqa-black
       additional_dependencies: [black==26.5.1]
+- repo: local
+  hooks:
+    - id: pyright
+      name: Pyright (CPU-safe metadata)
+      entry: pyright
+      language: python
+      additional_dependencies: [pyright==1.1.414, numpy==2.4.6]
+      # Pyright checks its complete configured scope, never a partial file list.
+      pass_filenames: false
+      always_run: true

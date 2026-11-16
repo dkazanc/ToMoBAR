@@ -1,12 +1,13 @@
 """Backend-independent geometry for 3D tomography."""
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 
-def _validate_ordsub_number(value, n_angles):
+def _validate_ordsub_number(value: object, n_angles: int) -> int:
     """Normalize None to one; subsets must be nonempty integer partitions."""
     if value is None:
         value = 1
@@ -33,7 +34,9 @@ def interleaved_view_indices(
     )
 
 
-def _validate_shape(shape, ndim: int, name: str) -> tuple[int, ...]:
+def _validate_shape(
+    shape: Iterable[int | np.integer], ndim: int, name: str
+) -> tuple[int, ...]:
     dimensions = tuple(shape)
     if len(dimensions) != ndim:
         raise ValueError(f"{name} must have {ndim} dimensions")
@@ -248,6 +251,7 @@ class Parallel3DGeometry:
         )
         if tilt_angle == np.pi / 2 and np.array_equal(axis, [0.0, 0.0, 1.0]):
             return scan
+        assert scan.angles is not None  # tomography() always constructs angle geometry.
         sine, cosine = np.sin(scan.angles)[:, None], np.cos(scan.angles)[:, None]
         u = cosine * e1 + sine * e2
         ray = np.sin(tilt_angle) * (sine * e1 - cosine * e2) + np.cos(tilt_angle) * axis
@@ -263,7 +267,10 @@ class Parallel3DGeometry:
     @property
     def view_count(self) -> int:
         """Number of acquired projection angles."""
-        return len(self.vectors) if self.vectors is not None else self.angles.size
+        if self.vectors is not None:
+            return len(self.vectors)
+        assert self.angles is not None  # The constructor requires angles or vectors.
+        return self.angles.size
 
     @property
     def is_standard_tomography(self) -> bool:
@@ -301,6 +308,7 @@ class Parallel3DGeometry:
     def to_vectors(self) -> NDArray[np.float64]:
         """Return fresh vectors with detector shifts and CoR applied once."""
         if self.vectors is None:
+            assert self.angles is not None  # Validated angle/vector exclusivity.
             sine, cosine = np.sin(self.angles), np.cos(self.angles)
             vectors = np.zeros((self.view_count, 12), dtype=np.float64)
             vectors[:, 0], vectors[:, 1] = sine, -cosine
@@ -350,7 +358,7 @@ class Parallel2DGeometry:
         detector_shape: tuple[int],
         detector_shifts: ArrayLike | None = None,
         centre_of_rotation: float = 0.0,
-    ):
+    ) -> None:
         angles = np.asarray(angles)
         if angles.ndim != 1 or angles.size == 0:
             raise ValueError("angles must be a nonempty one-dimensional array")
@@ -384,5 +392,5 @@ class Volume2DGeometry:
 
     shape: tuple[int, int]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         object.__setattr__(self, "shape", _validate_shape(self.shape, 2, "shape"))

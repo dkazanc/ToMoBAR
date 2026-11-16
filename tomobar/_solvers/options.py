@@ -14,7 +14,7 @@ class SolverOptions:
     nonnegativity: bool = False
     diagnostics: Diagnostics = Diagnostics()
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         _boolean(self.nonnegativity, "nonnegativity")
         if not isinstance(self.diagnostics, Diagnostics):
             raise TypeError("diagnostics must be a Diagnostics instance")
@@ -26,7 +26,7 @@ class LandweberOptions(SolverOptions):
 
     step_size: float = 1e-5
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         SolverOptions.__post_init__(self)
         object.__setattr__(self, "step_size", _real(self.step_size, "step_size"))
 
@@ -49,7 +49,7 @@ class CGLSOptions(SolverOptions):
 class _RegularisedOptions(SolverOptions):
     regularisation: Regularisation | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         SolverOptions.__post_init__(self)
         if self.regularisation is not None and not isinstance(
             self.regularisation, Regularisation
@@ -62,7 +62,7 @@ class _QuadraticOptions(_RegularisedOptions):
     fidelity: DataFidelity = DataFidelity()
     lipschitz_constant: float | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         _RegularisedOptions.__post_init__(self)
         if not isinstance(self.fidelity, DataFidelity):
             raise TypeError("fidelity must be a DataFidelity instance")
@@ -101,7 +101,7 @@ class ADMMOptions(_QuadraticOptions):
     absolute_tolerance: float | None = None
     relative_tolerance: float | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         _QuadraticOptions.__post_init__(self)
         object.__setattr__(self, "rho", _real(self.rho, "rho"))
         object.__setattr__(self, "relaxation", _real(self.relaxation, "relaxation"))

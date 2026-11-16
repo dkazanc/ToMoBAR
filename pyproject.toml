@@ -51,6 +51,7 @@ dev = [
   "ruff==0.16.7",
   "black==26.5.1",
   "pre-commit==4.6.2",
+  "pyright==1.1.414",
   "pydocstyle",
   "toml",
   "imageio",
@@ -91,10 +92,6 @@ source = [
     "tomobar",
     "**/site-packages/"
 ]
-
-[tool.mypy]
-# Ignore missing stubs for modules we use
-ignore_missing_imports = true
 
 [tool.pydocstyle]
 convention = "google"
@@ -149,3 +146,18 @@ ignore = ["D100", "D104", "D105", "D107", "D418"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.pyright]
+# Expand this list only after the added modules pass without blanket suppressions.
+include = [
+    "tomobar/_validation.py",
+    "tomobar/geometry.py",
+    "tomobar/options.py",
+    "tomobar/_solvers/options.py",
+    "tomobar/_solvers/types.py",
+    "tomobar/reconstruction/state.py",
+]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+stubPath = "typings"
+reportUnnecessaryTypeIgnoreComment = "error"

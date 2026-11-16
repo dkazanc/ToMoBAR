@@ -164,10 +164,49 @@ formatting hooks use the same Black version.
 Codacy remains enabled during the migration. Its ``.prospector.yaml`` and the
 legacy pydocstyle settings mirror Ruff's Google-style documentation policy.
 Do not remove these until the replacement checks pass and Codacy is retired.
-Pyright and CodeQL are separate follow-up steps.
+Pyright starts with the limited scope described below. CodeQL remains a separate
+follow-up step.
 
 These checks complement the numerical and dependency-boundary tests; changing
 analyzer configuration does not replace running those tests.
+
+Static typing
+-------------
+
+Pyright runs in basic mode against six CPU-safe modules listed explicitly in
+``[tool.pyright].include``: scalar validation, geometry, public options,
+method-specific solver options, solver work types and public solver state.
+Numerical execution modules, tests and demos are outside this initial scope.
+Imported code can supply type information without becoming an additional
+checked entry point.
+
+Run the same isolated check as CI::
+
+    pre-commit run pyright --all-files
+
+The hook pins Pyright and the NumPy typing dependency and checks the entire
+configured scope, including when only one file changed. Its environment does
+not install ToMoBAR, CuPy or ASTRA and does not need a CUDA device. Pyright uses
+Node.js; its Python distribution finds an existing Node installation or installs
+its runtime on first use. With development dependencies installed in an active
+Python environment, ``python -m pyright`` also runs the check directly.
+
+The separate ``Pyright`` GitHub Actions job uses this hook. To require typing
+before merging, enable that check in repository branch protection or a ruleset.
+Keep Pyright's version aligned in the development dependencies and hook.
+
+``typings/cupy/__init__.pyi`` supplies only the CuPy array identity and metadata
+used by solver-state annotations. It is a static declaration, outside the
+runtime package. It does not describe or validate CUDA arithmetic. Extend or
+replace it before bringing GPU execution code into scope; do not silence
+missing imports across the project.
+
+To expand coverage, add a small cohesive module to ``include``, resolve its
+findings and run the hook in its CPU-only environment. Keep basic mode as the
+baseline and tighten individual modules once their annotations support it.
+No blanket diagnostic suppression is used, and unnecessary type-ignore comments
+are errors. Runtime input validation and numerical regression tests remain
+necessary alongside static checks.
 
 Regulariser tests
 -----------------
