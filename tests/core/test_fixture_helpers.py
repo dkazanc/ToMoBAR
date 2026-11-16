@@ -1,5 +1,8 @@
 """Shared doubles clean up resources and preserve imported dependencies."""
 
+import os
+from pathlib import Path
+import subprocess
 import sys
 from contextlib import nullcontext
 
@@ -47,3 +50,32 @@ def test_harness_instances_do_not_share_backend_state():
         assert not second.backend.live["projector3d"]
         first.current_device = 2
         assert second.current_device == 0
+
+
+def test_backend_selection_doubles_work_without_gpu_packages():
+    """Run the five CPU operator cases with real GPU packages unavailable."""
+    root = Path(__file__).resolve().parents[2]
+    code = """
+import importlib.abc
+import sys
+class WithoutGPU(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.split('.')[0] in {'cupy', 'cupyx', 'astra'}:
+            raise ModuleNotFoundError(f"No module named '{fullname}'", name=fullname)
+sys.meta_path.insert(0, WithoutGPU())
+import pytest
+raise SystemExit(pytest.main([
+    'tests/reconstruction/test_backend_selection.py::test_usfft_selection_is_lazy_and_closes',
+    'tests/reconstruction/test_backend_selection.py::test_invalid_selection',
+    '--cpu-only',
+]))
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=root,
+        env=dict(os.environ, PYTHONPATH=str(root)),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "5 passed" in result.stdout

@@ -173,7 +173,7 @@ def gpu(request):
 
 @pytest.fixture
 def mock_reconstruction():
-    """Isolated ASTRA/CuPy doubles exposing the backend and public modules."""
+    """Isolated ASTRA/CuPy doubles exposing reconstructors and their operator."""
     from tests.helpers.reconstruction import DirectHarness, ResourceHarness
 
     with ResourceHarness() as wrapper, DirectHarness() as direct:
@@ -210,7 +210,10 @@ def mock_reconstruction():
 
         iterative = wrapper.load_iterative_module()
         yield SimpleNamespace(
-            backend=wrapper, direct=direct.direct_module, iterative=iterative
+            backend=wrapper,
+            direct=direct.direct_module,
+            iterative=iterative,
+            ProjectionOperator=iterative.ProjectionOperator,
         )
 
 

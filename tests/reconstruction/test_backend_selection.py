@@ -28,7 +28,7 @@ def geometries(dim=3):
 
 @pytest.mark.parametrize("dim", [2, 3])
 def test_usfft_selection_is_lazy_and_closes(mock_reconstruction, dim):
-    from tomobar.projectors.operator import ProjectionOperator
+    ProjectionOperator = mock_reconstruction.ProjectionOperator
 
     scan, grid = geometries(dim)
     with ProjectionOperator(
@@ -69,7 +69,7 @@ def test_iterative_selection_and_transactional_replacement(mock_reconstruction):
 
 @pytest.mark.parametrize("backend", ["unknown", None, "USFFT"])
 def test_invalid_selection(mock_reconstruction, backend):
-    from tomobar.projectors.operator import ProjectionOperator
+    ProjectionOperator = mock_reconstruction.ProjectionOperator
 
     scan, grid = geometries()
     for cls in (ProjectionOperator, mock_reconstruction.iterative.RecToolsIR):
