@@ -3,7 +3,9 @@
 Run outside the repository after installing its wheel with --no-deps.
 """
 
+from importlib.metadata import metadata
 from pathlib import Path
+import tomllib
 
 import tomobar
 from tomobar.reconstruction.state import SolverState
@@ -17,6 +19,20 @@ if installed == source:
     raise RuntimeError(
         "Smoke test imported the checkout instead of the installed wheel"
     )
+
+# The static project version and metadata are authoritative for both artifacts.
+project = tomllib.loads((source.parent / "pyproject.toml").read_text())["project"]
+installed_metadata = metadata("tomobar")
+for field, expected_value in (
+    ("Version", project["version"]),
+    ("Requires-Python", project["requires-python"]),
+    ("License-Expression", project["license"]),
+):
+    if installed_metadata[field] != expected_value:
+        raise RuntimeError(
+            f"Installed metadata mismatch for {field}: "
+            f"{installed_metadata[field]!r} != {expected_value!r}"
+        )
 
 # Require an exact source/resource layout: stale build output must not restore
 # removed modules or omit newly moved packages.

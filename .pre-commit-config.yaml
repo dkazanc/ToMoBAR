@@ -10,7 +10,7 @@ repos:
       language_version: python3
       args: [--workers=1]
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.5.0
+  rev: v6.0.0
   hooks:
     - id: trailing-whitespace  # This hook trims trailing whitespace.
     - id: check-docstring-first  # Checks a common error of defining a docstring after code.

@@ -50,7 +50,7 @@ from tomobar.options import Diagnostics
 def test_state_contains_only_method_settings(cpu_rec, method, option_type, extra):
     # Exact identity checks the native-type normalisation contract.
     state = cpu_rec.initialise_solver(method, np.ones(cpu_rec.shape, dtype=np.float32))
-    assert type(state._options) is option_type  # noqa: E721
+    assert type(state._options) is option_type
     assert set(state.options) == {"nonnegativity", "diagnostics"} | extra
     assert set(state.options) == {item.name for item in fields(state._options)}
     assert not hasattr(state._options, "__dict__")
@@ -123,15 +123,14 @@ def test_numpy_scalars_preserve_canonical_execution_types():
         cg_tolerance=np.float32(0.01),
     )
     assert (
-        type(options.rho)  # noqa: E721
-        is type(options.relaxation)  # noqa: E721
-        is type(options.cg_tolerance)  # noqa: E721
+        type(options.rho)
+        is type(options.relaxation)
+        is type(options.cg_tolerance)
         is float
     )
-    assert type(options.cg_iterations) is int  # noqa: E721
+    assert type(options.cg_iterations) is int
     assert (
-        type(solver_options("Landweber", step_size=np.float32(0.1)).step_size)
-        is float  # noqa: E721
+        type(solver_options("Landweber", step_size=np.float32(0.1)).step_size) is float
     )
 
 

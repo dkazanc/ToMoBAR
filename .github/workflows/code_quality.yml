@@ -21,6 +21,12 @@ jobs:
           python-version: "3.12"
       - name: Install pre-commit
         run: python -m pip install pre-commit==4.6.2
+      - name: Validate pre-commit configuration
+        run: pre-commit validate-config
+      - name: Check YAML configuration
+        run: pre-commit run check-yaml --all-files --show-diff-on-failure
+      - name: Check TOML configuration
+        run: pre-commit run check-toml --all-files --show-diff-on-failure
       - name: Check Ruff rules
         run: pre-commit run ruff-check --all-files --show-diff-on-failure
       - name: Check Black formatting

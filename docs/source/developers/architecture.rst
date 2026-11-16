@@ -120,7 +120,7 @@ Code quality conventions
 Ruff is the primary Python linter and Black is the formatter. Both use
 ``pyproject.toml`` and target Python 3.12. The initial Ruff rule set checks
 undefined names, unused imports, common Python errors, selected bug-prone
-patterns and package docstrings. It does not enforce import sorting or line
+patterns, unused suppression comments and package docstrings. It does not enforce import sorting or line
 length; Black handles layout.
 
 Docstrings use Google-style ``Args:``, ``Returns:`` and ``Notes:`` sections.
@@ -143,7 +143,8 @@ isolated environments without installing ToMoBAR or its GPU dependencies::
     pre-commit run black --all-files
 
 The ``Code quality`` GitHub Actions workflow runs these same two hooks on pull
-requests and pushes to master. Its stable check name is ``Ruff and Black``;
+requests and pushes to master. It also validates the pre-commit configuration
+and runs the existing YAML and TOML syntax checks. Its stable check name is ``Ruff and Black``;
 repository administrators can require it in branch protection or a ruleset.
 The workflow needs no CUDA device, package installation or repository secrets.
 
@@ -168,6 +169,28 @@ CodeQL supplies the separate security analysis.
 
 These checks complement the numerical and dependency-boundary tests; changing
 analyzer configuration does not replace running those tests.
+
+Packaging metadata and coverage
+-------------------------------
+
+``[project].version`` is the single Python package version source. Update it and
+the Conda recipe version before creating a release tag; source archives do not need Git to resolve their version.
+The license expression records both Apache 2.0 and GPLv3 as required licenses,
+and the LICENSE file is distributed with the package. Setuptools 77.0.3 or newer
+is required for this SPDX metadata format. Python classifiers and tool targets
+match the minimum supported Python version, 3.12.
+
+CUDA sources and headers belong to the ``tomobar.cuda_kernels`` package and are
+included explicitly in both wheels and source archives. Release CI builds both
+artifacts, checks their metadata with ``twine check --strict`` and checks the
+installed wheel's version, Python requirement, license and complete Python/CUDA
+resource layout outside the source tree.
+
+Coverage data is written to the checkout's ignored ``.coverage`` file. Installed
+``site-packages/tomobar`` paths map to the source ``tomobar`` directory when
+combining data, rather than to a duplicate ``tomobar/tomobar`` path. For example::
+
+    python -m pytest --cpu-only --cov=tomobar --cov-report=term-missing
 
 Static typing
 -------------

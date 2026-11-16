@@ -31,7 +31,7 @@ def test_gpu_index_is_stored_as_python_integer(value):
     # Exact identity checks the native-type normalisation contract.
     result = _validate_device_index(value)
     assert result == value
-    assert type(result) is int  # noqa: E721
+    assert type(result) is int
 
 
 @pytest.mark.parametrize("fail", [False, True])

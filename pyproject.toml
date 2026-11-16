@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "setuptools-git-versioning"]
+requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -9,27 +9,24 @@ include-package-data = true
 include = ["tomobar", "tomobar.*"]
 
 [tool.setuptools.package-data]
-tomobar = ["*.cu", "*.cuh"]  # include cuda kernels in package
-
-[tool.setuptools-git-versioning]
-enabled = true
-template = "{tag}"
-dev_template = "{tag}"
+"tomobar.cuda_kernels" = ["*.cu", "*.cuh"]
 
 [project]
 name = "tomobar"
 version = "2026.4.0.0"
 description = "TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software"
 readme = "Readme.md"
-license = {text = "GPLv3"}
+license = "Apache-2.0 AND GPL-3.0-only"
+license-files = ["LICENSE"]
 authors = [
     {name = "Daniil Kazantsev", email = "daniil.kazantsev@diamond.ac.uk"},
     {name = "Viktor Nikitin", email = "vnikitin@anl.gov"},
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
     "Environment :: GPU :: NVIDIA CUDA"
 ]
 requires-python = ">=3.12"
@@ -52,7 +49,6 @@ dev = [
   "black==26.5.1",
   "pre-commit==4.6.2",
   "pyright==1.1.414",
-  "toml",
   "imageio",
   "h5py"
 ]
@@ -63,11 +59,10 @@ dev = [
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = [
-   "-vv",
    "-ra",
-   "-q",
    "--tb=short",
    "--strict-markers",
+   "--strict-config",
 ]
 markers = [
     "gpu: requires a working CUDA device (including tests using host arrays with ASTRA)",
@@ -83,13 +78,15 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-data_file = "/tmp/tomobar.coverage"
+data_file = ".coverage"
+source = ["tomobar"]
+relative_files = true
 
 [tool.coverage.paths]
 # Tests are run from installed location, map back to the src directory
 source = [
     "tomobar",
-    "**/site-packages/"
+    "*/site-packages/tomobar"
 ]
 
 [tool.black]
@@ -122,7 +119,7 @@ force-exclude = true
 [tool.ruff.lint]
 # Black handles formatting. Keep the initial lint set focused on errors,
 # package documentation and selected bug-prone Python patterns.
-select = ["F", "E4", "E7", "E9", "D", "B006", "B007", "B018", "B023", "B904"]
+select = ["F", "E4", "E7", "E9", "D", "B006", "B007", "B018", "B023", "B904", "RUF100"]
 ignore = ["D100", "D104", "D105", "D107", "D418"]
 
 [tool.ruff.lint.per-file-ignores]
