@@ -126,7 +126,7 @@ def test_admm_scaling_does_not_modify_original_regularisation(cpu_rec):
 def test_cuda_continuation(method, gpu):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 9, endpoint=False), detector_shape=(4, 12)
@@ -226,7 +226,8 @@ def test_fista_scales_only_local_prox_settings(
     rec.OS_number = subset_count
     calls = []
 
-    def capture_prox(reconstructor, image, settings, **kwargs):
+    def capture_prox(image, settings, *, device_index, **kwargs):
+        assert device_index == rec.device_index
         calls.append(settings)
         return image
 
@@ -275,8 +276,8 @@ def test_fista_recomputes_tv_scaling_after_geometry_restart(two_pixel_rec):
 def test_cuda_fista_first_step_matches_scaled_tv_prox(gpu, method):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
-    from tomobar.regularisers import prox_regul
+    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar._regularisers.proximal import prox_regul
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 5, endpoint=False), detector_shape=(3, 8)
@@ -291,9 +292,9 @@ def test_cuda_fista_first_step_matches_scaled_tv_prox(gpu, method):
         settings = Regularisation(method=method, strength=0.5, iterations=10)
         gradient = rec.operator.backproject(rec.operator.forward(initial) - data)
         expected = prox_regul(
-            rec,
             initial - gradient / L,
             replace(settings, strength=settings.strength / L),
+            device_index=rec.device_index,
         )
         actual = rec.FISTA(
             data,
@@ -389,7 +390,7 @@ def test_cuda_fista_constrained_tv_matches_analytic_solution(
     gpu, monkeypatch, strength, expected, half
 ):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     cp = gpu
     scan = Parallel3DGeometry(angles=[0, 1], detector_shape=(2, 2))

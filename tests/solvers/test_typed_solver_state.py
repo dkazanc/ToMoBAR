@@ -6,7 +6,7 @@ from dataclasses import FrozenInstanceError
 import numpy as np
 import pytest
 
-from tomobar._solver_types import (
+from tomobar._solvers.types import (
     ADMMWork,
     CGLSWork,
     FISTAWork,

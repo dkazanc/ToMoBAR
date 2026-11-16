@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.fourier_plan import build_fourier_plan
+from tomobar.reconstruction.fourier_plan import build_fourier_plan
 
 
 @pytest.mark.parametrize("offset", [-1.25, 0, 0.5])

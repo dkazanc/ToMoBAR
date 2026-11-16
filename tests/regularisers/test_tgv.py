@@ -234,9 +234,7 @@ def test_singletons_zero_strength_and_integration(cpu_tgv, shape, nonneg):
         method="TGV", strength=0.2, alpha1=0.7, alpha0=1.3, iterations=100
     )
     direct = ns["TGV_cupy"](data, 0.2, 0.7, 1.3, 100, 12, int(nonneg))
-    integrated = ns["prox_regul"](
-        SimpleNamespace(device_index=0), data, settings, nonnegativity=nonneg
-    )
+    integrated = ns["prox_regul"](data, settings, device_index=0, nonnegativity=nonneg)
     np.testing.assert_array_equal(direct, integrated)
     for strength in (0, 1e-40):
         result = ns["TGV_cupy"](data, strength, iterations=5, nonneg=int(nonneg))

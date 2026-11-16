@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from tomobar.supp.device import _clear_gpu_cache
+from tomobar._arrays.device import _clear_gpu_cache
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def fft_cache(gpu):
 
 @pytest.mark.parametrize("width", [8, 9])
 def test_direct_cuda_filter_keeps_plans_and_opt_in_releases_them(gpu, fft_cache, width):
-    from tomobar.fourier import _filtersinc3D
+    from tomobar._filters.responses import _filtersinc3D
 
     data = gpu.asarray(
         np.random.default_rng(4).normal(size=(7, 3, width)), dtype=gpu.float32
@@ -52,7 +52,7 @@ def test_public_fbp_preserves_cache_and_cleanup_preserves_output(
     gpu, fft_cache, library, filter_type
 ):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, 9)

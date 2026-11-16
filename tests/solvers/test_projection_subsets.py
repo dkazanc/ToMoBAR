@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from tomobar.supp.subsets import ProjectionSubsets
+from tomobar._solvers.subsets import ProjectionSubsets
 
 
 @pytest.mark.parametrize("views,count", [(1, 1), (5, 1), (5, 2), (7, 3), (4, 4)])
@@ -96,7 +96,7 @@ def test_gpu_accessor_allocates_only_lazy_weight_sums(gpu, beta):
 @pytest.mark.parametrize("subset_count", [1, 3, 7])
 def test_gpu_gradient_consumes_subset_views(gpu, monkeypatch, fidelity, subset_count):
     cp = gpu
-    from tomobar import data_fidelities as terms
+    from tomobar._solvers import fidelities as terms
 
     rng = np.random.default_rng(1)
     shape = (3, 7, 9)
@@ -184,7 +184,7 @@ def test_gpu_gradient_consumes_subset_views(gpu, monkeypatch, fidelity, subset_c
 )
 def test_gpu_swls_reads_arbitrary_weight_strides(gpu, monkeypatch, shape, layout):
     cp = gpu
-    from tomobar import data_fidelities as terms
+    from tomobar._solvers import fidelities as terms
 
     rng = np.random.default_rng(12)
     make = lambda size: cp.asarray(rng.random(size).astype(np.float32) + 0.1)
@@ -282,8 +282,8 @@ def test_gpu_solvers_match_eager_subsets_for_uneven_views(
     gpu, monkeypatch, method, fidelity
 ):
     cp = gpu
-    import tomobar.methodsIR as iterative
-    from tomobar import _iterative_solvers
+    import tomobar.reconstruction.iterative as iterative
+    from tomobar._solvers import iterative as _iterative_solvers
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.options import DataFidelity
 
@@ -322,7 +322,7 @@ def test_cpu_solver_state_uses_patched_subset_provider(
     monkeypatch, method, fidelity, cpu_rec
 ):
     """Check the eager-reference patch even when GPU tests are skipped."""
-    from tomobar import _iterative_solvers
+    from tomobar._solvers import iterative as _iterative_solvers
     from tomobar.options import DataFidelity
 
     # Reuse the independent linear operator and public CPU solver adapter.

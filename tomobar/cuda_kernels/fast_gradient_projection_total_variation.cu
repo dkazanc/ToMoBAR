@@ -26,12 +26,12 @@ template<typename T>
 __global__ void fgp_primal(const float *f, float *u,
     const T *r0, const T *r1, const T *r2,
     float strength, int nonneg, int nx, int ny, int nz, int ndim) {
-    const long long i=(long long)blockIdx.x*blockDim.x+threadIdx.x;
-    const long long size=(long long)nx*ny*nz;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long size=static_cast<long long>(nx)*ny*nz;
     if(i>=size) return;
-    const int coord[3]={(int)(i%nx),(int)((i/nx)%ny),(int)(i/((long long)nx*ny))};
+    const long long coord[3]={i%nx,(i/nx)%ny,i/(static_cast<long long>(nx)*ny)};
     const int shape[3]={nx,ny,nz};
-    const long long stride[3]={1,nx,(long long)nx*ny};
+    const long long stride[3]={1,nx,static_cast<long long>(nx)*ny};
     const T *r[3]={r0,r1,r2};
     float adjoint=0;
     for(int a=0;a<ndim;++a) {
@@ -49,11 +49,11 @@ __global__ void fgp_dual(const float *u,
     T *p0, T *p1, T *p2, T *next0, T *next1, T *next2,
     float strength, float momentum, int anisotropic,
     int nx, int ny, int nz, int ndim) {
-    const long long i=(long long)blockIdx.x*blockDim.x+threadIdx.x;
-    if(i>=(long long)nx*ny*nz) return;
-    const int coord[3]={(int)(i%nx),(int)((i/nx)%ny),(int)(i/((long long)nx*ny))};
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    if(i>=static_cast<long long>(nx)*ny*nz) return;
+    const long long coord[3]={i%nx,(i/nx)%ny,i/(static_cast<long long>(nx)*ny)};
     const int shape[3]={nx,ny,nz};
-    const long long stride[3]={1,nx,(long long)nx*ny};
+    const long long stride[3]={1,nx,static_cast<long long>(nx)*ny};
     const T *r[3]={r0,r1,r2}, *old[3]={old0,old1,old2};
     T *p[3]={p0,p1,p2}, *next[3]={next0,next1,next2};
     float v[3]={0,0,0};

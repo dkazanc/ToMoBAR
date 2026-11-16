@@ -14,8 +14,8 @@ from tomobar.geometry import (
     Volume3DGeometry,
 )
 
-from tomobar.methodsDIR import RecToolsDIR
-from tomobar.supp.suppTools import normaliser
+from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.preprocessing import normaliser
 
 pytestmark = pytest.mark.usefixtures("gpu")
 

@@ -31,7 +31,7 @@ def stub_module(name, **attributes):
 
 def isolated_backend_factory(tools2d, tools3d):
     """Load the production factory with isolated ASTRA types for one harness."""
-    factory = load_module("_test_projection_backend", "_projection_backend.py")
+    factory = load_module("_test_projection_backend", "projectors/interface.py")
     factory._astra_backend_types = lambda: (tools2d.AstraTools2D, tools3d.AstraTools3D)
     return factory
 
@@ -192,20 +192,20 @@ class ResourceHarness(_Harness):
         self.astra.projector3d.direct_FP = Mock(side_effect=self.direct)
         self.astra.projector3d.direct_BP = Mock(side_effect=self.direct)
         with patch.dict("sys.modules", {"astra": self.astra, "cupy": cupy}):
-            axes = load_module("_resource_test_axes", "supp/axis_order.py")
+            axes = load_module("_resource_test_axes", "_arrays/axes.py")
             self.axes = axes
-            with patch.dict("sys.modules", {"tomobar.supp.axis_order": axes}):
+            with patch.dict("sys.modules", {"tomobar._arrays.axes": axes}):
                 self.base = load_module(
-                    "_resource_test_base", "astra_wrappers/astra_base.py"
+                    "_resource_test_base", "projectors/_astra/base.py"
                 )
                 with patch.dict(
-                    "sys.modules", {"tomobar.astra_wrappers.astra_base": self.base}
+                    "sys.modules", {"tomobar.projectors._astra.base": self.base}
                 ):
                     self.tools2d = load_module(
-                        "_resource_test_2d", "astra_wrappers/astra_tools2d.py"
+                        "_resource_test_2d", "projectors/_astra/parallel2d.py"
                     )
                     self.tools3d = load_module(
-                        "_resource_test_3d", "astra_wrappers/astra_tools3d.py"
+                        "_resource_test_3d", "projectors/_astra/parallel3d.py"
                     )
 
     def ascontiguousarray(self, data, dtype):
@@ -305,36 +305,39 @@ class ResourceHarness(_Harness):
             Device=Mock(side_effect=lambda index: nullcontext())
         )
         cupy._default_memory_pool = SimpleNamespace(free_all_blocks=Mock())
-        supp = ModuleType("suppTools")
-        supp.check_kwargs = lambda data, **kw: data
-        supp.perform_recon_crop = lambda data, *args: data
-        regularisers = ModuleType("regularisers")
-        regularisers.prox_regul = Mock()
+        postprocess = ModuleType("postprocess")
+        postprocess.postprocess_reconstruction = lambda data, **kw: data
+        proximal = ModuleType("proximal")
+        proximal.prox_regul = Mock()
         fidelities = ModuleType("fidelities")
         fidelities.grad_data_term = Mock(
             side_effect=lambda rec, x, *args, **kwargs: np.zeros_like(x)
         )
         import importlib
 
-        importlib.import_module("tomobar.solver_state")
+        importlib.import_module("tomobar._solvers.state")
         with patch.dict(
             "sys.modules",
             {
                 "cupy": cupy,
                 "astra": self.astra,
-                "tomobar.supp.axis_order": self.axes,
-                "tomobar.supp.suppTools": supp,
-                "tomobar.regularisers": regularisers,
-                "tomobar.astra_wrappers.astra_tools3d": self.tools3d,
-                "tomobar.astra_wrappers.astra_tools2d": self.tools2d,
-                "tomobar.data_fidelities": fidelities,
+                "tomobar._arrays.axes": self.axes,
+                "tomobar.reconstruction.postprocess": postprocess,
+                "tomobar._regularisers.proximal": proximal,
+                "tomobar.projectors._astra.parallel3d": self.tools3d,
+                "tomobar.projectors._astra.parallel2d": self.tools2d,
+                "tomobar._solvers.fidelities": fidelities,
             },
         ):
             factory = isolated_backend_factory(self.tools2d, self.tools3d)
-            with patch.dict("sys.modules", {"tomobar._projection_backend": factory}):
-                operators = load_module("_subset_test_operators", "operators.py")
-                with patch.dict("sys.modules", {"tomobar.operators": operators}):
-                    return load_module("_subset_test_ir", "methodsIR.py")
+            with patch.dict("sys.modules", {"tomobar.projectors.interface": factory}):
+                operators = load_module(
+                    "_subset_test_operators", "projectors/operator.py"
+                )
+                with patch.dict(
+                    "sys.modules", {"tomobar.projectors.operator": operators}
+                ):
+                    return load_module("_subset_test_ir", "reconstruction/iterative.py")
 
     def make_iterative(self, module, n_views, count):
         rec = module.RecToolsIR(
@@ -385,7 +388,7 @@ class DirectHarness(_Harness):
         executor.execute.side_effect = RuntimeError("stop before CUDA kernels")
         executor.estimate.side_effect = RuntimeError("stop before CUDA kernels")
         stubs = {
-            "tomobar._fourier_execution": stub_module(
+            "tomobar.reconstruction.fourier_execution": stub_module(
                 "fourier_execution", FourierExecutor=Mock(return_value=executor)
             ),
             "cupy": cupy,
@@ -401,38 +404,46 @@ class DirectHarness(_Harness):
             "cupyx.scipy.fftpack": stub_module(
                 "cupyx.scipy.fftpack", get_fft_plan=Mock()
             ),
-            "tomobar.astra_wrappers.astra_tools2d": stub_module(
+            "tomobar.projectors._astra.parallel2d": stub_module(
                 "astra_tools2d", AstraTools2D=Mock()
             ),
-            "tomobar.astra_wrappers.astra_tools3d": stub_module(
+            "tomobar.projectors._astra.parallel3d": stub_module(
                 "astra_tools3d", AstraTools3D=Mock()
             ),
-            "tomobar.supp.suppTools": stub_module("suppTools", check_kwargs=identity),
-            "tomobar.supp.memory_estimator_helpers": stub_module(
+            "tomobar.reconstruction.postprocess": stub_module(
+                "postprocess", postprocess_reconstruction=identity
+            ),
+            "tomobar.reconstruction.memory": stub_module(
                 "memory", DeviceMemStack=Mock()
             ),
-            "tomobar.fourier": stub_module(
+            "tomobar._filters.responses": stub_module(
                 "fourier",
                 _filtersinc3D=self.filter,
                 _filterramlak3D=self.filter,
                 calc_filter=Mock(),
             ),
-            "tomobar.cuda_kernels": stub_module(
+            "tomobar.cuda_kernels.loader": stub_module(
                 "cuda_kernels",
                 load_cuda_module=self.kernels,
                 get_cuda_kernel=lambda module, name: module.get_function(name),
             ),
         }
-        self.tools2d = stubs["tomobar.astra_wrappers.astra_tools2d"]
-        self.tools3d = stubs["tomobar.astra_wrappers.astra_tools3d"]
+        self.tools2d = stubs["tomobar.projectors._astra.parallel2d"]
+        self.tools3d = stubs["tomobar.projectors._astra.parallel3d"]
         self.backend_factory = isolated_backend_factory(self.tools2d, self.tools3d)
-        stubs["tomobar._projection_backend"] = self.backend_factory
+        stubs["tomobar.projectors.interface"] = self.backend_factory
         with patch.dict("sys.modules", stubs):
-            self.axes = load_module("_axis_test_axes", "supp/axis_order.py")
-            with patch.dict("sys.modules", {"tomobar.supp.axis_order": self.axes}):
-                operators = load_module("_axis_test_operators", "operators.py")
-                with patch.dict("sys.modules", {"tomobar.operators": operators}):
-                    self.direct_module = load_module("_axis_test_dir", "methodsDIR.py")
+            self.axes = load_module("_axis_test_axes", "_arrays/axes.py")
+            with patch.dict("sys.modules", {"tomobar._arrays.axes": self.axes}):
+                operators = load_module(
+                    "_axis_test_operators", "projectors/operator.py"
+                )
+                with patch.dict(
+                    "sys.modules", {"tomobar.projectors.operator": operators}
+                ):
+                    self.direct_module = load_module(
+                        "_axis_test_dir", "reconstruction/direct.py"
+                    )
         self.classes = (self.direct_module.RecToolsDIR,)
 
     def reconstructor(self, cls, native, dim=3):

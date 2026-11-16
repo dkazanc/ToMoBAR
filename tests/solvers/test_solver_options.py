@@ -5,8 +5,8 @@ from dataclasses import FrozenInstanceError, fields
 import numpy as np
 import pytest
 
-from tomobar import solver_state
-from tomobar._solver_options import (
+from tomobar._solvers import state as solver_state
+from tomobar._solvers.options import (
     ADMMOptions,
     CGLSOptions,
     FISTAOptions,

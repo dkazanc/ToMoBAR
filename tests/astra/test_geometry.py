@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from tomobar.astra_wrappers.geometry_adapter import (
+from tomobar.projectors._astra.geometry import (
     parallel3d_vectors,
     projection_geometry,
     volume_geometry,
@@ -64,7 +64,7 @@ def test_dictionaries_match_astra_factories():
 
 
 def test_2d_vectors_preserve_cor_shifts_and_view_order():
-    from tomobar.astra_wrappers.geometry_adapter import parallel2d_vectors
+    from tomobar.projectors._astra.geometry import parallel2d_vectors
     from tomobar.geometry import Parallel2DGeometry
 
     scan = Parallel2DGeometry(
@@ -84,7 +84,7 @@ def test_2d_vectors_preserve_cor_shifts_and_view_order():
 
 def test_2d_dictionaries_match_astra_factories():
     astra = pytest.importorskip("astra")
-    from tomobar.astra_wrappers.geometry_adapter import parallel2d_vectors
+    from tomobar.projectors._astra.geometry import parallel2d_vectors
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
 
     scan = Parallel2DGeometry(angles=[0.3, -1.2], detector_shape=(7,))
@@ -99,7 +99,7 @@ def test_2d_dictionaries_match_astra_factories():
 
 
 def test_real_gpu_rectangular_2d_full_and_subset_projection(gpu):
-    from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
+    from tomobar.projectors._astra.parallel2d import AstraTools2D
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
 
     scan = Parallel2DGeometry(

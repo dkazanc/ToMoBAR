@@ -2,7 +2,6 @@
 import os
 import sys
 from datetime import date
-from unittest import mock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -10,49 +9,10 @@ from unittest import mock
 
 sys.path.insert(0, os.path.abspath("../.."))
 
-# -- Mock imports -------------------------------------------------------------
-
-
-# Mock imports instead of full environment in readthedocs
-MOCK_MODULES = [
-    "cupy",
-    "cupyx",
-    "cupyx.scipy",
-    "cupyx.scipy.fft",
-    "astra",
-    "scipy",
-    "scipy.fftpack",
-]
-
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
-
-autodoc_mock_imports = [
-    "astra",
-    "cupy",
-    "cupyx",
-    "cupyx.scipy",
-    "cupyx.scipy.fft",
-    "scipy",
-    "scipy.fftpack",
-    "bm3d",
-    "skimage",
-    "tomobar.astra_wrappers.astra_base",
-    "tomobar.astra_wrappers.astra_tools2d",
-    "tomobar.astra_wrappers.astra_tools3d",
-]
-
-
-class CustomMock(mock.Mock):
-    def __repr__(self):
-        return "<cp.ndarray>"
-
-
-sys.modules["cupy"] = CustomMock()
-sys.modules["numpy"] = CustomMock()
-
-
-# ------------------------------------------------------------------------------
+# -- Optional GPU dependencies ------------------------------------------------
+# Keep NumPy and ToMoBAR real so geometry, annotations and API links resolve.
+# Sphinx provides temporary mocks only while importing optional dependencies.
+autodoc_mock_imports = ["astra", "cupy", "cupyx", "bm3d"]
 
 project = "ToMoBAR"
 author = "Daniil Kazantsev"

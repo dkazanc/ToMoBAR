@@ -8,7 +8,6 @@ projected onto nonnegative values, after validating the input and parameters.
 """
 
 import cupy as cp
-from tomobar.options import Regularisation
 from tomobar._regularisers import (
     rof_tv as _rof_tv,
     pd_tv as _pd_tv,
@@ -23,87 +22,6 @@ from tomobar._regularisers.common import (
     _restore_shape,
     __check_if_input_2d_or_3d,
 )
-
-
-def prox_regul(
-    self,
-    X: cp.ndarray,
-    regularisation: Regularisation,
-    *,
-    nonnegativity: bool = False,
-    dual_state=None,
-) -> cp.ndarray:
-    """Apply method-specific settings, optionally retaining PD-TV duals."""
-    regularisation = regularisation._settings
-    if regularisation.strength == 0:
-        return cp.maximum(X, 0) if nonnegativity else X
-    if regularisation.method == "NDF":
-        return NDF_cupy(
-            X,
-            regularisation_parameter=regularisation.strength,
-            sigma=regularisation.sigma,
-            iterations=regularisation.iterations,
-            time_marching_parameter=regularisation.time_step,
-            penalty_type=regularisation.penalty_type,
-            nonneg=int(nonnegativity),
-            gpu_id=self.device_index,
-            half_precision=regularisation.half_precision,
-        )
-    if regularisation.method == "TGV":
-        return TGV_cupy(
-            X,
-            regularisation_parameter=regularisation.strength,
-            alpha1=regularisation.alpha1,
-            alpha0=regularisation.alpha0,
-            iterations=regularisation.iterations,
-            lipschitz_const=regularisation.lipschitz_constant,
-            nonneg=int(nonnegativity),
-            gpu_id=self.device_index,
-            half_precision=regularisation.half_precision,
-        )
-    if regularisation.method == "ROF_TV":
-        return ROF_TV_cupy(
-            X,
-            regularisation_parameter=regularisation.strength,
-            iterations=regularisation.iterations,
-            time_marching_parameter=regularisation.time_step,
-            gpu_id=self.device_index,
-            half_precision=regularisation.half_precision,
-            nonnegativity=nonnegativity,
-        )
-    if regularisation.method == "FGP_TV":
-        return FGP_TV_cupy(
-            X,
-            regularisation_parameter=regularisation.strength,
-            iterations=regularisation.iterations,
-            methodTV=regularisation.tv_type,
-            nonneg=int(nonnegativity),
-            gpu_id=self.device_index,
-            half_precision=regularisation.half_precision,
-        )
-    if regularisation.method == "SB_TV":
-        return SB_TV_cupy(
-            X,
-            regularisation_parameter=regularisation.strength,
-            iterations=regularisation.iterations,
-            methodTV=regularisation.tv_type,
-            nonneg=int(nonnegativity),
-            gpu_id=self.device_index,
-            half_precision=regularisation.half_precision,
-        )
-    if regularisation.method == "PD_TV":
-        return PD_TV_cupy(
-            X,
-            regularisation_parameter=regularisation.strength,
-            iterations=regularisation.iterations,
-            methodTV=regularisation.tv_type,
-            nonneg=int(nonnegativity),
-            lipschitz_const=regularisation.lipschitz_constant,
-            gpu_id=self.device_index,
-            half_precision=regularisation.half_precision,
-            _dual_state=dual_state,
-        )
-    raise ValueError(f"unsupported regularisation method: {regularisation.method}")
 
 
 def ROF_TV_cupy(
@@ -134,7 +52,7 @@ def ROF_TV_cupy(
         cp.ndarray: ROF-TV filtered CuPy array.
     """
     from tomobar.options import _standalone_regularisation
-    from tomobar.options import _boolean
+    from tomobar._validation import _boolean
 
     _boolean(nonnegativity, "nonnegativity")
 

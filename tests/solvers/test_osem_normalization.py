@@ -209,7 +209,7 @@ def test_mlem_likelihood_improves(matrix_reconstructor):
 @pytest.mark.parametrize("subsets", [1, 3, 7])
 def test_gpu_osem_preserves_exact_solution_and_input_arrays(gpu, subsets):
     cp = gpu
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, 12)

@@ -10,8 +10,8 @@ pytest.importorskip("astra")
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.options import DataFidelity, Regularisation
 
-from tomobar.methodsIR import RecToolsIR
-from tomobar.supp.suppTools import normaliser
+from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.preprocessing import normaliser
 
 pytestmark = pytest.mark.usefixtures("gpu")
 

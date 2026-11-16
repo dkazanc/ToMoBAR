@@ -10,7 +10,7 @@ import pytest
 @pytest.mark.parametrize("host", [False, True])
 @pytest.mark.parametrize("subset", [None, 1])
 def test_numerical_out_identity_and_input_preservation(gpu, host, subset):
-    from tomobar._usfft_backend import USFFTBackend
+    from tomobar.projectors._usfft.backend import USFFTBackend
 
     xp = np if host else gpu
     with USFFTBackend(
@@ -45,7 +45,7 @@ def test_numerical_out_identity_and_input_preservation(gpu, host, subset):
 
 @pytest.mark.parametrize("forward", [True, False])
 def test_gpu_out_avoids_final_result_allocation(gpu, monkeypatch, forward):
-    import tomobar._usfft_backend as module
+    import tomobar.projectors._usfft.backend as module
 
     with module.USFFTBackend(
         size=8, detector_width=9, angles=np.linspace(0, np.pi, 7)
@@ -79,7 +79,7 @@ def test_gpu_out_avoids_final_result_allocation(gpu, monkeypatch, forward):
 
 
 def test_full_and_uneven_subset_plans_reuse_device_arrays(gpu, monkeypatch):
-    from tomobar._usfft_backend import USFFTBackend
+    from tomobar.projectors._usfft.backend import USFFTBackend
 
     backend = USFFTBackend(
         size=8, detector_width=9, angles=np.linspace(0, np.pi, 7), subset_count=3
@@ -131,7 +131,7 @@ def test_full_and_uneven_subset_plans_reuse_device_arrays(gpu, monkeypatch):
 
 
 def test_workspace_is_replaced_when_slice_count_changes(gpu):
-    from tomobar._usfft_backend import USFFTBackend
+    from tomobar.projectors._usfft.backend import USFFTBackend
 
     with USFFTBackend(size=8, detector_width=8, angles=[0, 0.7]) as backend:
         first = backend.forward(gpu.ones((1, 8, 8), dtype=gpu.float32))
@@ -144,7 +144,7 @@ def test_workspace_is_replaced_when_slice_count_changes(gpu):
 
 
 def test_invalid_numerical_out_creates_no_execution_caches(gpu):
-    from tomobar._usfft_backend import USFFTBackend
+    from tomobar.projectors._usfft.backend import USFFTBackend
 
     with USFFTBackend(
         size=8, detector_width=9, angles=np.linspace(0, np.pi, 7)

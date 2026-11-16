@@ -18,7 +18,7 @@ def test_direct_full_and_subset_projection_on_cuda(array_library):
             xp.cuda.Device(0).compute_capability
         except xp.cuda.runtime.CUDARuntimeError:
             pytest.skip("CuPy CUDA is unavailable")
-    from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+    from tomobar.projectors._astra.parallel3d import AstraTools3D
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(
@@ -63,7 +63,7 @@ def test_direct_full_and_subset_projection_on_cuda(array_library):
 )
 def test_iterative_output_crop_matches_full_working_volume(method):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 6, endpoint=False), detector_shape=(4, 10)
@@ -100,7 +100,7 @@ def test_iterative_output_crop_matches_full_working_volume(method):
 @pytest.mark.parametrize("array_library", ["numpy", "cupy"])
 def test_direct_2d_full_and_subset_array_projection(array_library):
     xp = np if array_library == "numpy" else pytest.importorskip("cupy")
-    from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
+    from tomobar.projectors._astra.parallel2d import AstraTools2D
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
 
     scan = Parallel2DGeometry(
@@ -142,7 +142,7 @@ def test_direct_2d_full_and_subset_array_projection(array_library):
 
 def test_public_2d_numpy_projection_uses_cuda():
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     with RecToolsDIR(
         projection_geometry=Parallel2DGeometry(
@@ -161,9 +161,9 @@ def test_public_2d_numpy_projection_uses_cuda():
 def test_public_2d_cupy_projection_and_detector_padding():
     from dataclasses import replace
 
-    from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
+    from tomobar.projectors._astra.parallel2d import AstraTools2D
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel2DGeometry(
         angles=np.linspace(0, np.pi, 5, endpoint=False),

@@ -188,9 +188,7 @@ def test_wrapper_matches_reference_and_is_order_independent(
         iterations=20,
         time_step=5,
     )
-    integrated = ns["prox_regul"](
-        SimpleNamespace(device_index=0), data, settings, nonnegativity=nonneg
-    )
+    integrated = ns["prox_regul"](data, settings, device_index=0, nonnegativity=nonneg)
     np.testing.assert_array_equal(result, integrated)
 
 

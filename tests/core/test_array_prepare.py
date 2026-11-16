@@ -5,7 +5,7 @@ from itertools import permutations
 import numpy as np
 import pytest
 
-from tomobar.supp.array_prepare import prepare_array, prepare_projection
+from tomobar._arrays.prepare import prepare_array, prepare_projection
 
 
 def test_numpy_storage_reuse_and_deferred_packing():
@@ -56,9 +56,9 @@ def test_single_detector_row_and_invalid_shapes():
 
 def test_gpu_storage_and_filter_layout_reuse(gpu, monkeypatch):
     cp = gpu
-    import tomobar.methodsDIR as direct
+    import tomobar.reconstruction.direct as direct
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     grid = Volume3DGeometry(shape=(3, 6, 8))
@@ -91,7 +91,7 @@ def test_gpu_storage_and_filter_layout_reuse(gpu, monkeypatch):
 def test_iterative_projection_weights_and_settings_reuse(gpu, padding):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     data = cp.arange(np.prod(scan.projection_shape), dtype=cp.float32).reshape(
@@ -138,7 +138,7 @@ def test_iterative_projection_weights_and_settings_reuse(gpu, padding):
 def test_cgls_preserves_projection_input(gpu):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     with RecToolsIR(

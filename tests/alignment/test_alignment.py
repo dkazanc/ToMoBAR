@@ -9,7 +9,7 @@ from scipy.ndimage import shift as image_shift
 from skimage.registration import phase_cross_correlation
 from skimage.transform import iradon, radon
 
-from tomobar import solver_state
+from tomobar._solvers import state as solver_state
 from tomobar.alignment import _constrain_updates, _estimate_updates, align
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
@@ -231,7 +231,7 @@ def test_cuda_archive_joint_alignment(
     gpu, data_shifted, data_shifted_cupy, synth_data_shifts, use_cupy
 ):
     cp = gpu
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     supplied = data_shifted_cupy if use_cupy else data_shifted
     original = data_shifted.copy()

@@ -1,5 +1,5 @@
 Geometry objects and projector lifetime
-**************************************
+***************************************
 
 The reconstruction constructors take explicit geometry objects. For 3D,
 ``Parallel3DGeometry`` describes acquisition angles in radians, the detector
@@ -11,7 +11,7 @@ of the detector dimensions.
 
     import numpy as np
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry.tomography(
         angles=np.linspace(0, np.pi, 180, endpoint=False),
@@ -73,7 +73,7 @@ configuration stay fixed for the lifetime of the operator.
 
 .. code-block:: python
 
-    from tomobar.operators import ProjectionOperator
+    from tomobar.projectors.operator import ProjectionOperator
 
     with ProjectionOperator(
         projection_geometry=scan, volume_geometry=grid, device_index=0
@@ -158,7 +158,7 @@ restart mechanism. The numerical update formulas and the meaning of the
 acquired projection data are unchanged.
 
 Reconstruction geometry and detector padding
--------------------------------------------
+--------------------------------------------
 
 ``centre_of_rotation`` is a finite scalar horizontal correction in pixels.
 ``detector_shifts`` holds actual horizontal/vertical displacements for each view,
@@ -183,7 +183,7 @@ ADMM and OSEM:
 .. code-block:: python
 
     import cupy as cp
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     working_grid = Volume3DGeometry(shape=(64, 288, 288))
     with RecToolsIR(
@@ -286,7 +286,7 @@ conventions assume uniformly sampled half-turn angles and unit spacing.
 .. code-block:: python
 
     import cupy as cp
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     with RecToolsIR(
         projection_geometry=scan,
@@ -338,8 +338,8 @@ accept geometry objects and convert vectors once before selecting subset rows.
 The 2D ASTRA wrapper also supports rectangular volumes. The GPU ``FOURIER_INV`` method requires
 square slices, one volume slice per detector row, and zero detector shifts.
 
-Axis-order helpers live in ``tomobar.supp.axis_order`` and device selection in
-``tomobar.supp.device``. The old ``tomobar.supp.funcs`` module and its vector and
+Axis-order helpers live in ``tomobar._arrays.axes`` and device selection in
+``tomobar._arrays.device``. The old ``tomobar.supp.funcs`` module and its vector and
 offset-normalisation helpers have been removed; CoR and detector shifts are
 validated separately by the geometry objects.
 
@@ -363,7 +363,7 @@ arrays must already reside on that device. NumPy inputs remain supported through
 CUDA projection and reconstruction; 3D FBP FFT filtering also runs on the GPU.
 
 Projection preparation and memory use
-------------------------------------
+-------------------------------------
 
 Direct and iterative entry points share projection shape, numeric dtype and GPU
 device validation, axis normalization and detector padding. Axis changes are
@@ -496,7 +496,7 @@ all three caches before the next load:
 
 .. code-block:: python
 
-    from tomobar.cuda_kernels import clear_cuda_cache
+    from tomobar.cuda_kernels.loader import clear_cuda_cache
 
     clear_cuda_cache()
 
@@ -565,7 +565,7 @@ beam and rotation axis can be constructed as follows::
 
     import numpy as np
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry.laminography(
         angles=np.linspace(0, 2 * np.pi, 180, endpoint=False),
@@ -680,7 +680,7 @@ scale. For an actual reconstruction, use FBP or an iterative reconstruction
 method. The demo's separate plot colour scales make this difference explicit.
 
 Geometry supported by each backend
----------------------------------
+----------------------------------
 
 ``ProjectionOperator`` (2D/3D) and ``RecToolsIR`` (3D) accept
 ``backend="astra"`` (the default) or ``backend="usfft"``. ASTRA supports the
@@ -790,7 +790,7 @@ reconstructor's public edge-padding boundary treatment: with nonzero
 edge-extend acquired data and are not a matched transpose pair.
 
 Iterative methods with USFFT
----------------------------
+----------------------------
 
 The power method, Landweber, CGLS, FISTA and ADMM use the shared operator and
 support ``backend="usfft"``. CGLS is the conjugate-gradient least-squares method;
@@ -829,7 +829,7 @@ CG comparisons should check fitted-data/normal-equation residuals and image
 norm errors, rather than demanding bit-identical Krylov trajectories.
 
 USFFT output buffers and cached execution data
----------------------------------------------
+----------------------------------------------
 
 ``operator.forward(..., out=projection_buffer)`` and
 ``operator.backproject(..., out=volume_buffer)`` write final packing/scaling

@@ -13,9 +13,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cupy as cp
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.supp.suppTools import normaliser
-from tomobar.methodsIR import RecToolsIR
-from tomobar.methodsDIR import RecToolsDIR
+from tomobar.preprocessing import normaliser
+from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.direct import RecToolsDIR
 
 # Resolve the dataset relative to this script, regardless of the working folder.
 data_path = Path(__file__).resolve().parents[1] / "tests/test_data/geant4_dataset1.npz"

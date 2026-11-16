@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from tomobar._ramlak_filter import (
+from tomobar._filters.ramlak import (
     ramlak_fft_length,
     ramlak_response,
     validate_ramlak_cutoff,

@@ -9,20 +9,20 @@ Direct reconstruction
 We start by defining a 3D projection data Numpy array of unsigned integer 16-bit data type (optional)
 and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide the corresponding flats and darks fields (also 3D arrays of the same axes order).
 
-* The first step is to normalise :mod:`dataRaw` using the :mod:`normaliser` function from :mod:`tomobar.supp.suppTools.normaliser`.
+* The first step is to normalise :mod:`dataRaw` using the :mod:`normaliser` function from :mod:`tomobar.preprocessing.normaliser`.
 
 .. code-block:: python
 
-    from tomobar.supp.suppTools import normaliser
+    from tomobar.preprocessing import normaliser
 
     data_norm = normaliser(dataRaw, flats, darks, log=True, method="mean", axis=1)
 
-* Instantiate the direct reconstructor :mod:`tomobar.methodsDIR`:
+* Instantiate the direct reconstructor :mod:`tomobar.reconstruction.direct`:
 
 .. code-block:: python
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
@@ -46,4 +46,4 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
     FBP_Rec = Rectools.FBP(data_norm, input_axes=data_axes_labels3D)
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-Use :class:`tomobar.methodsDIR.RecToolsDIR` with either NumPy or CuPy arrays. Select ``filter_type="SINC"`` in ``FBP`` for the custom CUDA SINC filter. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
+Use :class:`tomobar.reconstruction.direct.RecToolsDIR` with either NumPy or CuPy arrays. Select ``filter_type="SINC"`` in ``FBP`` for the custom CUDA SINC filter. Note that the array of angles for the CuPy modules should be provided as a Numpy array.

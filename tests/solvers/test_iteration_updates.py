@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from tomobar.options import Regularisation
-from tomobar.supp import iteration_updates as updates
+from tomobar._solvers import updates
 
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
@@ -84,7 +84,7 @@ def test_inplace_proximal_matches_out_of_place_continuation(
     rec.run(expected, iterations=9)
     snapshot = rec.solver_image(expected, recon_mask_radius=None)
 
-    def inplace_prox(rec, image, settings, **kwargs):
+    def inplace_prox(image, settings, **kwargs):
         image /= 1 + settings.strength
         return image
 
@@ -106,7 +106,7 @@ def test_inplace_proximal_matches_out_of_place_continuation(
 def test_warmed_gpu_iterations_do_not_allocate_volume_sized_temporaries(gpu, method):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     shape = (8, 64, 64)
     scan = Parallel3DGeometry(
@@ -146,7 +146,7 @@ def test_gpu_admm_diagnostics_and_stopping_match_cpu_reference(
 ):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     def identity(data, *args, subset_index=None, out=None):
         if out is None:

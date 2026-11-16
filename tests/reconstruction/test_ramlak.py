@@ -8,7 +8,7 @@ import pytest
 
 @pytest.mark.parametrize("width", [1, 2, 8, 9, 64, 65])
 def test_gpu_ramlak_matches_direct_linear_convolution(gpu, width):
-    from tomobar.fourier import _filterramlak3D
+    from tomobar._filters.responses import _filterramlak3D
 
     data = np.random.default_rng(4).normal(size=(7, 3, width)).astype(np.float32)
     indices = np.arange(width)
@@ -33,7 +33,7 @@ def test_gpu_ramlak_matches_direct_linear_convolution(gpu, width):
 @pytest.mark.parametrize("padding", [0, 2])
 def test_public_ramlak_aliases_axes_and_array_libraries(gpu, width, padding):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, width)
@@ -74,7 +74,7 @@ def test_ramlak_scale_matches_astra_2d_fbp(gpu):
         Volume2DGeometry,
         Volume3DGeometry,
     )
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     angles = np.linspace(0, np.pi, 51, endpoint=False)
     y, x = np.mgrid[-16:16, -16:16] + 0.5
@@ -134,8 +134,8 @@ def test_invalid_ramlak_cutoff_fails_before_preparation(
 
 
 def test_ramlak_cutoff_limits_high_frequencies(gpu):
-    from tomobar.fourier import _filterramlak3D
-    from tomobar._ramlak_filter import ramlak_fft_length
+    from tomobar._filters.responses import _filterramlak3D
+    from tomobar._filters.ramlak import ramlak_fft_length
 
     width = 9
     data = np.random.default_rng(6).normal(size=(7, 3, width)).astype(np.float32)

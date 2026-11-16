@@ -6,10 +6,10 @@ from numpy.testing import assert_allclose
 
 cp = pytest.importorskip("cupy")
 
-from tomobar.supp.array_prepare import prepare_projection
-from tomobar.supp.axis_order import _swap_data_axes_to_accepted
+from tomobar._arrays.prepare import prepare_projection
+from tomobar._arrays.axes import _swap_data_axes_to_accepted
 
-from tomobar.supp.suppTools import normaliser
+from tomobar.preprocessing import normaliser
 
 
 @pytest.mark.parametrize("methods", ["mean", "median"])

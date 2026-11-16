@@ -11,7 +11,12 @@ from tests.helpers.reconstruction import DirectHarness, ResourceHarness
 @pytest.mark.parametrize("fail", [False, True])
 def test_harness_owns_projectors_and_restores_imports(fail):
     # Import patches must restore identities, including initially absent names.
-    names = ("astra", "cupy", "tomobar.supp.axis_order", "tomobar._fourier_execution")
+    names = (
+        "astra",
+        "cupy",
+        "tomobar._arrays.axes",
+        "tomobar.reconstruction.fourier_execution",
+    )
     missing = object()
     before = {name: sys.modules.get(name, missing) for name in names}
     outcome = (

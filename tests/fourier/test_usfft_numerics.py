@@ -12,7 +12,7 @@ from tests.helpers.usfft_reference import (
 @pytest.fixture
 def cpu_backend(monkeypatch):
     pytest.importorskip("cupy")
-    import tomobar._usfft_backend as module
+    import tomobar.projectors._usfft.backend as module
 
     monkeypatch.setattr(module, "cp", np)
     monkeypatch.setattr(module, "load_cuda_module", lambda *args: None)
@@ -108,7 +108,7 @@ def test_integer_cor_and_padding_transpose(cpu_backend, n):
 )
 @pytest.mark.parametrize("cor", [0, -1.25, 0.375])
 def test_cuda_numerical_contract(gpu, n, rows, width, cor):
-    from tomobar._usfft_backend import USFFTBackend
+    from tomobar.projectors._usfft.backend import USFFTBackend
 
     angles = np.array([0.73, -0.4, np.pi / 2, 0, 4.1, 0.73, 2], dtype=np.float32)
     rng = np.random.default_rng(19)
@@ -138,7 +138,7 @@ def test_cuda_numerical_contract(gpu, n, rows, width, cor):
 
 @pytest.mark.parametrize("n", [32, 33])
 def test_cuda_cardinal_orientation_and_scale_against_astra(gpu, n):
-    from tomobar.operators import ProjectionOperator
+    from tomobar.projectors.operator import ProjectionOperator
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(angles=[0, np.pi / 2], detector_shape=(3, n))
@@ -186,7 +186,7 @@ def test_backprojection_against_independent_dense_transpose(cpu_backend, n, widt
 
 @pytest.mark.parametrize("cor", [-1.25, 0.375])
 def test_cuda_oblique_orientation_and_cor_against_astra(gpu, cor):
-    from tomobar.operators import ProjectionOperator
+    from tomobar.projectors.operator import ProjectionOperator
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     n = 64

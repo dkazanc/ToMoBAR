@@ -38,5 +38,14 @@ def regulariser_tree():
         run.name = "_run_algorithm"
         calls[0].func = ast.Name(id=run.name, ctx=ast.Load())
         function.body[1:1] = [*copy.deepcopy(helpers), run]
-    facade.body += helpers
+    proximal = ast.parse((root / "_regularisers/proximal.py").read_text())
+    dispatch = next(n for n in proximal.body if isinstance(n, ast.FunctionDef))
+
+    class InjectRegularisers(ast.NodeTransformer):
+        def visit_Attribute(self, node):
+            if isinstance(node.value, ast.Name) and node.value.id == "regularisers":
+                return ast.copy_location(ast.Name(id=node.attr, ctx=node.ctx), node)
+            return self.generic_visit(node)
+
+    facade.body += [InjectRegularisers().visit(dispatch), *helpers]
     return ast.fix_missing_locations(facade)

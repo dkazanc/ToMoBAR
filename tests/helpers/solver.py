@@ -6,20 +6,18 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from tomobar import solver_state
-from tomobar.options import (
-    DataFidelity,
-    Diagnostics,
-    Regularisation,
-    _positive_integer,
-    _real,
-)
+from tomobar._solvers import state as solver_state
+from tomobar.reconstruction.state import SolverState
+from tomobar.options import DataFidelity, Diagnostics, Regularisation
+from tomobar._validation import _positive_integer, _real
 
 
 def make_cpu_rec():
     # Load public methods without CUDA decorators; numerical steps are the
     # production state engine using NumPy in place of CuPy.
-    tree = ast.parse((Path(__file__).parents[2] / "tomobar/methodsIR.py").read_text())
+    tree = ast.parse(
+        (Path(__file__).parents[2] / "tomobar/reconstruction/iterative.py").read_text()
+    )
     cls = next(n for n in tree.body if isinstance(n, ast.ClassDef))
     names = {
         "initialise_solver",
@@ -76,15 +74,16 @@ def make_cpu_rec():
         DataFidelity=DataFidelity,
         Diagnostics=Diagnostics,
         solver_state=solver_state,
-        SolverState=solver_state.SolverState,
+        SolverState=SolverState,
         _real=_real,
         grad_data_term=gradient,
-        prox_regul=lambda rec, x, reg, **kw: x / (1 + reg.strength),
+        prox_regul=lambda x, reg, **kw: x / (1 + reg.strength),
     )
     exec(compile(ast.Module(body=[cls], type_ignores=[]), "<cpu_rec>", "exec"), ns)
 
     class CPURec(ns["RecToolsIR"]):
         backend = "astra"
+        device_index = 0
         OS_number = 1
         geometry_version = 0
         closed = False
@@ -166,7 +165,7 @@ def make_cpu_rec():
     return CPURec()
 
 
-def two_pixel_tv_prox(reconstructor, image, regularisation, **kwargs):
+def two_pixel_tv_prox(image, regularisation, **kwargs):
     """Exact prox of strength * abs(x[1] - x[0]), independent of GPU TV code."""
     left, right = image.ravel()
     gap = float(right - left)

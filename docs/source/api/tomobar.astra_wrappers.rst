@@ -1,20 +1,21 @@
-tomobar.astra\_wrappers package
-===============================
+:orphan:
 
-Submodules
-----------
+ASTRA projector package moved
+=============================
 
-.. toctree::
-   :maxdepth: 4
+The historical Python package ``tomobar.astra_wrappers`` has been removed.
+See :doc:`tomobar.projectors._astra` for the current implementation layout.
 
-   tomobar.astra_wrappers.astra_base
-   tomobar.astra_wrappers.astra_tools2d
-   tomobar.astra_wrappers.astra_tools3d
+Use :class:`tomobar.reconstruction.direct.RecToolsDIR`,
+:class:`tomobar.reconstruction.iterative.RecToolsIR` and
+:class:`tomobar.projectors.operator.ProjectionOperator` directly.
 
-Module contents
----------------
+Implementation import migration:
 
-.. automodule:: tomobar.astra_wrappers
-   :members:
-   :show-inheritance:
-   :undoc-members:
+* ``astra_base`` is now ``tomobar.projectors._astra.base``.
+* ``astra_tools2d`` is now ``tomobar.projectors._astra.parallel2d``.
+* ``astra_tools3d`` is now ``tomobar.projectors._astra.parallel3d``.
+* ``geometry_adapter`` is now ``tomobar.projectors._astra.geometry``.
+
+These are private implementation paths; prefer the public operator API for
+external integrations. This page preserves the historical documentation URL.

@@ -3,7 +3,7 @@
 Real data reconstruction
 ************************
 
-.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. These examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.methodsIR.RecToolsIR`` with explicit geometry objects. This demo will be updated soon.
+.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. These examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.reconstruction.iterative.RecToolsIR`` with explicit geometry objects. This demo will be updated soon.
 
 .. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
 
@@ -18,7 +18,7 @@ demo.
 .. code-block:: python
 
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     Rectools = RecToolsDIR(
         projection_geometry=Parallel2DGeometry(
@@ -41,7 +41,7 @@ demo.
 .. code-block:: python
 
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     Rectools = RecToolsDIR(
         projection_geometry=Parallel2DGeometry(
@@ -66,7 +66,7 @@ demo.
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.options import DataFidelity, Regularisation
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     Rectools = RecToolsIR(
         projection_geometry=Parallel3DGeometry(

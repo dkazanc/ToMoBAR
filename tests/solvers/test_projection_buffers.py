@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.supp.projection_buffers import ProjectionBuffers
+from tomobar._solvers.buffers import ProjectionBuffers
 
 
 def test_uneven_subset_views_share_one_contiguous_slab():
@@ -22,8 +22,8 @@ def test_uneven_subset_views_share_one_contiguous_slab():
 @pytest.mark.parametrize("library", ["numpy", "cupy"])
 @pytest.mark.parametrize("dimension", [2, 3])
 def test_native_output_overwrites_and_returns_supplied_storage(gpu, library, dimension):
-    from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
-    from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+    from tomobar.projectors._astra.parallel2d import AstraTools2D
+    from tomobar.projectors._astra.parallel3d import AstraTools3D
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
 
     xp = np if library == "numpy" else gpu
@@ -57,7 +57,7 @@ def test_native_output_overwrites_and_returns_supplied_storage(gpu, library, dim
 @pytest.mark.parametrize("library", ["numpy", "cupy"])
 @pytest.mark.parametrize("invalid", ["shape", "dtype", "strides", "alias", "library"])
 def test_invalid_output_is_rejected_before_projector_creation(gpu, library, invalid):
-    from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+    from tomobar.projectors._astra.parallel3d import AstraTools3D
 
     xp = np if library == "numpy" else gpu
     scan = Parallel3DGeometry(angles=np.arange(5), detector_shape=(2, 5))
@@ -87,7 +87,7 @@ def test_invalid_output_is_rejected_before_projector_creation(gpu, library, inva
 def test_native_scratch_is_private_reused_and_rebuilt_after_geometry_change(
     gpu, method
 ):
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, 9)
@@ -120,7 +120,7 @@ def test_native_scratch_is_private_reused_and_rebuilt_after_geometry_change(
 
 def test_operator_diagnostics_preserve_paused_admm_gradient(gpu):
     from tests.helpers.cg_diagnostics import diagnostics
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, 9)

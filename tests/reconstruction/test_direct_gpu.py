@@ -9,13 +9,13 @@ from numpy.testing import assert_allclose
 cp = pytest.importorskip("cupy")
 pytest.importorskip("astra")
 
-from tomobar.cuda_kernels import load_cuda_module
+from tomobar.cuda_kernels.loader import load_cuda_module
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
 from cupy import float32
 from cupyx.profiler import time_range
 
-from tomobar.methodsDIR import RecToolsDIR
+from tomobar.reconstruction.direct import RecToolsDIR
 
 pytestmark = pytest.mark.usefixtures("gpu")
 

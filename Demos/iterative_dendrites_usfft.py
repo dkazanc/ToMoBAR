@@ -20,8 +20,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cupy as cp
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.supp.suppTools import normaliser
-from tomobar.methodsIR import RecToolsIR
+from tomobar.preprocessing import normaliser
+from tomobar.reconstruction.iterative import RecToolsIR
 
 # Settings shared by the reconstruction cells.
 N_size = 1000

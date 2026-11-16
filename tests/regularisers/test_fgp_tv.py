@@ -168,7 +168,7 @@ def test_wrapper_matches_convex_reference(cpu_fgp, shape, anisotropic, nonneg, h
         half_precision=half,
     )
     integrated = ns["prox_regul"](
-        SimpleNamespace(device_index=0), data, settings, nonnegativity=bool(nonneg)
+        data, settings, device_index=0, nonnegativity=bool(nonneg)
     )
     np.testing.assert_array_equal(integrated, result)
 

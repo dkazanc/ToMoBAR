@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from tomobar._sinc_filter import SINC_DEFAULT_CUTOFF, validate_sinc_cutoff
+from tomobar._filters.sinc import SINC_DEFAULT_CUTOFF, validate_sinc_cutoff
 
 
 def test_default_cutoff_matches_cuda_sinc_default():

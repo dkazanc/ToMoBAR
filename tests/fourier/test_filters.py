@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 
 cp = pytest.importorskip("cupy")
 
-from tomobar.fourier import calc_filter
+from tomobar._filters.responses import calc_filter
 
 
 @pytest.mark.parametrize(

@@ -30,10 +30,10 @@ ToMoBAR operates in device-to-device fashion on CuPy arrays on a GPU, therefore 
 efficiency. With the GPU device controlling :ref:`ref_api` exposed it can also support multi-GPU parallel computing [CT2020]_ .
 
 * Reconstruct parallel-beam projection data in 2D and 3D using GPU-accelerated routines from ASTRA-toolbox [VanAarle2015]_.
-* Access to fast GPU-accelerated direct methods, such as FBP method in :mod:`tomobar.methodsDIR` and very fast CuPy-accelerated Fourier
-  reconstruction :func:`FOURIER_INV` [NIKITIN2017]_ in :mod:`tomobar.methodsDIR`.
+* Access to fast GPU-accelerated direct methods, such as FBP method in :mod:`tomobar.reconstruction.direct` and very fast CuPy-accelerated Fourier
+  reconstruction :func:`FOURIER_INV` [NIKITIN2017]_ in :mod:`tomobar.reconstruction.direct`.
 * Use advanced model-based regularised iterative schemes such as FISTA and ADMM proximal splitting algorithms. Note that more
-  data fidelities are accessible in the release `2026.2.0.0`` using :mod:`tomobar.methodsIR`. It is possible to construct different combinations of the objective function.
+  data fidelities are accessible in the release `2026.2.0.0`` using :mod:`tomobar.reconstruction.iterative`. It is possible to construct different combinations of the objective function.
 * The FISTA iterative algorithm [BT2009]_, [Xu2016]_ offers various modifications: convergence acceleration with ordered-subsets,
   different data fidelities: PWLS, Huber, Group-Huber [PM2015]_, Students't [KAZ1_2017]_, and SWLS [HOA2017]_
   to deal with noise and various imaging artefacts, such as, rings, streaks. Regularisers from the CCPi-Regularisation Toolkit [KAZ2019]_ are required.
@@ -41,7 +41,7 @@ efficiency. With the GPU device controlling :ref:`ref_api` exposed it can also s
   linearised or conjugate-gradient data solves, relaxation, warm starts,
   optional TV/nonnegativity and residual stopping.
   Its objective and update sequence are independent of the ordered-subset setting.
-* Use CuPy accelerated FISTA and ADMM methods in :mod:`tomobar.methodsIR`. This GPU-only class is actively developed.
+* Use CuPy accelerated FISTA and ADMM methods in :mod:`tomobar.reconstruction.iterative`. This GPU-only class is actively developed.
 
 .. figure::  ../_static/TomoRec_surf2.jpg
     :scale: 30 %

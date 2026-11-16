@@ -41,3 +41,9 @@
     :maxdepth: 2
 
     reference/api
+
+.. toctree::
+    :caption: Developers
+    :maxdepth: 2
+
+    developers/index

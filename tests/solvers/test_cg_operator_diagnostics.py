@@ -111,7 +111,9 @@ def test_native_matrix_sampling_uses_working_operators(monkeypatch):
         SimpleNamespace(zeros=np.zeros, float32=np.float32, asnumpy=np.asarray),
     )
     monkeypatch.setitem(
-        sys.modules, "tomobar.methodsIR", SimpleNamespace(RecToolsIR=Reconstruction)
+        sys.modules,
+        "tomobar.reconstruction.iterative",
+        SimpleNamespace(RecToolsIR=Reconstruction),
     )
     forward, backward, shape = diagnostics.dense_cuda_pair(
         np.array([0, 0.7]), padding=2

@@ -37,7 +37,7 @@ def cached_loader(monkeypatch):
         cuda=SimpleNamespace(runtime=SimpleNamespace(getDevice=current_device)),
     )
     with patch.dict("sys.modules", {"cupy": cupy}):
-        loader = load_module("_cuda_cache_test", "cuda_kernels/__init__.py")
+        loader = load_module("_cuda_cache_test", "cuda_kernels/loader.py")
     source = Mock(return_value='extern "C" __global__ void test() {}')
     monkeypatch.setattr(Path, "read_text", source)
     yield SimpleNamespace(
@@ -185,7 +185,7 @@ def test_concurrent_requests_create_one_module_and_handle(cached_loader):
 
 
 def test_cached_cuda_kernel_produces_same_results(gpu):
-    from tomobar.cuda_kernels import (
+    from tomobar.cuda_kernels.loader import (
         clear_cuda_cache,
         get_cuda_kernel,
         load_cuda_module,
@@ -219,7 +219,11 @@ def test_cached_cuda_kernel_produces_same_results(gpu):
 def test_real_cuda_modules_are_isolated_across_devices(gpu):
     if gpu.cuda.runtime.getDeviceCount() < 2:
         pytest.skip("requires two CUDA devices")
-    from tomobar.cuda_kernels import clear_cuda_cache, get_cuda_kernel, load_cuda_module
+    from tomobar.cuda_kernels.loader import (
+        clear_cuda_cache,
+        get_cuda_kernel,
+        load_cuda_module,
+    )
 
     clear_cuda_cache()
     try:

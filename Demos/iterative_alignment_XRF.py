@@ -16,19 +16,19 @@ import matplotlib.pyplot as plt
 
 from tomobar.options import Regularisation
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.methodsIR import RecToolsIR
+from tomobar.reconstruction.iterative import RecToolsIR
 
 # %% Load the XRF projections and measured rotation angles
 print("Loading the Fe-Ka XRF dataset")
 data_path = (
     Path(__file__).resolve().parents[1]
-    / "tests/test_data/tomo_xrf_436147_436230_Fe-Ka.nxs"
+    / "tests/test_data/tomo_xrf_467790_467821_Ni-Ka.nxs"
 )
 with h5py.File(data_path, "r") as nexus:
-    projection_views = nexus["entry/instrument/detector/image_key"][:] == 0
-    data = np.float32(nexus["entry/instrument/detector/data"][:][projection_views])
+    projection_views = nexus["entry/data/image_key"][:] == 0
+    data = np.float32(nexus["entry/data/data"][:][projection_views])
     # Rotation angles in this dataset are stored in degrees.
-    angles = nexus["entry/sample/rotation_angle"][:][projection_views]
+    angles = nexus["entry/data/rotation_angle"][:][projection_views]
 
 if not np.isfinite(data).all() or np.any(data < 0):
     raise ValueError("OSEM requires finite, nonnegative fluorescence intensities")

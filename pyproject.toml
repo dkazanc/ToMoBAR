@@ -4,12 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 include-package-data = true
-packages = ["tomobar",
-            "tomobar.supp",
-            "tomobar._regularisers",
-            "tomobar.cuda_kernels",
-            "tomobar.astra_wrappers",
-            ]
+
+[tool.setuptools.packages.find]
+include = ["tomobar", "tomobar.*"]
 
 [tool.setuptools.package-data]
 tomobar = ["*.cu", "*.cuh"]  # include cuda kernels in package

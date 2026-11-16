@@ -115,7 +115,7 @@ def test_cgls_warm_start_uses_its_residual_and_preserves_storage(
 def test_gpu_warm_starts_are_preserved(gpu, method):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     grid = Volume3DGeometry(shape=(3, 6, 8))
@@ -137,13 +137,13 @@ def test_gpu_warm_starts_are_preserved(gpu, method):
 
 def test_admm_scales_a_local_regularisation_copy(gpu, monkeypatch):
     cp = gpu
-    import tomobar.methodsIR as iterative
+    import tomobar.reconstruction.iterative as iterative
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     seen = []
 
-    def prox(rec, x, settings, **kwargs):
+    def prox(x, settings, **kwargs):
         seen.append(settings)
         return x
 

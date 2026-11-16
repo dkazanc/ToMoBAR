@@ -11,7 +11,7 @@ from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 def test_fourier_reconstruction_ignores_stale_grid_memory(
     gpu, monkeypatch, center_size, stale_value
 ):
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 47, endpoint=False),

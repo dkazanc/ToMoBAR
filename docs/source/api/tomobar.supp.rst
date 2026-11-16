@@ -1,20 +1,6 @@
-tomobar.supp package
-====================
+:orphan:
 
-Submodules
-----------
+Removed support import
+======================
 
-.. toctree::
-   :maxdepth: 4
-
-   tomobar.supp.axis_order
-   tomobar.supp.device
-   tomobar.supp.suppTools
-
-Module contents
----------------
-
-.. automodule:: tomobar.supp
-   :members:
-   :show-inheritance:
-   :undoc-members:
+``tomobar.supp`` has been removed. Use :doc:`tomobar.preprocessing`. Reconstruction masking and cropping live in :doc:`tomobar.postprocessing`.

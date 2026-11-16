@@ -35,12 +35,12 @@ __device__ int tgv_pair(int a,int b,int ndim) {
 template<typename T>
 __global__ void tgv_dual(const float *ubar,const float *vbar,T *p,T *q,
     float sigma,float alpha1,float alpha0,int nx,int ny,int nz,int ndim) {
-    const long long i=(long long)blockIdx.x*blockDim.x+threadIdx.x;
-    const long long size=(long long)nx*ny*nz;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long size=static_cast<long long>(nx)*ny*nz;
     if(i>=size) return;
-    const int coord[3]={(int)(i%nx),(int)((i/nx)%ny),(int)(i/((long long)nx*ny))};
+    const long long coord[3]={i%nx,(i/nx)%ny,i/(static_cast<long long>(nx)*ny)};
     const int shape[3]={nx,ny,nz};
-    const long long stride[3]={1,nx,(long long)nx*ny};
+    const long long stride[3]={1,nx,static_cast<long long>(nx)*ny};
     float candidate[3]={0,0,0};
     float norm=0;
     for(int a=0;a<ndim;++a) {
@@ -70,12 +70,12 @@ __global__ void tgv_primal(const float *f,const float *u,float *nextu,float *uba
     const float *v,float *nextv,float *vbar,const T *p,const T *q,
     float weight,float fidelity_weight,float tau,float alpha1,float alpha0,int nonneg,
     int nx,int ny,int nz,int ndim) {
-    const long long i=(long long)blockIdx.x*blockDim.x+threadIdx.x;
-    const long long size=(long long)nx*ny*nz;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long size=static_cast<long long>(nx)*ny*nz;
     if(i>=size) return;
-    const int coord[3]={(int)(i%nx),(int)((i/nx)%ny),(int)(i/((long long)nx*ny))};
+    const long long coord[3]={i%nx,(i/nx)%ny,i/(static_cast<long long>(nx)*ny)};
     const int shape[3]={nx,ny,nz};
-    const long long stride[3]={1,nx,(long long)nx*ny};
+    const long long stride[3]={1,nx,static_cast<long long>(nx)*ny};
     float adjoint=0;
     for(int a=0;a<ndim;++a) {
         if(coord[a]>0) adjoint+=float(p[a*size+i-stride[a]]);

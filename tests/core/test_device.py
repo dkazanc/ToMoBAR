@@ -11,7 +11,7 @@ from tomobar.geometry import (
     Volume2DGeometry,
     Volume3DGeometry,
 )
-from tomobar.supp.device import _on_device, _validate_device_index
+from tomobar._arrays.device import _on_device, _validate_device_index
 
 
 @pytest.mark.parametrize(

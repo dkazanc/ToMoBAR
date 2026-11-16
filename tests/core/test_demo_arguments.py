@@ -16,14 +16,15 @@ ROOT = Path(__file__).resolve().parents[2]
 def api_keywords():
     registry = {}
     paths = (
-        "methodsDIR.py",
-        "methodsIR.py",
-        "operators.py",
+        "reconstruction/direct.py",
+        "reconstruction/iterative.py",
+        "projectors/operator.py",
         "geometry.py",
-        "reconstruction_geometry.py",
+        "reconstruction/base.py",
         "options.py",
         "regularisers.py",
-        "supp/suppTools.py",
+        "preprocessing.py",
+        "postprocessing.py",
         "visualisation.py",
     )
     for relative in paths:
@@ -82,9 +83,7 @@ def api_keywords():
             if name.endswith(".FOURIER_INV"):
                 keys |= registry["FourierOptions"]
             if name.endswith(".FBP"):
-                keys.add(
-                    "recon_mask_radius"
-                )  # Forwarded to check_kwargs's mask helper.
+                keys.add("recon_mask_radius")  # Applied by postprocess_reconstruction.
         allowed[name] = keys
     # initialise_solver is defined before solver methods in the source.
     allowed["RecToolsIR.initialise_solver"] |= set().union(

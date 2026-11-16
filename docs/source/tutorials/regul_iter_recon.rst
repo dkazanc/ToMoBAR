@@ -3,7 +3,7 @@
 Regularised iterative reconstruction
 ************************************
 
-.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. The examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.methodsIR.RecToolsIR`` with explicit geometry objects. This demo will be updated soon. Historical wavelet illustrations are retained; current examples use supported PD-TV regularisation without wavelets.
+.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. The examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.reconstruction.iterative.RecToolsIR`` with explicit geometry objects. This demo will be updated soon. Historical wavelet illustrations are retained; current examples use supported PD-TV regularisation without wavelets.
 
 .. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
 
@@ -20,20 +20,20 @@ We start by defining a 3D projection data Numpy array of unsigned integer 16-bit
 and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide the corresponding flats and darks fields
 (also 3D arrays of the same axes order).
 
-* The first step is to normalise :mod:`dataRaw` using the :mod:`normaliser` function from :mod:`tomobar.supp.suppTools.normaliser`.
+* The first step is to normalise :mod:`dataRaw` using the :mod:`normaliser` function from :mod:`tomobar.preprocessing.normaliser`.
 
 .. code-block:: python
 
-    from tomobar.supp.suppTools import normaliser
+    from tomobar.preprocessing import normaliser
 
     data_norm = normaliser(dataRaw, flats, darks, log=True, method="mean", axis=1)
 
-* Instantiate the iterative reconstructor :mod:`tomobar.methodsIR`:
+* Instantiate the iterative reconstructor :mod:`tomobar.reconstruction.iterative`:
 
 .. code-block:: python
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
@@ -81,7 +81,7 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.options import DataFidelity, Regularisation
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
@@ -119,7 +119,7 @@ reconstructed object characteristics (geometry, texture etc.) and if your data c
 data inaccuracies? See an example in :ref:`examples_synth_iter`.
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-Use :class:`tomobar.methodsIR.RecToolsIR` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.
+Use :class:`tomobar.reconstruction.iterative.RecToolsIR` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.
 
 FISTA regularisation strength
 -----------------------------
@@ -294,7 +294,7 @@ accelerated, constrained, or ordered-subset iterations. Standalone objective fun
 ``tomobar.energy`` for NumPy or CuPy arrays via ``array_module``.
 
 Continuing a solver in batches
------------------------------
+------------------------------
 
 For alignment loops or monitoring, use an explicit in-memory ``SolverState``::
 
@@ -354,7 +354,7 @@ geometries describe different objectives. No history samples are evaluated when
 tracking is disabled. Do not run or modify one state concurrently.
 
 Iterative alignment by reprojection
-----------------------------------
+-----------------------------------
 
 ``RecToolsIR.align`` alternates reconstruction, full-view reprojection and
 subpixel translation registration, following the reconstruction/reprojection

@@ -18,7 +18,7 @@ from tomophantom import TomoP3D
 from tomophantom.qualitymetrics import QualityTools
 from tomophantom.flatsgen import synth_flats
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.supp.suppTools import normaliser
+from tomobar.preprocessing import normaliser
 
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()
@@ -127,7 +127,7 @@ projData3D_norm_cp = cp.asarray(projData3D_norm, order="C")
 input_data_labels = ["detY", "angles", "detX"]
 # %%
 # initialise tomobar DIRECT reconstruction class
-from tomobar.methodsDIR import RecToolsDIR
+from tomobar.reconstruction.direct import RecToolsDIR
 
 with RecToolsDIR(
     projection_geometry=Parallel3DGeometry(
@@ -173,7 +173,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA-PWLS-OS-TV method using tomobar")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # initialise tomobar ITERATIVE reconstruction class
-from tomobar.methodsIR import RecToolsIR
+from tomobar.reconstruction.iterative import RecToolsIR
 
 with RecToolsIR(
     projection_geometry=Parallel3DGeometry(
@@ -225,7 +225,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM-PWLS-TV method using tomobar")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
-from tomobar.methodsIR import RecToolsIR
+from tomobar.reconstruction.iterative import RecToolsIR
 
 with RecToolsIR(
     projection_geometry=Parallel3DGeometry(

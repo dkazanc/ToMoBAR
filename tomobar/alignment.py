@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
-from tomobar.options import _positive_integer, _real, _boolean
+from tomobar._validation import _positive_integer, _real, _boolean
 
 
 @dataclass(frozen=True)

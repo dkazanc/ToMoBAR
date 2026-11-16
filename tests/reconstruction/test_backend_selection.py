@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import pytest
 
-from tomobar._usfft_adapter import USFFTGeometryBackend
+from tomobar.projectors._usfft.geometry import USFFTGeometryBackend
 from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
@@ -28,7 +28,7 @@ def geometries(dim=3):
 
 @pytest.mark.parametrize("dim", [2, 3])
 def test_usfft_selection_is_lazy_and_closes(mock_reconstruction, dim):
-    from tomobar.operators import ProjectionOperator
+    from tomobar.projectors.operator import ProjectionOperator
 
     scan, grid = geometries(dim)
     with ProjectionOperator(
@@ -69,7 +69,7 @@ def test_iterative_selection_and_transactional_replacement(mock_reconstruction):
 
 @pytest.mark.parametrize("backend", ["unknown", None, "USFFT"])
 def test_invalid_selection(mock_reconstruction, backend):
-    from tomobar.operators import ProjectionOperator
+    from tomobar.projectors.operator import ProjectionOperator
 
     scan, grid = geometries()
     for cls in (ProjectionOperator, mock_reconstruction.iterative.RecToolsIR):
@@ -123,7 +123,9 @@ def test_adapter_output_contract_and_execution(monkeypatch, dim):
 
     monkeypatch.setitem(sys.modules, "cupy", np)
     monkeypatch.setitem(
-        sys.modules, "tomobar._usfft_backend", SimpleNamespace(USFFTBackend=Numerical)
+        sys.modules,
+        "tomobar.projectors._usfft.backend",
+        SimpleNamespace(USFFTBackend=Numerical),
     )
     backend = USFFTGeometryBackend(
         projection_geometry=scan, volume_geometry=grid, subset_count=2
@@ -150,7 +152,7 @@ def test_adapter_output_contract_and_execution(monkeypatch, dim):
 
 @pytest.mark.parametrize("dim", [2, 3])
 def test_public_usfft_gpu(gpu, dim):
-    from tomobar.operators import ProjectionOperator
+    from tomobar.projectors.operator import ProjectionOperator
 
     scan, grid = geometries(dim)
     with ProjectionOperator(
@@ -246,7 +248,7 @@ def test_neutral_backend_ownership_and_replacement(mock_reconstruction, backend)
 
 
 def test_usfft_geometry_replacement_discards_execution_caches(gpu):
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan, grid = geometries()
     with RecToolsIR(

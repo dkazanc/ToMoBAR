@@ -40,14 +40,14 @@ def operator_backend():
             "sys.modules",
             {
                 "cupy": harness.cupy,
-                "tomobar._projection_backend": isolated_backend_factory(
+                "tomobar.projectors.interface": isolated_backend_factory(
                     harness.tools2d, harness.tools3d
                 ),
-                "tomobar.astra_wrappers.astra_tools2d": harness.tools2d,
-                "tomobar.astra_wrappers.astra_tools3d": harness.tools3d,
+                "tomobar.projectors._astra.parallel2d": harness.tools2d,
+                "tomobar.projectors._astra.parallel3d": harness.tools3d,
             },
         ):
-            module = load_module("_projection_operator_test", "operators.py")
+            module = load_module("_projection_operator_test", "projectors/operator.py")
 
         def shape(geometry):
             if "GridRowCount" in geometry:
@@ -256,8 +256,8 @@ def test_rejects_mismatched_geometry_and_invalid_device(operator_backend, dim):
 @pytest.mark.parametrize("dim", [2, 3])
 @pytest.mark.parametrize("library", ["numpy", "cupy"])
 def test_cuda_operator_matches_reconstruction_api_and_reuses_buffers(gpu, dim, library):
-    from tomobar.methodsDIR import RecToolsDIR
-    from tomobar.operators import ProjectionOperator
+    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.projectors.operator import ProjectionOperator
 
     xp = np if library == "numpy" else gpu
     scan, grid = geometries(dim)
@@ -299,8 +299,8 @@ def test_cuda_operator_matches_reconstruction_api_and_reuses_buffers(gpu, dim, l
 
 
 def test_cuda_operator_preserves_general_vector_geometry(gpu):
-    from tomobar.methodsDIR import RecToolsDIR
-    from tomobar.operators import ProjectionOperator
+    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.projectors.operator import ProjectionOperator
 
     scan = Parallel3DGeometry.laminography(
         angles=np.linspace(0, np.pi, 7, endpoint=False),
@@ -433,7 +433,7 @@ def test_subset_data_and_output_must_match_selected_views(operator_backend, dim)
 @pytest.mark.parametrize("dim", [2, 3])
 @pytest.mark.parametrize("library", ["numpy", "cupy"])
 def test_cuda_subsets_match_full_rows_and_sum_backprojections(gpu, dim, library):
-    from tomobar.operators import ProjectionOperator
+    from tomobar.projectors.operator import ProjectionOperator
 
     xp = np if library == "numpy" else gpu
     scan, grid = geometries(dim)

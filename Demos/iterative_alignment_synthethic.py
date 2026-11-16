@@ -14,7 +14,7 @@ import numpy as np
 import cupy as cp
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.methodsIR import RecToolsIR
+from tomobar.reconstruction.iterative import RecToolsIR
 
 # %% Load the misaligned projections and known image shifts
 print("Loading misaligned synthetic projection data")

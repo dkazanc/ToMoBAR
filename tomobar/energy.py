@@ -12,7 +12,8 @@ from time import perf_counter
 
 import numpy as np
 
-from tomobar.options import DataFidelity, Regularisation, _boolean
+from tomobar.options import DataFidelity, Regularisation
+from tomobar._validation import _boolean
 
 
 def data_energy(

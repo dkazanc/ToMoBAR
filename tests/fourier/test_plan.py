@@ -6,7 +6,10 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from tomobar.fourier_plan import build_fourier_plan, resolve_fourier_options
+from tomobar.reconstruction.fourier_plan import (
+    build_fourier_plan,
+    resolve_fourier_options,
+)
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.options import FourierOptions
 
@@ -156,7 +159,7 @@ def test_public_planning_and_validation_need_no_gpu(mock_reconstruction):
 
 @pytest.mark.parametrize("rows,width", [(4, 64), (3, 65), (5, 100)])
 def test_typed_and_legacy_execution_share_plan(gpu, rows, width):
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan, volume = geometries(rows=rows, width=width, output=width - 2)
     data = gpu.asarray(
@@ -178,9 +181,9 @@ def test_typed_and_legacy_execution_share_plan(gpu, rows, width):
 
 
 def test_estimator_does_not_load_interpolation_kernels(gpu):
-    from tomobar._fourier_execution import FourierExecutor
-    from tomobar.methodsDIR import RecToolsDIR
-    from tomobar.supp.memory_estimator_helpers import DeviceMemStack
+    from tomobar.reconstruction.fourier_execution import FourierExecutor
+    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.memory import DeviceMemStack
 
     scan, volume = geometries(rows=3, width=100, output=97)
     with RecToolsDIR(projection_geometry=scan, volume_geometry=volume) as rec:

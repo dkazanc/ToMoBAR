@@ -18,7 +18,7 @@ from tomobar.geometry import (
     Volume2DGeometry,
     Volume3DGeometry,
 )
-from tomobar.operators import ProjectionOperator
+from tomobar.projectors.operator import ProjectionOperator
 
 # %%
 # Set the object size, detector dimensions and scanning geometry.

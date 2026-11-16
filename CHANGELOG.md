@@ -1,5 +1,55 @@
 # Change Log
 
+## Unreleased
+
+Use 64-bit voxel coordinates, flattened indices and slice offsets throughout
+ROF-TV, PD-TV, SB-TV, FGP-TV, TGV and NDF CUDA kernels. Fix multiplication-order
+overflow in ROF slice offsets and 32-bit indexing in all Split Bregman stages.
+Split Bregman now passes its total element count explicitly as an int64 scalar.
+Added regression probes above signed/unsigned 32-bit limits without allocating
+full-sized volumes. Per-axis dimensions, mode flags and small component counters
+retain their existing integer contracts.
+
+Moved the public `SolverState` definition to `tomobar.reconstruction.state`;
+continuation execution remains in `_solvers/state.py`. CUDA compilation,
+lookup and cache management now live in `tomobar.cuda_kernels.loader`, leaving
+the package initializer CPU-safe. All callers use the defining modules directly.
+Added developer architecture documentation and tests for CPU-safe metadata,
+public-state/engine separation and projector/solver dependency boundaries.
+
+Reconstruction and projection operators now use public package names:
+`tomobar.reconstruction.direct.RecToolsDIR`,
+`tomobar.reconstruction.iterative.RecToolsIR`, and
+`tomobar.projectors.operator.ProjectionOperator`. No aliases for the former
+`_reconstruction` or `_projectors` packages are provided. ASTRA and USFFT
+implementations are private sibling packages, `projectors._astra` and
+`projectors._usfft`; USFFT separates numerical execution from geometry adaptation.
+
+Shared scalar validation now lives in `_validation`, independently of public
+option classes. Solver-facing proximal dispatch lives in `_regularisers.proximal`
+and takes explicit image/settings/device arguments instead of a reconstructor.
+Public standalone regulariser functions remain in `tomobar.regularisers`.
+
+Removed historical import shims and the `tomobar.supp` package. Import
+reconstructors from `tomobar.reconstruction.direct` and
+`tomobar.reconstruction.iterative`, the projection operator from
+`tomobar.projectors.operator`, and solver state from `tomobar._solvers.state`.
+Other former aliases (`fourier`, `fourier_plan`, `data_fidelities` and
+`reconstruction_geometry`) likewise use their canonical implementation modules.
+ASTRA implementations live under `tomobar.projectors._astra`.
+
+Shared array handling lives in `_arrays`, solver buffers/subsets/updates in
+`_solvers`, and memory estimation in `_reconstruction.memory`. Use
+`tomobar.preprocessing` and `tomobar.postprocessing` directly instead of
+`suppTools`. Internal reconstruction output processing uses the explicit
+`postprocess_reconstruction` helper; `check_kwargs` has been removed.
+
+Updated imports in tests, demos and documentation. Historical documentation URLs
+remain migration pages, but Python import aliases are no longer provided.
+NumPy preprocessing no longer imports CuPy, and dynamic flat-field dependencies
+load only when requested. Fixed default and keyword-order handling for dynamic
+normalisation options.
+
 ## v.2026.4.0.0
 
 Replaced GPULink and experimental calls with public DLPack methods (only available in ASTRA toolbox version 2.5). Pinning ASTRA toolbox to 2.5 or newer.

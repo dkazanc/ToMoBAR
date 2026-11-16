@@ -159,7 +159,8 @@ def test_sb_tv_settings():
 def test_gpu_wrapper_matches_numpy_reference(gpu, shape, half, tv_type, nonneg):
     from types import SimpleNamespace
 
-    from tomobar.regularisers import SB_TV_cupy, prox_regul
+    from tomobar.regularisers import SB_TV_cupy
+    from tomobar._regularisers.proximal import prox_regul
 
     data = np.random.default_rng(3).normal(size=shape).astype(np.float32)
     device_data = gpu.asarray(data)
@@ -183,9 +184,9 @@ def test_gpu_wrapper_matches_numpy_reference(gpu, shape, half, tv_type, nonneg):
         half_precision=half,
     )
     integrated = prox_regul(
-        SimpleNamespace(device_index=device),
         device_data,
         settings,
+        device_index=device,
         nonnegativity=bool(nonneg),
     )
     gpu.testing.assert_array_equal(result, integrated)
@@ -283,9 +284,7 @@ def test_python_wrapper_buffer_order_on_cpu(cpu_kernels, shape, nonneg):
     ).reshape(expected_shape)
     np.testing.assert_allclose(result, expected, atol=2e-6, rtol=2e-6)
     settings = Regularisation(method="SB_TV", strength=0.2, iterations=12, tv_type=1)
-    integrated = ns["prox_regul"](
-        SimpleNamespace(device_index=0), data, settings, nonnegativity=nonneg
-    )
+    integrated = ns["prox_regul"](data, settings, device_index=0, nonnegativity=nonneg)
     np.testing.assert_array_equal(result, integrated)
     np.testing.assert_array_equal(data, original)
     zero = ns["SB_TV_cupy"](data, 0, 1)

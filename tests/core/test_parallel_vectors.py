@@ -5,7 +5,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from tomobar.astra_wrappers.geometry_adapter import (
+from tomobar.projectors._astra.geometry import (
     parallel3d_vectors,
     projection_geometry,
 )
@@ -139,7 +139,7 @@ def test_rigid_transform_composition_with_pixel_shifts():
 
 
 def test_cuda_laminography_full_subset_and_adjoint(gpu):
-    from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+    from tomobar.projectors._astra.parallel3d import AstraTools3D
 
     grid = Volume3DGeometry((4, 6, 8))
     rng = np.random.default_rng(17)

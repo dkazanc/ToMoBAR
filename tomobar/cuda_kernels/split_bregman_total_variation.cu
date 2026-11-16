@@ -24,12 +24,12 @@ limitations under the License.
 #include <cuda_fp16.h>
 
 template<typename T>
-__global__ void gauss_seidel2D_kernel(float *U, float *A, float *U_prev, T *Dx, T *Dy, T *Bx, T *By, float lambda, float mu, float normConst, int N, int M, int ImSize)
+__global__ void gauss_seidel2D_kernel(float *U, float *A, float *U_prev, T *Dx, T *Dy, T *Bx, T *By, float lambda, float mu, float normConst, int N, int M, long long ImSize)
 {
-    const int i=blockIdx.x*blockDim.x+threadIdx.x;
-    const int j=blockIdx.y*blockDim.y+threadIdx.y;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long j=static_cast<long long>(blockIdx.y)*blockDim.y+threadIdx.y;
     if (i>=N || j>=M) return;
-    const int index=i+N*j;
+    const long long index=i+N*j;
     float sum=0; int degree=0;
     if (i>0) {
         sum += U_prev[index-(1)] + float(Dx[index-(1)]) - float(Bx[index-(1)]);
@@ -51,12 +51,12 @@ __global__ void gauss_seidel2D_kernel(float *U, float *A, float *U_prev, T *Dx, 
 }
 
 template<typename T>
-__global__ void updDxDy_shrinkIso2D_kernel(float *U, T *Dx, T *Dy, T *Bx, T *By, float threshold, int N, int M, int ImSize)
+__global__ void updDxDy_shrinkIso2D_kernel(float *U, T *Dx, T *Dy, T *Bx, T *By, float threshold, int N, int M, long long ImSize)
 {
-    const int i=blockIdx.x*blockDim.x+threadIdx.x;
-    const int j=blockIdx.y*blockDim.y+threadIdx.y;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long j=static_cast<long long>(blockIdx.y)*blockDim.y+threadIdx.y;
     if (i>=N || j>=M) return;
-    const int index=i+N*j;
+    const long long index=i+N*j;
     const float v0=(i+1<N) ? U[index+(1)]-U[index]+float(Bx[index]) : 0.0f;
     const float v1=(j+1<M) ? U[index+(N)]-U[index]+float(By[index]) : 0.0f;
     const float norm=hypotf(v0,v1);
@@ -66,12 +66,12 @@ __global__ void updDxDy_shrinkIso2D_kernel(float *U, T *Dx, T *Dy, T *Bx, T *By,
 }
 
 template<typename T>
-__global__ void updDxDy_shrinkAniso2D_kernel(float *U, T *Dx, T *Dy, T *Bx, T *By, float threshold, int N, int M, int ImSize)
+__global__ void updDxDy_shrinkAniso2D_kernel(float *U, T *Dx, T *Dy, T *Bx, T *By, float threshold, int N, int M, long long ImSize)
 {
-    const int i=blockIdx.x*blockDim.x+threadIdx.x;
-    const int j=blockIdx.y*blockDim.y+threadIdx.y;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long j=static_cast<long long>(blockIdx.y)*blockDim.y+threadIdx.y;
     if (i>=N || j>=M) return;
-    const int index=i+N*j;
+    const long long index=i+N*j;
     const float v0=(i+1<N) ? U[index+(1)]-U[index]+float(Bx[index]) : 0.0f;
     const float v1=(j+1<M) ? U[index+(N)]-U[index]+float(By[index]) : 0.0f;
     Dx[index]=copysignf(fmaxf(fabsf(v0)-threshold,0.0f),v0);
@@ -79,24 +79,25 @@ __global__ void updDxDy_shrinkAniso2D_kernel(float *U, T *Dx, T *Dy, T *Bx, T *B
 }
 
 template<typename T>
-__global__ void updBxBy2D_kernel(float *U, T *Dx, T *Dy, T *Bx, T *By, int N, int M, int ImSize)
+__global__ void updBxBy2D_kernel(float *U, T *Dx, T *Dy, T *Bx, T *By, int N, int M, long long ImSize)
 {
-    const int i=blockIdx.x*blockDim.x+threadIdx.x;
-    const int j=blockIdx.y*blockDim.y+threadIdx.y;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long j=static_cast<long long>(blockIdx.y)*blockDim.y+threadIdx.y;
     if (i>=N || j>=M) return;
-    const int index=i+N*j;
+    const long long index=i+N*j;
     Bx[index]=(i+1<N) ? float(Bx[index])+U[index+(1)]-U[index]-float(Dx[index]) : 0.0f;
     By[index]=(j+1<M) ? float(By[index])+U[index+(N)]-U[index]-float(Dy[index]) : 0.0f;
 }
 
 template<typename T>
-__global__ void gauss_seidel3D_kernel(float *U, float *A, float *U_prev, T *Dx, T *Dy, T *Dz, T *Bx, T *By, T *Bz, float lambda, float mu, float normConst, int N, int M, int Z, int ImSize)
+__global__ void gauss_seidel3D_kernel(float *U, float *A, float *U_prev, T *Dx, T *Dy, T *Dz, T *Bx, T *By, T *Bz, float lambda, float mu, float normConst, int N, int M, int Z, long long ImSize)
 {
-    const int i=blockIdx.x*blockDim.x+threadIdx.x;
-    const int j=blockIdx.y*blockDim.y+threadIdx.y;
-    const int k=blockIdx.z*blockDim.z+threadIdx.z;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long j=static_cast<long long>(blockIdx.y)*blockDim.y+threadIdx.y;
+    const long long k=static_cast<long long>(blockIdx.z)*blockDim.z+threadIdx.z;
     if (i>=N || j>=M || k>=Z) return;
-    const int index=i+N*j+N*M*k;
+    const long long zStride=static_cast<long long>(N)*M;
+    const long long index=i+N*j+zStride*k;
     float sum=0; int degree=0;
     if (i>0) {
         sum += U_prev[index-(1)] + float(Dx[index-(1)]) - float(Bx[index-(1)]);
@@ -115,27 +116,28 @@ __global__ void gauss_seidel3D_kernel(float *U, float *A, float *U_prev, T *Dx, 
         ++degree;
     }
     if (k>0) {
-        sum += U_prev[index-(N*M)] + float(Dz[index-(N*M)]) - float(Bz[index-(N*M)]);
+        sum += U_prev[index-(zStride)] + float(Dz[index-(zStride)]) - float(Bz[index-(zStride)]);
         ++degree;
     }
     if (k+1<Z) {
-        sum += U_prev[index+(N*M)] - float(Dz[index]) + float(Bz[index]);
+        sum += U_prev[index+(zStride)] - float(Dz[index]) + float(Bz[index]);
         ++degree;
     }
     U[index]=(mu*A[index]+lambda*sum)/(mu+lambda*degree);
 }
 
 template<typename T>
-__global__ void updDxDy_shrinkIso3D_kernel(float *U, T *Dx, T *Dy, T *Dz, T *Bx, T *By, T *Bz, float threshold, int N, int M, int Z, int ImSize)
+__global__ void updDxDy_shrinkIso3D_kernel(float *U, T *Dx, T *Dy, T *Dz, T *Bx, T *By, T *Bz, float threshold, int N, int M, int Z, long long ImSize)
 {
-    const int i=blockIdx.x*blockDim.x+threadIdx.x;
-    const int j=blockIdx.y*blockDim.y+threadIdx.y;
-    const int k=blockIdx.z*blockDim.z+threadIdx.z;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long j=static_cast<long long>(blockIdx.y)*blockDim.y+threadIdx.y;
+    const long long k=static_cast<long long>(blockIdx.z)*blockDim.z+threadIdx.z;
     if (i>=N || j>=M || k>=Z) return;
-    const int index=i+N*j+N*M*k;
+    const long long zStride=static_cast<long long>(N)*M;
+    const long long index=i+N*j+zStride*k;
     const float v0=(i+1<N) ? U[index+(1)]-U[index]+float(Bx[index]) : 0.0f;
     const float v1=(j+1<M) ? U[index+(N)]-U[index]+float(By[index]) : 0.0f;
-    const float v2=(k+1<Z) ? U[index+(N*M)]-U[index]+float(Bz[index]) : 0.0f;
+    const float v2=(k+1<Z) ? U[index+(zStride)]-U[index]+float(Bz[index]) : 0.0f;
     const float norm=hypotf(hypotf(v0,v1),v2);
     const float scale=(norm>0) ? fmaxf(1.0f-threshold/norm,0.0f) : 0.0f;
     Dx[index]=scale*v0;
@@ -144,30 +146,32 @@ __global__ void updDxDy_shrinkIso3D_kernel(float *U, T *Dx, T *Dy, T *Dz, T *Bx,
 }
 
 template<typename T>
-__global__ void updDxDy_shrinkAniso3D_kernel(float *U, T *Dx, T *Dy, T *Dz, T *Bx, T *By, T *Bz, float threshold, int N, int M, int Z, int ImSize)
+__global__ void updDxDy_shrinkAniso3D_kernel(float *U, T *Dx, T *Dy, T *Dz, T *Bx, T *By, T *Bz, float threshold, int N, int M, int Z, long long ImSize)
 {
-    const int i=blockIdx.x*blockDim.x+threadIdx.x;
-    const int j=blockIdx.y*blockDim.y+threadIdx.y;
-    const int k=blockIdx.z*blockDim.z+threadIdx.z;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long j=static_cast<long long>(blockIdx.y)*blockDim.y+threadIdx.y;
+    const long long k=static_cast<long long>(blockIdx.z)*blockDim.z+threadIdx.z;
     if (i>=N || j>=M || k>=Z) return;
-    const int index=i+N*j+N*M*k;
+    const long long zStride=static_cast<long long>(N)*M;
+    const long long index=i+N*j+zStride*k;
     const float v0=(i+1<N) ? U[index+(1)]-U[index]+float(Bx[index]) : 0.0f;
     const float v1=(j+1<M) ? U[index+(N)]-U[index]+float(By[index]) : 0.0f;
-    const float v2=(k+1<Z) ? U[index+(N*M)]-U[index]+float(Bz[index]) : 0.0f;
+    const float v2=(k+1<Z) ? U[index+(zStride)]-U[index]+float(Bz[index]) : 0.0f;
     Dx[index]=copysignf(fmaxf(fabsf(v0)-threshold,0.0f),v0);
     Dy[index]=copysignf(fmaxf(fabsf(v1)-threshold,0.0f),v1);
     Dz[index]=copysignf(fmaxf(fabsf(v2)-threshold,0.0f),v2);
 }
 
 template<typename T>
-__global__ void updBxBy3D_kernel(float *U, T *Dx, T *Dy, T *Dz, T *Bx, T *By, T *Bz, int N, int M, int Z, int ImSize)
+__global__ void updBxBy3D_kernel(float *U, T *Dx, T *Dy, T *Dz, T *Bx, T *By, T *Bz, int N, int M, int Z, long long ImSize)
 {
-    const int i=blockIdx.x*blockDim.x+threadIdx.x;
-    const int j=blockIdx.y*blockDim.y+threadIdx.y;
-    const int k=blockIdx.z*blockDim.z+threadIdx.z;
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    const long long j=static_cast<long long>(blockIdx.y)*blockDim.y+threadIdx.y;
+    const long long k=static_cast<long long>(blockIdx.z)*blockDim.z+threadIdx.z;
     if (i>=N || j>=M || k>=Z) return;
-    const int index=i+N*j+N*M*k;
+    const long long zStride=static_cast<long long>(N)*M;
+    const long long index=i+N*j+zStride*k;
     Bx[index]=(i+1<N) ? float(Bx[index])+U[index+(1)]-U[index]-float(Dx[index]) : 0.0f;
     By[index]=(j+1<M) ? float(By[index])+U[index+(N)]-U[index]-float(Dy[index]) : 0.0f;
-    Bz[index]=(k+1<Z) ? float(Bz[index])+U[index+(N*M)]-U[index]-float(Dz[index]) : 0.0f;
+    Bz[index]=(k+1<Z) ? float(Bz[index])+U[index+(zStride)]-U[index]-float(Dz[index]) : 0.0f;
 }

@@ -17,7 +17,7 @@ remain in ``tomobar.cuda_kernels``. Applications should continue importing
 regularisers through the public module.
 
 Split Bregman TV
----------------
+----------------
 ``SB_TV_cupy`` ports CCPi-Regularisation-Toolkit's ``TV_SB_GPU_core.cu``
 (Goldstein and Osher, 2009). All allocations and launches use CuPy; no CCPi
 installation is required. The source copyright and Apache 2.0 notice are
@@ -75,7 +75,7 @@ numerical overflow for very small strengths. Calls do not share dual state.
 
 
 Second-order Total Generalised Variation
----------------------------------------
+----------------------------------------
 ``TGV_cupy`` adapts CCPi's ``TGV_GPU_core.cu`` (Bredies' TGV, solved with
 Chambolle--Pock primal-dual iterations). Original copyright and Apache 2.0
 notices are preserved; there is no CCPi runtime dependency.

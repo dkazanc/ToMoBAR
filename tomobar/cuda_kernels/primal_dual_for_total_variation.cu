@@ -38,7 +38,7 @@ __device__ float extrapolated_value(const float *current, const float *previous,
 template <typename T, bool anisotropic, bool is3d>
 __device__ void updated_dual(const float *current, const float *previous,
                              const T *p1, const T *p2, const T *p3,
-                             long long index, int x, int y, int z,
+                             long long index, long long x, long long y, long long z,
                              int dimX, int dimY, int dimZ,
                              float sigma, float theta, float *result)
 {

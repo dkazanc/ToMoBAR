@@ -7,9 +7,11 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   tomobar.astra_wrappers
+   tomobar.projectors
+   tomobar.reconstruction
    tomobar.cuda_kernels
-   tomobar.supp
+   tomobar._arrays.axes
+   tomobar._arrays.device
 
 Submodules
 ----------
@@ -17,14 +19,13 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   tomobar.fourier
-   tomobar.fourier_plan
-   tomobar.methodsDIR
-   tomobar.methodsIR
+   tomobar._filters.responses
    tomobar.options
-   tomobar.operators
+   tomobar.geometry
+   tomobar.preprocessing
+   tomobar.postprocessing
    tomobar.visualisation
-   tomobar.solver_state
+   tomobar._solvers.fidelities
    tomobar.alignment
    tomobar.regularisers
 

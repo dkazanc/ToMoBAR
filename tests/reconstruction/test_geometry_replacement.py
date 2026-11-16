@@ -154,7 +154,7 @@ def test_2d_filter_settings_survive(mock_reconstruction):
 
 
 def test_cuda_replacement_matches_fresh_reconstructor(gpu):
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     grid = Volume3DGeometry((4, 6, 8))
     original = Parallel3DGeometry(
@@ -275,7 +275,7 @@ def test_failed_operator_install_leaves_current_geometry_usable(
 
 @pytest.mark.parametrize("method", ["FISTA", "OSEM"])
 def test_cuda_subset_continuation_uses_replacement_operator(gpu, method):
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 9, endpoint=False), detector_shape=(3, 12)

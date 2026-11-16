@@ -18,8 +18,8 @@ from tomophantom.qualitymetrics import QualityTools
 from tomophantom.artefacts import artefacts_mix
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.methodsDIR import RecToolsDIR
-from tomobar.methodsIR import RecToolsIR
+from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.iterative import RecToolsIR
 
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()

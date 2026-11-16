@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.methodsIR import RecToolsIR
+from tomobar.reconstruction.iterative import RecToolsIR
 from tomobar.options import DataFidelity, Regularisation
 
 # %% Create a small phantom and matching parallel-beam geometry.

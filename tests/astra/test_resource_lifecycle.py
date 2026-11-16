@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 
 from tests.helpers.reconstruction import MockGPUArray, ResourceHarness
-from tomobar.astra_wrappers.geometry_adapter import (
+from tomobar.projectors._astra.geometry import (
     parallel2d_vectors,
     parallel3d_vectors,
 )

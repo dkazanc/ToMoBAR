@@ -9,21 +9,21 @@ We start by defining a 3D projection data Numpy array of unsigned integer 16-bit
 and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide the corresponding flats and darks fields
 (also 3D arrays of the same axes order).
 
-* The first step is to normalise :mod:`dataRaw` using the :mod:`normaliser` function from :mod:`tomobar.supp.suppTools.normaliser`.
+* The first step is to normalise :mod:`dataRaw` using the :mod:`normaliser` function from :mod:`tomobar.preprocessing.normaliser`.
 
 .. code-block:: python
 
-    from tomobar.supp.suppTools import normaliser
+    from tomobar.preprocessing import normaliser
 
     data_norm = normaliser(dataRaw, flats, darks, log=True, method="mean", axis=1)
 
-* Instantiate the iterative reconstructor :mod:`tomobar.methodsIR`:
+* Instantiate the iterative reconstructor :mod:`tomobar.reconstruction.iterative`:
 
 .. code-block:: python
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     import cupy as cp
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
@@ -62,7 +62,7 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
     )
 
 USFFT dendrites example
-======================
+=======================
 
 ``Demos/iterative_dendrites_usfft.py`` reconstructs the same bundled I12
 ``DendrRawData.npz`` acquisition as ``Demos/iterative_dendrites.py`` using

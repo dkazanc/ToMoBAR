@@ -17,7 +17,7 @@ import pytest
 
 from tests.helpers.regulariser_adapter import regulariser_tree
 from tests.helpers.tv_reference import forward_gradient, gradient_adjoint, reference_tv
-from tomobar.supp.device import _validate_device_index
+from tomobar._arrays.device import _validate_device_index
 
 
 @pytest.fixture(scope="module")
@@ -249,7 +249,7 @@ def test_fista_uses_the_actual_constrained_pd_kernel(
     rec.operator.backproject = lambda data, *a, **kw: data.copy()
     rec._finish_reconstruction = lambda image, **kw: image
 
-    def proximal(rec, image, settings, *, nonnegativity):
+    def proximal(image, settings, *, device_index, nonnegativity):
         return cpu_pd_tv(
             image,
             regularisation_parameter=settings.strength,
@@ -319,15 +319,20 @@ def test_admm_warm_tv_continuation_and_geometry_reset(
     rec.operator.forward = lambda image, *a, **kw: image.copy()
     rec.operator.backproject = lambda data, *a, **kw: data.copy()
     from tomobar import regularisers
+    from tomobar._regularisers.proximal import prox_regul
 
     rec.device_index = 0
     monkeypatch.setattr(regularisers, "PD_TV_cupy", cpu_pd_tv)
     cache_calls = []
 
-    def proximal(rec, image, settings, *, nonnegativity, dual_state):
+    def proximal(image, settings, *, device_index, nonnegativity, dual_state):
         cache_calls.append(dual_state)
-        return regularisers.prox_regul(
-            rec, image, settings, nonnegativity=nonnegativity, dual_state=dual_state
+        return prox_regul(
+            image,
+            settings,
+            device_index=device_index,
+            nonnegativity=nonnegativity,
+            dual_state=dual_state,
         )
 
     monkeypatch.setitem(rec.run.__func__.__globals__, "prox_regul", proximal)

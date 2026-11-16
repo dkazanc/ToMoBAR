@@ -6,7 +6,7 @@ from typing import Tuple
 
 def _validate_tv_input(data, gpu_id):
     """Validate raw-kernel storage before selecting a device or allocating."""
-    from tomobar.supp.device import _validate_device_index
+    from tomobar._arrays.device import _validate_device_index
 
     gpu_id = _validate_device_index(gpu_id)
     if not isinstance(data, cp.ndarray) or data.dtype != cp.float32:

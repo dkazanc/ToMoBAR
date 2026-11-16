@@ -11,7 +11,7 @@ def test_gpu_residual_reuses_forward_storage_and_bounds_peak_allocations(
     gpu, fidelity, normal_operator
 ):
     cp = gpu
-    from tomobar.data_fidelities import grad_data_term
+    from tomobar._solvers.fidelities import grad_data_term
 
     shape = (4, 127, 64)
     data = cp.full(shape, 0.25, dtype=cp.float32)

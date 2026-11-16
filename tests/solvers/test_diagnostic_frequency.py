@@ -128,7 +128,7 @@ def test_invalid_settings_fail_before_preparing_data(cpu_rec):
 def test_gpu_disabled_reporting_skips_norms_and_preserves_images(gpu, monkeypatch):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     shape = (3, 8, 8)
     scan = Parallel3DGeometry(

@@ -9,7 +9,7 @@ import cupy as cp
 import numpy as np
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.methodsIR import RecToolsIR
+from tomobar.reconstruction.iterative import RecToolsIR
 
 
 def main():

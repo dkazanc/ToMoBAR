@@ -9,8 +9,8 @@ import pytest
 @pytest.mark.parametrize("amplitude", [0.2, 1.7])
 def test_known_phantom_has_consistent_physical_scale(gpu, width, view_count, amplitude):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     y, x = np.mgrid[-16:16, -16:16] + 0.5
     plane = amplitude * np.exp(-(x * x + y * y) / 50).astype(np.float32)
@@ -42,7 +42,7 @@ def test_known_phantom_has_consistent_physical_scale(gpu, width, view_count, amp
 
 def test_fourier_legacy_scale_is_explicit_and_linear(gpu):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 47, endpoint=False), detector_shape=(3, 128)
@@ -61,7 +61,7 @@ def test_fourier_legacy_scale_is_explicit_and_linear(gpu):
 
 
 def test_small_sinc_cutoff_has_unit_gain_relative_to_ramlak(gpu):
-    from tomobar.fourier import _filtersinc3D, _filterramlak3D
+    from tomobar._filters.responses import _filtersinc3D, _filterramlak3D
 
     data = gpu.asarray(
         np.random.default_rng(7).normal(size=(7, 3, 65)), dtype=gpu.float32

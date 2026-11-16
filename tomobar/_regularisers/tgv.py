@@ -1,5 +1,5 @@
 import cupy as cp
-from tomobar.cuda_kernels import get_cuda_kernel, load_cuda_module
+from tomobar.cuda_kernels.loader import get_cuda_kernel, load_cuda_module
 
 
 def run(

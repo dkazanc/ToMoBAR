@@ -99,3 +99,42 @@ invalidates all old execution caches.
 `Demos/` against the current source signatures and typed Fourier settings,
 without importing CUDA or requiring optional demo datasets. It also checks the
 explicit settings dictionaries in the denoising example.
+
+## Implementation layout
+
+Supported reconstruction and operator imports use the public packages
+`tomobar.reconstruction` and `tomobar.projectors`. Backend implementation packages
+`projectors._astra` and `projectors._usfft` remain private. Shared scalar
+validators live in `_validation`; geometry-specific validation stays in geometry.
+Solver proximal dispatch lives in `_regularisers/proximal.py` and receives an
+explicit device index, rather than a reconstruction object. CPU numerical
+adapters load the same dispatch and algorithm bodies from their canonical files.
+
+Implementations live in `projectors/` (ASTRA and USFFT), `reconstruction/`
+(reconstruction classes, Fourier inversion and memory estimation), `_solvers/`
+(state, options, subsets, buffers, updates and fidelities), `_filters/`, and
+`_arrays/` (preparation, axes and device handling). Geometry and typed options
+remain in their cohesive public modules. Projection preprocessing and
+reconstruction postprocessing live in `tomobar.preprocessing` and
+`tomobar.postprocessing`.
+
+Historical import shims and the `supp` package have been removed. All callers
+and test doubles use the canonical implementation paths directly.
+`core/test_package_layout.py` checks removed paths, import boundaries, CPU-only
+metadata imports and class metadata/pickle references. These checks do not make
+live GPU resources or solver states portable checkpoints.
+
+Package configuration discovers `tomobar.*` subpackages automatically. Wheel
+validation requires the exact current Python/CUDA resource layout, rejecting
+stale build output that would restore removed modules.
+
+`SolverState` is defined in the public `reconstruction/state.py`; the private
+`_solvers/state.py` contains execution and lifecycle logic. CUDA cache utilities
+are imported directly from `cuda_kernels/loader.py`. Architecture rules and
+CPU-safe import checks live in `core/test_architecture.py` and are documented
+in `docs/source/developers/architecture.rst`.
+
+`regularisers/test_large_indices.py` executes production ROF and Split Bregman
+index arithmetic beyond 32-bit limits without allocating image storage. It also
+checks the 64-bit total-element-count argument passed by the SB-TV launcher.
+Numerical regulariser tests cover the CUDA float/half variants separately.

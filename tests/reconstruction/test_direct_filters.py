@@ -10,7 +10,7 @@ from tests.helpers.sinc_reference import sinc_response, filter_sinc
 
 @pytest.fixture
 def sinc(gpu):
-    from tomobar.fourier import _filtersinc3D
+    from tomobar._filters.responses import _filtersinc3D
 
     def apply(data, cutoff=1.1, **options):
         angles_first = gpu.ascontiguousarray(gpu.asarray(data).swapaxes(0, 1))
@@ -23,7 +23,7 @@ def sinc(gpu):
 def test_fbp_filters_layout_storage_and_normalization(gpu, padding):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     # Unequal numbers of rows and views catch normalization on the wrong axis.
     scan = Parallel3DGeometry(
@@ -68,7 +68,7 @@ def test_fbp_filters_layout_storage_and_normalization(gpu, padding):
 def test_shared_2d_fbp_storage_and_filter_reset(gpu):
     cp = gpu
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel2DGeometry(
         angles=np.linspace(0, np.pi, 9, endpoint=False), detector_shape=(12,)
@@ -91,7 +91,7 @@ def test_shared_2d_fbp_storage_and_filter_reset(gpu):
 def test_fbp_rejects_bad_input_before_filtering(gpu):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry(angles=[0, 0.5, 1], detector_shape=(2, 8))
     with RecToolsDIR(
@@ -185,7 +185,7 @@ def test_sinc_preserves_even_width_legacy_response(gpu, width, sinc):
 @pytest.mark.parametrize("width", [8, 9])
 def test_fbp_default_is_cuda_sinc_with_cutoff_035(gpu, width):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, width)
@@ -244,7 +244,7 @@ def test_invalid_fbp_cutoff_fails_before_preparing_data(
 @pytest.mark.parametrize("cutoff", [0.35, 0.6, 1.1])
 def test_public_cutoff_matches_numpy_reference(gpu, cutoff, width):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, width)
@@ -275,7 +275,7 @@ def test_public_cutoff_matches_numpy_reference(gpu, cutoff, width):
 )
 @pytest.mark.parametrize("width", [1, 2, 8, 9, 14, 64, 65, 160, 181, 512, 4096])
 def test_legacy_cuda_sinc_coefficients_match_independent_reference(gpu, width, cutoff):
-    from tomobar.cuda_kernels import load_cuda_module
+    from tomobar.cuda_kernels.loader import load_cuda_module
 
     # Generate native-bin reference in double precision, independently of the
     # production sinc reformulation, shared-memory reduction and output mapping.

@@ -3,7 +3,7 @@
 Synthethic data reconstruction
 ******************************
 
-.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. These examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.methodsIR.RecToolsIR`` with explicit geometry objects. This demo will be updated soon. Historical wavelet illustrations are retained; current examples use supported PD-TV regularisation without wavelets.
+.. warning:: The results bellow presented using ToMoBAR version 2026.2.0.1. These examples describe the historical iterative API; current GPU-only reconstruction uses ``tomobar.reconstruction.iterative.RecToolsIR`` with explicit geometry objects. This demo will be updated soon. Historical wavelet illustrations are retained; current examples use supported PD-TV regularisation without wavelets.
 
 .. note:: Installing `HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ provides access to a wide range of GPU-accelerated processing tools, in addition to `reconstruction <https://diamondlightsource.github.io/httomolibgpu/reference/methods_list/reconstruction_methods.html>`_ wrappers that leverage ToMoBAR's modules, see point 6 in :ref:`ref_dependencies`.
 
@@ -22,7 +22,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
     from tomophantom import TomoP3D
     from tomophantom.qualitymetrics import QualityTools
     from tomophantom.flatsgen import synth_flats
-    from tomobar.supp.suppTools import normaliser
+    from tomobar.preprocessing import normaliser
 
     model = 16  # select a model number from the library of phantoms
     N_size = 256  # Define phantom dimensions using a scalar value (cubic phantom)
@@ -82,7 +82,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
     :alt: Projection data with background and the flat field
 
 
-* Now we normalise the data using the function from :mod:`tomobar.supp.suppTools.normaliser`.
+* Now we normalise the data using the function from :mod:`tomobar.preprocessing.normaliser`.
   Note a visible stripe artefact in the generated sinogram after normalisation. This will
   result in a ring artefact in the reconstructed image.
 
@@ -102,7 +102,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
 .. code-block:: python
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.methodsDIR import RecToolsDIR
+    from tomobar.reconstruction.direct import RecToolsDIR
 
     RectoolsDIR = RecToolsDIR(
         projection_geometry=Parallel3DGeometry(
@@ -239,4 +239,4 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
   ToMoBAR package.
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-Use :class:`tomobar.methodsIR.RecToolsIR` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.
+Use :class:`tomobar.reconstruction.iterative.RecToolsIR` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.

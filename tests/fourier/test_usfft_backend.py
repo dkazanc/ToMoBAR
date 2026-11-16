@@ -7,7 +7,7 @@ import pytest
 @pytest.fixture
 def backend_type():
     pytest.importorskip("cupy")
-    from tomobar._usfft_backend import USFFTBackend
+    from tomobar.projectors._usfft.backend import USFFTBackend
 
     return USFFTBackend
 

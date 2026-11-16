@@ -1,5 +1,5 @@
 import cupy as cp
-from tomobar.cuda_kernels import get_cuda_kernel, load_cuda_module
+from tomobar.cuda_kernels.loader import get_cuda_kernel, load_cuda_module
 
 
 def run(data, *, strength, iterations, methodTV, nonneg, half_precision):
@@ -23,7 +23,8 @@ def run(data, *, strength, iterations, methodTV, nonneg, half_precision):
     dims = tuple(reversed(data.shape))
     block = (128,) + (1,) * (ndim - 1)
     grid = ((dims[0] + 127) // 128,) + dims[1:]
-    sizes = (*dims, data.size)
+    # A volume may exceed 32-bit element counts even when every axis fits int.
+    sizes = (*dims, cp.int64(data.size))
     penalty, fidelity = (cp.float32(2), cp.float32(1))
     norm = cp.float32(1 / (1 + 4 * ndim))
     threshold = cp.float32(strength / 2)

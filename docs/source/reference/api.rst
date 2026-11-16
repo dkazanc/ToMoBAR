@@ -10,10 +10,6 @@ ToMoBAR Modules
 --------------------
 
 .. toctree::
-   :glob:
+   :maxdepth: 2
 
-   ../api/tomobar.methodsDIR
-   ../api/tomobar.methodsIR
-   ../api/tomobar.options
-   ../api/tomobar.regularisers
-   ../api/tomobar.supp.suppTools
+   ../api/tomobar

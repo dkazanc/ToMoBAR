@@ -11,7 +11,7 @@ from tests.helpers.usfft_reference import direct_fourier_projection
 
 
 def make_rec(n=8, rows=1, *, subsets=1, cor=0, padding=0, crop=False):
-    from tomobar.methodsIR import RecToolsIR
+    from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 17, endpoint=False),

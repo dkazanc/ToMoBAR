@@ -49,11 +49,11 @@ extern "C" __global__ void nonlinear_diffusion(
     const float *f,const float *current,float *next,
     float step,float step_strength,float sigma,int penalty,int nonneg,
     int nx,int ny,int nz,int ndim) {
-    const long long i=(long long)blockIdx.x*blockDim.x+threadIdx.x;
-    if(i>=(long long)nx*ny*nz) return;
-    const int coord[3]={(int)(i%nx),(int)((i/nx)%ny),(int)(i/((long long)nx*ny))};
+    const long long i=static_cast<long long>(blockIdx.x)*blockDim.x+threadIdx.x;
+    if(i>=static_cast<long long>(nx)*ny*nz) return;
+    const long long coord[3]={i%nx,(i/nx)%ny,i/(static_cast<long long>(nx)*ny)};
     const int shape[3]={nx,ny,nz};
-    const long long stride[3]={1,nx,(long long)nx*ny};
+    const long long stride[3]={1,nx,static_cast<long long>(nx)*ny};
     float flux=0;
     for(int axis=0;axis<ndim;++axis) {
         if(coord[axis]>0) flux+=ndf_flux(current[i-stride[axis]]-current[i],sigma,penalty);

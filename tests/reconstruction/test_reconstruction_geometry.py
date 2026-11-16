@@ -9,7 +9,7 @@ from tomobar.geometry import (
     Volume2DGeometry,
     Volume3DGeometry,
 )
-from tomobar.reconstruction_geometry import GeometryReconstruction
+from tomobar.reconstruction.base import GeometryReconstruction
 
 
 @pytest.mark.parametrize("kind", ["direct", "iterative"])
@@ -198,7 +198,7 @@ def test_2d_geometries_are_explicit_and_immutable():
 
 def test_rectangular_reconstruction_mask_preserves_shape():
     pytest.importorskip("cupy")
-    from tomobar.supp.suppTools import apply_circular_mask
+    from tomobar.postprocessing import apply_circular_mask
 
     volume = np.ones((2, 5, 9), dtype=np.float32)
     masked = apply_circular_mask(volume, 1.0)
