@@ -52,7 +52,6 @@ dev = [
   "black==26.5.1",
   "pre-commit==4.6.2",
   "pyright==1.1.414",
-  "pydocstyle",
   "toml",
   "imageio",
   "h5py"
@@ -91,16 +90,6 @@ data_file = "/tmp/tomobar.coverage"
 source = [
     "tomobar",
     "**/site-packages/"
-]
-
-[tool.pydocstyle]
-convention = "google"
-add-ignore = [
-    "D100", # Ignore missing docstrings in public modules
-    "D104", # Ignore missing docstrings in public packages
-    "D105", # Standard magic methods follow their documented Python protocols
-    "D107", # Constructor arguments are documented on the class
-    "D418", # Retain the existing overload-docstring workaround; See: https://github.com/PyCQA/pydocstyle/issues/525
 ]
 
 [tool.black]

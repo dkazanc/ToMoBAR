@@ -10,7 +10,7 @@ from collections.abc import Mapping, Iterator
 from dataclasses import dataclass, field, fields
 from typing import TYPE_CHECKING, TypeAlias, Literal
 
-import numpy as np  # pylint: disable=unused-import  # Used in quoted type aliases.
+import numpy as np
 
 from tomobar._solvers.options import SolverOptions
 from tomobar._solvers.buffers import ProjectionBuffers

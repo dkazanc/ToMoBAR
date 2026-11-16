@@ -49,7 +49,6 @@ from tomobar.options import Diagnostics
 )
 def test_state_contains_only_method_settings(cpu_rec, method, option_type, extra):
     # Exact identity checks the native-type normalisation contract.
-    # pylint: disable=unidiomatic-typecheck
     state = cpu_rec.initialise_solver(method, np.ones(cpu_rec.shape, dtype=np.float32))
     assert type(state._options) is option_type  # noqa: E721
     assert set(state.options) == {"nonnegativity", "diagnostics"} | extra
@@ -116,7 +115,6 @@ def test_common_parameters_validated_without_reconstructor(method):
 
 def test_numpy_scalars_preserve_canonical_execution_types():
     # Exact identity checks the native-type normalisation contract.
-    # pylint: disable=unidiomatic-typecheck
     options = solver_options(
         "ADMM",
         rho=np.float32(2),

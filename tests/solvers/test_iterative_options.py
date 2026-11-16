@@ -36,7 +36,7 @@ def test_settings_are_immutable_and_reject_unknown_fields():
             setattr(settings, field, None)
     with pytest.raises(TypeError):
         # Unsupported arguments must be rejected.
-        Regularisation(regul_param=1.0)  # pylint: disable=unexpected-keyword-arg
+        Regularisation(regul_param=1.0)
 
 
 @pytest.mark.parametrize(

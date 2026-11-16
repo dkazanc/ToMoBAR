@@ -161,11 +161,10 @@ in ``[project.optional-dependencies].dev`` and ``.pre-commit-config.yaml`` align
 with the required versions in ``pyproject.toml``. Notebook and documentation
 formatting hooks use the same Black version.
 
-Codacy remains enabled during the migration. Its ``.prospector.yaml`` and the
-legacy pydocstyle settings mirror Ruff's Google-style documentation policy.
-Do not remove these until the replacement checks pass and Codacy is retired.
-Pyright starts with the limited scope described below. CodeQL remains a separate
-follow-up step.
+Ruff owns the docstring policy, including the Google convention configured in
+``[tool.ruff.lint.pydocstyle]``. There is no separate pydocstyle or Prospector
+configuration or development dependency. Pyright covers the limited scope below;
+CodeQL supplies the separate security analysis.
 
 These checks complement the numerical and dependency-boundary tests; changing
 analyzer configuration does not replace running those tests.
@@ -207,6 +206,43 @@ baseline and tighten individual modules once their annotations support it.
 No blanket diagnostic suppression is used, and unnecessary type-ignore comments
 are errors. Runtime input validation and numerical regression tests remain
 necessary alongside static checks.
+
+Security analysis
+-----------------
+
+``.github/workflows/codeql.yml`` configures CodeQL advanced setup for Python.
+It scans pull requests targeting master, pushes to master and a weekly schedule;
+maintainers can also trigger it manually. It uses GitHub's default security query
+suite and uploads findings to the repository's Security / Code scanning page.
+The workflow does not install ToMoBAR or its GPU dependencies. Its only write
+permission is ``security-events: write`` for publishing scan results.
+
+The stable job name is ``CodeQL (Python)``. This check complements Ruff, Black,
+Pyright and numerical tests. It does not analyze CUDA kernels or establish
+projector adjointness, convergence or numerical accuracy.
+
+Repository configuration replaces Codacy with these checks. Finish the hosted
+migration after pushing the workflow:
+
+1. Ensure CodeQL uses **advanced setup**, as supplied by this workflow. If default
+   setup is already enabled, switch to advanced setup first; default setup blocks
+   uploads from a custom workflow. See `GitHub's advanced setup instructions
+   <https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configuring-advanced-setup-for-code-scanning>`_.
+2. Let ``CodeQL (Python)`` complete and confirm its results on Security / Code
+   scanning. The weekly schedule starts once the workflow is on the default branch.
+3. In branch protection or repository rulesets, remove the old Codacy required
+   checks and require ``Ruff and Black``, ``Pyright`` and ``CodeQL (Python)`` as
+   appropriate. Keep any unrelated test and build requirements.
+4. In GitHub Settings / Applications / Installed GitHub Apps, configure the
+   Codacy installation and remove **ToMoBAR** from its repository access. Preserve
+   access for other repositories that still use it. Disable any remaining Codacy
+   analysis for this repository in the Codacy dashboard. See `GitHub's app access
+   instructions
+   <https://docs.github.com/en/apps/using-github-apps/reviewing-and-modifying-installed-github-apps>`_.
+
+Deleting a configuration file does not revoke a hosted integration's access or
+remove its required status checks. These account settings require a signed-in
+repository administrator; they are not changed by committing this workflow.
 
 Regulariser tests
 -----------------

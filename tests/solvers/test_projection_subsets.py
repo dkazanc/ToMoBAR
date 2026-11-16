@@ -57,7 +57,7 @@ def test_swls_sums_are_lazy_and_reused_without_packed_subset_caches():
 def test_invalid_subset_indices(index, error):
     subsets = ProjectionSubsets(np.ones((2, 7, 4)), subset_count=3, array_module=np)
     with pytest.raises(error):
-        subsets[index]  # pylint: disable=pointless-statement  # Check IndexError.
+        subsets[index]  # Check IndexError.
 
 
 @pytest.mark.parametrize("beta", [None, 0.1])
