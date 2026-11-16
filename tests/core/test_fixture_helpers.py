@@ -1,0 +1,44 @@
+"""Shared doubles clean up resources and preserve imported dependencies."""
+
+import sys
+from contextlib import nullcontext
+
+import pytest
+
+from tests.helpers.reconstruction import DirectHarness, ResourceHarness
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_harness_owns_projectors_and_restores_imports(fail):
+    # Import patches must restore identities, including initially absent names.
+    names = ("astra", "cupy", "tomobar.supp.axis_order", "tomobar._fourier_execution")
+    missing = object()
+    before = {name: sys.modules.get(name, missing) for name in names}
+    outcome = (
+        pytest.raises(RuntimeError, match="test body failed") if fail else nullcontext()
+    )
+    with outcome:
+        with ResourceHarness() as backend:
+            with DirectHarness():
+                assert all(
+                    sys.modules.get(name, missing) is before[name] for name in names
+                )
+            backend.load_iterative_module()
+            assert all(sys.modules.get(name, missing) is before[name] for name in names)
+            wrapper = backend.make_wrapper(3)
+            wrapper._projector_handle(None)
+            assert backend.backend.live["projector3d"]
+            if fail:
+                raise RuntimeError("test body failed")
+    assert not backend.backend.live["projector3d"]
+    backend.close()  # Repeated cleanup must remain safe.
+    assert all(sys.modules.get(name, missing) is before[name] for name in names)
+
+
+def test_harness_instances_do_not_share_backend_state():
+    with ResourceHarness() as first, ResourceHarness() as second:
+        first.make_wrapper(3)._projector_handle(None)
+        assert first.backend.live["projector3d"]
+        assert not second.backend.live["projector3d"]
+        first.current_device = 2
+        assert second.current_device == 0

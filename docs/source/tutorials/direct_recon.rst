@@ -46,4 +46,4 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
     FBP_Rec = Rectools.FBP(data_norm, data_axes_labels_order=data_axes_labels3D)
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-Use :class:`tomobar.methodsDIR.RecToolsDIR` with either NumPy or CuPy arrays. Select ``filter_type="SINC_CuPy"`` in ``FBP`` for the custom CUDA SINC filter. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
+Use :class:`tomobar.methodsDIR.RecToolsDIR` with either NumPy or CuPy arrays. Select ``filter_type="SINC"`` in ``FBP`` for the custom CUDA SINC filter. Note that the array of angles for the CuPy modules should be provided as a Numpy array.

@@ -37,8 +37,10 @@ efficiency. With the GPU device controlling :ref:`ref_api` exposed it can also s
 * The FISTA iterative algorithm [BT2009]_, [Xu2016]_ offers various modifications: convergence acceleration with ordered-subsets,
   different data fidelities: PWLS, Huber, Group-Huber [PM2015]_, Students't [KAZ1_2017]_, and SWLS [HOA2017]_
   to deal with noise and various imaging artefacts, such as, rings, streaks. Regularisers from the CCPi-Regularisation Toolkit [KAZ2019]_ are required.
-* The ADMM iterative algorithm [Boyd2011]_ offers various modifications: relaxation, warm start, and ordered-subsets. The CuPy accelerated version
-  is very fast and with enabled OS can converge in 2-3 iterations.
+* The ADMM iterative algorithm [Boyd2011]_ uses full-data updates with either
+  linearised or conjugate-gradient data solves, relaxation, warm starts,
+  optional TV/nonnegativity and residual stopping.
+  Its objective and update sequence are independent of the ordered-subset setting.
 * Use CuPy accelerated FISTA and ADMM methods in :mod:`tomobar.methodsIR`. This GPU-only class is actively developed.
 
 .. figure::  ../_static/TomoRec_surf2.jpg

@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 include-package-data = true
 packages = ["tomobar",
             "tomobar.supp",
+            "tomobar._regularisers",
             "tomobar.cuda_kernels",
             "tomobar.astra_wrappers",
             ]
@@ -45,6 +46,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+visualisation = ["matplotlib"]
 dev = [
   "pytest",
   "pytest-cov",
@@ -66,14 +68,19 @@ addopts = [
    "-vv",
    "-ra",
    "-q",
-   "--tb=native",
+   "--tb=short",
+   "--strict-markers",
+]
+markers = [
+    "gpu: requires a working CUDA device (including tests using host arrays with ASTRA)",
+    "perf: opt-in performance measurements; run with --performance",
+    "full: opt-in large memory/computation cases; run with --full",
 ]
 testpaths = [
     "tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
-    "ignore::pytest.PytestUnknownMarkWarning",
     "ignore::scipy.stats.ConstantInputWarning",
 ]
 

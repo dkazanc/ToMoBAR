@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 """
 A script to reconstruct tomographic X-ray data that is simulated using Geant4
-Get the geant4_dataset1.npz file from https://zenodo.org/records/17252190
+Download geant4_dataset1.npz from https://zenodo.org/records/17252190
+and place it in ToMoBAR/tests/test_data (or change data_path below).
 """
 
 from tomobar.options import DataFidelity, Regularisation
 import timeit
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import cupy as cp
@@ -15,13 +17,13 @@ from tomobar.supp.suppTools import normaliser
 from tomobar.methodsIR import RecToolsIR
 from tomobar.methodsDIR import RecToolsDIR
 
-# Load the downloaded dataset
-data = np.load("/path/to/geant4_dataset1.npz")
-
-projdata = data["projdata"]
-angles = data["angles"]
-flats = data["flats"]
-darks = data["darks"]
+# Resolve the dataset relative to this script, regardless of the working folder.
+data_path = Path(__file__).resolve().parents[1] / "tests/test_data/geant4_dataset1.npz"
+with np.load(data_path, allow_pickle=False) as data:
+    projdata = data["projdata"]
+    angles = data["angles"]
+    flats = data["flats"]
+    darks = data["darks"]
 
 # normalise the data
 data_norm = np.float32(normaliser(projdata, flats, darks, axis=0))
@@ -52,7 +54,7 @@ with RecToolsDIR(
     device_index=0,
 ) as RectoolsDIR_cp:
     FBPrec_cupy = RectoolsDIR_cp.FBP(
-        data_norm_cupy, filter_type="SINC_CuPy", data_axes_labels_order=data_labels3D
+        data_norm_cupy, filter_type="SINC", data_axes_labels_order=data_labels3D
     )
 
 FBPrec_np = cp.asnumpy(FBPrec_cupy)
@@ -63,7 +65,7 @@ plt.title("FBP reconstruction")
 # fig.savefig('dendr_FPP.png', dpi=200)
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # The FBP warm start must match the explicitly requested volume geometry.
 
@@ -77,32 +79,32 @@ with RecToolsIR(
         shape=(detectorVert, detectorHoriz, detectorHoriz)
     ),
     device_index=0,
-    OS_number=24,
+    OS_number=1,
 ) as RectoolsCuPy:
-    # RUN THE ADMM-OS-TV METHOD:
+    # RUN THE ADMM-TV METHOD:
     tic = timeit.default_timer()
-    RecADMM_os_tv = RectoolsCuPy.ADMM(
+    RecADMM_tv = RectoolsCuPy.ADMM(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="PWLS"),
         weights=cp.asarray(projdata[:, 100:300, 100:-100]),
         initial=FBPrec_cupy,
-        iterations=2,
         rho=0.9,
         relaxation=1.7,
-        recon_mask_radius=2.0,
         nonnegativity=True,
         regularisation=Regularisation(
             method="PD_TV", strength=0.0025, iterations=40, half_precision=True
         ),
+        iterations=100,
+        recon_mask_radius=2.0,
     )
     toc = timeit.default_timer()
 Run_time = toc - tic
-print("ADMM-OS-TV (PD) reconstruction done in {} seconds".format(Run_time))
+print("ADMM-TV (PD) reconstruction done in {} seconds".format(Run_time))
 
 fig = plt.figure()
-plt.imshow(cp.asnumpy((RecADMM_os_tv[150, :, :])), vmin=0, vmax=0.003, cmap="gray")
-plt.title("ADMM OS-TV (PD) reconstruction")
+plt.imshow(cp.asnumpy((RecADMM_tv[150, :, :])), vmin=0, vmax=0.003, cmap="gray")
+plt.title("ADMM TV (PD) reconstruction")
 plt.show()
 
 # %%

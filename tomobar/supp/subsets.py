@@ -48,8 +48,11 @@ class ProjectionSubsets:
         weight_sum = None
         if self._beta_swls is not None:
             if index not in self._weight_sums:
-                self._weight_sums[index] = (
-                    self._array_module.sum(weights, axis=1) + self._beta_swls
-                )
+                total = self._array_module.sum(weights, axis=1) + self._beta_swls
+                if self._beta_swls == 0:
+                    # An entirely excluded detector column contributes zero;
+                    # use a safe denominator for its zero numerator.
+                    total = self._array_module.where(total > 0, total, 1)
+                self._weight_sums[index] = total
             weight_sum = self._weight_sums[index]
         return projections, weights, weight_sum

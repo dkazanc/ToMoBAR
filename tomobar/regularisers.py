@@ -1,34 +1,109 @@
+"""Public regulariser validation, device scoping and algorithm dispatch.
+
+Numerical implementations live in tomobar._regularisers. These entry points
+retain the established names, signatures and 2D/3D output-shape conventions.
+All methods require finite nonnegative strength and positive integer iterations,
+even when strength is zero. Zero strength returns an independent copy, optionally
+projected onto nonnegative values, after validating the input and parameters.
+"""
+
 import cupy as cp
-from tomobar.cuda_kernels import load_cuda_module
-from typing import Tuple
 from tomobar.options import Regularisation
+from tomobar._regularisers import (
+    rof_tv as _rof_tv,
+    pd_tv as _pd_tv,
+    sb_tv as _sb_tv,
+    fgp_tv as _fgp_tv,
+    tgv as _tgv,
+    ndf as _ndf,
+)
+from tomobar._regularisers.common import (
+    _validate_tv_input,
+    _prepare_input,
+    _restore_shape,
+    __check_if_input_2d_or_3d,
+)
 
 
 def prox_regul(
-    self, X: cp.ndarray, regularisation: Regularisation, *, nonnegativity: bool = False
+    self,
+    X: cp.ndarray,
+    regularisation: Regularisation,
+    *,
+    nonnegativity: bool = False,
+    dual_state=None,
 ) -> cp.ndarray:
-    """Apply typed TV settings on the reconstructor's selected GPU."""
+    """Apply method-specific settings, optionally retaining PD-TV duals."""
+    regularisation = regularisation._settings
     if regularisation.strength == 0:
-        return X
+        return cp.maximum(X, 0) if nonnegativity else X
+    if regularisation.method == "NDF":
+        return NDF_cupy(
+            X,
+            regularisation_parameter=regularisation.strength,
+            sigma=regularisation.sigma,
+            iterations=regularisation.iterations,
+            time_marching_parameter=regularisation.time_step,
+            penalty_type=regularisation.penalty_type,
+            nonneg=int(nonnegativity),
+            gpu_id=self.device_index,
+            half_precision=regularisation.half_precision,
+        )
+    if regularisation.method == "TGV":
+        return TGV_cupy(
+            X,
+            regularisation_parameter=regularisation.strength,
+            alpha1=regularisation.alpha1,
+            alpha0=regularisation.alpha0,
+            iterations=regularisation.iterations,
+            lipschitz_const=regularisation.lipschitz_constant,
+            nonneg=int(nonnegativity),
+            gpu_id=self.device_index,
+            half_precision=regularisation.half_precision,
+        )
     if regularisation.method == "ROF_TV":
         return ROF_TV_cupy(
             X,
-            regularisation.strength,
-            regularisation.iterations,
-            regularisation.time_step,
-            self.device_index,
-            regularisation.half_precision,
+            regularisation_parameter=regularisation.strength,
+            iterations=regularisation.iterations,
+            time_marching_parameter=regularisation.time_step,
+            gpu_id=self.device_index,
+            half_precision=regularisation.half_precision,
+            nonnegativity=nonnegativity,
         )
-    return PD_TV_cupy(
-        X,
-        regularisation.strength,
-        regularisation.iterations,
-        regularisation.tv_type,
-        int(nonnegativity),
-        regularisation.lipschitz_constant,
-        self.device_index,
-        regularisation.half_precision,
-    )
+    if regularisation.method == "FGP_TV":
+        return FGP_TV_cupy(
+            X,
+            regularisation_parameter=regularisation.strength,
+            iterations=regularisation.iterations,
+            methodTV=regularisation.tv_type,
+            nonneg=int(nonnegativity),
+            gpu_id=self.device_index,
+            half_precision=regularisation.half_precision,
+        )
+    if regularisation.method == "SB_TV":
+        return SB_TV_cupy(
+            X,
+            regularisation_parameter=regularisation.strength,
+            iterations=regularisation.iterations,
+            methodTV=regularisation.tv_type,
+            nonneg=int(nonnegativity),
+            gpu_id=self.device_index,
+            half_precision=regularisation.half_precision,
+        )
+    if regularisation.method == "PD_TV":
+        return PD_TV_cupy(
+            X,
+            regularisation_parameter=regularisation.strength,
+            iterations=regularisation.iterations,
+            methodTV=regularisation.tv_type,
+            nonneg=int(nonnegativity),
+            lipschitz_const=regularisation.lipschitz_constant,
+            gpu_id=self.device_index,
+            half_precision=regularisation.half_precision,
+            _dual_state=dual_state,
+        )
+    raise ValueError(f"unsupported regularisation method: {regularisation.method}")
 
 
 def ROF_TV_cupy(
@@ -38,125 +113,56 @@ def ROF_TV_cupy(
     time_marching_parameter: float = 0.001,
     gpu_id: int = 0,
     half_precision: bool = False,
+    nonnegativity: bool = False,
 ) -> cp.ndarray:
     """Total Variation using Rudin-Osher-Fatemi (ROF) explicit iteration scheme to perform edge-preserving image denoising.
        This is a gradient-based algorithm for a smoothed TV term which requires a small time marching parameter and a significant number of iterations.
        Ref: Rudin, Osher, Fatemi, "Nonlinear Total Variation based noise removal algorithms", 1992.
 
     Args:
-        data (cp.ndarray): A 2d or 3d CuPy array.
+        data (cp.ndarray): A finite float32 2D/3D CuPy array on gpu_id.
+            Strided inputs are packed without modifying the supplied array.
         regularisation_parameter (float): Regularisation parameter to control the level of smoothing. Defaults to 1e-05.
         iterations (int): The number of iterations. Defaults to 3000.
         time_marching_parameter (float): Time marching parameter, needs to be small to ensure convergance. Defaults to 0.001.
-        gpu_id (int): A GPU device index to perform operation on. Defaults to 0.
+        gpu_id (int): GPU containing the input. Defaults to 0. The caller's
+            current device is restored on return or failure.
         half_precision (bool): Perform some computations in half-precision, potentially leads to better performance. Defaults to False.
+        nonnegativity (bool): Project each updated image onto nonnegative values.
 
     Returns:
         cp.ndarray: ROF-TV filtered CuPy array.
     """
-    if gpu_id >= 0:
-        cp.cuda.Device(gpu_id).use()
-    else:
-        raise ValueError("The gpu_device must be a positive integer or zero")
+    from tomobar.options import _standalone_regularisation
+    from tomobar.options import _boolean
 
-    input_type = data.dtype
+    _boolean(nonnegativity, "nonnegativity")
 
-    if input_type != "float32":
-        raise ValueError("The input data should be float32 data type")
-
-    data, input_is_2d, ind_axis = __check_if_input_2d_or_3d(data)
-
-    dtype_of_D = cp.float16 if half_precision else cp.float32
-
-    # initialise CuPy arrays here
-    out_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
-    d_D1 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
-    d_D2 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
-
-    module = load_cuda_module("rudin_osher_fatemi_total_variation")
-
-    divergence_kernel_name = (
-        f"divergence_kernel_{data.ndim}D_{'half' if half_precision else 'float'}"
+    settings = _standalone_regularisation(
+        "ROF_TV",
+        regularisation_parameter,
+        iterations,
+        half_precision,
+        nonnegativity,
+        time_step=time_marching_parameter,
     )
-    divergence_kernel = module.get_function(divergence_kernel_name)
-    TV_kernel_name = f"TV_kernel_{data.ndim}D_{'half' if half_precision else 'float'}"
-    TV_kernel = module.get_function(TV_kernel_name)
-
-    dz, dy, dx = (0,) * (3 - data.ndim) + data.shape
-    block_x = 128
-    block_dims = (block_x, 1)
-    grid_x = (dx + block_x - 1) // block_x
-    grid_y = dy
-    grid_dims = (grid_x, grid_y)
-    data_dims = (dx, dy)
-
-    if not input_is_2d:
-        d_D3 = cp.empty(data.shape, dtype=dtype_of_D, order="C")
-
-        block_dims = block_dims + (1,)
-        grid_dims = grid_dims + (dz,)
-        data_dims = data_dims + (dz,)
-
-    # perform algorithm iterations
-    input_index = 0
-    output_index = 1
-
-    for _ in range(iterations):
-        if input_is_2d:
-            params = (
-                out_arrays[input_index],
-                d_D1,
-                d_D2,
-                dx,
-                dy,
-            )
-        else:
-            params = (
-                out_arrays[input_index],
-                d_D1,
-                d_D2,
-                d_D3,
-                dx,
-                dy,
-                dz,
-            )
-        divergence_kernel(grid_dims, block_dims, params)
-
-        if input_is_2d:
-            params = (
-                out_arrays[input_index],
-                out_arrays[output_index],
-                data,
-                d_D1,
-                d_D2,
-                cp.float32(regularisation_parameter),
-                cp.float32(time_marching_parameter),
-                dx,
-                dy,
-            )
-        else:
-            params = (
-                out_arrays[input_index],
-                out_arrays[output_index],
-                data,
-                d_D1,
-                d_D2,
-                d_D3,
-                cp.float32(regularisation_parameter),
-                cp.float32(time_marching_parameter),
-                dx,
-                dy,
-                dz,
-            )
-        TV_kernel(grid_dims, block_dims, params)
-
-        input_index = 1 - input_index
-        output_index = 1 - output_index
-
-    if input_is_2d:
-        return cp.expand_dims(out_arrays[input_index], axis=ind_axis)
-    else:
-        return out_arrays[input_index]
+    strength = float(settings.strength)
+    iterations = int(settings.iterations)
+    gpu_id = _validate_tv_input(data, gpu_id)
+    with cp.cuda.Device(gpu_id):
+        data, input_is_2d, ind_axis = _prepare_input(data, "TV")
+        if strength == 0:
+            result = cp.maximum(data, 0) if nonnegativity else data.copy()
+            return _restore_shape(result, input_is_2d, ind_axis)
+        result = _rof_tv.run(
+            data,
+            regularisation_parameter=regularisation_parameter,
+            iterations=iterations,
+            time_marching_parameter=time_marching_parameter,
+            half_precision=half_precision,
+            nonnegativity=nonnegativity,
+        )
+        return _restore_shape(result, input_is_2d, ind_axis)
 
 
 def PD_TV_cupy(
@@ -168,137 +174,296 @@ def PD_TV_cupy(
     lipschitz_const: float = 8.0,
     gpu_id: int = 0,
     half_precision: bool = False,
+    *,
+    _dual_state=None,
 ) -> cp.ndarray:
     """Primal Dual algorithm for non-smooth convex Total Variation functional.
        Ref: Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
        with Applications to Imaging", 2010.
+       Forward differences have zero boundary flux. The returned array is the
+       primal image; nonnegativity is applied to each primal update.
+       The internal _dual_state cache retains unit-ball dual fields for ADMM;
+       primal buffers are rebuilt from the current input on every call.
 
     Args:
-        data (cp.ndarray): A 2d or 3d CuPy array.
+        data (cp.ndarray): A finite float32 2D/3D CuPy array on gpu_id.
+            Strided inputs are packed without modifying the supplied array.
         regularisation_parameter (float): Regularisation parameter to control the level of smoothing. Defaults to 1e-05.
         iterations (int): The number of iterations. Defaults to 1000.
         methodTV (int): Choose between isotropic (0) or anisotropic (1) case for TV norm.
         nonneg (int): Enable non-negativity in updates by selecting 1. Defaults to 0.
-        lipschitz_const (float): Lipschitz constant to control convergence.
-        gpu_id (int): A GPU device index to perform operation on. Defaults to 0.
+        lipschitz_const (float): Squared forward-gradient norm bound. Values
+            below 4*ndim are raised to that safe bound.
+        gpu_id (int): GPU containing the input. Defaults to 0. The caller's
+            current device is restored on return or failure.
         half_precision (bool): Perform some computations in half-precision, potentially leads to better performance. Defaults to False.
 
 
     Returns:
         cp.ndarray: PD-TV filtered CuPy array.
     """
-    if gpu_id >= 0:
-        cp.cuda.Device(gpu_id).use()
-    else:
-        raise ValueError("The gpu_device must be a positive integer or zero")
+    from tomobar.options import _standalone_regularisation
 
-    input_type = data.dtype
-    if input_type != "float32":
-        raise ValueError("The input data should be float32 data type")
-
-    data, input_is_2d, ind_axis = __check_if_input_2d_or_3d(data)
-
-    dtype_of_P = cp.float16 if half_precision else cp.float32
-
-    # prepare some parameters:
-    tau = cp.float32(regularisation_parameter * 0.1)
-    sigma = cp.float32(1.0 / (lipschitz_const * tau))
-    theta = cp.float32(1.0)
-    lt = cp.float32(tau / regularisation_parameter)
-
-    # initialise CuPy arrays here:
-    U_arrays = [data.copy(), cp.zeros(data.shape, dtype=cp.float32, order="C")]
-    P1_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
-    P2_arrays = [cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)]
-
-    # loading and compiling CUDA kernels:
-    kernel_name = f"primal_dual_for_total_variation_{'3D' if data.ndim == 3 else '2D'}_{'half' if half_precision else 'float'}"
-    if nonneg:
-        kernel_name += "_nonneg"
-    if methodTV:
-        kernel_name += "_methodTV"
-
-    module = load_cuda_module("primal_dual_for_total_variation")
-    primal_dual_for_total_variation = module.get_function(kernel_name)
-
-    dz, dy, dx = (0,) * (3 - data.ndim) + data.shape
-    block_x = 128
-    block_dims = (block_x, 1)
-    grid_x = (dx + block_x - 1) // block_x
-    grid_y = dy
-    grid_dims = (grid_x, grid_y)
-    data_dims = (dx, dy)
-
-    if not input_is_2d:
-        P3_arrays = [
-            cp.zeros(data.shape, dtype=dtype_of_P, order="C") for _ in range(2)
-        ]
-        block_dims = block_dims + (1,)
-        grid_dims = grid_dims + (dz,)
-        data_dims = data_dims + (dz,)
-
-    # perform algorithm iterations
-    input_index = 0
-    output_index = 1
-
-    for _ in range(iterations):
-        if input_is_2d:
-            params = (
-                data,
-                U_arrays[input_index],
-                U_arrays[output_index],
-                P1_arrays[input_index],
-                P2_arrays[input_index],
-                P1_arrays[output_index],
-                P2_arrays[output_index],
-                sigma,
-                tau,
-                lt,
-                theta,
-                *data_dims,
-            )
-        else:
-            params = (
-                data,
-                U_arrays[input_index],
-                U_arrays[output_index],
-                P1_arrays[input_index],
-                P2_arrays[input_index],
-                P3_arrays[input_index],
-                P1_arrays[output_index],
-                P2_arrays[output_index],
-                P3_arrays[output_index],
-                sigma,
-                tau,
-                lt,
-                theta,
-                *data_dims,
-            )
-
-        primal_dual_for_total_variation(grid_dims, block_dims, params)
-
-        input_index = 1 - input_index
-        output_index = 1 - output_index
-    if input_is_2d:
-        return cp.expand_dims(U_arrays[input_index], axis=ind_axis)
-    else:
-        return U_arrays[input_index]
+    settings = _standalone_regularisation(
+        "PD_TV",
+        regularisation_parameter,
+        iterations,
+        half_precision,
+        nonneg,
+        tv_type=methodTV,
+        lipschitz_constant=lipschitz_const,
+    )
+    strength = float(settings.strength)
+    iterations = int(settings.iterations)
+    gpu_id = _validate_tv_input(data, gpu_id)
+    with cp.cuda.Device(gpu_id):
+        data, input_is_2d, ind_axis = _prepare_input(data, "TV")
+        if regularisation_parameter == 0:
+            result = cp.maximum(data, 0) if nonneg else data.copy()
+            return _restore_shape(result, input_is_2d, ind_axis)
+        result = _pd_tv.run(
+            data,
+            regularisation_parameter=regularisation_parameter,
+            iterations=iterations,
+            methodTV=methodTV,
+            nonneg=nonneg,
+            lipschitz_const=lipschitz_const,
+            gpu_id=gpu_id,
+            half_precision=half_precision,
+            _dual_state=_dual_state,
+        )
+        return _restore_shape(result, input_is_2d, ind_axis)
 
 
-def __check_if_input_2d_or_3d(data: cp.ndarray) -> Tuple[cp.ndarray, bool, int]:
-    # return False if the data is 3D and its dimensions are larger 1.
-    ind = 0
-    if data.ndim == 2:
-        return (data, True, 0)
-    elif data.ndim == 3:
-        dim_is_one = False
-        for i in range(3):
-            if cp.shape(data)[i] == 1:
-                dim_is_one = True
-                break
-        if dim_is_one:
-            data = cp.squeeze(data, axis=i)
-            ind = i
-        return (data, dim_is_one, ind)
-    else:
-        raise ValueError("2D or 3D arrays must be provided only")
+def SB_TV_cupy(
+    data: cp.ndarray,
+    regularisation_parameter: float = 0.001,
+    iterations: int = 150,
+    methodTV: int = 0,
+    nonneg: int = 0,
+    gpu_id: int = 0,
+    half_precision: bool = False,
+) -> cp.ndarray:
+    """Split Bregman TV denoising, ported from CCPi's TV_SB_GPU_core.cu.
+
+    Implements Goldstein and Osher (2009) with two image-update sweeps per
+    iteration and zero-flux forward differences with their exact adjoint. ``methodTV`` selects
+    isotropic (0) or anisotropic (1) shrinkage. The fidelity weight is
+    1/regularisation_parameter and the splitting penalty is twice that weight.
+    No CCPi runtime is needed. The input is never modified.
+
+    Input must be a float32 CuPy image/volume on gpu_id. As with the other TV
+    wrappers, a 2D image is returned with a leading singleton dimension; a
+    singleton axis of a 3D input is restored in its original position.
+    Half precision stores only split and Bregman fields in float16; image
+    buffers and calculations remain float32. Nonnegativity projects each
+    image sweep. Iterations are fixed; no residual stopping rule is used.
+    """
+    from tomobar.options import _standalone_regularisation
+
+    settings = _standalone_regularisation(
+        "SB_TV",
+        regularisation_parameter,
+        iterations,
+        half_precision,
+        nonneg,
+        tv_type=methodTV,
+    )
+    strength = float(settings.strength)
+    iterations = int(settings.iterations)
+    gpu_id = _validate_tv_input(data, gpu_id)
+    with cp.cuda.Device(int(gpu_id)):
+        data, is2d, axis = _prepare_input(data, "SB_TV")
+        if data.size > 2147483647:
+            raise ValueError("SB_TV input exceeds the 32-bit kernel index range")
+        if strength == 0:
+            result = cp.maximum(data, 0) if nonneg else data.copy()
+            return _restore_shape(result, is2d, axis)
+        if min(data.shape) < 1:
+            raise ValueError("SB_TV requires nonempty input axes")
+        result = _sb_tv.run(
+            data,
+            strength=strength,
+            iterations=iterations,
+            methodTV=methodTV,
+            nonneg=nonneg,
+            half_precision=half_precision,
+        )
+        return _restore_shape(result, is2d, axis)
+
+
+def FGP_TV_cupy(
+    data: cp.ndarray,
+    regularisation_parameter: float = 0.001,
+    iterations: int = 150,
+    methodTV: int = 0,
+    nonneg: int = 0,
+    gpu_id: int = 0,
+    half_precision: bool = False,
+) -> cp.ndarray:
+    """Fast Gradient Projection TV, adapted from CCPi TV_FGP_GPU_core.cu.
+
+    Beck and Teboulle's accelerated dual projected-gradient method minimises
+    0.5*||u-data||^2 + strength*TV(u), optionally over u>=0. Forward differences
+    use zero boundary flux. methodTV=0 selects isotropic TV, 1 anisotropic TV.
+    Nonnegativity projects every primal evaluation, including the final output.
+    Half precision stores only bounded dual fields; primal buffers stay float32.
+
+    Accepts float32 CuPy images/volumes on gpu_id without modifying them.
+    Like the other TV wrappers, returns a leading singleton axis for 2D input
+    and restores singleton axes of 3D input. Uses a fixed iteration count;
+    no CCPi runtime, residual tolerance or persistent dual state is required.
+    """
+    from tomobar.options import _standalone_regularisation
+
+    settings = _standalone_regularisation(
+        "FGP_TV",
+        regularisation_parameter,
+        iterations,
+        half_precision,
+        nonneg,
+        tv_type=methodTV,
+    )
+    strength = float(settings.strength)
+    iterations = int(settings.iterations)
+    gpu_id = _validate_tv_input(data, gpu_id)
+    with cp.cuda.Device(int(gpu_id)):
+        data, is2d, axis = _prepare_input(data, "FGP_TV")
+        strength32 = cp.float32(strength)
+        if strength32 == 0:
+            result = cp.maximum(data, 0) if nonneg else data.copy()
+            return _restore_shape(result, is2d, axis)
+        if min(data.shape) < 1:
+            raise ValueError("FGP_TV requires nonempty input axes")
+        result = _fgp_tv.run(
+            data,
+            strength32=strength32,
+            iterations=iterations,
+            methodTV=methodTV,
+            nonneg=nonneg,
+            half_precision=half_precision,
+        )
+        return _restore_shape(result, is2d, axis)
+
+
+def TGV_cupy(
+    data: cp.ndarray,
+    regularisation_parameter: float = 0.001,
+    alpha1: float = 1.0,
+    alpha0: float = 2.0,
+    iterations: int = 150,
+    lipschitz_const: float = 12.0,
+    nonneg: int = 0,
+    gpu_id: int = 0,
+    half_precision: bool = False,
+) -> cp.ndarray:
+    """Second-order isotropic TGV, adapted from CCPi TGV_GPU_core.cu.
+
+    Minimises 0.5*||u-data||^2 + strength*(alpha1*||Du-v||_2,1
+    + alpha0*||Ev||_F,1) over u,v. E is the symmetrised forward gradient;
+    all derivatives have zero boundary flux and exact adjoints. Nonnegativity
+    constrains u only. The returned image is the true primal, not extrapolated.
+
+    Input is float32 CuPy 2D/3D on gpu_id and remains unchanged. 2D output has
+    a leading singleton axis; 3D singleton axes are restored. Half precision
+    stores only normalised duals, with float32 primal/auxiliary vector fields.
+    The requested squared operator bound is raised to at least 8*ndim+2;
+    tau=sigma=0.99/sqrt(bound). Fixed iterations, no residual tolerance/cache.
+    """
+    from tomobar.options import _standalone_regularisation
+
+    settings = _standalone_regularisation(
+        "TGV",
+        regularisation_parameter,
+        iterations,
+        half_precision,
+        nonneg,
+        alpha1=alpha1,
+        alpha0=alpha0,
+        lipschitz_constant=lipschitz_const,
+    )
+    strength = float(settings.strength)
+    iterations = int(settings.iterations)
+    gpu_id = _validate_tv_input(data, gpu_id)
+    with cp.cuda.Device(int(gpu_id)):
+        data, is2d, axis = _prepare_input(data, "TGV")
+        strength32 = cp.float32(strength)
+        if strength32 == 0:
+            result = cp.maximum(data, 0) if nonneg else data.copy()
+            return _restore_shape(result, is2d, axis)
+        if min(data.shape) < 1:
+            raise ValueError("TGV requires nonempty input axes")
+        result = _tgv.run(
+            data,
+            strength=strength,
+            alpha1=alpha1,
+            alpha0=alpha0,
+            iterations=iterations,
+            lipschitz_const=lipschitz_const,
+            nonneg=nonneg,
+            half_precision=half_precision,
+        )
+        return _restore_shape(result, is2d, axis)
+
+
+def NDF_cupy(
+    data: cp.ndarray,
+    regularisation_parameter: float = 0.001,
+    sigma: float = 0.01,
+    iterations: int = 150,
+    time_marching_parameter: float = 0.005,
+    penalty_type: int = 1,
+    nonneg: int = 0,
+    gpu_id: int = 0,
+    half_precision: bool = False,
+) -> cp.ndarray:
+    """Explicit nonlinear diffusion adapted from CCPi NonlDiff_GPU_core.cu.
+
+    sigma=0 selects linear diffusion; otherwise the effective edge threshold
+    is sigma/sqrt(2), matching CCPi. Penalties are 1 Huber, 2 Perona-Malik,
+    3 Tukey biweight, 4 truncated quadratic, 5 truncated Huber. The latter
+    four are nonconvex; finite diffusion is not an exact convex proximal map.
+
+    Read-only current and separate next buffers avoid the source's data race.
+    Boundary flux is zero and nonnegativity projects each updated image.
+    Time step is capped at 0.99/(1+2*ndim*strength*C), where C=1/threshold for
+    Huber penalties and 1 otherwise. No residual stopping rule is used.
+
+    Inputs are unmodified float32 CuPy 2D/3D arrays on gpu_id. 2D output has
+    a leading singleton axis; 3D singleton axes are restored. Half precision
+    is unsupported: there are no auxiliary fields, and primal storage stays
+    float32. The half_precision argument must be False.
+    """
+    from tomobar.options import _standalone_regularisation
+
+    settings = _standalone_regularisation(
+        "NDF",
+        regularisation_parameter,
+        iterations,
+        half_precision,
+        nonneg,
+        sigma=sigma,
+        time_step=time_marching_parameter,
+        penalty_type=penalty_type,
+    )
+    strength = float(settings.strength)
+    iterations = int(settings.iterations)
+    gpu_id = _validate_tv_input(data, gpu_id)
+    with cp.cuda.Device(int(gpu_id)):
+        data, is2d, axis = _prepare_input(data, "NDF")
+        strength32 = cp.float32(strength)
+        if strength32 == 0:
+            result = cp.maximum(data, 0) if nonneg else data.copy()
+            return _restore_shape(result, is2d, axis)
+        if min(data.shape) < 1:
+            raise ValueError("NDF requires nonempty input axes")
+        result = _ndf.run(
+            data,
+            strength=strength,
+            sigma=sigma,
+            iterations=iterations,
+            time_marching_parameter=time_marching_parameter,
+            penalty_type=penalty_type,
+            nonneg=nonneg,
+        )
+        return _restore_shape(result, is2d, axis)

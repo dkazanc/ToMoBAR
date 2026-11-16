@@ -18,10 +18,14 @@ Submodules
    :maxdepth: 4
 
    tomobar.fourier
+   tomobar.fourier_plan
    tomobar.methodsDIR
    tomobar.methodsIR
    tomobar.options
+   tomobar.operators
+   tomobar.visualisation
    tomobar.solver_state
+   tomobar.alignment
    tomobar.regularisers
 
 Module contents

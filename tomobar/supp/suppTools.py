@@ -9,18 +9,7 @@ List of functions:
 
 import numpy as np
 
-try:
-    import cupy as xp
-
-    try:
-        xp.cuda.Device(0).compute_capability
-    except xp.cuda.runtime.CUDARuntimeError:
-        import numpy as xp
-
-        print("CuPy is installed but the GPU device is inaccessible")
-except ImportError:
-    import numpy as xp
-
+import cupy as xp
 
 try:
     from skimage.transform import downscale_local_mean

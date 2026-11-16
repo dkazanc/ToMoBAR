@@ -95,7 +95,7 @@ demo.
     :alt: FISTA recon
 
 * The following historical Group-Huber illustration [PM2015]_ used the retired API.
-  The current API supports LS, PWLS, SWLS and KL; the accompanying call uses PWLS.
+  The current API supports LS, PWLS and SWLS; the accompanying call uses PWLS.
 
 .. code-block:: python
 

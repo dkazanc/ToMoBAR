@@ -9,26 +9,10 @@ import weakref
 
 import numpy as np
 from tomobar.geometry import interleaved_view_indices
-from tomobar.supp.array_prepare import prepare_array
+from tomobar.supp.array_prepare import prepare_array, validate_array
 
-try:
-    import cupy as xp
-
-    try:
-        xp.cuda.Device(0).compute_capability
-    except xp.cuda.runtime.CUDARuntimeError:
-        import numpy as xp
-
-        print("CuPy is installed but the GPU device is inaccessible")
-except ImportError:
-    import numpy as xp
-
-    print("CuPy is not installed")
-
-try:
-    import astra
-except ImportError:
-    print("____! Astra-toolbox package is missing, please install !____")
+import cupy as xp
+import astra
 
 
 ###########Base class############
@@ -99,12 +83,34 @@ class AstraBase:
             self._projector_handles[subset_index] = handle
         return self._projector_handles[subset_index]
 
-    def _project(self, data, subset_index, *, forward):
+    def _validate_output(self, out, data, geometry):
+        """Require writable, independent storage; never pack an output buffer."""
+        host = isinstance(data, np.ndarray)
+        if isinstance(out, np.ndarray) != host:
+            raise TypeError("out must use the same array library as the input")
+        validate_array(
+            out,
+            shape=astra.geom_size(geometry),
+            device_index=self.device_index,
+            array_module=xp,
+            name="out",
+        )
+        if out.dtype != np.float32 or not out.flags.c_contiguous:
+            raise ValueError("out must be C-contiguous float32 storage")
+        if host and not out.flags.writeable:
+            raise ValueError("out must be writable")
+        overlaps = np.shares_memory if host else xp.may_share_memory
+        if overlaps(data, out):
+            raise ValueError("out must not overlap the input")
+
+    def _project(self, data, subset_index, *, forward, out=None):
         self._ensure_open()
         projection = self._selected_geometry(subset_index)
         manager = astra.projector3d if self._is_3d else astra.projector
         input_geometry = self.vol_geom if forward else projection
         output_geometry = projection if forward else self.vol_geom
+        if out is not None:
+            self._validate_output(out, data, output_geometry)
         if isinstance(data, np.ndarray):
             prepared = prepare_array(
                 data,
@@ -113,31 +119,36 @@ class AstraBase:
                 array_module=xp,
                 pack=True,
             )
-            out = np.empty(astra.geom_size(output_geometry), dtype=np.float32)
+            if out is None:
+                out = np.empty(astra.geom_size(output_geometry), dtype=np.float32)
             handle = self._projector_handle(subset_index)
             operation = manager.direct_FP if forward else manager.direct_BP
             operation(handle, prepared, out=out)
         else:
             prepared = self._prepare_cupy_input(data, input_geometry, "data")
             with xp.cuda.Device(self.device_index):
-                out = xp.empty(astra.geom_size(output_geometry), dtype=xp.float32)
+                if out is None:
+                    out = xp.empty(astra.geom_size(output_geometry), dtype=xp.float32)
                 handle = self._projector_handle(subset_index)
                 operation = manager.direct_FP if forward else manager.direct_BP
                 operation(handle, prepared, out=out)
         return out
 
-    def forward(self, volume, *, subset_index=None):
+    def forward(self, volume, *, subset_index=None, out=None):
         """Project a NumPy/CuPy array using ASTRA 2.5's direct DLPack API.
 
         None selects all views, even when subsets are configured. A subset
         index selects its interleaved views. Output uses the input array library.
         Noncontiguous or non-float32 real inputs are packed as float32.
+        Optional out must be independent C-contiguous float32 storage on the
+        same device/library with the exact output shape. It is overwritten
+        and returned by identity. Without out, the result is a fresh array.
         """
-        return self._project(volume, subset_index, forward=True)
+        return self._project(volume, subset_index, forward=True, out=out)
 
-    def backproject(self, projections, *, subset_index=None):
-        """Backproject NumPy/CuPy projections using the same cached handle."""
-        return self._project(projections, subset_index, forward=False)
+    def backproject(self, projections, *, subset_index=None, out=None):
+        """Backproject using a cached handle and the same out contract as forward."""
+        return self._project(projections, subset_index, forward=False, out=out)
 
     def close(self):
         """Release cached handles. Repeated calls are harmless."""

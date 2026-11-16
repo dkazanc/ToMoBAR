@@ -1,4 +1,4 @@
-"""GPU device-index validation shared by reconstructors and projectors."""
+"""GPU device selection and explicit cache cleanup for reconstruction."""
 
 import numpy as np
 
@@ -25,3 +25,13 @@ def _on_device(array_module):
         return call
 
     return decorate
+
+
+def _clear_gpu_cache(array_module):
+    """Release CuPy FFT plans and unused default-pool blocks on explicit request.
+
+    Clear plans first so their work areas can also be returned by the pool.
+    Live reconstruction/input arrays are unaffected.
+    """
+    array_module.fft.config.get_plan_cache().clear()
+    array_module.get_default_memory_pool().free_all_blocks()

@@ -176,12 +176,12 @@ with RecToolsIR(
     RecFISTA_LS_reg = RectoolsIR.FISTA(
         sino_artifacts_cp,
         fidelity=DataFidelity(method="LS"),
-        iterations=25,
-        recon_mask_radius=1.3,
         lipschitz_constant=lc,
         regularisation=Regularisation(
             method="PD_TV", strength=0.002, iterations=80, half_precision=True
         ),
+        iterations=25,
+        recon_mask_radius=1.3,
     )
 RecFISTA_LS_reg = cp.asnumpy(RecFISTA_LS_reg[0, :, :])
 

@@ -4,8 +4,11 @@ Costs are unnormalised sums on the full working grid and padded projection
 geometry, before the final output mask/crop. TV uses unit voxel spacing and
 forward differences with zero normal derivative at the boundary. ROF_TV is
 reported using the nominal isotropic TV objective (its proximal solver uses
-an approximate, smoothed discretisation).
+an approximate, smoothed discretisation). SB_TV uses the same zero-flux
+TV discretisation as PD_TV.
 """
+
+from time import perf_counter
 
 import numpy as np
 
@@ -15,12 +18,11 @@ from tomobar.options import DataFidelity, Regularisation, _boolean
 def data_energy(
     prediction, data, *, fidelity=DataFidelity(), weights=None, array_module=np
 ):
-    """Evaluate LS, PWLS, SWLS or generalised KL divergence.
+    """Evaluate LS, PWLS or SWLS data cost.
 
-    Arrays use (detY, angles, detX). Weighted terms expect the same clamped,
+    Arrays use (detY, angles, detX). Weighted terms expect the same
     normalised weights used by the reconstruction. SWLS eliminates the stripe
     variable across all views, including when reconstruction uses subsets.
-    KL includes the data-only constant, so an exact fit has zero cost.
     """
     xp = array_module
     if not isinstance(fidelity, DataFidelity):
@@ -32,15 +34,6 @@ def data_energy(
             raise ValueError("weighted fidelity requires weights matching data")
     elif weights is not None:
         raise ValueError("weights are only supported for PWLS and SWLS")
-    if fidelity.method == "KL":
-        if bool(xp.any(data < 0)):
-            raise ValueError("KL requires nonnegative data")
-        # The solvers use this same floor in the KL gradient / EM update.
-        prediction = xp.maximum(prediction, 1e-8)
-        safe_data = xp.where(data > 0, data, 1)
-        return xp.sum(
-            prediction - data + data * xp.log(safe_data / prediction), dtype=xp.float64
-        )
     residual = prediction - data
     if fidelity.method == "LS":
         return 0.5 * xp.sum(residual * residual, dtype=xp.float64)
@@ -54,17 +47,56 @@ def data_energy(
     return 0.5 * cost
 
 
+def _diffusion_energy(volume, regularisation, xp):
+    """Edge potentials whose derivatives are the NDF flux functions."""
+    sigma = regularisation.sigma / np.sqrt(2.0)
+    penalty = regularisation.penalty_type
+    total = 0.0
+    image = volume.astype(xp.float64, copy=False)
+    for axis in range(volume.ndim):
+        magnitude = xp.abs(xp.diff(image, axis=axis))
+        if sigma == 0:
+            potential = 0.5 * magnitude * magnitude
+        elif penalty in (1, 5):
+            limited = xp.minimum(magnitude, sigma)
+            potential = 0.5 * limited * (limited / sigma) + (magnitude - limited)
+            if penalty == 5:
+                potential = xp.minimum(potential, 1.5 * sigma)
+        elif penalty == 2:
+            potential = 0.5 * sigma * sigma * xp.log1p((magnitude / sigma) ** 2)
+        elif penalty == 3:
+            ratio = xp.minimum(magnitude / sigma, 1)
+            r2 = ratio * ratio
+            potential = sigma * sigma * (0.5 * r2 - 0.5 * r2 * r2 + r2 * r2 * r2 / 6)
+        else:
+            limited = xp.minimum(magnitude, sigma)
+            potential = 0.5 * limited * limited
+        total += xp.sum(potential, dtype=xp.float64)
+    return regularisation.strength * total
+
+
 def regularisation_energy(volume, regularisation=None, *, array_module=np):
-    """Return strength times isotropic or anisotropic discrete TV."""
+    """Return the selected TV/diffusion penalty; image-only TGV is unsupported."""
     if regularisation is None:
         return 0.0
     if not isinstance(regularisation, Regularisation):
         raise TypeError("regularisation must be a Regularisation instance or None")
+    regularisation = regularisation._settings
     if regularisation.strength == 0:
         return 0.0
+    if regularisation.method == "NDF":
+        return _diffusion_energy(volume, regularisation, array_module)
+    if regularisation.method == "TGV":
+        raise NotImplementedError(
+            "TGV energy requires minimisation over an auxiliary vector field; "
+            "image-only energy histories are unsupported. Use return_energy=False."
+        )
     xp = array_module
     magnitude = xp.zeros_like(volume)
-    anisotropic = regularisation.method == "PD_TV" and regularisation.tv_type == 1
+    anisotropic = (
+        regularisation.method in ("PD_TV", "SB_TV", "FGP_TV")
+        and regularisation.tv_type == 1
+    )
     for axis in range(volume.ndim):
         difference = xp.diff(volume, axis=axis, append=xp.take(volume, [-1], axis=axis))
         magnitude += xp.abs(difference) if anisotropic else difference * difference
@@ -73,8 +105,15 @@ def regularisation_energy(volume, regularisation=None, *, array_module=np):
     return regularisation.strength * xp.sum(magnitude, dtype=xp.float64)
 
 
+def _emission_energy(prediction, data, *, array_module):
+    """OSEM diagnostic: Poisson negative log-likelihood without data constants."""
+    xp = array_module
+    predicted = xp.maximum(prediction, 1e-8)
+    return xp.sum(predicted - data * xp.log(predicted), dtype=xp.float64)
+
+
 class EnergyHistory:
-    """Internal recorder; disabled recording performs no forward projections."""
+    """Record energy and synchronized wall times; disabled recording does no work."""
 
     def __init__(
         self,
@@ -84,10 +123,13 @@ class EnergyHistory:
         *,
         fidelity=DataFidelity(),
         weights=None,
+        emission=False,
         regularisation=None,
         array_module,
     ):
         _boolean(enabled, "return_energy")
+        _boolean(emission, "emission")
+        self.emission = emission
         self.enabled = enabled
         self.reconstructor = reconstructor
         self.data = data
@@ -96,26 +138,34 @@ class EnergyHistory:
         self.regularisation = regularisation
         self.xp = array_module
         self.values = []
+        self.times = []
+        self._time_origin = None
 
     def record(self, volume):
         if self.enabled:
-            prediction = self.reconstructor._Ax(volume)
-            value = data_energy(
-                prediction,
-                self.data,
-                fidelity=self.fidelity,
-                weights=self.weights,
-                array_module=self.xp,
-            )
+            prediction = self.reconstructor.operator.forward(volume)
+            if self.emission:
+                value = _emission_energy(prediction, self.data, array_module=self.xp)
+            else:
+                value = data_energy(
+                    prediction,
+                    self.data,
+                    fidelity=self.fidelity,
+                    weights=self.weights,
+                    array_module=self.xp,
+                )
             value += regularisation_energy(
                 volume, self.regularisation, array_module=self.xp
             )
-            self.values.append(value)
+            # Reading the scalar waits for its GPU computation to finish, so
+            # timestamps reflect completed iterations rather than launch times.
+            self.values.append(float(value))
+            now = perf_counter()
+            if self._time_origin is None:
+                self._time_origin = now
+            self.times.append(now - self._time_origin)
 
     def finish(self, image):
         if not self.enabled:
             return image
-        values = self.xp.stack(self.values).astype(self.xp.float64, copy=False)
-        if self.xp is not np:
-            values = self.xp.asnumpy(values)
-        return image, values
+        return image, np.asarray(self.values, dtype=np.float64)

@@ -1,6 +1,10 @@
 """Geometry and resource ownership shared by public reconstruction classes."""
 
+from __future__ import annotations
+
 from dataclasses import replace
+from typing import TYPE_CHECKING
+import weakref
 from tomobar.supp.device import _validate_device_index
 from tomobar.supp.array_prepare import prepare_projection
 import numpy as np
@@ -11,6 +15,9 @@ from tomobar.geometry import (
     Volume2DGeometry,
     Volume3DGeometry,
 )
+
+if TYPE_CHECKING:
+    from tomobar.operators import ProjectionOperator
 
 
 class GeometryReconstruction:
@@ -49,6 +56,8 @@ class GeometryReconstruction:
         )
         self._closed = False
         self._geometry_version = 0
+        self._operator = None
+        self._operator_finalizer = None
 
     def _init_device(self, device_index):
         self._device_index = _validate_device_index(device_index)
@@ -73,13 +82,50 @@ class GeometryReconstruction:
     def detector_padding(self):
         return self._detector_padding
 
+    def _init_operator(self, operator_type, *, subset_count: int = 1) -> None:
+        """Own cleanup even when callers retain the borrowed operator."""
+        self._operator = operator_type._from_backend(
+            self.Atools,
+            projection_geometry=self.padded_projection_geometry,
+            volume_geometry=self.volume_geometry,
+            device_index=self.device_index,
+            subset_count=subset_count,
+        )
+        self._operator_finalizer = weakref.finalize(self, self._operator.close)
+
+    @property
+    def operator(self) -> ProjectionOperator:
+        """Borrow the current fixed operator for the internal padded geometry.
+
+        This reconstructor owns its lifetime. Use the reconstructor's context
+        manager or close(), rather than closing the borrowed operator. Owner
+        cleanup also closes it if the owner is garbage-collected. Geometry
+        replacement closes the previous operator and installs a new one.
+        Query this property again after replacement. No projection arrays or
+        additional projector handles are allocated by accessing this property.
+        """
+        self._ensure_open()
+        return self._operator
+
     @property
     def geometry_version(self) -> int:
         """Number of successful geometry replacements (initial geometry is zero)."""
         return self._geometry_version
 
-    def replace_geometry(self, projection_geometry):
+    def replace_geometry(
+        self, projection_geometry: Parallel2DGeometry | Parallel3DGeometry
+    ) -> None:
         """Replace acquisition geometry between reconstruction calls.
+
+        Args:
+            projection_geometry (Parallel2DGeometry or Parallel3DGeometry):
+                Required replacement scan of the same type, detector shape and
+                view count as the current geometry. Views retain their acquisition
+                order. Passing the current geometry object is a no-op.
+
+        Returns:
+            None: Updates this reconstructor's geometry and increments
+            geometry_version after a successful replacement.
 
         The geometry type, detector dimensions and view count must stay fixed;
         data must retain the same acquisition ordering. Volume grid, device,
@@ -120,21 +166,50 @@ class GeometryReconstruction:
             else projection_geometry
         )
         previous = self.Atools
+        previous_operator = self._operator
+        previous_finalizer = self._operator_finalizer
         replacement = type(previous)(
             projection_geometry=padded,
             volume_geometry=self.volume_geometry,
             device_index=self.device_index,
             ordsub_number=previous.ordsub_number,
         )
-        # Keep user-selected 2D FBP filter settings across wrapper replacement.
-        for name in ("fbp_filter_type", "fbp_filter_parameter", "fbp_filter_d"):
-            if hasattr(previous, name):
-                setattr(replacement, name, getattr(previous, name))
+        try:
+            replacement_operator = (
+                type(self._operator)._from_backend(
+                    replacement,
+                    projection_geometry=padded,
+                    volume_geometry=self.volume_geometry,
+                    device_index=self.device_index,
+                    subset_count=self._operator.subset_count,
+                )
+                if self._operator is not None
+                else None
+            )
+            # Keep user-selected 2D FBP filter settings across wrapper replacement.
+            for name in ("fbp_filter_type", "fbp_filter_parameter", "fbp_filter_d"):
+                if hasattr(previous, name):
+                    setattr(replacement, name, getattr(previous, name))
+            replacement_finalizer = (
+                weakref.finalize(self, replacement_operator.close)
+                if replacement_operator is not None
+                else None
+            )
+        except Exception:
+            replacement.close()
+            raise
         self._projection_geometry = projection_geometry
         self._padded_projection_geometry = padded
         self.Atools = replacement
+        self._operator = replacement_operator
+        self._operator_finalizer = replacement_finalizer
         self._geometry_version += 1
-        previous.close()
+        if previous_finalizer is not None:
+            previous_finalizer()
+        elif previous_operator is not None:
+            previous_operator.close()
+        else:
+            previous.close()
 
     def _prepare_projection(
         self,
@@ -188,7 +263,10 @@ class GeometryReconstruction:
     def close(self):
         """Release all lazily created projector handles. Repeated calls are safe."""
         self._closed = True
-        if hasattr(self, "Atools"):
+        finalizer = getattr(self, "_operator_finalizer", None)
+        if finalizer is not None:
+            finalizer()
+        elif hasattr(self, "Atools"):
             self.Atools.close()
 
     def __enter__(self):

@@ -70,7 +70,7 @@ _noise_ = {
 }
 
 # misalignment dictionary
-_datashifts_ = {"datashifts_maxamplitude_pixel": 10}
+_datashifts_ = {"datashifts_maxamplitude_subpixel": 5}
 
 projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_, **_datashifts_)
 
@@ -111,7 +111,7 @@ with RecToolsDIR(
     tic = timeit.default_timer()
     FBPrec_cupy = RecToolsCP.FBP(
         projData3D_analyt_cupy,
-        filter_type="SINC_CuPy",
+        filter_type="SINC",
         recon_mask_radius=0.95,
         data_axes_labels_order=input_data_labels,
         cutoff_freq=0.3,
@@ -174,12 +174,12 @@ with RecToolsIR(
         projData3D_analyt_cupy,
         input_axes=input_data_labels,
         fidelity=DataFidelity(method="LS"),
-        iterations=25,
         lipschitz_constant=lc,
-        recon_mask_radius=2.0,
         regularisation=Regularisation(
             method="PD_TV", strength=0.0001, iterations=50, half_precision=True
         ),
+        iterations=25,
+        recon_mask_radius=2.0,
     )
     toc = timeit.default_timer()
 Run_time = toc - tic
@@ -209,7 +209,7 @@ RMSE = Qtools.rmse()
 print("Root Mean Square Error is {} for FISTA OS-TV (PD) reconstruction".format(RMSE))
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with ADMM OS-TV (PD) method %%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 with RecToolsIR(
     projection_geometry=Parallel3DGeometry(
@@ -220,46 +220,48 @@ with RecToolsIR(
     ),
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
-    OS_number=36,
+    OS_number=1,
 ) as RectoolsCuPy:
     # RUN THE ADMM METHOD:
     tic = timeit.default_timer()
-    RecADMM_os_tv = RectoolsCuPy.ADMM(
+    RecADMM_tv = RectoolsCuPy.ADMM(
         projData3D_analyt_cupy,
         input_axes=input_data_labels,
         fidelity=DataFidelity(method="LS"),
         initial=FBPrec_cupy,
-        iterations=10,
         rho=1.0,
+        data_solver="cg",
+        cg_iterations=5,
         relaxation=1.7,
-        recon_mask_radius=2.0,
         regularisation=Regularisation(
             method="PD_TV", strength=0.1, iterations=30, half_precision=True
         ),
+        iterations=100,
+        recon_mask_radius=2.0,
     )
     toc = timeit.default_timer()
 Run_time = toc - tic
-print("ADMM OS-TV reconstruction done in {} seconds".format(Run_time))
+print("ADMM TV reconstruction done in {} seconds".format(Run_time))
 
-RecADMM_os_tv = cp.asnumpy(RecADMM_os_tv)
+RecADMM_tv = cp.asnumpy(RecADMM_tv)
 
 sliceSel = int(0.5 * N_size)
 max_val = 1
 plt.figure()
 plt.subplot(131)
-plt.imshow(RecADMM_os_tv[sliceSel, :, :], vmin=0, vmax=max_val)
-plt.title("ADMM OS-TV (PD) Reconstruction, axial view")
+plt.imshow(RecADMM_tv[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("ADMM TV (PD) Reconstruction, axial view")
 
 plt.subplot(132)
-plt.imshow(RecADMM_os_tv[:, sliceSel, :], vmin=0, vmax=max_val)
-plt.title("ADMM OS-TV (PD) Reconstruction, coronal view")
+plt.imshow(RecADMM_tv[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("ADMM TV (PD) Reconstruction, coronal view")
 
 plt.subplot(133)
-plt.imshow(RecADMM_os_tv[:, :, sliceSel], vmin=0, vmax=max_val)
-plt.title("ADMM OS-TV (PD) Reconstruction, sagittal view")
+plt.imshow(RecADMM_tv[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("ADMM TV (PD) Reconstruction, sagittal view")
 plt.show()
 
 # calculate errors
-Qtools = QualityTools(phantom_tm, RecADMM_os_tv)
+Qtools = QualityTools(phantom_tm, RecADMM_tv)
 RMSE = Qtools.rmse()
-print("Root Mean Square Error is {} for ADMM OS-TV (PD) reconstruction".format(RMSE))
+print("Root Mean Square Error is {} for ADMM TV (PD) reconstruction".format(RMSE))

@@ -139,7 +139,7 @@ with RecToolsDIR(
     print("Reconstruction using FBP from tomobar")
     recNumerical_conventional = direct_reconstructor.FBP(
         projData3D_norm_cp,
-        filter_type="SINC_CuPy",
+        filter_type="SINC",
         recon_mask_radius=0.95,
         data_axes_labels_order=input_data_labels,
         cutoff_freq=0.3,
@@ -190,10 +190,10 @@ with RecToolsIR(
     RecFISTA_os_reg = Rectools.FISTA(
         projData3D_norm_cp,
         fidelity=DataFidelity(method="LS"),
-        iterations=12,
         lipschitz_constant=lc,
-        recon_mask_radius=2.0,
         regularisation=Regularisation(method="PD_TV", strength=3.5e-06, iterations=35),
+        iterations=12,
+        recon_mask_radius=2.0,
     )
 
 RecFISTA_os_reg = cp.asnumpy(RecFISTA_os_reg)
@@ -222,7 +222,7 @@ RMSE = Qtools.rmse()
 print("Root Mean Square Error is {} for LS-TV".format(RMSE))
 # %%
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print("Reconstructing with ADMM-PWLS-OS-TV method using tomobar")
+print("Reconstructing with ADMM-PWLS-TV method using tomobar")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
 from tomobar.methodsIR import RecToolsIR
@@ -233,44 +233,46 @@ with RecToolsIR(
     ),
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
-    OS_number=24,
+    OS_number=1,
 ) as Rectools:
-    lc = Rectools.powermethod()  # calculate Lipschitz constant (run once to initialise)
+    lc = Rectools.powermethod(
+        full_data=True
+    )  # calculate Lipschitz constant (run once to initialise)
 
     # %%
     # algorithm parameters
 
-    RecADMM_os_reg = Rectools.ADMM(
+    RecADMM_reg = Rectools.ADMM(
         projData3D_norm_cp,
         fidelity=DataFidelity(method="LS"),
-        iterations=15,
         lipschitz_constant=lc,
         rho=1.0,
         relaxation=1.7,
-        recon_mask_radius=2.0,
         regularisation=Regularisation(method="PD_TV", strength=0.01, iterations=35),
+        iterations=100,
+        recon_mask_radius=2.0,
     )
 
-RecADMM_os_reg = cp.asnumpy(RecADMM_os_reg)
-RecADMM_os_reg *= intens_max_clean
+RecADMM_reg = cp.asnumpy(RecADMM_reg)
+RecADMM_reg *= intens_max_clean
 
 sliceSel = int(0.5 * N_size)
 max_val = 1
 plt.figure()
 plt.subplot(131)
-plt.imshow(RecADMM_os_reg[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.imshow(RecADMM_reg[sliceSel, :, :], vmin=0, vmax=max_val)
 plt.title("3D ADMM-TV Reconstruction, axial view")
 
 plt.subplot(132)
-plt.imshow(RecADMM_os_reg[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.imshow(RecADMM_reg[:, sliceSel, :], vmin=0, vmax=max_val)
 plt.title("3D ADMM-TV Reconstruction, coronal view")
 
 plt.subplot(133)
-plt.imshow(RecADMM_os_reg[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.imshow(RecADMM_reg[:, :, sliceSel], vmin=0, vmax=max_val)
 plt.title("3D ADMM-TV Reconstruction, sagittal view")
 plt.show()
 
 # calculate errors
-Qtools = QualityTools(phantom_3D, RecADMM_os_reg)
+Qtools = QualityTools(phantom_3D, RecADMM_reg)
 RMSE = Qtools.rmse()
 print("Root Mean Square Error is {} for LS-TV".format(RMSE))

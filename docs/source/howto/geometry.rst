@@ -32,6 +32,133 @@ of the detector dimensions.
         # projected.shape == (64, 180, 256)
         # reconstructed.shape == (48, 192, 224)
 
+Geometry visualisation
+----------------------
+
+``plot_geometry`` provides a static 3D view of the volume, detector reference
+planes and central ray directions. It requires the optional Matplotlib extra
+(``pip install 'tomobar[visualisation]'``), but neither ASTRA nor CUDA::
+
+    from tomobar.visualisation import plot_geometry
+
+    fig, ax = plot_geometry(scan, grid, view_indices=[0, 30, 60])
+    fig.savefig("geometry.png", dpi=200)
+
+Omit ``view_indices`` to show up to three evenly spaced acquisition indices.
+Pass an existing Matplotlib 3D axes as ``ax=...`` to compose a larger figure.
+The function returns the figure and axes without calling ``show()``. All axes
+use equal spatial scaling in XYZ voxel coordinates; volume array shapes remain
+ZYX. Detector boundaries follow outer pixel edges and preserve the supplied
+column/row basis lengths and angles. Shifts and CoR are applied through
+``to_vectors()`` exactly once.
+
+Tomography, laminography and explicit ``Parallel3DGeometry`` vectors are
+supported. The first version accepts ``Volume3DGeometry`` and 3D scans only.
+Reference planes can intersect the volume in valid parallel geometry; the
+plot does not introduce artificial source distances. Arrow lengths are for
+display, and a rotation axis is not inferred from arbitrary vectors.
+
+``Demos/geometry_visualisation.py`` is a cell-based example comparing standard
+tomography, laminography, detector shifts and non-unit detector pixels. It
+uses synthetic geometry and can run without a GPU.
+
+Fixed-geometry projection operator
+----------------------------------
+
+For custom algorithms, ``ProjectionOperator`` exposes forward projection and
+unnormalised backprojection directly, with reusable output buffers. Both 2D
+and 3D parallel geometry are supported, including explicit 3D vector geometry.
+Views retain acquisition order. Geometry, device selection and subset
+configuration stay fixed for the lifetime of the operator.
+
+.. code-block:: python
+
+    from tomobar.operators import ProjectionOperator
+
+    with ProjectionOperator(
+        projection_geometry=scan, volume_geometry=grid, device_index=0
+    ) as operator:
+        image = np.ones(operator.domain_shape, dtype=np.float32)
+        projection_buffer = np.empty(operator.range_shape, dtype=np.float32)
+        volume_buffer = np.empty(operator.domain_shape, dtype=np.float32)
+
+        operator.forward(image, out=projection_buffer)
+        operator.backproject(projection_buffer, out=volume_buffer)
+
+``out=None`` allocates fresh output. Supplied output must be independent,
+writable, C-contiguous float32 storage with the exact output shape and the
+same array library/device as the input. It is overwritten and returned by
+identity. Real inputs are packed as contiguous float32 when needed; their
+storage is preserved. NumPy inputs return NumPy arrays and CuPy inputs return
+CuPy arrays. Both paths require an ASTRA CUDA device.
+
+``domain_shape`` is the volume shape, with axes ``(Y, X)`` in 2D or
+``(Z, Y, X)`` in 3D. ``range_shape`` is the projection shape, with axes
+``(angles, detX)`` in 2D or ``(detY, angles, detX)`` in 3D. These properties,
+``projection_geometry``, ``volume_geometry`` and ``device_index`` are read-only.
+Construct another operator to use different geometry.
+
+Set ``subset_count`` (default 1) to configure nonempty interleaved subsets.
+``subset_indices`` contains immutable acquisition-order index arrays;
+``subset_shape(i)`` gives the projection shape for subset ``i``. Both execution
+methods accept ``subset_index=i``. Omitting it, or passing None, uses all views
+even when multiple subsets are configured. For example:
+
+.. code-block:: python
+
+    with ProjectionOperator(
+        projection_geometry=scan, volume_geometry=grid, subset_count=3
+    ) as operator:
+        image = np.ones(operator.domain_shape, dtype=np.float32)
+        subset_buffer = np.empty(operator.subset_shape(1), dtype=np.float32)
+        operator.forward(image, subset_index=1, out=subset_buffer)
+        result = operator.backproject(subset_buffer, subset_index=1)
+
+The selected projection input/output must have exactly ``subset_shape(i)``;
+backprojection always returns the full ``domain_shape``. ``range_shape``
+continues to describe all views. Handles for the full acquisition and each
+used subset are cached independently and released together.
+
+The operator applies the supplied geometry directly: no detector padding,
+cropping, masking, filtering or angular normalisation is added. Backprojection
+uses ASTRA's approximate adjoint, so this API does not expose an exact
+transpose or ``.T`` alias. Projector handles are lazy and reused across calls.
+The context manager releases them even when an operation fails; alternatively,
+call ``close()`` explicitly. Repeated close calls are safe. Execution after
+closing raises ``RuntimeError``. Garbage collection provides fallback cleanup
+for an abandoned operator. Concurrent use or cleanup of one operator is
+unsupported.
+
+Reconstructor-owned operators
+-----------------------------
+
+``RecToolsIR`` and ``RecToolsDIR`` expose their current operator through the
+read-only ``rec.operator`` property. It shares the existing backend and cached
+projectors, and describes ``rec.padded_projection_geometry`` with the full
+working volume. ``RecToolsIR`` uses ``OS_number`` for its subset count. Input
+preparation, detector edge padding, public output cropping and masks remain
+outside the operator.
+
+Treat ``rec.operator`` as a borrowed reference: close or use a context manager
+on the reconstructor, rather than on the borrowed operator. Closing or garbage
+collecting the reconstructor closes its operator even if the caller retains
+that reference. After ``replace_geometry()``, the previous operator is closed
+and a new fixed operator is installed. Obtain ``rec.operator`` again for the
+new geometry. The replacement creates no CUDA handles until first execution.
+Failed validation or replacement construction leaves the current operator
+usable and its geometry version unchanged.
+
+Iterative solvers, data-fidelity gradients, energy histories and the power
+method call ``operator.forward()`` and ``operator.backproject()`` directly.
+They resolve the current operator, so continuation and alignment use the
+replacement geometry.
+Geometry-dependent solver work is still rebuilt by the existing continuation
+restart mechanism. The numerical update formulas and the meaning of the
+acquired projection data are unchanged.
+
+Reconstruction geometry and detector padding
+-------------------------------------------
+
 ``centre_of_rotation`` is a finite scalar horizontal correction in pixels.
 ``detector_shifts`` holds actual horizontal/vertical displacements for each view,
 with shape ``(n_views, 2)``. They remain separate in the scan object. ASTRA
@@ -85,29 +212,73 @@ methods default to ``(detY, angles, detX)`` in 3D, with ``input_axes`` or
 ``output_axes`` available for other layouts. Array type does not change the
 axis convention or select the filter.
 
-3D ``FBP`` defaults to ``filter_type="SINC"``. Choose
-``filter_type="SINC_CuPy"`` to use the custom CUDA real-FFT filter formerly
-provided by ``RecToolsDIRCuPy``. Both filters execute on the GPU. The custom
-filter accepts ``cutoff_freq`` (default 0.35); the established SINC coefficients
-are fixed. Padding is applied to detector X before filtering. Internally, SINC
-uses ``(detY, angles, detX)`` and SINC_CuPy uses ``(angles, detY, detX)`` so
-its normalization uses the number of views; its result is transposed back
-before ASTRA backprojection. For example:
+3D ``FBP`` supports ``SINC`` (the default) and ``RAM-LAK``. The aliases
+``ram-lak`` and ``ramp`` also select Ram-Lak. Both NumPy and CuPy inputs use
+GPU detector-column real FFTs. The duplicate host-FFT implementation has been
+removed.
+Use ``filter_type="SINC", cutoff_freq=1.1, legacy_scaling=True`` to reproduce
+the previous SINC response with the corrected odd-width frequency grid.
+
+For SINC, the default ``cutoff_freq`` is 0.35; passing ``None`` also selects
+this default. The cutoff is a filter shape parameter in the positive normal
+float32 range,
+from ``numpy.finfo(numpy.float32).tiny`` through
+``numpy.finfo(numpy.float32).max``. Subnormal and overflowing values are rejected
+before conversion. It is not a fractional Nyquist threshold. Lower values give
+sharper reconstructions; values above one are supported.
+
+For RAM-LAK, ``cutoff_freq`` is instead a fraction of detector Nyquist in
+``(0, 1]``, default 1.0. The discrete impulse response has ``h[0]=1/4``,
+``h[k]=-1/(pi*k)^2`` at odd lags and zero at other nonzero lags, matching
+ASTRA's Ram-Lak convention. Its finite FFT response includes a small DC
+correction. The FFT is zero-padded to the next power of two at least twice
+the detector width, then cropped back after filtering to avoid wraparound at
+opposite detector edges. Angular normalization is ``pi/view_count`` and
+assumes uniformly spaced views over a half turn, with unit detector spacing.
+SINC now uses the same padded discrete ramp, multiplied by a sinc window with
+unit low-frequency gain. Its cutoff changes the smoothing without introducing
+a cutoff-dependent global amplitude factor. The default cutoff remains 0.35.
+Both filters therefore preserve reconstruction units; smoothing and sampling can
+still change individual pixel values. No phantom-dependent rescaling is applied.
+
+Quantitative scaling is the default. To reproduce older 3D SINC results, pass
+``legacy_scaling=True``; this restores its native-width FFT and global gain.
+The option is unsupported for Ram-Lak and 2D FBP.
+
+.. code-block:: python
+
+    result = rec.FBP(projections, filter_type="RAM-LAK", cutoff_freq=1.0)
+
+Padding is applied to detector X before filtering. Internally the filter uses
+``(angles, detY, detX)`` so normalization uses the number of views; its result is
+transposed back before ASTRA backprojection. Public input axis defaults are
+unchanged. For example:
 
 .. code-block:: python
 
     with RecToolsDIR(projection_geometry=scan, volume_geometry=grid) as rec:
         result = rec.FBP(
             projections,
-            filter_type="SINC_CuPy",
+            filter_type="SINC",
             input_axes=("angles", "detY", "detX"),
             cutoff_freq=1.1,
         )
 
+By default, 3D FBP retains CuPy FFT plans and unused memory-pool blocks for
+reuse across calls. For memory-constrained runs, pass ``clear_gpu_cache=True``
+to ``rec.FBP(...)``. This clears FFT plans and returns unused pool blocks between
+FFT stages, after filtering and before ASTRA output allocation. It does not free
+live input/output arrays. Aggressive cleanup reduces cached memory but repeats
+FFT setup and allocations on subsequent calls. This option applies only to 3D FBP.
+
 2D ``FBP`` uses ASTRA ``FBP_CUDA`` filters (default ``ram-lak``). CuPy inputs
 are transferred through ASTRA's host data API and the result returns to the
 selected GPU. ``FOURIER_INV`` remains available on ``RecToolsDIR`` and accepts
-CuPy arrays or shape tuples for memory estimation.
+CuPy arrays or shape tuples for memory estimation. Its quantitative angular
+normalization corrects the former amplitude by ``pi/8``, and its output crop
+centers odd detector widths. Pass ``legacy_scaling=True`` directly or through
+``FourierOptions`` to retain the former amplitude and crop. These scale
+conventions assume uniformly sampled half-turn angles and unit spacing.
 ``RecToolsIR`` also accepts ``OS_number`` for interleaved ordered subsets:
 
 .. code-block:: python
@@ -196,7 +367,7 @@ Direct and iterative entry points share projection shape, numeric dtype and GPU
 device validation, axis normalization and detector padding. Axis changes are
 views; padding allocates only when requested. Contiguous ``float32`` storage is
 created when required by a filter or ASTRA. Suitable CuPy storage is reused.
-``SINC_CuPy`` receives angles-first data directly, avoiding an intermediate copy
+``SINC`` receives angles-first data directly, avoiding an intermediate copy
 into ASTRA's projection layout before filtering. Fourier inversion validates
 through the same layer but applies its padding inside the FFT implementation.
 
@@ -240,11 +411,16 @@ dictionaries or ``dicts_check``. For example:
 
 ``FISTA`` and ``ADMM`` additionally take ``fidelity``, ``weights``,
 ``regularisation`` and ``lipschitz_constant``. ADMM takes ``rho``, ``relaxation``
-and ``verbose``. ``OSEM`` accepts the common solver arguments and optional
-``regularisation``. Defaults for iterations remain method dependent; FISTA,
-ADMM and OSEM use their previous ordered-subset defaults when subsets are active.
+and ``verbose``, plus optional ``absolute_tolerance`` and ``relative_tolerance``.
+Its ``data_solver`` selects ``"linearised"`` (default) or warm-started ``"cg"``;
+``cg_iterations`` and ``cg_tolerance`` control the inner CG solve.
+``OSEM`` accepts the common solver arguments and optional ``regularisation``.
+Defaults for iterations remain method dependent. FISTA and OSEM use shorter
+ordered-subset defaults; ADMM uses 400 full-data iterations by default.
 
-``DataFidelity`` supports LS, PWLS, SWLS and KL. PWLS/SWLS require ``weights``;
+``DataFidelity`` supports LS, PWLS and SWLS. PWLS/SWLS require ``weights``.
+Weights must be finite and nonnegative, with at least one positive value.
+They are divided by their maximum; zeros exclude measurements.
 ``beta_swls`` controls the SWLS stripe penalty. ``Regularisation`` supports
 PD_TV and ROF_TV. Pass ``None`` to disable regularisation. Settings are immutable
 and reusable: ADMM scales a local copy of the regularisation strength by rho.
@@ -255,38 +431,76 @@ zeros. ``initial`` must match the working volume, not the final output crop, and
 copied before iteration. Invalid shapes and settings raise errors. Previously
 ignored dictionary entries such as solver ``tolerance`` are not accepted.
 ``powermethod(iterations=15)`` uses geometry alone and estimates the unweighted
-operator, using subset zero when ordered subsets are enabled.
+operator. With ordered subsets it estimates every subset and returns the
+largest value; estimates are cached in solver state until geometry changes.
+Linearised ADMM instead requests ``powermethod(full_data=True)`` internally to
+estimate the full data-gradient bound. Explicit ADMM Lipschitz constants must
+also correspond to the full operator. ADMM with ``data_solver="cg"`` does not
+use a Lipschitz estimate. Power iteration is approximate, so this is
+not a certified norm bound.
 
 Subset storage
 --------------
 
-FISTA, ADMM and OSEM select interleaved views using slices of the prepared
+FISTA and OSEM select interleaved views using slices of the prepared
 projection arrays: ``data[:, subset_index::OS_number, :]``. Subsets include
 view zero, preserve acquisition order and may contain different numbers of
 views. No lists of copied 3D projection or weight subsets are retained.
 
-LS, PWLS and KL consume the slicing views directly. SWLS computes a
+LS and PWLS consume the slicing views directly. SWLS computes a
 ``(detY, detX)`` weight sum when a subset is first used and reuses that sum in
 later iterations. Its custom CUDA kernel reads weights directly using signed
 64-bit element strides, so interleaved weight subsets are consumed without a
 contiguous copy. Residual and reduction buffers remain contiguous. Projector
 handle caching and reconstruction axes are unchanged.
 
+ADMM uses all prepared projections together, regardless of ``OS_number``.
+This keeps its data gradient, TV term and dual update consistent with the full
+objective; SWLS uses one global weight sum across all views. No subset-gradient
+surrogate or subset-specific TV scaling is applied in ADMM.
+
 Data-fidelity workspaces
 ------------------------
 
 Data-fidelity gradients reuse the freshly allocated ASTRA forward-projection
 result as their residual buffer. LS subtracts the measured data in place, PWLS
-also applies weights in place, and KL clips, divides and subtracts in the same
-buffer. SWLS weights that residual in place, computes its two-dimensional sum,
-and applies the stripe correction directly to it. There is no separate 3D
-weighted-residual array.
+also applies weights in place. SWLS weights that residual in place, computes
+its two-dimensional sum, and applies the stripe correction directly to it.
+There is no separate 3D weighted-residual array.
 
 Only the owned forward output is overwritten. Input volumes, measured
-projections, weights and cached weight sums remain unchanged. The internal
-``_Ax`` operation must return fresh, writable, contiguous float32 storage, as
-the ASTRA wrapper does. The public reconstruction API and output axes are
+projections, weights and cached weight sums remain unchanged. Without ``out``,
+``operator.forward()`` returns fresh, writable, contiguous float32 storage.
+Solvers can instead supply their own residual scratch through ``out``. The public reconstruction API and output axes are
 unchanged.
+
+CUDA module and kernel reuse
+----------------------------
+
+CUDA source text, modules and kernel handles are cached across reconstruction
+and regularisation calls. Module keys include the source name, current CUDA
+device, ordered compiler options and template expressions; kernel handles are
+keyed by module, current device and symbol. Repeated calls reuse the same
+objects, avoiding source reads, module creation and function lookup. These
+in-process caches complement CuPy's compiled-code cache on disk.
+
+The source and module caches each hold at most 32 entries, and the kernel cache
+holds at most 128 handles with references to their modules. Cache access is
+synchronised across threads. Arrays, launch arguments and solver state are not
+stored in these caches.
+
+After editing CUDA source files within a running process, explicitly clear
+all three caches before the next load:
+
+.. code-block:: python
+
+    from tomobar.cuda_kernels import clear_cuda_cache
+
+    clear_cuda_cache()
+
+Existing references remain valid. This operation does not clear FFT plans,
+array memory pools or CuPy's on-disk cache. The FBP ``clear_gpu_cache`` option
+continues to control only FFT plans and unused array-pool storage.
 
 Memory-pool ownership
 ---------------------
@@ -443,3 +657,22 @@ CUDA handle construction is still deferred until first use. Calls on closed
 reconstructors fail. Replacement must happen between calls, with no concurrent
 projection or reconstruction using the same object. Existing direct-method
 capability checks apply to the replacement geometry.
+
+Projection operator demo
+------------------------
+
+``Demos/projection_operator.py`` is a cell-based script in the same style as
+``Demos/iterative_dendrites.py``. It generates its own phantom and demonstrates
+3D CuPy forward projection, unfiltered backprojection, output-buffer reuse and
+interleaved subsets, followed by a 2D NumPy example. Both examples use CUDA.
+Edit the geometry and device settings at the top of the script, then run::
+
+    python Demos/projection_operator.py
+
+The script displays Matplotlib figures. Uncomment the ``fig.savefig(...)``
+lines to save them. For noninteractive execution, select Matplotlib's Agg
+backend before running the script.
+
+Raw backprojection is unfiltered and does not preserve the phantom's intensity
+scale. For an actual reconstruction, use FBP or an iterative reconstruction
+method. The demo's separate plot colour scales make this difference explicit.
