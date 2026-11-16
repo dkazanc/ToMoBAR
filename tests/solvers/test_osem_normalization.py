@@ -46,7 +46,7 @@ class MatrixProjector:
 
     def forward(self, volume, *, subset_index=None, out=None):
         self.next_backprojection_is_data = True
-        result = (self.selected(subset_index) @ volume.ravel()).reshape(1, -1, 1)
+        result = (self.selected(subset_index) @ volume.ravel()).reshape((1, -1, 1))
         if out is not None:
             out[...] = result
             return out
@@ -103,7 +103,7 @@ def test_osem_matches_independent_dense_reference(
 ):
     measured = SYSTEM_MATRIX @ TRUE_VOXELS
     initial = np.array([0.8, 0.7, 1.2], dtype=np.float32)
-    data, initial_volume = measured.reshape(1, -1, 1), initial.reshape(1, 1, -1)
+    data, initial_volume = measured.reshape((1, -1, 1)), initial.reshape((1, 1, -1))
     original_data, original_initial = data.copy(), initial_volume.copy()
     expected = reference_osem(SYSTEM_MATRIX, measured, initial, subsets, iterations)
     rec, projector = matrix_reconstructor(SYSTEM_MATRIX, subsets)
@@ -126,8 +126,8 @@ def test_osem_preserves_exact_noiseless_solution(matrix_reconstructor, subsets):
     rec, _ = matrix_reconstructor(SYSTEM_MATRIX, subsets)
     with rec:
         result = rec.OSEM(
-            (SYSTEM_MATRIX @ TRUE_VOXELS).reshape(1, -1, 1),
-            initial=TRUE_VOXELS.reshape(1, 1, -1),
+            (SYSTEM_MATRIX @ TRUE_VOXELS).reshape((1, -1, 1)),
+            initial=TRUE_VOXELS.reshape((1, 1, -1)),
             iterations=3,
             recon_mask_radius=None,
         )
@@ -139,7 +139,7 @@ def test_mlem_two_voxel_regression(matrix_reconstructor):
     rec, _ = matrix_reconstructor(matrix, 1)
     with rec:
         result = rec.OSEM(
-            np.array([2.0, 3.0], dtype=np.float32).reshape(1, 2, 1),
+            np.array([2.0, 3.0], dtype=np.float32).reshape((1, 2, 1)),
             initial=np.ones((1, 1, 2), dtype=np.float32),
             iterations=1,
             recon_mask_radius=None,
@@ -162,8 +162,8 @@ def test_osem_zero_sensitivity_is_finite_and_zero(matrix_reconstructor, subsets)
     rec, _ = matrix_reconstructor(matrix, subsets)
     with rec, np.errstate(divide="raise", invalid="raise"):
         result = rec.OSEM(
-            measured.reshape(1, -1, 1),
-            initial=initial.reshape(1, 1, -1),
+            measured.reshape((1, -1, 1)),
+            initial=initial.reshape((1, 1, -1)),
             iterations=3,
             recon_mask_radius=None,
         )
@@ -179,7 +179,7 @@ def test_sensitivity_storage_is_bounded_and_mlem_reuses_it(
     rec, projector = matrix_reconstructor(SYSTEM_MATRIX, subsets)
     with rec:
         rec.OSEM(
-            (SYSTEM_MATRIX @ TRUE_VOXELS).reshape(1, -1, 1),
+            (SYSTEM_MATRIX @ TRUE_VOXELS).reshape((1, -1, 1)),
             iterations=3,
             recon_mask_radius=None,
         )
@@ -196,8 +196,8 @@ def test_mlem_likelihood_improves(matrix_reconstructor):
     with rec:
         for iterations in range(1, 6):
             result = rec.OSEM(
-                measured.reshape(1, -1, 1),
-                initial=initial.reshape(1, 1, -1),
+                measured.reshape((1, -1, 1)),
+                initial=initial.reshape((1, 1, -1)),
                 iterations=iterations,
                 recon_mask_radius=None,
             )

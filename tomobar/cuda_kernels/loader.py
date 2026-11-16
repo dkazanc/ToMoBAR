@@ -55,7 +55,7 @@ def _cuda_source(file: str) -> str:
 
 @lru_cache(maxsize=32)
 def _cached_module(
-    device: int, file: str, names: tuple, options: tuple
+    _device: int, file: str, names: tuple, options: tuple
 ) -> cp.RawModule:
     return cp.RawModule(
         options=("-std=c++11", *options),
@@ -81,7 +81,7 @@ def get_cuda_kernel(module: cp.RawModule, name: str) -> cp.RawKernel:
 
 
 @lru_cache(maxsize=128)
-def _cached_kernel(device: int, module: cp.RawModule, name: str) -> cp.RawKernel:
+def _cached_kernel(_device: int, module: cp.RawModule, name: str) -> cp.RawKernel:
     return module.get_function(name)
 
 

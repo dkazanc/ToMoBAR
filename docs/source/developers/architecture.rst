@@ -113,3 +113,64 @@ It checks the exact Python/CUDA resource layout and rejects stale build output.
 Build documentation with warnings treated as errors::
 
     python -m sphinx -W --keep-going -b html docs/source /tmp/tomobar-docs
+
+Code quality conventions
+------------------------
+
+Docstrings use Google-style ``Args:``, ``Returns:`` and ``Notes:`` sections.
+``pyproject.toml`` configures pydocstyle and Ruff consistently. Constructor
+arguments belong in class docstrings, and standard magic methods follow their
+Python protocols without requiring repeated boilerplate documentation.
+
+Codacy's Prospector adapter calls the docstring checker directly, so
+``.prospector.yaml`` mirrors the Google-convention exclusions and the project
+exceptions. Keep those exclusions aligned with ``[tool.pydocstyle]`` when
+changing the policy. In Codacy's Code patterns page, enable use of the repository
+configuration file for Prospector; rerun the hosted analysis after pushing it.
+
+Suppressions stay local to intentional patterns. Exact ``type(...) is`` checks
+verify conversion to native Python types. Deliberate invalid arguments and
+mapping lookups inside ``pytest.raises`` check rejection behavior. NumPy shape
+varargs are valid calls even when inference misses the signature. Security
+analysis and normal argument checks remain enabled elsewhere.
+
+Install the optional analyzers with
+``python -m pip install ruff pydocstyle prospector bandit``. Useful checks from
+the repository root::
+
+    python -m ruff check --select F,E721 tomobar tests Demos
+    python -m pydocstyle tomobar
+    python -m prospector -t pydocstyle -P .prospector.yaml tomobar
+    python -m bandit -r tests -t B102
+
+These checks complement the numerical and dependency-boundary tests; changing
+analyzer configuration does not replace running those tests.
+
+Regulariser tests
+-----------------
+
+Numerical regulariser checks execute the real CUDA functions against independent
+NumPy/SciPy references in ``tests/helpers``. Shared GPU execution fixtures live
+in ``tests/regularisers/conftest.py``. They also exercise the production proximal
+dispatcher; intermediate-update checks observe actual CUDA launches.
+
+CPU CI retains settings, metadata, energy and solver-control checks. It does not
+emulate CUDA regulariser kernels. Focused host-compiled index arithmetic probes
+remain to check overflow beyond 32-bit sizes without allocating large volumes.
+
+
+Solver tests
+------------
+
+``tests/helpers/solver.py`` supplies an explicit NumPy reconstructor harness.
+It calls ``_solvers.state.initialise`` and ``run`` directly, injecting a simple
+linear operator, gradient and proximal function. It does not extract production
+source, strip decorators or execute ASTs. Tests override proximal functions on
+the harness instance. Its method aliases are numerical test conveniences;
+public signature, device and output validation use actual reconstruction classes.
+
+CG regression tests retain independent fidelity weighting and sample the actual
+ASTRA/USFFT working-grid forward and backward operators. Their small dense
+normal equations check the production CG data step, including detector padding.
+ASTRA's backward projector is sampled independently rather than assumed to equal
+the forward matrix transpose. No handwritten model of ASTRA kernels is retained.

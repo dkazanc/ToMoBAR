@@ -1,42 +1,10 @@
-"""Validate compatibility diagnostics against known matched/unmatched matrices."""
+"""CG fidelity references and actual ASTRA/USFFT working operators."""
 
 import numpy as np
 import pytest
 
-from tests.helpers import cg_diagnostics as diagnostics
-
-
-def test_axis_aligned_source_model_is_matched():
-    forward, backward = diagnostics.source_model_matrices([0, np.pi / 2])
-    np.testing.assert_allclose(backward, forward.T, atol=1e-14)
-
-
-def test_oblique_source_model_has_genuine_nonsymmetry():
-    forward, backward = diagnostics.source_model_matrices(
-        np.linspace(0, np.pi, 16, endpoint=False) + 0.03
-    )
-    metrics = diagnostics.matrix_metrics(
-        forward, backward, np.eye(forward.shape[0]), 0.9
-    )
-    assert metrics["adjoint_relative_frobenius"] > 0.1
-    assert metrics["adjoint_error_after_scalar_rescaling"] > 0.1
-    assert metrics["cg_system_asymmetry"] > 0.04
-    # Every p.T*K*p is positive, despite K being unsuitable for standard CG.
-    assert metrics["minimum_symmetric_part_eigenvalue"] > 0
-    target = diagnostics.quadratic_target_comparison(
-        forward, backward, np.eye(forward.shape[0]), 0.9
-    )
-    assert target["relative_data_step_bias"] > 0.01
-    assert target["mismatched_equation_stationarity"] < 1e-10
-    assert target["intended_objective_stationarity"] > 0.01
-
-
-def test_matched_control_converges_to_direct_solve():
-    rng = np.random.default_rng(7)
-    forward = rng.normal(size=(15, 6))
-    trials = diagnostics.production_cg_trials(forward, forward.T, np.eye(15), 0.9)
-    assert trials[-1]["true_relative_residual"] < 1e-9
-    assert trials[-1]["relative_error_to_direct_system_solution"] < 1e-9
+from tests.helpers import operator_reference as reference
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
 
 @pytest.mark.parametrize("method", ["LS", "PWLS", "SWLS"])
@@ -47,77 +15,85 @@ def test_precision_matrix_matches_full_fidelity(method):
     rng = np.random.default_rng(9)
     weights = rng.uniform(0.1, 1, (2, 5, 3))
     residual = rng.normal(size=weights.shape)
-    precision = diagnostics.precision_matrix(weights, method, beta=0.1)
-    reference = data_energy(
+    precision = reference.precision_matrix(weights, method, beta=0.1)
+    expected = data_energy(
         residual,
         np.zeros_like(residual),
         weights=None if method == "LS" else weights,
         fidelity=DataFidelity(method, beta_swls=0.1),
     )
     np.testing.assert_allclose(
-        0.5 * residual.ravel() @ precision @ residual.ravel(), reference
+        0.5 * residual.ravel() @ precision @ residual.ravel(), expected
     )
     np.testing.assert_allclose(precision, precision.T)
     assert np.linalg.eigvalsh(precision).min() >= -1e-12
 
 
-def test_native_matrix_sampling_uses_working_operators(monkeypatch):
-    import sys
-    from types import SimpleNamespace
+@pytest.mark.parametrize("backend", ["astra", "usfft"])
+@pytest.mark.parametrize("padding", [0, 2])
+def test_actual_working_operator_matches_sampled_normal_equation(gpu, backend, padding):
+    from tomobar.reconstruction.iterative import RecToolsIR
 
-    instances = []
-
-    class Reconstruction:
-        def __init__(self, *, projection_geometry, volume_geometry, detector_padding):
-            self.projection_shape = (
-                2,
-                len(projection_geometry.angles),
-                12 + 2 * detector_padding,
-            )
-            rng = np.random.default_rng(3)
-            self.forward_matrix = rng.normal(
-                size=(np.prod(self.projection_shape), np.prod(volume_geometry.shape))
-            ).astype(np.float32)
-            self.backward_matrix = (self.forward_matrix.T + 0.01).copy()
-            self.volume_shape = volume_geometry.shape
-            self.operator = SimpleNamespace(
-                forward=self._forward, backproject=self._backproject
-            )
-            instances.append(self)
-
-        def _forward(self, image):
-            return (self.forward_matrix @ image.ravel()).reshape(self.projection_shape)
-
-        def _backproject(self, data):
-            return (self.backward_matrix @ data.ravel()).reshape(self.volume_shape)
-
-        def forward(self, *a, **kw):
-            raise AssertionError("public crop must not enter compatibility checks")
-
-        def backproject(self, *a, **kw):
-            raise AssertionError(
-                "public edge-padding must not enter compatibility checks"
-            )
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            pass
-
-    monkeypatch.setitem(
-        sys.modules,
-        "cupy",
-        SimpleNamespace(zeros=np.zeros, float32=np.float32, asnumpy=np.asarray),
+    scan = Parallel3DGeometry(
+        angles=np.linspace(0, np.pi, 5, endpoint=False) + 0.03,
+        detector_shape=(1, 6),
+        centre_of_rotation=0.25,
     )
-    monkeypatch.setitem(
-        sys.modules,
-        "tomobar.reconstruction.iterative",
-        SimpleNamespace(RecToolsIR=Reconstruction),
-    )
-    forward, backward, shape = diagnostics.dense_cuda_pair(
-        np.array([0, 0.7]), padding=2
-    )
-    assert shape == (2, 2, 16)
-    np.testing.assert_array_equal(forward, instances[0].forward_matrix)
-    np.testing.assert_array_equal(backward, instances[0].backward_matrix)
+    grid = Volume3DGeometry((1, 4, 4))
+    with RecToolsIR(
+        projection_geometry=scan,
+        volume_geometry=grid,
+        backend=backend,
+        detector_padding=padding,
+    ) as rec:
+        forward, backward = reference.sample_operator_pair(rec, gpu)
+        rng = np.random.default_rng(7)
+        image = gpu.asarray(rng.normal(size=grid.shape), dtype=gpu.float32)
+        projected = rec.operator.forward(image)
+        assert projected.shape == rec.padded_projection_geometry.projection_shape
+        np.testing.assert_allclose(
+            gpu.asnumpy(projected).ravel(),
+            forward @ gpu.asnumpy(image).ravel(),
+            atol=2e-6,
+            rtol=2e-5,
+        )
+        np.testing.assert_allclose(
+            gpu.asnumpy(rec.operator.backproject(projected)).ravel(),
+            backward @ forward @ gpu.asnumpy(image).ravel(),
+            atol=5e-6,
+            rtol=2e-5,
+        )
+        # Fourier FP/BP is an adjoint pair; ASTRA's independently implemented
+        # kernels are sampled separately rather than assumed to be transposes.
+        if backend == "usfft":
+            np.testing.assert_allclose(backward, forward.T, atol=5e-7, rtol=2e-5)
+        rho = 0.7
+        state = rec.initialise_solver(
+            "ADMM",
+            rec.forward(image),
+            data_solver="cg",
+            rho=rho,
+            cg_iterations=80,
+            cg_tolerance=1e-7,
+        )
+        rec.run(state)
+        actual = gpu.asnumpy(state.algorithm_state["z"]).ravel()
+        rhs = backward @ gpu.asnumpy(state.projections).ravel()
+        system = backward @ forward + rho * np.eye(image.size)
+        relative_residual = np.linalg.norm(system @ actual - rhs) / np.linalg.norm(rhs)
+        # ASTRA's unmatched FP/BP can slow CG on its nonsymmetric normal map.
+        assert relative_residual < (2e-3 if backend == "astra" else 2e-5)
+
+        probe = reference.working_pair_probes(rec, state, trials=1, seed=4)[0]
+        x = (
+            np.random.default_rng(4)
+            .standard_normal(grid.shape, dtype=np.float32)
+            .ravel()
+        )
+        expected_rayleigh = x @ system @ x / (x.astype(np.float64) @ x)
+        np.testing.assert_allclose(
+            probe["sampled_cg_rayleigh_quotient"],
+            expected_rayleigh,
+            rtol=2e-6,
+            atol=2e-6,
+        )

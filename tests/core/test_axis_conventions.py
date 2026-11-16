@@ -2,15 +2,13 @@
 
 import unittest
 from itertools import permutations
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import numpy as np
 
 from tests.helpers.reconstruction import DirectHarness
 from tomobar.geometry import (
-    Parallel2DGeometry,
     Parallel3DGeometry,
-    Volume2DGeometry,
     Volume3DGeometry,
 )
 

@@ -262,6 +262,7 @@ class Parallel3DGeometry:
 
     @property
     def view_count(self) -> int:
+        """Number of acquired projection angles."""
         return len(self.vectors) if self.vectors is not None else self.angles.size
 
     @property

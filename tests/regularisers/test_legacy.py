@@ -6,7 +6,8 @@ from numpy.testing import assert_allclose
 
 cp = pytest.importorskip("cupy")
 
-from tomobar.regularisers import PD_TV_cupy, ROF_TV_cupy, __check_if_input_2d_or_3d
+from tomobar.regularisers import PD_TV_cupy, ROF_TV_cupy
+from tomobar._regularisers.common import __check_if_input_2d_or_3d
 
 pytestmark = pytest.mark.usefixtures("gpu")
 

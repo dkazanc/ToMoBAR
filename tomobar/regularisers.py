@@ -20,7 +20,6 @@ from tomobar._regularisers.common import (
     _validate_tv_input,
     _prepare_input,
     _restore_shape,
-    __check_if_input_2d_or_3d,
 )
 
 
@@ -34,6 +33,7 @@ def ROF_TV_cupy(
     nonnegativity: bool = False,
 ) -> cp.ndarray:
     """Total Variation using Rudin-Osher-Fatemi (ROF) explicit iteration scheme to perform edge-preserving image denoising.
+
        This is a gradient-based algorithm for a smoothed TV term which requires a small time marching parameter and a significant number of iterations.
        Ref: Rudin, Osher, Fatemi, "Nonlinear Total Variation based noise removal algorithms", 1992.
 
@@ -96,6 +96,7 @@ def PD_TV_cupy(
     _dual_state=None,
 ) -> cp.ndarray:
     """Primal Dual algorithm for non-smooth convex Total Variation functional.
+
        Ref: Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
        with Applications to Imaging", 2010.
        Forward differences have zero boundary flux. The returned array is the
@@ -131,7 +132,6 @@ def PD_TV_cupy(
         tv_type=methodTV,
         lipschitz_constant=lipschitz_const,
     )
-    strength = float(settings.strength)
     iterations = int(settings.iterations)
     gpu_id = _validate_tv_input(data, gpu_id)
     with cp.cuda.Device(gpu_id):

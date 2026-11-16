@@ -219,10 +219,10 @@ def mock_reconstruction():
 
 @pytest.fixture
 def cpu_rec():
-    """Fresh production solver control flow backed by a CPU linear operator."""
-    from tests.helpers.solver import make_cpu_rec
+    """Fresh explicit NumPy harness for the production solver state engine."""
+    from tests.helpers.solver import CPURec
 
-    return make_cpu_rec()
+    return CPURec()
 
 
 @pytest.fixture
@@ -234,5 +234,5 @@ def two_pixel_rec(cpu_rec, monkeypatch):
     rec.operator.forward = lambda image, *args, **kwargs: image.copy()
     rec.operator.backproject = lambda data, *args, **kwargs: data.copy()
     rec._finish_reconstruction = lambda image, **kwargs: image
-    monkeypatch.setitem(rec.run.__func__.__globals__, "prox_regul", two_pixel_tv_prox)
+    monkeypatch.setattr(rec, "proximal", two_pixel_tv_prox)
     return rec

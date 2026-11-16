@@ -328,7 +328,6 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
                     self.current_device = 2
                     self.backend.counts.clear()
                     self.backend.fail_at = failure
-                    persistent = set(self.backend.live["projector3d"])
 
                     def invoke():
                         if forward:

@@ -89,6 +89,7 @@ class RecToolsDIR(GeometryReconstruction):
         """Forward-project a 2D image or 3D volume.
 
         Args:
+            **kwargs: Legacy axis-order and method-specific reconstruction options.
             data (numpy.ndarray or cupy.ndarray): Real object matching
                 volume_geometry.shape, in (Y, X) or (Z, Y, X) order.
                 Noncontiguous or non-float32 input is packed as float32.
@@ -128,6 +129,7 @@ class RecToolsDIR(GeometryReconstruction):
         """Backproject 2D or 3D measured projections.
 
         Args:
+            **kwargs: Legacy axis-order and method-specific reconstruction options.
             data (numpy.ndarray or cupy.ndarray): Real projection data matching the
                 acquisition geometry. Non-float32 input is packed as float32.
 
@@ -165,6 +167,7 @@ class RecToolsDIR(GeometryReconstruction):
         """Reconstruct 2D or 3D projection data by filtered backprojection.
 
         Args:
+            **kwargs: Legacy axis-order and method-specific reconstruction options.
             data (numpy.ndarray or cupy.ndarray): Projection data, converted to
                 contiguous float32 storage for reconstruction. Default axis order
                 is (angles, detX) in 2D and (detY, angles, detX) in 3D.

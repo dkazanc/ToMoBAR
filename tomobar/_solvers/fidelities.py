@@ -22,6 +22,7 @@ def grad_data_term(
     """Calculate the gradient of the data fidelity term.
 
     Args:
+        self: Reconstruction context providing the shared projection operator.
         x (cp.ndarray): the current solution/volume as a 3D CuPy array.
         b (cp.ndarray or None): measured line integrals. None returns the
             quadratic normal operator applied to x, without allocating zero data.
@@ -30,6 +31,8 @@ def grad_data_term(
         w (Optional, cp.ndarray): weights for Penalised-Weighted LS.
         w_sum (Optional, cp.ndarray): sum_weights for SWLS.
         fidelity (str): LS, PWLS or SWLS data term.
+        projection_out: Optional reusable residual buffer, independent of inputs.
+        out: Optional reusable gradient buffer, independent of inputs.
 
     projection_out optionally supplies residual scratch; out supplies gradient
     storage. These buffers must not overlap x, b, weights or each other. With

@@ -80,22 +80,27 @@ class GeometryReconstruction:
 
     @property
     def device_index(self) -> int:
+        """CUDA device selected for this reconstruction."""
         return self._device_index
 
     @property
     def projection_geometry(self):
+        """Unpadded acquisition geometry supplied by the caller."""
         return self._projection_geometry
 
     @property
     def volume_geometry(self):
+        """Working-grid volume geometry."""
         return self._volume_geometry
 
     @property
     def padded_projection_geometry(self):
+        """Acquisition geometry including reconstruction detector padding."""
         return self._padded_projection_geometry
 
     @property
     def detector_padding(self):
+        """Number of extra detector columns on each side."""
         return self._detector_padding
 
     def _init_operator(self, operator_type, *, subset_count: int = 1) -> None:

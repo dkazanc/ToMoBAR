@@ -2,6 +2,8 @@ ALLOCATION_UNIT_SIZE = 512
 
 
 class DeviceMemStack:
+    """Track rounded allocation sizes and peak Fourier workspace usage."""
+
     _instance = None
     _stack_count = 0
 
@@ -20,6 +22,7 @@ class DeviceMemStack:
 
     @classmethod
     def instance(cls):
+        """Return the active outermost allocation-estimation context, if any."""
         return cls._instance
 
     def __init__(self) -> None:
@@ -28,12 +31,14 @@ class DeviceMemStack:
         self.highwater = 0
 
     def malloc(self, byte_count):
+        """Record a logical allocation and update the estimated peak."""
         self.allocations.append(byte_count)
         allocated = self._round_up(byte_count)
         self.current += allocated
         self.highwater = max(self.current, self.highwater)
 
     def free(self, byte_count):
+        """Release a previously recorded logical allocation."""
         assert byte_count in self.allocations
         self.allocations.remove(byte_count)
         self.current -= self._round_up(byte_count)

@@ -34,7 +34,7 @@ def gaussian_weights(n, angles, m, mu):
 
 def emulate_interpolation(_grid, _block, arguments):
     """Emulate raw CUDA gather/scatter, retaining complex64 output rounding."""
-    polar, cartesian, theta, m, mu, n, views, rows, adjoint = arguments
+    polar, cartesian, theta, m, mu, n, _views, _rows, adjoint = arguments
     weights = gaussian_weights(
         int(n), tuple(float(t) for t in theta), int(m), float(mu)
     )

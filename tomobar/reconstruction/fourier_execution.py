@@ -12,6 +12,8 @@ from tomobar.reconstruction.postprocess import postprocess_reconstruction
 
 
 class FourierExecutor:
+    """Execute a CPU-built Fourier plan or trace its CUDA workspace usage."""
+
     def __init__(self, projection_geometry, plan):
         self.projection_geometry = projection_geometry
         self.plan = plan
@@ -36,6 +38,7 @@ class FourierExecutor:
         )
 
     def execute(self, data):
+        """Execute or trace Fourier inversion for the prepared projections."""
         p = self.plan
         o = p.options
         nz, _, data_n = p.even_shape
@@ -384,6 +387,7 @@ class FourierExecutor:
         del fft_input, fft_plan
 
     def ifft_gathered_projections(self, fde: cp.ndarray, c2dfftshift: cp.RawKernel):
+        """Transform gathered Fourier samples back to image space."""
         detector_height = self.plan.even_shape[0]
         detector_width = self.plan.detector_width
         c2dfftshift(
@@ -413,9 +417,10 @@ class FourierExecutor:
         )
 
     def ifft_gathered_projections_estimator(self, fde: tuple):
+        """Trace the workspace needed to transform gathered Fourier samples."""
         mem_stack = self.mem_stack
 
-        fde_shape, fde_dtype = fde
+        _, fde_dtype = fde
         ifft2_input = cp.empty(self.plan.workspaces["ifft_input"].shape, fde_dtype)
 
         ifft2_plan = get_fft_plan(ifft2_input, axes=(-2, -1))
@@ -427,6 +432,7 @@ class FourierExecutor:
     def unpad_reconstructed_data(
         self, fde: cp.ndarray, unpadding_mul_phi: cp.RawKernel
     ):
+        """Extract the planned output crop from the padded reconstruction."""
         detector_height, projection_count, _ = self.plan.even_shape
         detector_width = self.plan.detector_width
         mu = self.plan.mu
@@ -461,6 +467,7 @@ class FourierExecutor:
         return recon_up
 
     def unpad_reconstructed_data_estimator(self):
+        """Return the planned output crop shape for workspace estimation."""
         workspace = self.plan.workspaces["output"]
         self.mem_stack.malloc(workspace.nbytes)
         return workspace.shape

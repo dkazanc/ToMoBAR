@@ -106,7 +106,7 @@ extern "C" void sb_index(int stage,int ndim,int x,int y,int z,int nx,int ny,int 
     ],
 )
 def test_rof_index_exceeds_signed_and_unsigned_32_bit(indexing_probe, shape, point):
-    nz, ny, nx = shape
+    _nz, ny, nx = shape
     z, y, x = point
     expected = x + nx * y + nx * ny * z
     assert expected > np.iinfo(np.int32).max

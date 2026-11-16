@@ -45,7 +45,6 @@ def test_backproj2d(data, angles):
 
 def test_forwproj2d(data, angles):
     detX = np.shape(data)[2]
-    data2D = data[:, 60, :]
     N_size = detX
     phantom = np.float32(np.ones((N_size, N_size)))
 

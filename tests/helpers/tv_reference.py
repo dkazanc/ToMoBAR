@@ -66,3 +66,42 @@ def reference_tv(image, strength, anisotropic, nonnegative):
     )
     assert solution.success, solution.message
     return primal(solution.x)
+
+
+def reference_sb(data, strength, iterations, anisotropic=False, nonneg=False):
+    """NumPy SB iteration using zero-flux differences and their adjoint."""
+    x = data.copy()
+    d = [np.zeros_like(x) for _ in range(x.ndim)]
+    b = [np.zeros_like(x) for _ in range(x.ndim)]
+    degree = np.zeros_like(x)
+    for axis in range(x.ndim):
+        lower = [slice(None)] * x.ndim
+        upper = lower.copy()
+        lower[axis], upper[axis] = slice(None, -1), slice(1, None)
+        degree[tuple(lower)] += 1
+        degree[tuple(upper)] += 1
+    for _ in range(iterations):
+        for _ in range(2):
+            total = np.zeros_like(x)
+            for axis in range(x.ndim):
+                lower = [slice(None)] * x.ndim
+                upper = lower.copy()
+                lower[axis], upper[axis] = slice(None, -1), slice(1, None)
+                lo, hi = tuple(lower), tuple(upper)
+                total[lo] += x[hi] - d[axis][lo] + b[axis][lo]
+                total[hi] += x[lo] + d[axis][lo] - b[axis][lo]
+            x = (data + 2 * total) / (1 + 2 * degree)
+            if nonneg:
+                x = np.maximum(x, 0)
+        gradients = [
+            np.diff(x, axis=a, append=np.take(x, [-1], axis=a)) for a in range(x.ndim)
+        ]
+        v = [g + dual for g, dual in zip(gradients, b)]
+        if anisotropic:
+            d = [np.sign(a) * np.maximum(np.abs(a) - strength / 2, 0) for a in v]
+        else:
+            norm = np.sqrt(sum(a * a for a in v))
+            scale = np.maximum(norm - strength / 2, 0) / np.maximum(norm, 1e-30)
+            d = [a * scale for a in v]
+        b = [dual + g - split for dual, g, split in zip(b, gradients, d)]
+    return x

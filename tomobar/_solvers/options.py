@@ -22,6 +22,8 @@ class SolverOptions:
 
 @dataclass(frozen=True, slots=True)
 class LandweberOptions(SolverOptions):
+    """Validated gradient-descent step size and constraint settings."""
+
     step_size: float = 1e-5
 
     def __post_init__(self):
@@ -31,11 +33,15 @@ class LandweberOptions(SolverOptions):
 
 @dataclass(frozen=True, slots=True)
 class SIRTOptions(SolverOptions):
+    """Validated simultaneous-iteration constraint settings."""
+
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class CGLSOptions(SolverOptions):
+    """Validated settings for conjugate-gradient least squares."""
+
     pass
 
 
@@ -70,16 +76,22 @@ class _QuadraticOptions(_RegularisedOptions):
 
 @dataclass(frozen=True, slots=True)
 class OSEMOptions(_RegularisedOptions):
+    """Validated settings for ordered-subset expectation maximisation."""
+
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class FISTAOptions(_QuadraticOptions):
+    """Validated settings for accelerated proximal-gradient iterations."""
+
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class ADMMOptions(_QuadraticOptions):
+    """Validated ADMM splitting, data-solve and stopping settings."""
+
     rho: float = 1.0
     data_solver: Literal["linearised", "cg"] = "linearised"
     cg_iterations: int = 5

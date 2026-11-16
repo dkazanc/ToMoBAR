@@ -23,6 +23,7 @@ class ProjectionBuffers:
         self._views = {}
 
     def projection(self, subset_index=0):
+        """Return reusable projection scratch for the requested subset."""
         rows, angles, columns = self._shape
         count = len(range(subset_index, angles, self._subsets))
         if self._projection is None:
@@ -37,6 +38,7 @@ class ProjectionBuffers:
         return self._views[count]
 
     def volume(self):
+        """Return reusable full working-grid volume scratch."""
         if self._volume is None:
             self._volume = self._xp.empty(self._volume_shape, dtype=self._volume_dtype)
         return self._volume

@@ -35,7 +35,8 @@ def test_settings_are_immutable_and_reject_unknown_fields():
         with pytest.raises(FrozenInstanceError):
             setattr(settings, field, None)
     with pytest.raises(TypeError):
-        Regularisation(regul_param=1.0)
+        # Unsupported arguments must be rejected.
+        Regularisation(regul_param=1.0)  # pylint: disable=unexpected-keyword-arg
 
 
 @pytest.mark.parametrize(
@@ -59,7 +60,6 @@ def test_settings_are_immutable_and_reject_unknown_fields():
 def test_invalid_solver_options_create_no_projector(
     mock_reconstruction, method, kwargs, error
 ):
-    backend = mock_reconstruction.backend
     iterative = mock_reconstruction.iterative
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 

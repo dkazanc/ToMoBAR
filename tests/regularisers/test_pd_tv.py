@@ -1,181 +1,13 @@
-"""Reference checks for PD-TV kernels and their Python buffer management.
+"""GPU PD-TV numerical, buffer ownership and solver-integration regressions."""
 
-The CPU adapter compiles the actual float CUDA kernel bodies as ordinary C++
-with synthetic thread indices. CUDA float/half variants also run when available.
-"""
-
-import ast
-import ctypes
-import shutil
-import subprocess
-from contextlib import nullcontext
-from pathlib import Path
-from types import SimpleNamespace
+from dataclasses import replace
+from functools import partial
 
 import numpy as np
 import pytest
 
-from tests.helpers.regulariser_adapter import regulariser_tree
-from tests.helpers.tv_reference import forward_gradient, gradient_adjoint, reference_tv
-from tomobar._arrays.device import _validate_device_index
-
-
-@pytest.fixture(scope="module")
-def cpu_pd_tv(tmp_path_factory):
-    compiler = shutil.which("g++")
-    if compiler is None:
-        pytest.skip("g++ is needed for the CPU CUDA-kernel adapter")
-    root = Path(__file__).resolve().parents[2]
-    directory = tmp_path_factory.mktemp("pd_tv_kernels")
-    source = (
-        root / "tomobar/cuda_kernels/primal_dual_for_total_variation.cu"
-    ).read_text()
-    shim = r"""
-#include <cmath>
-#define __device__
-#define __global__
-#define __forceinline__ inline
-struct __half { float value; };
-float __half2float(__half h) { return h.value; }
-__half __float2half(float f) { return {f}; }
-struct Index { long long x, y, z; };
-Index blockIdx, blockDim, threadIdx;
-"""
-    source = source.replace("#include <cuda_fp16.h>", shim)
-    source += r"""
-extern "C" void launch(
-    float *input, float *previous, float *current, float *output,
-    float *p1, float *p2, float *p3, float *q1, float *q2, float *q3,
-    float sigma, float tau, float lt, float theta,
-    int dx, int dy, int dz, int nonneg, int anisotropic, int is3d)
-{
-    blockDim = {1, 1, 1}; threadIdx = {0, 0, 0};
-    for (int z=0; z<dz; ++z) for (int y=0; y<dy; ++y) for (int x=0; x<dx; ++x) {
-        blockIdx = {x, y, z};
-#define STEP(N,A,D) primal_dual_step<float,N,A,D>(input,previous,current,output,p1,p2,p3,q1,q2,q3,sigma,tau,lt,theta,dx,dy,dz)
-#define DIM_STEP(N,A) if(is3d) { STEP(N,A,true); } else { STEP(N,A,false); }
-        if(nonneg) { if(anisotropic) { DIM_STEP(true,true); } else { DIM_STEP(true,false); } }
-        else { if(anisotropic) { DIM_STEP(false,true); } else { DIM_STEP(false,false); } }
-    }
-}
-"""
-    cpp = directory / "pd_tv.cpp"
-    library = directory / "pd_tv.so"
-    cpp.write_text(source)
-    subprocess.run(
-        [
-            compiler,
-            "-std=c++11",
-            "-O2",
-            "-shared",
-            "-fPIC",
-            str(cpp),
-            "-o",
-            str(library),
-        ],
-        check=True,
-        capture_output=True,
-    )
-    launch = ctypes.CDLL(str(library)).launch
-    launch.argtypes = [ctypes.c_void_p] * 10 + [ctypes.c_float] * 4 + [ctypes.c_int] * 6
-    launch.restype = None
-
-    class Module:
-        def get_function(self, name):
-            assert "_float" in name  # Half arithmetic is tested on CUDA only.
-            is3d = "_3D_" in name
-
-            def kernel(grid, block, args):
-                if is3d:
-                    arrays, scalars, dims = args[:10], args[10:14], args[14:]
-                else:
-                    arrays = (*args[:6], None, *args[6:8], None)
-                    scalars, dims = args[8:12], (*args[12:], 1)
-                pointers = [
-                    array.ctypes.data if array is not None else None for array in arrays
-                ]
-                launch(
-                    *pointers,
-                    *scalars,
-                    *dims,
-                    int("_nonneg" in name),
-                    int("_methodTV" in name),
-                    int(is3d),
-                )
-
-            return kernel
-
-    # Execute the production Python buffer rotations as well as the kernel.
-    tree = regulariser_tree()
-    functions = [
-        n
-        for n in tree.body
-        if isinstance(n, ast.FunctionDef)
-        and n.name in ("PD_TV_cupy", "__check_if_input_2d_or_3d", "_validate_tv_input")
-    ]
-    for function in functions:
-        function.returns = None
-        for argument in function.args.args:
-            argument.annotation = None
-
-    class DeviceArray(np.ndarray):
-        @property
-        def device(self):
-            return SimpleNamespace(id=0)
-
-    cp = SimpleNamespace(
-        ndarray=DeviceArray,
-        ascontiguousarray=np.ascontiguousarray,
-        all=np.all,
-        isfinite=np.isfinite,
-        float32=np.float32,
-        float16=np.float16,
-        zeros=np.zeros,
-        empty=np.empty,
-        shape=np.shape,
-        squeeze=np.squeeze,
-        expand_dims=np.expand_dims,
-        maximum=np.maximum,
-        multiply=np.multiply,
-        cuda=SimpleNamespace(Device=lambda index: nullcontext()),
-    )
-    namespace = dict(
-        cp=cp,
-        load_cuda_module=lambda name: Module(),
-        get_cuda_kernel=lambda module, name: module.get_function(name),
-        _validate_device_index=_validate_device_index,
-    )
-    exec(
-        compile(ast.Module(body=functions, type_ignores=[]), "<pd_tv_cpu>", "exec"),
-        namespace,
-    )
-
-    def denoise(image, *args, **options):
-        return namespace["PD_TV_cupy"](image.view(DeviceArray), *args, **options)
-
-    return denoise
-
-
-@pytest.fixture(
-    params=[
-        "cpu",
-        pytest.param("cuda-float", marks=pytest.mark.gpu),
-        pytest.param("cuda-half", marks=pytest.mark.gpu),
-    ]
-)
-def pd_tv(request):
-    if request.param == "cpu":
-        function = request.getfixturevalue("cpu_pd_tv")
-        return function, 1e-4
-    cp = request.getfixturevalue("gpu")
-    from tomobar.regularisers import PD_TV_cupy
-
-    half = request.param == "cuda-half"
-
-    def denoise(image, **options):
-        return cp.asnumpy(PD_TV_cupy(cp.asarray(image), half_precision=half, **options))
-
-    return denoise, 2e-3 if half else 1e-4
+from tests.helpers.tv_reference import reference_tv
+from tomobar.options import Regularisation
 
 
 @pytest.mark.parametrize("shape", [(2, 2), (2, 2, 2), (1, 2), (1, 1, 2)])
@@ -239,51 +71,20 @@ def test_zero_strength_is_identity_or_nonnegative_projection(pd_tv, nonnegative)
     np.testing.assert_array_equal(result.reshape(image.shape), expected)
 
 
-@pytest.mark.parametrize("strength,expected", [(0.6, [0, 3.4]), (3.0, [1, 1])])
-def test_fista_uses_the_actual_constrained_pd_kernel(
-    cpu_rec, monkeypatch, cpu_pd_tv, strength, expected
-):
-    rec = cpu_rec
-    rec.shape = (1, 1, 2)
-    rec.operator.forward = lambda image, *a, **kw: image.copy()
-    rec.operator.backproject = lambda data, *a, **kw: data.copy()
-    rec._finish_reconstruction = lambda image, **kw: image
-
-    def proximal(image, settings, *, device_index, nonnegativity):
-        return cpu_pd_tv(
-            image,
-            regularisation_parameter=settings.strength,
-            iterations=500,
-            nonneg=int(nonnegativity),
-        )
-
-    monkeypatch.setitem(rec.run.__func__.__globals__, "prox_regul", proximal)
-    from tomobar.options import Regularisation
-
-    image = rec.FISTA(
-        np.array([[[-2, 4]]], dtype=np.float32),
-        iterations=3,
-        lipschitz_constant=1,
-        regularisation=Regularisation(strength=strength),
-        nonnegativity=True,
-        recon_mask_radius=None,
-    )
-    np.testing.assert_allclose(image.ravel(), expected, atol=1e-5)
-
-
 @pytest.mark.parametrize("shape", [(16, 16), (3, 12, 12)])
-def test_warm_tv_reuses_dual_buffers_and_improves_short_solves(cpu_pd_tv, shape):
+def test_warm_tv_reuses_dual_buffers_and_improves_short_solves(regularise, shape):
+    denoise = partial(regularise, "PD_TV_cupy")
     image = np.random.default_rng(3).uniform(0, 0.003, shape).astype(np.float32)
     options = dict(regularisation_parameter=0.05 / 0.9, iterations=40)
-    reference = cpu_pd_tv(image, **{**options, "iterations": 3000})
-    cold = cpu_pd_tv(image, **options)
+    reference = denoise(image, **{**options, "iterations": 3000})
+    cold = denoise(image, **options)
     state = {}
-    first = cpu_pd_tv(image, _dual_state=state, **options)
+    first = denoise(image, _dual_state=state, **options)
     np.testing.assert_array_equal(first, cold)
     buffers = state["dual"]
     assert len(buffers) == image.ndim
     for _ in range(9):
-        warm = cpu_pd_tv(image, _dual_state=state, **options)
+        warm = denoise(image, _dual_state=state, **options)
         # Even step counts finish in the retained input buffers, without copies.
         assert all(a is b for a, b in zip(buffers, state["dual"]))
     assert np.linalg.norm(warm - reference) < np.linalg.norm(cold - reference) * 0.5
@@ -307,22 +108,30 @@ def test_warm_tv_matches_reference_for_changed_proximal_input(pd_tv, steps):
     np.testing.assert_allclose(output, reference_tv(second, 0.3, 0, 1), atol=tolerance)
 
 
+@pytest.mark.parametrize("strength,expected", [(0.6, [0, 3.4]), (3.0, [1, 1])])
+def test_fista_uses_the_actual_constrained_pd_kernel(
+    identity_rec, gpu, strength, expected
+):
+    rec, _ = identity_rec
+    image = rec.FISTA(
+        gpu.asarray([[[-2, 4], [-2, 4]]], dtype=gpu.float32),
+        iterations=3,
+        lipschitz_constant=1,
+        regularisation=Regularisation(strength=strength, iterations=500),
+        nonnegativity=True,
+        recon_mask_radius=None,
+    )
+    np.testing.assert_allclose(gpu.asnumpy(image), [[expected, expected]], atol=1e-5)
+
+
 @pytest.mark.parametrize("data_solver", ["linearised", "cg"])
 def test_admm_warm_tv_continuation_and_geometry_reset(
-    cpu_rec, cpu_pd_tv, monkeypatch, data_solver
+    identity_rec, gpu, monkeypatch, data_solver
 ):
-    pytest.importorskip("cupy")
-    from tomobar.options import Regularisation
-
-    rec = cpu_rec
-    rec.shape = (1, 1, 2)
-    rec.operator.forward = lambda image, *a, **kw: image.copy()
-    rec.operator.backproject = lambda data, *a, **kw: data.copy()
-    from tomobar import regularisers
+    rec, install_identity = identity_rec
     from tomobar._regularisers.proximal import prox_regul
+    from tomobar.reconstruction import iterative
 
-    rec.device_index = 0
-    monkeypatch.setattr(regularisers, "PD_TV_cupy", cpu_pd_tv)
     cache_calls = []
 
     def proximal(image, settings, *, device_index, nonnegativity, dual_state):
@@ -335,7 +144,7 @@ def test_admm_warm_tv_continuation_and_geometry_reset(
             dual_state=dual_state,
         )
 
-    monkeypatch.setitem(rec.run.__func__.__globals__, "prox_regul", proximal)
+    monkeypatch.setattr(iterative, "prox_regul", proximal)
     options = dict(
         data_solver=data_solver,
         rho=1,
@@ -343,18 +152,21 @@ def test_admm_warm_tv_continuation_and_geometry_reset(
         lipschitz_constant=1,
         regularisation=Regularisation(strength=0.6, iterations=10),
     )
-    data = np.array([[[0, 4]]], dtype=np.float32)
+    data = gpu.asarray([[[0, 4], [0, 4]]], dtype=gpu.float32)
     state = rec.initialise_solver("ADMM", data, **options)
     rec.run(state, iterations=30)
     cache = state.algorithm_state["tv_dual"]
     rec.run(state, iterations=30)
     assert all(value is cache for value in cache_calls)
-    np.testing.assert_allclose(state.image.ravel(), [0.6, 3.4], atol=2e-4)
+    np.testing.assert_allclose(
+        gpu.asnumpy(state.image), [[[0.6, 3.4], [0.6, 3.4]]], atol=2e-4
+    )
     uninterrupted = rec.initialise_solver("ADMM", data, **options)
     rec.run(uninterrupted, iterations=60)
-    np.testing.assert_array_equal(state.image, uninterrupted.image)
+    gpu.testing.assert_array_equal(state.image, uninterrupted.image)
     assert uninterrupted.algorithm_state["tv_dual"] is not cache
-    rec.geometry_version += 1
+    rec.replace_geometry(replace(rec.projection_geometry, centre_of_rotation=0.25))
+    install_identity(rec)
     rec.run(state)
     assert state.algorithm_state["tv_dual"] is not cache
     assert cache_calls[-1] is state.algorithm_state["tv_dual"]

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 
-import numpy as np
+import numpy as np  # pylint: disable=unused-import  # Used in quoted type aliases.
 
 from tomobar.geometry import (
     Parallel2DGeometry,

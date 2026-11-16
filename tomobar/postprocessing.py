@@ -6,7 +6,7 @@ __all__ = ["apply_circular_mask", "perform_recon_crop"]
 
 
 def apply_circular_mask(data, recon_mask_radius, cupyrun=False):
-    """Applies a circular mask of a certain radius to zero the values outside the mask
+    """Apply a circular mask in place, zeroing values outside its radius.
 
     Args:
         data (cp or np ndarray): reconstructed volume
@@ -42,7 +42,7 @@ def apply_circular_mask(data, recon_mask_radius, cupyrun=False):
 
 
 def perform_recon_crop(data, croped_size):
-    """Perform cropping of the larger 3D data array (reconstruction) to a smaller one defined by croped_size
+    """Centrally crop a reconstruction to the requested transverse size.
 
     Args:
         data (xp.ndarray): 3D array [vertical, reconX, reconY] or 2D array [reconX, reconY] to crop

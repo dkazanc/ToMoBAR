@@ -103,8 +103,6 @@ def test_owner_closed_validation_and_initial_cgls_convergence(cpu_rec):
     with pytest.raises(ValueError):
         other.run(state)
     with pytest.raises(ValueError):
-        other.solver_image(state)
-    with pytest.raises(ValueError):
         rec.run(state, iterations=0)
     with pytest.raises(TypeError):
         rec.initialise_solver("FISTA", np.zeros(rec.shape), rho=3)
@@ -231,7 +229,7 @@ def test_fista_scales_only_local_prox_settings(
         calls.append(settings)
         return image
 
-    monkeypatch.setitem(rec.run.__func__.__globals__, "prox_regul", capture_prox)
+    monkeypatch.setattr(rec, "proximal", capture_prox)
     regularisation = Regularisation(method=method, strength=0.8)
     state = rec.initialise_solver(
         "FISTA",
@@ -421,3 +419,21 @@ def test_cuda_fista_constrained_tv_matches_analytic_solution(
         expected_image = cp.asarray(np.broadcast_to(expected, (2, 2, 2)).copy())
         cp.testing.assert_allclose(image, expected_image, atol=2e-3 if half else 1e-4)
         assert bool(cp.all(image >= 0))
+
+
+def test_public_solver_image_rejects_foreign_state(mock_reconstruction):
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+
+    options = dict(
+        projection_geometry=Parallel3DGeometry(angles=[0, 1], detector_shape=(1, 3)),
+        volume_geometry=Volume3DGeometry((1, 2, 2)),
+    )
+    with (
+        mock_reconstruction.iterative.RecToolsIR(**options) as first,
+        mock_reconstruction.iterative.RecToolsIR(**options) as second,
+    ):
+        state = first.initialise_solver(
+            "FISTA", np.ones((1, 2, 3), dtype=np.float32), lipschitz_constant=1
+        )
+        with pytest.raises(ValueError, match="belong"):
+            second.solver_image(state)

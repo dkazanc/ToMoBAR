@@ -88,7 +88,7 @@ def test_inplace_proximal_matches_out_of_place_continuation(
         image /= 1 + settings.strength
         return image
 
-    monkeypatch.setitem(rec.run.__func__.__globals__, "prox_regul", inplace_prox)
+    monkeypatch.setattr(rec, "proximal", inplace_prox)
     rec.run(actual, iterations=3)
     rec.run(actual, iterations=6)
     np.testing.assert_array_equal(actual.image, expected.image)

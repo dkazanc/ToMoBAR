@@ -1,6 +1,8 @@
 """Method-specific configuration rejects unused parameters before allocation."""
 
+from contextlib import ExitStack
 from dataclasses import FrozenInstanceError, fields
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -46,8 +48,10 @@ from tomobar.options import Diagnostics
     ],
 )
 def test_state_contains_only_method_settings(cpu_rec, method, option_type, extra):
+    # Exact identity checks the native-type normalisation contract.
+    # pylint: disable=unidiomatic-typecheck
     state = cpu_rec.initialise_solver(method, np.ones(cpu_rec.shape, dtype=np.float32))
-    assert type(state._options) is option_type
+    assert type(state._options) is option_type  # noqa: E721
     assert set(state.options) == {"nonnegativity", "diagnostics"} | extra
     assert set(state.options) == {item.name for item in fields(state._options)}
     assert not hasattr(state._options, "__dict__")
@@ -73,18 +77,29 @@ def test_state_contains_only_method_settings(cpu_rec, method, option_type, extra
 )
 @pytest.mark.parametrize("public_api", [True, False])
 def test_unused_options_fail_before_preparing_arrays(
-    cpu_rec, method, unused, public_api
+    cpu_rec, mock_reconstruction, monkeypatch, method, unused, public_api
 ):
-    if public_api:
-        initialise = cpu_rec.initialise_solver
-    else:
-        # Exercise the engine independently of public signature binding.
-        initialise = lambda method, data, **kw: solver_state.initialise(
-            cpu_rec, method, data, xp=np, **kw
+    with ExitStack() as stack:
+        rec = cpu_rec
+        if public_api:
+            from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+
+            rec = stack.enter_context(
+                mock_reconstruction.iterative.RecToolsIR(
+                    projection_geometry=Parallel3DGeometry(
+                        angles=[0, 1], detector_shape=(1, 3)
+                    ),
+                    volume_geometry=Volume3DGeometry((1, 2, 2)),
+                )
+            )
+        prepare = Mock(
+            side_effect=AssertionError("invalid options reached input preparation")
         )
-    with pytest.raises(TypeError):
-        initialise(method, None, **unused)
-    assert cpu_rec.preparations == cpu_rec.projection_calls == cpu_rec.power_calls == 0
+        monkeypatch.setattr(rec, "_prepare_inputs", prepare)
+        with pytest.raises(TypeError):
+            rec.initialise_solver(method, None, **unused)
+        prepare.assert_not_called()
+        assert cpu_rec.projection_calls == cpu_rec.power_calls == 0
 
 
 @pytest.mark.parametrize(
@@ -100,6 +115,8 @@ def test_common_parameters_validated_without_reconstructor(method):
 
 
 def test_numpy_scalars_preserve_canonical_execution_types():
+    # Exact identity checks the native-type normalisation contract.
+    # pylint: disable=unidiomatic-typecheck
     options = solver_options(
         "ADMM",
         rho=np.float32(2),
@@ -108,14 +125,15 @@ def test_numpy_scalars_preserve_canonical_execution_types():
         cg_tolerance=np.float32(0.01),
     )
     assert (
-        type(options.rho)
-        is type(options.relaxation)
-        is type(options.cg_tolerance)
+        type(options.rho)  # noqa: E721
+        is type(options.relaxation)  # noqa: E721
+        is type(options.cg_tolerance)  # noqa: E721
         is float
     )
-    assert type(options.cg_iterations) is int
+    assert type(options.cg_iterations) is int  # noqa: E721
     assert (
-        type(solver_options("Landweber", step_size=np.float32(0.1)).step_size) is float
+        type(solver_options("Landweber", step_size=np.float32(0.1)).step_size)
+        is float  # noqa: E721
     )
 
 

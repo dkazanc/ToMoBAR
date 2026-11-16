@@ -143,6 +143,7 @@ class EnergyHistory:
         self._time_origin = None
 
     def record(self, volume):
+        """Record the full working-grid objective when sampling is enabled."""
         if self.enabled:
             prediction = self.reconstructor.operator.forward(volume)
             if self.emission:
@@ -167,6 +168,7 @@ class EnergyHistory:
             self.times.append(now - self._time_origin)
 
     def finish(self, image):
+        """Return the image and, when enabled, the sampled objective values."""
         if not self.enabled:
             return image
         return image, np.asarray(self.values, dtype=np.float64)

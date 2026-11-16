@@ -1,4 +1,5 @@
 """The series of functions for Fourier processing and reconstruction.
+
 The methods that use nonuniform FFT's are adopted from the TomoCupy library
 written by Viktor Nikitin.
 https://tomocupy.readthedocs.io/en/latest/
@@ -29,6 +30,7 @@ def _filtersinc3D(
     response |w*sinc(a*w/2)|*q**2 and view-count normalization.
 
     Args:
+        projection3D: Projection array ordered as (angles, detector rows, columns).
         data : xp.ndarray
             Projection data as a CuPy array in (angles, detY, detX) order.
             The first dimension supplies the number of views for normalization.
@@ -50,7 +52,7 @@ def _filtersinc3D(
     _boolean(clear_gpu_cache, "clear_gpu_cache")
     _boolean(legacy_scaling, "legacy_scaling")
     cutoff = validate_sinc_cutoff(cutoff)
-    projectionsNum, DetectorsLengthV, DetectorsLengthH = xp.shape(projection3D)
+    projectionsNum, _, DetectorsLengthH = xp.shape(projection3D)
 
     # prepearing a ramp-like filter to apply to every projection
     module = load_cuda_module("generate_filtersync")
@@ -160,24 +162,24 @@ def _wint(n, t):
     return wn
 
 
-def calc_filter(n, filter, cutoff_freq):
-    """fbp filters, higher order integrals discretization"""
+def calc_filter(n, filter_type, cutoff_freq):
+    """Return Fourier filter weights for the requested response."""
     d = 0.5
     t = np.arange(0, n / 2 + 1) / n
 
-    if filter == "none":
+    if filter_type == "none":
         wfa = n * cutoff_freq + t * 0
         return xp.asarray(wfa, dtype=xp.float32)
-    elif filter == "ramp":
+    elif filter_type == "ramp":
         # .*(t/(2*d)<=1)%compute the weigths
         wfa = n * cutoff_freq * _wint(12, t)
-    elif filter == "shepp":
+    elif filter_type == "shepp":
         wfa = n * cutoff_freq * _wint(12, t) * np.sinc(t / (2 * d)) * (t / d <= 2)
-    elif filter == "cosine":
+    elif filter_type == "cosine":
         wfa = (
             n * cutoff_freq * _wint(12, t) * np.cos(np.pi * t / (2 * d)) * (t / d <= 1)
         )
-    elif filter == "cosine2":
+    elif filter_type == "cosine2":
         wfa = (
             n
             * cutoff_freq
@@ -185,7 +187,7 @@ def calc_filter(n, filter, cutoff_freq):
             * (np.cos(np.pi * t / (2 * d))) ** 2
             * (t / d <= 1)
         )
-    elif filter == "hamming":
+    elif filter_type == "hamming":
         wfa = (
             n
             * cutoff_freq
@@ -193,7 +195,7 @@ def calc_filter(n, filter, cutoff_freq):
             * (0.54 + 0.46 * np.cos(np.pi * t / d))
             * (t / d <= 1)
         )
-    elif filter == "hann":
+    elif filter_type == "hann":
         wfa = (
             n
             * cutoff_freq
@@ -202,7 +204,7 @@ def calc_filter(n, filter, cutoff_freq):
             / 2.0
             * (t / d <= 1)
         )
-    elif filter == "parzen":
+    elif filter_type == "parzen":
         wfa = n * cutoff_freq * _wint(12, t) * pow(1 - t / d, 3) * (t / d <= 1)
 
     wfa = 2 * wfa * (wfa >= 0)

@@ -11,8 +11,6 @@ from tomobar.geometry import (
     _validate_ordsub_number,
 )
 
-import astra
-import numpy as np
 
 from typing import Optional
 
@@ -72,16 +70,20 @@ class AstraTools3D(AstraBase):
 
     @property
     def projection_geometry(self) -> Parallel3DGeometry:
+        """Acquisition geometry bound to this backend."""
         return self._projection_geometry
 
     @property
     def volume_geometry(self) -> Volume3DGeometry:
+        """Volume geometry bound to this backend."""
         return self._volume_geometry
 
     @property
     def ordsub_number(self) -> int:
+        """Number of configured interleaved projection subsets."""
         return self._ordsub_number
 
     @property
     def device_index(self):
+        """CUDA device selected for projection execution."""
         return self._device_index

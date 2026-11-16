@@ -30,7 +30,6 @@ def _DFFC(data, flats, darks, downsample, nrPArepetions):
     mn = np.mean(whiteVect, axis=0)
 
     # Substract mean flat field
-    M, N = whiteVect.shape
     Data = whiteVect - mn
 
     # =============================================================================
@@ -39,13 +38,6 @@ def _DFFC(data, flats, darks, downsample, nrPArepetions):
     #      Each flat field is a single row of the matrix flatFields, different
     #      rows are different observations.
     # =============================================================================
-
-    def cov(X):
-        one_vector = np.ones((1, X.shape[0]))
-        mu = np.dot(one_vector, X) / X.shape[0]
-        X_mean_subtract = X - mu
-        covA = np.dot(X_mean_subtract.T, X_mean_subtract) / (X.shape[0] - 1)
-        return covA
 
     def parallelAnalysis(flatFields, repetitions):
         stdEFF = np.std(flatFields, axis=0, ddof=1, dtype=np.float64)
@@ -171,7 +163,7 @@ def normaliser(
     axis: int = 0,
     **kwargs,
 ) -> np.ndarray:
-    """Data normalisation module
+    """Normalise projection data using flat and dark fields.
 
     Args:
         data (np.ndarray): 3d numpy array of raw data.
@@ -180,6 +172,7 @@ def normaliser(
         log (bool, optional): Take negative log. Defaults to True.
         method (str, optional): Normalisation method, choose "mean", "median" or "dynamic". Defaults to "mean".
         axis (int, optional): Define the ANGLES axis.
+        **kwargs: Dynamic flat-field options described below.
         dyn_downsample (int, optional): Parameter for "dynamic" method. Defaults to 2.
         dyn_iterations (int, optional): Parameter for "dynamic" method. Defaults to 10.
 
@@ -204,7 +197,7 @@ def normaliser(
         # dynamic flat field normalisation according to the paper of Vincent Van Nieuwenhove
         dyn_downsample_v = kwargs.get("dyn_downsample", 2)
         dyn_iterations_v = kwargs.get("dyn_iterations", 10)
-        [data_norm, EFF, EFF_filt] = _DFFC(
+        data_norm, _, _ = _DFFC(
             data,
             flats,
             darks,
@@ -236,14 +229,15 @@ def normaliser(
 
 
 def autocropper(data, addbox, backgr_pix1):
-    """The method crops 3D projection data in order to reduce the total data size.
-    Method assumes that the object is positioned vertically around the central
+    """Crop 3D projection data to reduce the total data size.
+
+    This method assumes that the object is positioned vertically around the central
     point of the horizontal detector. It is important since the vertical mid ROI
     of each projection is used to estimate the background noise levels.
 
 
     Args:
-        data (np.ndarray) The required dimensions: [Projections, detectorsVertical, detectorsHoriz] !
+        data (np.ndarray): The required dimensions: [Projections, detectorsVertical, detectorsHoriz] !
         addbox: (int) to add additional pixels in addition to automatically found cropped values, i.e. increasing the cropping region (safety option)
         backgr_pix1 (int): to create rectangular ROIs to collect noise statistics on both (vertical) sides of each 2D projection
     """

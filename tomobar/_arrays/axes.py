@@ -64,8 +64,9 @@ def _resolve_data_axes(explicit_axes, legacy_axes, default_axes):
 
 
 def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
-    """A module to ensure that the input tomographic data is prepeared for reconstruction
-    in the axes order required.
+    """Prepare the axis swaps needed for reconstruction.
+
+    Resolve the input labels against the required axis order.
 
     Args:
         data_axes_labels (list):  a list of data labels, e.g. given as ['angles', 'detX', 'detY']
@@ -74,7 +75,6 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
     Returns:
         list: A list of two tuples for input data swaping axis. If both are None, then no swapping needed.
     """
-
     _axis_permutation(data_axes_labels, required_labels_order)
     swap_tuple2 = None
     # check if the labels names are the accepted ones
@@ -107,13 +107,14 @@ def _swap_data_axes_to_accepted(data_axes_labels, required_labels_order):
 
 
 def swap_tuple_elements(tup: Tuple[int, int, int], idx1: int, idx2: int):
+    """Return a tuple with the two selected elements exchanged."""
     items = list(tup)
     items[idx1], items[idx2] = items[idx2], items[idx1]
     return tuple(items)
 
 
 def _data_swap(data: Any | Tuple[int, int, int], data_swap_list: list) -> Any:
-    """Swap data labels based on the provided list of tuples
+    """Swap axes using the provided list of index pairs.
 
     Args:
         data (xp.ndarray): Numpy or CuPu 2D or 3D array

@@ -272,7 +272,7 @@ def test_fourier3d_inv_vert_blocks(data_cupy, angles, blocks):
         volume_geometry=Volume3DGeometry(shape=(block_size, detX, detX)),
         device_index=0,
     ) as RecToolsCP:
-        for block_index in range(0, detY // block_size):
+        for _ in range(0, detY // block_size):
             proj_data_block = data_cupy[:, index_start:index_end, :]
 
             lprec_block_recon = RecToolsCP.FOURIER_INV(
@@ -346,7 +346,6 @@ def test_fourier3d_inv_vert_blocks_last_odd(data_cupy, angles):
 
 
 def test_fourier3d_y_odd_to_even(ensure_clean_memory):
-    dev = cp.cuda.Device()
     data_host = np.random.randint(
         low=7515, high=37624, size=(901, 3, 1341), dtype=np.uint16
     ).astype(np.float32)
@@ -370,7 +369,6 @@ def test_fourier3d_y_odd_to_even(ensure_clean_memory):
 
 
 def test_fourier3d_y_even_to_odd(ensure_clean_memory):
-    dev = cp.cuda.Device()
     data_host = np.random.randint(
         low=7515, high=37624, size=(901, 3, 1342), dtype=np.uint16
     ).astype(np.float32)
@@ -394,7 +392,6 @@ def test_fourier3d_y_even_to_odd(ensure_clean_memory):
 
 
 def test_fourier3d_y_even_to_even(ensure_clean_memory):
-    dev = cp.cuda.Device()
     data_host = np.random.randint(
         low=7515, high=37624, size=(901, 3, 1342), dtype=np.uint16
     ).astype(np.float32)
@@ -418,7 +415,6 @@ def test_fourier3d_y_even_to_even(ensure_clean_memory):
 
 
 def test_fourier3d_y_odd_to_odd(ensure_clean_memory):
-    dev = cp.cuda.Device()
     data_host = np.random.randint(
         low=7515, high=37624, size=(901, 3, 1341), dtype=np.uint16
     ).astype(np.float32)
@@ -444,7 +440,6 @@ def test_fourier3d_y_odd_to_odd(ensure_clean_memory):
 @pytest.mark.parametrize("slices", [3, 5, 8, 11, 14, 17, 20])
 @pytest.mark.parametrize("detectorX", [761, 762])
 def test_fourier3d_y_z_variations(ensure_clean_memory, slices, detectorX):
-    dev = cp.cuda.Device()
     data_host = np.random.randint(
         low=7515, high=37624, size=(750, slices, detectorX), dtype=np.uint16
     ).astype(np.float32)

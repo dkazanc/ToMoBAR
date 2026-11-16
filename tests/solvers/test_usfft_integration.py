@@ -44,12 +44,12 @@ def test_power_estimate_matches_dense_singular_value(gpu, subsets, full_data):
         scan = rec.padded_projection_geometry
         matrix = (
             direct_fourier_projection(
-                np.eye(n * n).reshape(n * n, n, n),
+                np.eye(n * n).reshape((n * n, n, n)),
                 scan.angles,
                 scan.detector_shape[-1],
                 scan.centre_of_rotation,
             )
-            .reshape(n * n, -1)
+            .reshape((n * n, -1))
             .T
         )
         selections = (
@@ -57,7 +57,8 @@ def test_power_estimate_matches_dense_singular_value(gpu, subsets, full_data):
         )
         expected = max(
             np.linalg.norm(
-                matrix.reshape(17, n + 1, n * n)[views].reshape(-1, n * n), ord=2
+                matrix.reshape((17, n + 1, n * n))[views].reshape((-1, n * n)),
+                ord=2,
             )
             ** 2
             for views in selections
@@ -178,19 +179,19 @@ def test_regularisation_padding_crop_and_geometry_restart(gpu, method):
 
 @pytest.mark.parametrize("fidelity", ["LS", "PWLS", "SWLS"])
 def test_admm_cg_matches_dense_normal_equation(gpu, fidelity):
-    from tests.helpers import cg_diagnostics as diagnostics
+    from tests.helpers import operator_reference as reference
 
     with make_rec(subsets=3, cor=0.375) as rec:
         n = rec.volume_geometry.shape[-1]
         scan = rec.padded_projection_geometry
         matrix = (
             direct_fourier_projection(
-                np.eye(n * n).reshape(n * n, n, n),
+                np.eye(n * n).reshape((n * n, n, n)),
                 scan.angles,
                 scan.detector_shape[-1],
                 scan.centre_of_rotation,
             )
-            .reshape(n * n, -1)
+            .reshape((n * n, -1))
             .T
         )
         data = rec.forward(phantom(gpu, n, 1))
@@ -208,7 +209,7 @@ def test_admm_cg_matches_dense_normal_equation(gpu, fidelity):
         precision = (
             np.eye(data.size)
             if fidelity == "LS"
-            else diagnostics.precision_matrix(
+            else reference.precision_matrix(
                 gpu.asnumpy(state.weights), fidelity, beta=options["fidelity"].beta_swls
             )
         )
@@ -227,12 +228,12 @@ def test_cgls_matches_independent_least_squares(gpu):
         scan = rec.padded_projection_geometry
         matrix = (
             direct_fourier_projection(
-                np.eye(n * n).reshape(n * n, n, n),
+                np.eye(n * n).reshape((n * n, n, n)),
                 scan.angles,
                 scan.detector_shape[-1],
                 scan.centre_of_rotation,
             )
-            .reshape(n * n, -1)
+            .reshape((n * n, -1))
             .T
         )
         data = rec.forward(phantom(gpu, n, 1))

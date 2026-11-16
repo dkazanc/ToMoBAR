@@ -65,18 +65,22 @@ class AstraTools2D(AstraBase):
 
     @property
     def projection_geometry(self):
+        """Acquisition geometry bound to this backend."""
         return self._projection_geometry
 
     @property
     def volume_geometry(self):
+        """Volume geometry bound to this backend."""
         return self._volume_geometry
 
     @property
     def device_index(self):
+        """CUDA device selected for projection execution."""
         return self._device_index
 
     @property
     def ordsub_number(self):
+        """Number of configured interleaved projection subsets."""
         return self._ordsub_number
 
     def _fbp(self, sinogram: np.ndarray) -> np.ndarray:

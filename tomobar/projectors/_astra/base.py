@@ -1,5 +1,6 @@
-"""The series of classes for wrapping of ASTRA toolbox to perform projection/backprojection
-and reconstruction of of 2D/3D parallel beam data.
+"""Own ASTRA resources for projection and backprojection.
+
+Support reconstruction of 2D/3D parallel-beam data.
 
 GPLv3 license (defined by ASTRA toolbox)
 """

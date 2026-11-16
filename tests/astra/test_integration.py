@@ -71,7 +71,7 @@ def test_iterative_output_crop_matches_full_working_volume(method):
     grid = Volume3DGeometry(shape=(4, 8, 10))
     output_shape = (3, 5, 6)
     projections = cp.asarray(
-        np.linspace(0.1, 1.0, 4 * 6 * 10, dtype=np.float32).reshape(4, 6, 10)
+        np.linspace(0.1, 1.0, 4 * 6 * 10, dtype=np.float32).reshape((4, 6, 10))
     )
     results = []
     for crop in (None, output_shape):

@@ -5,12 +5,6 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from tomobar.geometry import (
-    Parallel2DGeometry,
-    Parallel3DGeometry,
-    Volume2DGeometry,
-    Volume3DGeometry,
-)
 from tomobar._arrays.device import _on_device, _validate_device_index
 
 
@@ -34,9 +28,11 @@ def test_only_nonnegative_integer_device_indices_are_accepted(value, error):
 
 @pytest.mark.parametrize("value", [0, 2, np.int64(1)])
 def test_gpu_index_is_stored_as_python_integer(value):
+    # Exact identity checks the native-type normalisation contract.
+    # pylint: disable=unidiomatic-typecheck
     result = _validate_device_index(value)
     assert result == value
-    assert type(result) is int
+    assert type(result) is int  # noqa: E721
 
 
 @pytest.mark.parametrize("fail", [False, True])

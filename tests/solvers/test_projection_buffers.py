@@ -119,7 +119,7 @@ def test_native_scratch_is_private_reused_and_rebuilt_after_geometry_change(
 
 
 def test_operator_diagnostics_preserve_paused_admm_gradient(gpu):
-    from tests.helpers import cg_diagnostics as diagnostics
+    from tests.helpers import operator_reference as reference
     from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
@@ -132,6 +132,6 @@ def test_operator_diagnostics_preserve_paused_admm_gradient(gpu):
         state = rec.initialise_solver("ADMM", data, lipschitz_constant=100)
         rec.run(state)
         saved = state.algorithm_state["gradient"].copy()
-        result = diagnostics.working_pair_probes(rec, state, trials=1)
+        result = reference.working_pair_probes(rec, state, trials=1)
         assert len(result) == 1
         gpu.testing.assert_array_equal(state.algorithm_state["gradient"], saved)

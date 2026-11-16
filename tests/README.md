@@ -12,7 +12,7 @@ reference checks, tests with isolated backend doubles, and CUDA integration test
 | `regularisers/` | TV/TGV/diffusion kernels, parameters, storage and numerical references |
 | `fourier/` | Filters, planning, grid initialisation |
 | `alignment/` | Registration conventions, geometry updates, recovery |
-| `helpers/` | Backend doubles, CPU adapters and independent numerical references |
+| `helpers/` | Backend doubles and independent numerical references |
 | `test_data/` | Shared input/reference data; fixtures return independent arrays |
 
 ## Running tests
@@ -31,7 +31,7 @@ python -m pytest --full                     # Opt-in large memory/computation su
 
 CPU CI installs NumPy, SciPy, scikit-image and pytest. CUDA-dependent modules
 skip during collection when CuPy is missing. Mixed modules retain their CPU
-cases; GPU cases skip. The CPU adapters for regulariser kernels also need a C++
+cases; GPU cases skip. Only focused large-index arithmetic probes need a C++
 compiler and skip if it is unavailable. `--cpu-only` prevents CUDA fixture use
 regardless of whether CUDA libraries are installed.
 
@@ -53,7 +53,8 @@ runs their union. Unknown marker names fail collection.
 - Request shared fixtures (`cpu_rec`, `two_pixel_rec`, `mock_reconstruction`,
   `gpu`, data fixtures) by argument; do not import fixtures from test modules.
 - Put shared references and doubles in `helpers/`. Test modules must not import
-  other collected test modules. Keep standalone adapters independent of unittest.
+  other collected test modules. Keep numerical references independent of
+  production implementations.
 - Import optional GPU dependencies with `pytest.importorskip` before importing
   production GPU modules. Request `gpu` before allocating device storage, even
   for NumPy input sent through ASTRA's CUDA projectors.
@@ -102,8 +103,12 @@ Supported reconstruction and operator imports use the public packages
 `projectors._astra` and `projectors._usfft` remain private. Shared scalar
 validators live in `_validation`; geometry-specific validation stays in geometry.
 Solver proximal dispatch lives in `_regularisers/proximal.py` and receives an
-explicit device index, rather than a reconstruction object. CPU numerical
-adapters load the same dispatch and algorithm bodies from their canonical files.
+explicit device index, rather than a reconstruction object. Regulariser numerical
+checks execute the real CUDA implementations against independent NumPy/SciPy
+references. Shared execution fixtures live in `regularisers/conftest.py`; there
+are no host-compiled regulariser execution adapters. The explicit CPU solver harness
+calls the production state engine with NumPy arrays and injected gradient and
+proximal functions. Public API tests use actual reconstruction classes.
 
 Implementations live in `projectors/` (ASTRA and USFFT), `reconstruction/`
 (reconstruction classes, Fourier inversion and memory estimation), `_solvers/`
@@ -134,6 +139,8 @@ index arithmetic beyond 32-bit limits without allocating image storage. It also
 checks the 64-bit total-element-count argument passed by the SB-TV launcher.
 Numerical regulariser tests cover the CUDA float/half variants separately.
 
-CG/operator diagnostic references live in `helpers/cg_diagnostics.py`.
-Tests import that module directly and must not load optional benchmark scripts.
+Small fidelity references and native operator probes live in
+`helpers/operator_reference.py`. CG checks sample actual ASTRA/USFFT working-grid
+operators, including detector padding, and check the resulting normal equations.
+They do not reproduce ASTRA projection formulas or load optional benchmark scripts.
 The benchmark directory may be absent from a checkout or CI runner.

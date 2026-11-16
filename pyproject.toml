@@ -104,7 +104,9 @@ convention = "google"
 add-ignore = [
     "D100", # Ignore missing docstrings in public modules
     "D104", # Ignore missing docstrings in public packages
-    "D418", # Ignore missing docstrings in dunder methods; See: https://github.com/PyCQA/pydocstyle/issues/525
+    "D105", # Standard magic methods follow their documented Python protocols
+    "D107", # Constructor arguments are documented on the class
+    "D418", # Retain the existing overload-docstring workaround; See: https://github.com/PyCQA/pydocstyle/issues/525
 ]
 
 [tool.black]
@@ -123,3 +125,10 @@ exclude = '''
   | dist
 )/
 '''
+
+# Keep Ruff's optional docstring checks aligned with pydocstyle and Prospector.
+[tool.ruff.lint]
+extend-ignore = ["D100", "D104", "D105", "D107", "D418"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

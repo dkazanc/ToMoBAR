@@ -38,11 +38,14 @@ def _chunks(length, count):
 
 @dataclass(frozen=True)
 class FourierWorkspace:
+    """Shape and dtype metadata for one analytical Fourier workspace."""
+
     shape: tuple[int, ...]
     dtype: np.dtype
 
     @property
     def nbytes(self):
+        """Number of bytes required by this workspace."""
         return math.prod(self.shape) * self.dtype.itemsize
 
 
@@ -82,6 +85,7 @@ def build_fourier_plan(
     detector_padding=0,
     input_dtype=np.float32,
 ):
+    """Validate geometry and construct an analytical Fourier inversion plan."""
     options = FourierOptions() if options is None else options
     if not isinstance(options, FourierOptions):
         raise TypeError("options must be a FourierOptions instance")

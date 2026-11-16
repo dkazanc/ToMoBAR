@@ -57,7 +57,7 @@ def test_swls_sums_are_lazy_and_reused_without_packed_subset_caches():
 def test_invalid_subset_indices(index, error):
     subsets = ProjectionSubsets(np.ones((2, 7, 4)), subset_count=3, array_module=np)
     with pytest.raises(error):
-        subsets[index]
+        subsets[index]  # pylint: disable=pointless-statement  # Check IndexError.
 
 
 @pytest.mark.parametrize("beta", [None, 0.1])
@@ -325,7 +325,7 @@ def test_cpu_solver_state_uses_patched_subset_provider(
     from tomobar._solvers import iterative as _iterative_solvers
     from tomobar.options import DataFidelity
 
-    # Reuse the independent linear operator and public CPU solver adapter.
+    # Reuse the independent linear operator and explicit CPU solver harness.
     rec = cpu_rec
     rec.OS_number = 2  # Three views split unevenly into two subsets.
     data = np.arange(2, 8, dtype=np.float32).reshape(rec.shape)

@@ -55,7 +55,7 @@ def test_algorithm_has_explicit_fields_and_compatible_view(
     with pytest.raises(TypeError):
         view["buffers"] = None
     with pytest.raises(KeyError):
-        view["typo"]
+        view["typo"]  # pylint: disable=pointless-statement  # Check KeyError.
     with pytest.raises(AttributeError):
         state._work.typo = None
     # Ordinary continuation preserves the container and its scratch ownership.

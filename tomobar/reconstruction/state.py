@@ -84,7 +84,10 @@ class SolverState:
 
     @property
     def image(self) -> Array:
-        """Current full working-grid image; use solver_image() for an editable copy."""
+        """Current image on the full working grid.
+
+        Use solver_image() to obtain an independent editable copy.
+        """
         return self._image
 
     @property
@@ -177,6 +180,7 @@ class SolverState:
 
     @property
     def energy(self):
+        """Sampled objective values, or None when objective sampling is disabled."""
         if not self._history.enabled:
             return None
         return self._history.finish(None)[1]
