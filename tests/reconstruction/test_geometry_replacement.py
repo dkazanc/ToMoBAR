@@ -18,7 +18,6 @@ from tomobar.geometry import (
 
 def make_rec(mock, kind, padding=2):
     if kind == "2d":
-        mock.direct.AstraTools2D = mock.backend.tools2d.AstraTools2D
 
         def size(geometry):
             if "GridRowCount" in geometry:

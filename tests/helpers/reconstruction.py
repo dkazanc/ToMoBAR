@@ -29,6 +29,13 @@ def stub_module(name, **attributes):
     return module
 
 
+def isolated_backend_factory(tools2d, tools3d):
+    """Load the production factory with isolated ASTRA types for one harness."""
+    factory = load_module("_test_projection_backend", "_projection_backend.py")
+    factory._astra_backend_types = lambda: (tools2d.AstraTools2D, tools3d.AstraTools3D)
+    return factory
+
+
 class _Harness:
     def close(self):
         self._cleanup.close()
@@ -323,9 +330,11 @@ class ResourceHarness(_Harness):
                 "tomobar.data_fidelities": fidelities,
             },
         ):
-            operators = load_module("_subset_test_operators", "operators.py")
-            with patch.dict("sys.modules", {"tomobar.operators": operators}):
-                return load_module("_subset_test_ir", "methodsIR.py")
+            factory = isolated_backend_factory(self.tools2d, self.tools3d)
+            with patch.dict("sys.modules", {"tomobar._projection_backend": factory}):
+                operators = load_module("_subset_test_operators", "operators.py")
+                with patch.dict("sys.modules", {"tomobar.operators": operators}):
+                    return load_module("_subset_test_ir", "methodsIR.py")
 
     def make_iterative(self, module, n_views, count):
         rec = module.RecToolsIR(
@@ -414,6 +423,10 @@ class DirectHarness(_Harness):
                 get_cuda_kernel=lambda module, name: module.get_function(name),
             ),
         }
+        self.tools2d = stubs["tomobar.astra_wrappers.astra_tools2d"]
+        self.tools3d = stubs["tomobar.astra_wrappers.astra_tools3d"]
+        self.backend_factory = isolated_backend_factory(self.tools2d, self.tools3d)
+        stubs["tomobar._projection_backend"] = self.backend_factory
         with patch.dict("sys.modules", stubs):
             self.axes = load_module("_axis_test_axes", "supp/axis_order.py")
             with patch.dict("sys.modules", {"tomobar.supp.axis_order": self.axes}):

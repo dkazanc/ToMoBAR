@@ -30,7 +30,7 @@ demo.
         device_index=0,
     )
 
-    FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
+    FBPrec = Rectools.FBP(sinogram, input_axes=["detX", "angles"])
 
 .. figure::  ../_static/tutorial/real/dendr_FBPnopad.jpg
     :scale: 50 %
@@ -54,7 +54,7 @@ demo.
         device_index=0,
     )
 
-    FBPrec = Rectools.FBP(sinogram, data_axes_labels_order=["detX", "angles"])
+    FBPrec = Rectools.FBP(sinogram, input_axes=["detX", "angles"])
 
 .. figure::  ../_static/tutorial/real/dendr_FBPpad.jpg
     :scale: 50 %

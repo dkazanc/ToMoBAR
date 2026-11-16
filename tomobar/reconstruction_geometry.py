@@ -18,10 +18,26 @@ from tomobar.geometry import (
 
 if TYPE_CHECKING:
     from tomobar.operators import ProjectionOperator
+    from tomobar._projection_backend import ProjectionBackend
 
 
 class GeometryReconstruction:
     """Keep acquisition geometry separate from optional detector padding."""
+
+    _projection_backend: ProjectionBackend
+
+    @property
+    def Atools(self) -> ProjectionBackend:
+        """Legacy alias for the owned backend; use operator for projection calls.
+
+        Retained for existing ASTRA direct-method integrations. Backend ownership
+        and replacement use _projection_backend, regardless of implementation.
+        """
+        return self._projection_backend
+
+    @Atools.setter
+    def Atools(self, backend: ProjectionBackend) -> None:
+        self._projection_backend = backend
 
     def _init_geometry(self, projection_geometry, volume_geometry, detector_padding):
         if isinstance(projection_geometry, Parallel3DGeometry):
@@ -85,7 +101,7 @@ class GeometryReconstruction:
     def _init_operator(self, operator_type, *, subset_count: int = 1) -> None:
         """Own cleanup even when callers retain the borrowed operator."""
         self._operator = operator_type._from_backend(
-            self.Atools,
+            self._projection_backend,
             projection_geometry=self.padded_projection_geometry,
             volume_geometry=self.volume_geometry,
             device_index=self.device_index,
@@ -165,14 +181,11 @@ class GeometryReconstruction:
             if self.detector_padding
             else projection_geometry
         )
-        previous = self.Atools
-        previous_operator = self._operator
+        previous = self._projection_backend
+        previous_operator = self.operator
         previous_finalizer = self._operator_finalizer
-        replacement = type(previous)(
-            projection_geometry=padded,
-            volume_geometry=self.volume_geometry,
-            device_index=self.device_index,
-            ordsub_number=previous.ordsub_number,
+        replacement = previous_operator._create_backend(
+            backend=previous_operator.backend, projection_geometry=padded
         )
         try:
             replacement_operator = (
@@ -200,7 +213,7 @@ class GeometryReconstruction:
             raise
         self._projection_geometry = projection_geometry
         self._padded_projection_geometry = padded
-        self.Atools = replacement
+        self._projection_backend = replacement
         self._operator = replacement_operator
         self._operator_finalizer = replacement_finalizer
         self._geometry_version += 1
@@ -266,8 +279,8 @@ class GeometryReconstruction:
         finalizer = getattr(self, "_operator_finalizer", None)
         if finalizer is not None:
             finalizer()
-        elif hasattr(self, "Atools"):
-            self.Atools.close()
+        elif hasattr(self, "_projection_backend"):
+            self._projection_backend.close()
 
     def __enter__(self):
         self._ensure_open()

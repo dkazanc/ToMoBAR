@@ -141,7 +141,7 @@ with RecToolsDIR(
         projData3D_norm_cp,
         filter_type="SINC",
         recon_mask_radius=0.95,
-        data_axes_labels_order=input_data_labels,
+        input_axes=input_data_labels,
         cutoff_freq=0.3,
     )
 recNumerical_conventional *= intens_max_clean

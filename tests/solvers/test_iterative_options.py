@@ -88,7 +88,7 @@ def test_cgls_warm_start_uses_its_residual_and_preserves_storage(
         forward=lambda x, **kw: (matrix @ x.ravel()).reshape(scan.projection_shape),
         backproject=lambda b, **kw: (matrix.T @ b.ravel()).reshape(grid.shape),
     )
-    monkeypatch.setattr(iterative, "AstraTools3D", lambda **kw: projector)
+    monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
     initial = np.arange(4, dtype=np.float32).reshape(grid.shape) / 10
     before = initial.copy()
     data = np.ones(scan.projection_shape, dtype=np.float32)
@@ -232,7 +232,7 @@ def test_power_method_covers_every_subset(
         ),
         close=Mock(),
     )
-    monkeypatch.setattr(iterative, "AstraTools3D", lambda **kw: projector)
+    monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
     with iterative.RecToolsIR(
         projection_geometry=scan, volume_geometry=grid, OS_number=subset_count
     ) as rec:
@@ -253,7 +253,7 @@ def test_power_method_skips_zero_subset(mock_reconstruction, monkeypatch):
         backproject=lambda b, subset_index=None: b * (0 if subset_index == 0 else 3),
         close=Mock(),
     )
-    monkeypatch.setattr(iterative, "AstraTools3D", lambda **kw: projector)
+    monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
     with iterative.RecToolsIR(
         projection_geometry=scan, volume_geometry=grid, OS_number=2
     ) as rec:
@@ -284,7 +284,7 @@ def test_admm_power_method_uses_full_operator(mock_reconstruction, monkeypatch):
         backproject=lambda data, **kw: (matrix.T @ data).reshape(grid.shape),
         close=Mock(),
     )
-    monkeypatch.setattr(iterative, "AstraTools3D", lambda **kw: projector)
+    monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
     with iterative.RecToolsIR(
         projection_geometry=scan, volume_geometry=grid, OS_number=3
     ) as rec:

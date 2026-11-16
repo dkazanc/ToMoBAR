@@ -3,8 +3,8 @@
 """Denoise peppers.tif with every ToMoBAR regulariser, without reconstruction.
 
 Requires a CUDA GPU, CuPy, Pillow, matplotlib and scikit-image. The default
-image path points to the sibling CCPi-Regularisation-Toolkit checkout; change
-it below if your image lives elsewhere. CCPi itself is not imported.
+image path points to the bundled tests/test_data directory; change it below
+if your image lives elsewhere. CCPi itself is not imported.
 
 Run this script or its individual # %% cells. Settings are illustrative rather
 than tuned to maximise each method's PSNR. Iteration counts differ, so the

@@ -177,7 +177,10 @@ def mock_reconstruction():
     from tests.helpers.reconstruction import DirectHarness, ResourceHarness
 
     with ResourceHarness() as wrapper, DirectHarness() as direct:
-        direct.direct_module.AstraTools3D = wrapper.tools3d.AstraTools3D
+        direct.backend_factory._astra_backend_types = lambda: (
+            wrapper.tools2d.AstraTools2D,
+            wrapper.tools3d.AstraTools3D,
+        )
 
         def size(geometry):
             if "GridSliceCount" in geometry:

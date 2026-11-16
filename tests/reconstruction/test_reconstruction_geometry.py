@@ -333,11 +333,14 @@ def test_iterative_algorithms_only_require_projection_operations(
 
     # Deliberately supplies no ASTRA dictionaries, shape queries or subset metadata.
     projector = SimpleNamespace(
+        backend_name="astra",
         forward=Mock(side_effect=forward),
         backproject=Mock(side_effect=backproject),
         close=Mock(),
     )
-    monkeypatch.setattr(iterative, "AstraTools3D", lambda **kwargs: projector)
+    monkeypatch.setattr(
+        iterative, "create_projection_backend", lambda **kwargs: projector
+    )
     data = np.ones(scan.projection_shape, dtype=np.float32)
     with iterative.RecToolsIR(
         projection_geometry=scan,

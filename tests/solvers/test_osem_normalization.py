@@ -29,6 +29,8 @@ def reference_osem(matrix, measured, initial, subsets, iterations):
 
 
 class MatrixProjector:
+    backend_name = "astra"
+
     """Exact adjoint pair with tracked sensitivity lifetimes, without CUDA."""
 
     def __init__(self, matrix, subsets):
@@ -73,7 +75,9 @@ def matrix_reconstructor(mock_reconstruction, monkeypatch):
 
     def make(matrix, subsets):
         projector = MatrixProjector(matrix, subsets)
-        monkeypatch.setattr(iterative, "AstraTools3D", lambda **kwargs: projector)
+        monkeypatch.setattr(
+            iterative, "create_projection_backend", lambda **kwargs: projector
+        )
         scan = Parallel3DGeometry(
             angles=np.linspace(0, np.pi, matrix.shape[0], endpoint=False),
             detector_shape=(1, 1),

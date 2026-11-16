@@ -116,10 +116,11 @@ even when multiple subsets are configured. For example:
 
 The selected projection input/output must have exactly ``subset_shape(i)``;
 backprojection always returns the full ``domain_shape``. ``range_shape``
-continues to describe all views. Handles for the full acquisition and each
-used subset are cached independently and released together.
+continues to describe all views. ASTRA handles for the full acquisition and
+each used subset are cached independently and released together.
 
-The operator applies the supplied geometry directly: no detector padding,
+With the default ASTRA backend, the operator applies the supplied geometry
+directly: no detector padding,
 cropping, masking, filtering or angular normalisation is added. Backprojection
 uses ASTRA's approximate adjoint, so this API does not expose an exact
 transpose or ``.T`` alias. Projector handles are lazy and reused across calls.
@@ -168,7 +169,8 @@ is unaffected. Positive values follow increasing detector columns and rows.
 ``detector_padding`` adds edge pixels to each side of the horizontal detector.
 The reconstructor derives ``padded_projection_geometry`` without changing the
 supplied scan or grid. ``forward()`` trims the padded columns from its output;
-``backproject()`` edge-pads acquired projections before calling ASTRA. Padding
+``backproject()`` edge-pads acquired projections before calling the selected
+backend. Padding
 does not enlarge the requested volume or trigger an implicit square crop.
 Edge extension is a reconstruction boundary treatment; with padding enabled,
 these public operations are not an exact adjoint pair.
@@ -676,3 +678,179 @@ backend before running the script.
 Raw backprojection is unfiltered and does not preserve the phantom's intensity
 scale. For an actual reconstruction, use FBP or an iterative reconstruction
 method. The demo's separate plot colour scales make this difference explicit.
+
+Geometry supported by each backend
+---------------------------------
+
+``ProjectionOperator`` (2D/3D) and ``RecToolsIR`` (3D) accept
+``backend="astra"`` (the default) or ``backend="usfft"``. ASTRA supports the
+flexible acquisition geometries described above, including detector shifts,
+explicit vectors and laminography. USFFT supports standard, unit-spaced,
+angle-based parallel tomography with these restrictions:
+
+* Volume slices must be square: ``(N, N)`` in 2D or ``(Z, N, N)`` in 3D.
+* A 3D detector must have exactly ``Z`` rows. Slices are projected independently.
+* Detector width must be at least ``N``. For iterative reconstruction this
+  restriction applies to the internally padded detector width.
+* Angles are in radians and retain acquisition order, including for subsets.
+* ``centre_of_rotation`` accepts a finite scalar correction, including negative
+  and fractional pixel values. Zero means no additional CoR correction, for
+  both odd and even slice widths. Positive corrections move the effective
+  detector centre towards increasing columns, so projected features move
+  towards decreasing columns.
+* Every ``detector_shifts`` entry must be zero. Nonzero constant offsets and
+  per-view horizontal or vertical shifts are rejected. Use the scalar
+  ``centre_of_rotation`` for a CoR correction, or ASTRA for detector motion.
+* Explicit vector scans and laminography require ASTRA, even when the vectors
+  happen to describe standard tomography. Pass an angle-based geometry to USFFT.
+
+For example::
+
+    scan = Parallel3DGeometry.tomography(
+        angles=angles,
+        detector_shape=(Z, N),
+        centre_of_rotation=0.375,
+    )
+    grid = Volume3DGeometry((Z, N, N))
+    with ProjectionOperator(
+        projection_geometry=scan,
+        volume_geometry=grid,
+        backend="usfft",
+    ) as operator:
+        projections = operator.forward(volume)
+
+USFFT applies the same circular support mask in both directions. Forward
+projection uses unit-pixel line-integral scaling, with no view-count or angular
+normalisation. Backprojection is the Euclidean transpose of this discrete
+operator up to floating-point roundoff. This replaces the extracted legacy
+pair's inconsistent scaling and odd-width handling. Detector CoR phases are
+applied on the working slice width, before forward detector padding and after
+backward detector cropping.
+
+Geometry replacement preserves the selected backend and checks its restrictions
+before closing the previous operator. USFFT can replace angles and scalar CoR,
+but cannot replace its geometry with shifted or vector geometry. Shift-based
+``RecToolsIR.align()`` requires ``backend="astra"`` and rejects USFFT before
+processing data. Analytical ``RecToolsDIR.FOURIER_INV()`` likewise permits scalar
+CoR corrections but rejects detector shifts, vectors and laminography; the
+ASTRA-based direct operations retain their geometry support.
+
+USFFT numerical conventions
+---------------------------
+
+Voxel centres are ``x = column - (N-1)/2`` and
+``y = row - (N-1)/2``. Detector centres are
+``s = column - (detector_width-1)/2``. At angle ``theta`` the detector coordinate
+of a point is ``x*cos(theta) + y*sin(theta)``. Thus a zero-angle projection sums
+image rows, and a positive quarter-turn projection sums columns in row
+order, matching ASTRA. A positive scalar CoR correction samples at ``s + correction``.
+
+The Gaussian USFFT approximates polar Fourier samples with target interpolation
+accuracy ``1e-6``. This is an interpolation target, not a bound on total
+projection error. Both directions use the same truncated Gaussian weights.
+The two-dimensional FFT is unnormalised and the one-dimensional inverse FFT
+includes ``1/N``. The transpose applies the corresponding factors explicitly:
+``FFT1/N`` and ``(2*N)**2 * IFFT2``. No filter, angular quadrature, view-count
+factor or solver-specific normalisation is included. Repeating an angle repeats
+its projection without changing its amplitude.
+
+The circular mask uses physical voxel centres and radius ``N/2``; pixels on
+or outside the circle are excluded. Its numerical option
+``mask_radius_squared`` multiplies the squared radius. Masking is part of both
+forward and transpose operators, so volume values outside support contribute
+zero in either direction.
+
+Odd slice widths are preserved. The oversampled Cartesian grid is ``2*N`` in
+each direction; no detector-edge duplication or packing of adjacent slices is
+used. Origin phases account for half-pixel voxel centres and for differing
+parities of volume and detector widths. Extra detector bins are zero-filled,
+with ``floor((detector_width-N)/2)`` bins on the low side; backprojection crops
+exactly that same region. As with the underlying finite Fourier representation,
+CoR translation is periodic over the working width ``N`` before this padding.
+It does not introduce nonzero samples in the extra detector bins.
+
+For any configured subset ``I``, ``A_I x`` equals ``(A x)[I]`` and
+``A.T y`` equals the sum of ``A_I.T y[I]`` over all subsets, including uneven
+subsets. The inner-product contract is ``dot(A x, y) = dot(x, A.T y)`` within
+float32 roundoff. Unsorted and repeated angles keep their acquisition order.
+
+The tests compare the FFT implementation with a small independent direct
+plane-wave sum, check cardinal-view orientation and amplitude, and exercise
+odd/even widths, detector padding, fractional CoR, and subset transpose
+identities. CPU tests emulate CUDA interpolation to validate the FFT pipeline;
+separate CUDA tests check the actual kernel and compare cardinal views with
+ASTRA. GPU checks require a CUDA device. Scatter uses atomic additions, so
+last-bit differences between runs are possible. ASTRA and USFFT use different
+discretisations and need not agree elementwise at general angles.
+
+The transpose guarantee belongs to ``ProjectionOperator`` (including
+``rec.operator`` on the padded internal geometry). It does not change the
+reconstructor's public edge-padding boundary treatment: with nonzero
+``detector_padding``, ``rec.forward`` / ``rec.backproject`` still crop /
+edge-extend acquired data and are not a matched transpose pair.
+
+Iterative methods with USFFT
+---------------------------
+
+The power method, Landweber, CGLS, FISTA and ADMM use the shared operator and
+support ``backend="usfft"``. CGLS is the conjugate-gradient least-squares method;
+ADMM also supports ``data_solver="cg"`` for its quadratic data subproblem or
+``data_solver="linearised"`` for gradient updates. FISTA and ADMM support LS,
+PWLS and SWLS objectives and the existing proximal regularisers. No Fourier
+projector has been added to direct FBP methods.
+
+SIRT and OSEM/MLEM require ``backend="astra"``. Their current row/column
+normalisation and emission updates assume positive ray weights. Fourier
+interpolation is a signed linear operator, so those algorithms are rejected
+for USFFT before data preparation, both in one-shot calls and through
+``initialise_solver``. Shift-based alignment also remains ASTRA-only.
+
+For Landweber choose a step size from the full-data norm estimate, for example::
+
+    with RecToolsIR(
+        projection_geometry=scan,
+        volume_geometry=grid,
+        backend="usfft",
+    ) as rec:
+        norm_squared = rec.powermethod(iterations=30, full_data=True)
+        image = rec.Landweber(
+            projections, step_size=0.9 / norm_squared, iterations=100
+        )
+
+The estimate is not a certified upper bound. FISTA estimates the largest
+subset norm automatically; ADMM's linearised solve estimates the full-data
+norm, even when subsets are configured. CGLS and Landweber require one subset.
+FISTA visits all configured subsets, while ADMM always uses full data.
+
+Continuation, nonnegativity, regularisation, output cropping and geometry
+restart use the existing solver state machinery. Scalar CoR replacement
+rebuilds geometry-dependent work. Atomic scatter is not bitwise deterministic;
+CG comparisons should check fitted-data/normal-equation residuals and image
+norm errors, rather than demanding bit-identical Krylov trajectories.
+
+USFFT output buffers and cached execution data
+---------------------------------------------
+
+``operator.forward(..., out=projection_buffer)`` and
+``operator.backproject(..., out=volume_buffer)`` write final packing/scaling
+into the supplied float32 GPU buffer and return it by identity. No separate
+final float32 result is allocated and copied by the geometry adapter. NumPy
+``out`` is filled by a transfer from reusable GPU staging storage. Input/output
+shape, device, array library, contiguity, writability and overlap checks still
+apply. Calls without ``out`` return fresh independent arrays; subsequent calls
+cannot overwrite those results.
+
+Each numerical backend caches device angles, forward phases and conjugate
+phases lazily for the full scan and each requested configured subset. Subset
+plans select the corresponding rows of the full plan. One reusable complex
+Cartesian grid and one flat polar slab serve forward/backprojection and uneven
+subsets. The numerical backend replaces that workspace if its slice count
+changes; it does not retain a workspace for every shape. NumPy calls also keep
+one staging buffer, which grows only when a larger output is needed.
+
+These caches retain live GPU memory between calls. ``close()`` drops all owned
+plans, workspaces and staging arrays, without clearing shared CUDA kernels,
+CuPy memory pools or FFT plans. Geometry replacement closes the old backend and
+creates fresh execution caches lazily. Concurrent calls on one operator remain
+unsupported. FFT and shift operations still allocate internal temporaries, so
+``out`` support does not imply an allocation-free call.

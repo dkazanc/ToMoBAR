@@ -8,7 +8,12 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from tests.helpers.reconstruction import MockGPUArray, ResourceHarness, load_module
+from tests.helpers.reconstruction import (
+    MockGPUArray,
+    ResourceHarness,
+    load_module,
+    isolated_backend_factory,
+)
 from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
@@ -35,6 +40,9 @@ def operator_backend():
             "sys.modules",
             {
                 "cupy": harness.cupy,
+                "tomobar._projection_backend": isolated_backend_factory(
+                    harness.tools2d, harness.tools3d
+                ),
                 "tomobar.astra_wrappers.astra_tools2d": harness.tools2d,
                 "tomobar.astra_wrappers.astra_tools3d": harness.tools3d,
             },

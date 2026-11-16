@@ -9,6 +9,7 @@ import weakref
 
 import numpy as np
 from tomobar.geometry import interleaved_view_indices
+from tomobar._projection_backend import BackendName
 from tomobar.supp.array_prepare import prepare_array, validate_array
 
 import cupy as xp
@@ -23,7 +24,13 @@ class AstraBase:
     indices. Use close() or a context manager for prompt projector cleanup.
     """
 
+    backend_name: BackendName = "astra"
     _is_3d = False
+
+    @property
+    def subset_count(self) -> int:
+        """Neutral projector interface; legacy subset metadata stays internal."""
+        return len(self.subset_indices)
 
     def _init_projector_resources(self):
         """Initialise shared ownership without constructing geometry."""

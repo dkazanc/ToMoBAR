@@ -65,3 +65,37 @@ The unittest-based backend regression suites remain runnable directly:
 ```sh
 python -m unittest tests.astra.test_resource_lifecycle tests.core.test_axis_conventions
 ```
+
+## USFFT regression and benchmark coverage
+
+The Fourier numerical tests check direct plane-wave references, independent
+dense transposes, physical units, odd/even widths, padding, CoR, orientation,
+and subset identities. CUDA cases additionally compare smooth cardinal and
+oblique projections with ASTRA. Solver tests cover the power method, Landweber,
+CGLS, FISTA, ADMM, weighted objectives, regularisation and continuation. SIRT,
+OSEM and shift alignment have explicit ASTRA-only rejection tests.
+
+```sh
+python -m pytest tests/fourier/test_usfft_numerics.py tests/solvers/test_usfft_integration.py
+python -m pytest tests/reconstruction/test_usfft_examples.py
+python -m pytest tests/reconstruction/test_usfft_examples.py --performance
+```
+
+The real-data regression executes the dedicated dendrites demo cells with
+downsampled data and short iteration settings, checking all five reconstruction
+arrays and their fitted-data residuals. The opt-in
+benchmark smoke test checks both backends and memory-report fields, without
+asserting hardware-dependent timing thresholds. For larger timing/memory
+measurements, use `benchmarks/usfft_backends.py` as documented in
+`benchmarks/usfft_backends.md`.
+
+`fourier/test_usfft_buffers.py` checks direct output identity, input preservation,
+independent allocating results, absence of a separate final float32 allocation,
+full/subset geometry reuse, bounded workspace replacement, NumPy transfer staging
+and cleanup. Backend-selection tests also verify that geometry replacement
+invalidates all old execution caches.
+
+`core/test_demo_arguments.py` checks the ToMoBAR keyword names used throughout
+`Demos/` against the current source signatures and typed Fourier settings,
+without importing CUDA or requiring optional demo datasets. It also checks the
+explicit settings dictionaries in the denoising example.

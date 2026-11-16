@@ -22,7 +22,7 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
 
     def test_direct_constructors_forward_detector_shifts_separately_from_cor(self):
         shifts = np.array([[1.0, 2.0], [-3.0, 4.0]])
-        wrapper = self.direct_module.AstraTools3D
+        wrapper = self.tools3d.AstraTools3D
         for cls in self.classes:
             wrapper.reset_mock()
             original = Parallel3DGeometry(

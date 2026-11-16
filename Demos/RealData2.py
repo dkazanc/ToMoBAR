@@ -54,7 +54,7 @@ with RecToolsDIR(
     device_index=0,
 ) as RectoolsDIR_cp:
     FBPrec_cupy = RectoolsDIR_cp.FBP(
-        data_norm_cupy, filter_type="SINC", data_axes_labels_order=data_labels3D
+        data_norm_cupy, filter_type="SINC", input_axes=data_labels3D
     )
 
 FBPrec_np = cp.asnumpy(FBPrec_cupy)

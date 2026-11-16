@@ -14,8 +14,7 @@ from tomobar.supp.axis_order import _transpose_data_axes, _resolve_data_axes
 from tomobar.supp.device import _on_device, _clear_gpu_cache
 from tomobar.supp.memory_estimator_helpers import DeviceMemStack
 from tomobar.supp.suppTools import check_kwargs
-from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
-from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+from tomobar._projection_backend import create_projection_backend
 from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
@@ -68,8 +67,8 @@ class RecToolsDIR(GeometryReconstruction):
     ):
         self._init_device(device_index)
         self._init_geometry(projection_geometry, volume_geometry, detector_padding)
-        wrapper = AstraTools3D if self.geom == "3D" else AstraTools2D
-        self.Atools = wrapper(
+        self._projection_backend = create_projection_backend(
+            backend="astra",
             projection_geometry=self.padded_projection_geometry,
             volume_geometry=volume_geometry,
             device_index=self.device_index,

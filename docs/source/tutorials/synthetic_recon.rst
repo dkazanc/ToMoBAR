@@ -115,7 +115,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
     )
 
     data_axes_labels3D = ["detY", "angles", "detX"]
-    FBP_Rec = Rectools.FBP(projData3D_norm, data_axes_labels_order=data_axes_labels3D)
+    FBP_Rec = Rectools.FBP(projData3D_norm, input_axes=data_axes_labels3D)
 
 .. figure::  ../_static/tutorial/synth/FBP_recon.png
     :scale: 25 %

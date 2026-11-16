@@ -195,6 +195,10 @@ def align(
 ) -> AlignmentResult:
     """Internal driver; see RecToolsIR.align for the public parameter contract."""
     reconstructor._ensure_open()
+    if getattr(reconstructor, "backend", "astra") != "astra":
+        raise ValueError(
+            "Detector-shift alignment requires backend='astra'; Fourier projectors do not support detector shifts"
+        )
     iterations = _positive_integer(iterations, "iterations")
     inner_iterations = _positive_integer(
         reconstruction_iterations, "reconstruction_iterations"

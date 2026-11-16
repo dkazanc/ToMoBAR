@@ -1,10 +1,15 @@
-"""Fixed-geometry projection operators backed by cached ASTRA projectors."""
+"""Fixed-geometry projection operators with selectable GPU backends."""
 
 import cupy as cp
 import numpy as np
 
-from tomobar.astra_wrappers.astra_tools2d import AstraTools2D
-from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+from tomobar._projection_backend import (
+    BackendName,
+    ProjectionBackend,
+    ProjectionGeometry,
+    VolumeGeometry,
+    create_projection_backend,
+)
 from tomobar.geometry import (
     Parallel2DGeometry,
     Parallel3DGeometry,
@@ -19,13 +24,18 @@ __all__ = ["ProjectionOperator"]
 
 
 class ProjectionOperator:
-    """Forward projection and unnormalised backprojection with fixed geometry.
+    """Forward projection and backend-specific backprojection with fixed geometry.
 
     Keyword Args:
         projection_geometry (Parallel2DGeometry or Parallel3DGeometry): Required
             acquisition geometry. Views retain their acquisition order.
         volume_geometry (Volume2DGeometry or Volume3DGeometry): Required volume
             geometry, matching the dimensionality of the acquisition geometry.
+        backend (str): "astra" (default) or "usfft". USFFT requires square
+            slices, matching detector rows, detector width at least the slice
+            width, and angle geometry. Scalar centre_of_rotation corrections are
+            supported; nonzero detector_shifts (constant or per-view), vector
+            geometry and laminography require ASTRA.
         subset_count (int): Positive interleaved subset count, default 1.
             Must not exceed the number of acquired views. Each execution call
             defaults to using all views.
@@ -38,10 +48,16 @@ class ProjectionOperator:
         (angles, detX) in 2D and (detY, angles, detX) in 3D. Geometry, shapes and
         device selection are read-only. Create another operator to change them.
 
-        Operations use the supplied geometry directly. No detector padding,
+        With ASTRA, operations use the supplied geometry directly. No detector padding,
         cropping, masks, filtering or angular normalisation is applied.
         Backprojection uses ASTRA's approximate adjoint; an exact transpose
         relationship is not guaranteed.
+
+        USFFT uses a circular support mask in both directions, unit-pixel
+        line-integral scaling, and matched gather/scatter weights. Backprojection
+        is its Euclidean transpose up to float32 roundoff. Subsets select rows
+        of the same full operator; no angular normalisation is applied. Detector
+        padding is zero, with central cropping in the transpose operation.
 
         Projectors are created lazily and reused across calls. Use a context
         manager or close() to release them promptly. The backend also releases
@@ -65,30 +81,40 @@ class ProjectionOperator:
         volume_geometry: Volume2DGeometry | Volume3DGeometry,
         device_index: int = 0,
         subset_count: int = 1,
+        backend: BackendName = "astra",
     ) -> None:
-        if isinstance(projection_geometry, Parallel3DGeometry):
-            wrapper, volume_type = AstraTools3D, Volume3DGeometry
-        elif isinstance(projection_geometry, Parallel2DGeometry):
-            wrapper, volume_type = AstraTools2D, Volume2DGeometry
-        else:
-            raise TypeError(
-                "projection_geometry must be a Parallel2DGeometry or Parallel3DGeometry"
-            )
-        if not isinstance(volume_geometry, volume_type):
-            raise TypeError(f"volume_geometry must be a {volume_type.__name__}")
         self._set_geometry(
             projection_geometry, volume_geometry, device_index, subset_count
         )
-        self._backend = wrapper(
+        self._backend: ProjectionBackend = self._create_backend(
+            backend=backend, projection_geometry=projection_geometry
+        )
+
+    def _create_backend(
+        self, *, backend: BackendName, projection_geometry: ProjectionGeometry
+    ) -> ProjectionBackend:
+        """Build a replacement with the same volume, device and subset policy."""
+        return create_projection_backend(
+            backend=backend,
             projection_geometry=projection_geometry,
-            volume_geometry=volume_geometry,
+            volume_geometry=self.volume_geometry,
             device_index=self.device_index,
-            ordsub_number=self.subset_count,
+            subset_count=self.subset_count,
         )
 
     def _set_geometry(
-        self, projection_geometry, volume_geometry, device_index, subset_count
-    ):
+        self,
+        projection_geometry: ProjectionGeometry,
+        volume_geometry: VolumeGeometry,
+        device_index: int,
+        subset_count: int,
+    ) -> None:
+        if not isinstance(
+            projection_geometry, (Parallel2DGeometry, Parallel3DGeometry)
+        ):
+            raise TypeError(
+                "projection_geometry must be a Parallel2DGeometry or Parallel3DGeometry"
+            )
         self._projection_geometry = projection_geometry
         self._volume_geometry = volume_geometry
         self._device_index = _validate_device_index(device_index)
@@ -100,12 +126,12 @@ class ProjectionOperator:
     @classmethod
     def _from_backend(
         cls,
-        backend,
+        backend: ProjectionBackend,
         *,
-        projection_geometry,
-        volume_geometry,
-        device_index,
-        subset_count,
+        projection_geometry: ProjectionGeometry,
+        volume_geometry: VolumeGeometry,
+        device_index: int,
+        subset_count: int,
     ) -> "ProjectionOperator":
         """Bind prepared projection operations; the reconstructor owns cleanup."""
         operator = cls.__new__(cls)
@@ -114,6 +140,11 @@ class ProjectionOperator:
         )
         operator._backend = backend
         return operator
+
+    @property
+    def backend(self) -> BackendName:
+        """Selected numerical backend: astra or usfft."""
+        return self._backend.backend_name
 
     @property
     def subset_count(self) -> int:
@@ -215,7 +246,7 @@ class ProjectionOperator:
         subset_index: int | None = None,
         out: np.ndarray | cp.ndarray | None = None,
     ) -> np.ndarray | cp.ndarray:
-        """Backproject measured projections without filtering or normalisation.
+        """Backproject measured projections using the selected backend conventions.
 
         Args:
             projections (numpy.ndarray or cupy.ndarray): Real data with

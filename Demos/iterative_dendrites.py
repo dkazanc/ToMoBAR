@@ -67,25 +67,25 @@ with RecToolsDIR(
 ) as RecToolsCP:
     FourierLP_cupy = RecToolsCP.FOURIER_INV(
         data_norm_cupy,
-        filter_freq_cutoff=0.35,
+        cutoff_freq=1.1,
         recon_mask_radius=2.0,
-        data_axes_labels_order=data_labels3D,
+        input_axes=data_labels3D,
     )
 
     FBPrec_cupy = RecToolsCP.FBP(
         data_norm_cupy,
         filter_type="SINC",
         recon_mask_radius=2.0,
-        data_axes_labels_order=data_labels3D,
-        cutoff_freq=0.3,
+        input_axes=data_labels3D,
+        cutoff_freq=1.1,
     )
 
 fig = plt.figure()
 plt.subplot(121)
-plt.imshow(cp.asnumpy(FourierLP_cupy[3, :, :]), vmin=0, vmax=0.008, cmap="gray")
+plt.imshow(cp.asnumpy(FourierLP_cupy[3, :, :]), vmin=0, vmax=0.004, cmap="gray")
 plt.title("Log-Polar Fourier reconstruction")
 plt.subplot(122)
-plt.imshow(cp.asnumpy(FBPrec_cupy[3, :, :]), vmin=0, vmax=0.008, cmap="gray")
+plt.imshow(cp.asnumpy(FBPrec_cupy[3, :, :]), vmin=0, vmax=0.004, cmap="gray")
 plt.title("FBP reconstruction")
 # fig.savefig('dendr_LogPolar.png', dpi=200)
 # %%

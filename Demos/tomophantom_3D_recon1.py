@@ -113,7 +113,7 @@ with RecToolsDIR(
         projData3D_analyt_cupy,
         filter_type="SINC",
         recon_mask_radius=0.95,
-        data_axes_labels_order=input_data_labels,
+        input_axes=input_data_labels,
         cutoff_freq=0.3,
     )
     toc = timeit.default_timer()
@@ -176,7 +176,7 @@ with RecToolsIR(
         fidelity=DataFidelity(method="LS"),
         lipschitz_constant=lc,
         regularisation=Regularisation(
-            method="PD_TV", strength=0.0001, iterations=50, half_precision=True
+            method="PD_TV", strength=0.06, iterations=50, half_precision=True
         ),
         iterations=25,
         recon_mask_radius=2.0,
@@ -234,7 +234,7 @@ with RecToolsIR(
         cg_iterations=5,
         relaxation=1.7,
         regularisation=Regularisation(
-            method="PD_TV", strength=0.1, iterations=30, half_precision=True
+            method="PD_TV", strength=0.1, iterations=60, half_precision=True
         ),
         iterations=100,
         recon_mask_radius=2.0,

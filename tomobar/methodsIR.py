@@ -27,7 +27,7 @@ from tomobar.options import (
 )
 from tomobar.supp.array_prepare import prepare_array
 from tomobar.regularisers import prox_regul
-from tomobar.astra_wrappers.astra_tools3d import AstraTools3D
+from tomobar._projection_backend import BackendName, create_projection_backend
 from tomobar.geometry import (
     Parallel3DGeometry,
     Volume3DGeometry,
@@ -54,6 +54,13 @@ class RecToolsIR(GeometryReconstruction):
             reconstructed images and solver snapshots. Default None returns the
             working-grid shape. Each dimension must fit inside the working grid.
         device_index (int): Nonnegative CUDA device index, default 0.
+        backend (str): "astra" (default) or "usfft". USFFT uses square
+            slice-wise tomography with scalar centre_of_rotation corrections.
+            Nonzero detector_shifts, vectors and laminography require ASTRA.
+            SIRT and OSEM require ASTRA. USFFT supports Landweber, CGLS,
+            FISTA, ADMM and powermethod.
+            USFFT applies a circular mask and uses a matched transpose with
+            unit-pixel line-integral scaling, without angular normalisation.
         OS_number (int or None): Interleaved ordered-subset count, default None
             for one subset (all views). Must be positive and no greater than the
             view count. Landweber, SIRT and CGLS require None or 1; ADMM always uses
@@ -76,6 +83,7 @@ class RecToolsIR(GeometryReconstruction):
         output_shape: tuple[int, int, int] | None = None,
         device_index: int = 0,
         OS_number: Optional[int] = None,
+        backend: BackendName = "astra",
     ):
         if not isinstance(projection_geometry, Parallel3DGeometry):
             raise TypeError("projection_geometry must be a Parallel3DGeometry")
@@ -94,13 +102,19 @@ class RecToolsIR(GeometryReconstruction):
         self._subset_indices = interleaved_view_indices(
             projection_geometry.view_count, OS_number
         )
-        self.Atools = AstraTools3D(
+        self._projection_backend = create_projection_backend(
+            backend=backend,
             projection_geometry=self.padded_projection_geometry,
             volume_geometry=volume_geometry,
             device_index=self.device_index,
-            ordsub_number=self.OS_number,
+            subset_count=self.OS_number,
         )
         self._init_operator(ProjectionOperator, subset_count=self.OS_number)
+
+    @property
+    def backend(self) -> BackendName:
+        """Selected projection backend, preserved on geometry replacement."""
+        return self.operator.backend
 
     @property
     def OS_number(self) -> int:
@@ -267,7 +281,8 @@ class RecToolsIR(GeometryReconstruction):
         Returns:
             numpy.ndarray or cupy.ndarray: Unnormalised float32 backprojection in
             (Z, Y, X) order, matching volume_geometry.shape and the input array library.
-            Detector padding is applied internally. No output crop or mask is applied.
+            Detector padding is applied internally. No additional output crop or mask
+            is applied; the USFFT operator includes its circular support mask.
         """
         self._ensure_open()
         projections = self._prepare_projection(
@@ -372,6 +387,7 @@ class RecToolsIR(GeometryReconstruction):
             Updates this object's geometry on success; restores the starting
             geometry if reconstruction/registration fails. Measured projections
             remain unchanged. Solver state resets safely after geometry updates.
+            Requires backend="astra" because alignment updates detector shifts.
             Initial shifts and scalar CoR are respected; CoR is not optimised.
             References: Gürsoy et al., Scientific Reports 7, 11818 (2017),
             doi:10.1038/s41598-017-12141-9; TomoPy align_seq and align_joint.
@@ -401,6 +417,15 @@ class RecToolsIR(GeometryReconstruction):
             xp=cp,
         )
 
+    def _check_solver_backend(self, method):
+        """Reject ray-weight algorithms before preparing data or CUDA resources."""
+        if method in ("SIRT", "OSEM") and self.backend == "usfft":
+            raise ValueError(
+                f"{method} requires backend='astra': its positive ray-weight "
+                "normalisation is incompatible with signed Fourier projectors. "
+                "USFFT supports Landweber, CGLS, FISTA and ADMM."
+            )
+
     @_on_device(cp)
     def initialise_solver(
         self, method: str, projections: np.ndarray | cp.ndarray, **options
@@ -409,6 +434,7 @@ class RecToolsIR(GeometryReconstruction):
 
         Args:
             method (str): "Landweber", "SIRT", "CGLS", "FISTA", "ADMM" or "OSEM".
+                SIRT and OSEM require ASTRA; the other methods support USFFT.
             projections (numpy.ndarray or cupy.ndarray): Measured projections,
                 default axes (detY, angles, detX); copied to float32 GPU storage.
 
@@ -431,6 +457,7 @@ class RecToolsIR(GeometryReconstruction):
         self._ensure_open()
         if method not in ("Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM"):
             raise ValueError("unknown iterative method")
+        self._check_solver_backend(method)
         if "iterations" in options or "recon_mask_radius" in options:
             raise TypeError(
                 "set iterations in run(); set recon_mask_radius in solver_image()"
@@ -492,6 +519,7 @@ class RecToolsIR(GeometryReconstruction):
         )
 
     def _solve(self, method, projections, *, iterations, recon_mask_radius, **options):
+        self._check_solver_backend(method)
         defaults = {
             "Landweber": 1500,
             "SIRT": 200,
@@ -597,7 +625,7 @@ class RecToolsIR(GeometryReconstruction):
         diagnostics: Diagnostics = Diagnostics(),
         recon_mask_radius: float | None = 1.0,
     ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
-        """SIRT reconstruction on the working grid, returning a (z, y, x) CuPy array.
+        """ASTRA-only SIRT reconstruction, returning a (z, y, x) CuPy array.
 
         Args:
             projections (numpy.ndarray or cupy.ndarray):
@@ -998,7 +1026,7 @@ class RecToolsIR(GeometryReconstruction):
         diagnostics: Diagnostics = Diagnostics(),
         recon_mask_radius: float | None = 1.0,
     ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
-        """Emission OSEM, or MLEM when OS_number is one.
+        """ASTRA-only emission OSEM, or MLEM when OS_number is one.
 
         Args:
             projections (numpy.ndarray or cupy.ndarray):

@@ -724,7 +724,7 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
             data = np.arange(1, 1 + n_views * 2, dtype=np.float32).reshape(
                 1, n_views, 2
             )
-            rec._operator = SimpleNamespace()
+            rec._operator = SimpleNamespace(backend="astra")
             rec.operator.forward = Mock(
                 side_effect=lambda x, *, subset_index=None, **kwargs: np.ones(
                     (

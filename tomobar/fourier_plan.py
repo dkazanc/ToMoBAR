@@ -6,6 +6,7 @@ import math
 
 import numpy as np
 
+from tomobar._fourier_geometry import require_fourier_geometry
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry, _validate_shape
 from tomobar.options import FourierOptions
 
@@ -88,10 +89,7 @@ def build_fourier_plan(
         volume_geometry, Volume3DGeometry
     ):
         raise ValueError("FOURIER_INV requires 3D geometry")
-    if not projection_geometry.is_standard_tomography:
-        raise ValueError(
-            "This analytical method requires standard Z-axis tomography; use iterative reconstruction for general vectors or laminography"
-        )
+    require_fourier_geometry(projection_geometry, method="FOURIER_INV")
     shape = _validate_shape(input_shape, 3, "Fourier input_shape")
     if shape != projection_geometry.projection_shape:
         raise ValueError(
@@ -106,8 +104,6 @@ def build_fourier_plan(
         raise ValueError(
             "The reconstruction size should not be larger than the size of the horizontal detector"
         )
-    if np.any(projection_geometry.detector_shifts != 0):
-        raise ValueError("FOURIER_INV does not support detector_shifts")
     if isinstance(detector_padding, (bool, np.bool_)) or not isinstance(
         detector_padding, (int, np.integer)
     ):

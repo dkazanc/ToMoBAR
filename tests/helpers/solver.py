@@ -23,6 +23,7 @@ def make_cpu_rec():
     cls = next(n for n in tree.body if isinstance(n, ast.ClassDef))
     names = {
         "initialise_solver",
+        "_check_solver_backend",
         "run",
         "solver_image",
         "_solve",
@@ -83,6 +84,7 @@ def make_cpu_rec():
     exec(compile(ast.Module(body=[cls], type_ignores=[]), "<cpu_rec>", "exec"), ns)
 
     class CPURec(ns["RecToolsIR"]):
+        backend = "astra"
         OS_number = 1
         geometry_version = 0
         closed = False
