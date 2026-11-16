@@ -44,9 +44,7 @@ def reference_tgv(data, strength, alpha1=1.0, alpha0=2.0, nonneg=False):
         return -strength * (operator.T @ primal(q))
 
     def constraint_p(q):
-        return alpha1**2 - np.sum(
-            (symmetric.T @ q).reshape((ndim, size)) ** 2, axis=0
-        )
+        return alpha1**2 - np.sum((symmetric.T @ q).reshape((ndim, size)) ** 2, axis=0)
 
     def constraint_p_jac(q):
         p = (symmetric.T @ q).reshape((ndim, size))

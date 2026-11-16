@@ -141,9 +141,13 @@ def test_gpu_gradient_consumes_subset_views(gpu, monkeypatch, fidelity, subset_c
     for index in range(subset_count):
         b, w, total = subsets[index]
         selected_predictions = predictions[:, index::subset_count, :]
+
+        def forward(*args, predictions=selected_predictions, **kwargs):
+            return predictions.copy(order="C")
+
         operator = SimpleNamespace(
             operator=SimpleNamespace(
-                forward=lambda *args, **kwargs: selected_predictions.copy(order="C"),
+                forward=forward,
                 backproject=lambda residual, *args, **kwargs: residual,
             )
         )
@@ -187,7 +191,10 @@ def test_gpu_swls_reads_arbitrary_weight_strides(gpu, monkeypatch, shape, layout
     from tomobar._solvers import fidelities as terms
 
     rng = np.random.default_rng(12)
-    make = lambda size: cp.asarray(rng.random(size).astype(np.float32) + 0.1)
+
+    def make(size):
+        return cp.asarray(rng.random(size).astype(np.float32) + 0.1)
+
     if layout == "rows":
         weights = make((shape[0] * 2, shape[1], shape[2]))[::2, :, :]
     elif layout == "columns":

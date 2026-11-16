@@ -42,8 +42,8 @@ def test_normaliser_axis1(raw_data, flats, darks):
 def test_swap_data_axis_to_accepted1(labels):
     labels_order = ["detY", "angles", "detX"]
     result = _swap_data_axes_to_accepted(labels, labels_order)
-    assert result[0] == None
-    assert result[1] == None
+    assert result[0] is None
+    assert result[1] is None
 
 
 @pytest.mark.parametrize("labels", [["angles", "detY", "detX"]])

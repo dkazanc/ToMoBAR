@@ -354,7 +354,9 @@ class ResourceHarness(_Harness):
 class DirectHarness(_Harness):
     def __init__(self):
         self._cleanup = ExitStack()
-        identity = lambda data, *args, **kwargs: data
+
+        def identity(data, *args, **kwargs):
+            return data
 
         class Device:
             compute_capability = "80"

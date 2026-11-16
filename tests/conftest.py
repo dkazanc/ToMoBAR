@@ -165,7 +165,7 @@ def gpu(request):
         pytest.skip("ASTRA CUDA is unavailable")
     cp = pytest.importorskip("cupy")
     try:
-        cp.cuda.Device(0).compute_capability
+        _ = cp.cuda.Device(0).compute_capability
     except cp.cuda.runtime.CUDARuntimeError:
         pytest.skip("CuPy CUDA is unavailable")
     return cp

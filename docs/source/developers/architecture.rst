@@ -117,31 +117,54 @@ Build documentation with warnings treated as errors::
 Code quality conventions
 ------------------------
 
+Ruff is the primary Python linter and Black is the formatter. Both use
+``pyproject.toml`` and target Python 3.12. The initial Ruff rule set checks
+undefined names, unused imports, common Python errors, selected bug-prone
+patterns and package docstrings. It does not enforce import sorting or line
+length; Black handles layout.
+
 Docstrings use Google-style ``Args:``, ``Returns:`` and ``Notes:`` sections.
-``pyproject.toml`` configures pydocstyle and Ruff consistently. Constructor
-arguments belong in class docstrings, and standard magic methods follow their
-Python protocols without requiring repeated boilerplate documentation.
+Constructor arguments belong in class docstrings, and standard magic methods
+follow their documented Python protocols without repeated boilerplate.
+Tests, demos and tooling do not require API docstrings. Tests may import GPU
+modules after ``pytest.importorskip``; demos may import within example sections.
+Other exceptions stay local to the intentional pattern.
 
-Codacy's Prospector adapter calls the docstring checker directly, so
-``.prospector.yaml`` mirrors the Google-convention exclusions and the project
-exceptions. Keep those exclusions aligned with ``[tool.pydocstyle]`` when
-changing the policy. In Codacy's Code patterns page, enable use of the repository
-configuration file for Prospector; rerun the hosted analysis after pushing it.
+Install the development tools and enable the commit hooks::
 
-Suppressions stay local to intentional patterns. Exact ``type(...) is`` checks
-verify conversion to native Python types. Deliberate invalid arguments and
-mapping lookups inside ``pytest.raises`` check rejection behavior. NumPy shape
-varargs are valid calls even when inference misses the signature. Security
-analysis and normal argument checks remain enabled elsewhere.
+    python -m pip install -e ".[dev]"
+    pre-commit install
 
-Install the optional analyzers with
-``python -m pip install ruff pydocstyle prospector bandit``. Useful checks from
-the repository root::
+For a CPU-only environment, install just the hook runner; the hooks create
+isolated environments without installing ToMoBAR or its GPU dependencies::
 
-    python -m ruff check --select F,E721 tomobar tests Demos
-    python -m pydocstyle tomobar
-    python -m prospector -t pydocstyle -P .prospector.yaml tomobar
-    python -m bandit -r tests -t B102
+    python -m pip install pre-commit==4.6.2
+    pre-commit run ruff-check --all-files
+    pre-commit run black --all-files
+
+The ``Code quality`` GitHub Actions workflow runs these same two hooks on pull
+requests and pushes to master. Its stable check name is ``Ruff and Black``;
+repository administrators can require it in branch protection or a ruleset.
+The workflow needs no CUDA device, package installation or repository secrets.
+
+For direct local checks and corrections::
+
+    python -m ruff check .
+    python -m black --check .
+    python -m ruff check --fix .
+    python -m black .
+
+Hook runs operate on version-controlled files; direct commands also inspect
+untracked Python files. Optional local ``benchmarks/`` scripts and generated
+``docs/build/`` output are excluded. When updating tool versions, keep the pins
+in ``[project.optional-dependencies].dev`` and ``.pre-commit-config.yaml`` aligned
+with the required versions in ``pyproject.toml``. Notebook and documentation
+formatting hooks use the same Black version.
+
+Codacy remains enabled during the migration. Its ``.prospector.yaml`` and the
+legacy pydocstyle settings mirror Ruff's Google-style documentation policy.
+Do not remove these until the replacement checks pass and Codacy is retired.
+Pyright and CodeQL are separate follow-up steps.
 
 These checks complement the numerical and dependency-boundary tests; changing
 analyzer configuration does not replace running those tests.

@@ -210,7 +210,10 @@ def test_cuda_oblique_orientation_and_cor_against_astra(gpu, cor):
     # expose angle-sign, axis or centre-offset errors at oblique views.
     detector = gpu.arange(n, dtype=gpu.float32)
     expected_centroid = 5 * np.cos(angles) - 4 * np.sin(angles) + (n - 1) / 2 - cor
-    centroid = lambda p: (p * detector).sum(axis=-1) / p.sum(axis=-1)
+
+    def centroid(p):
+        return (p * detector).sum(axis=-1) / p.sum(axis=-1)
+
     np.testing.assert_allclose(
         gpu.asnumpy(centroid(actual))[0], expected_centroid, atol=2e-3
     )

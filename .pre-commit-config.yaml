@@ -1,9 +1,14 @@
 repos:
-- repo: https://github.com/psf/black
-  rev: 23.12.1
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.16.7
+  hooks:
+    - id: ruff-check
+- repo: https://github.com/psf/black-pre-commit-mirror
+  rev: 26.5.1
   hooks:
     - id: black
       language_version: python3
+      args: [--workers=1]
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.5.0
   hooks:
@@ -26,8 +31,9 @@ repos:
     rev: 1.16.0
     hooks:
     - id: blacken-docs
+      additional_dependencies: [black==26.5.1]
 - repo: https://github.com/nbQA-dev/nbQA
   rev: 1.7.1
   hooks:
     - id: nbqa-black
-      args: [--nbqa-mutate]
+      additional_dependencies: [black==26.5.1]

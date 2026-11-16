@@ -287,9 +287,16 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
             wrapper = self.make_wrapper(3, subsets)
             volume_shape = (2, 2, 2)
             projection_shape = (2, 4 // subsets, 4)
-            self.astra.geom_size.side_effect = lambda geom: (
-                volume_shape if geom == wrapper.vol_geom else projection_shape
-            )
+
+            def geometry_shape(
+                geom,
+                wrapper=wrapper,
+                volume_shape=volume_shape,
+                projection_shape=projection_shape,
+            ):
+                return volume_shape if geom == wrapper.vol_geom else projection_shape
+
+            self.astra.geom_size.side_effect = geometry_shape
             index = None if subsets == 1 else 1
             volume = MockGPUArray(np.ones(volume_shape, dtype=np.float32))
             projections = MockGPUArray(np.ones(projection_shape, dtype=np.float32))
@@ -329,7 +336,7 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
                     self.backend.counts.clear()
                     self.backend.fail_at = failure
 
-                    def invoke():
+                    def invoke(forward=forward):
                         if forward:
                             return wrapper.forward(data, subset_index=None)
                         return wrapper.backproject(data, subset_index=None)
@@ -725,7 +732,7 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
             )
             rec._operator = SimpleNamespace(backend="astra")
             rec.operator.forward = Mock(
-                side_effect=lambda x, *, subset_index=None, **kwargs: np.ones(
+                side_effect=lambda x, *, subset_index=None, rec=rec, **kwargs: np.ones(
                     (
                         1,
                         len(
@@ -763,7 +770,7 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
         for n_views, count in ((5, 2), (4, 4)):
             rec = self.make_iterative(module, n_views, count)
             rec.Atools.forward = Mock(
-                side_effect=lambda x, subset_index: np.ones(
+                side_effect=lambda x, subset_index, rec=rec: np.ones(
                     (
                         1,
                         len(

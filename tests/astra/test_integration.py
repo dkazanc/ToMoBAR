@@ -15,7 +15,7 @@ def test_direct_full_and_subset_projection_on_cuda(array_library):
     if array_library == "cupy":
         xp = pytest.importorskip("cupy")
         try:
-            xp.cuda.Device(0).compute_capability
+            _ = xp.cuda.Device(0).compute_capability
         except xp.cuda.runtime.CUDARuntimeError:
             pytest.skip("CuPy CUDA is unavailable")
     from tomobar.projectors._astra.parallel3d import AstraTools3D

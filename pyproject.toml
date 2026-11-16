@@ -48,8 +48,9 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-xdist",
-  "flake8",
-  "pyproject-flake8",
+  "ruff==0.16.7",
+  "black==26.5.1",
+  "pre-commit==4.6.2",
   "pydocstyle",
   "toml",
   "imageio",
@@ -95,10 +96,6 @@ source = [
 # Ignore missing stubs for modules we use
 ignore_missing_imports = true
 
-[tool.isort]
-profile = "black"
-float_to_top = true
-
 [tool.pydocstyle]
 convention = "google"
 add-ignore = [
@@ -111,6 +108,9 @@ add-ignore = [
 
 [tool.black]
 line-length = 88
+target-version = ["py312"]
+required-version = "26.5.1"
+force-exclude = "/(benchmarks|docs/build)/"
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -126,9 +126,26 @@ exclude = '''
 )/
 '''
 
-# Keep Ruff's optional docstring checks aligned with pydocstyle and Prospector.
+[tool.ruff]
+required-version = "==0.16.7"
+target-version = "py312"
+line-length = 88
+extend-exclude = ["benchmarks", "docs/build"]
+force-exclude = true
+
 [tool.ruff.lint]
-extend-ignore = ["D100", "D104", "D105", "D107", "D418"]
+# Black handles formatting. Keep the initial lint set focused on errors,
+# package documentation and selected bug-prone Python patterns.
+select = ["F", "E4", "E7", "E9", "D", "B006", "B007", "B018", "B023", "B904"]
+ignore = ["D100", "D104", "D105", "D107", "D418"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests import optional GPU libraries before importing production GPU modules.
+"tests/**" = ["D", "E402"]
+# Demos use staged imports to keep each example section self-contained.
+"Demos/**" = ["D", "E402"]
+"docs/**" = ["D"]
+".github/**" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
