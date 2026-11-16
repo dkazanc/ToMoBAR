@@ -178,7 +178,7 @@ def test_regularisation_padding_crop_and_geometry_restart(gpu, method):
 
 @pytest.mark.parametrize("fidelity", ["LS", "PWLS", "SWLS"])
 def test_admm_cg_matches_dense_normal_equation(gpu, fidelity):
-    from tests.helpers.cg_diagnostics import diagnostics
+    from tests.helpers import cg_diagnostics as diagnostics
 
     with make_rec(subsets=3, cor=0.375) as rec:
         n = rec.volume_geometry.shape[-1]

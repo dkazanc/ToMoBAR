@@ -77,17 +77,12 @@ OSEM and shift alignment have explicit ASTRA-only rejection tests.
 
 ```sh
 python -m pytest tests/fourier/test_usfft_numerics.py tests/solvers/test_usfft_integration.py
-python -m pytest tests/reconstruction/test_usfft_examples.py
-python -m pytest tests/reconstruction/test_usfft_examples.py --performance
 ```
 
-The real-data regression executes the dedicated dendrites demo cells with
-downsampled data and short iteration settings, checking all five reconstruction
-arrays and their fitted-data residuals. The opt-in
-benchmark smoke test checks both backends and memory-report fields, without
-asserting hardware-dependent timing thresholds. For larger timing/memory
-measurements, use `benchmarks/usfft_backends.py` as documented in
-`benchmarks/usfft_backends.md`.
+`core/test_demo_arguments.py` checks the keyword names used by the dendrites
+and other demos against the current APIs. Larger timing/memory measurements can
+use optional local benchmark scripts. The benchmark directory is not required
+for test collection or execution.
 
 `fourier/test_usfft_buffers.py` checks direct output identity, input preservation,
 independent allocating results, absence of a separate final float32 allocation,
@@ -138,3 +133,7 @@ in `docs/source/developers/architecture.rst`.
 index arithmetic beyond 32-bit limits without allocating image storage. It also
 checks the 64-bit total-element-count argument passed by the SB-TV launcher.
 Numerical regulariser tests cover the CUDA float/half variants separately.
+
+CG/operator diagnostic references live in `helpers/cg_diagnostics.py`.
+Tests import that module directly and must not load optional benchmark scripts.
+The benchmark directory may be absent from a checkout or CI runner.

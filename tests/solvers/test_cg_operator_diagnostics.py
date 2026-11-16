@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from tests.helpers.cg_diagnostics import diagnostics
+from tests.helpers import cg_diagnostics as diagnostics
 
 
 def test_axis_aligned_source_model_is_matched():

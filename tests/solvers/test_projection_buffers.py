@@ -119,7 +119,7 @@ def test_native_scratch_is_private_reused_and_rebuilt_after_geometry_change(
 
 
 def test_operator_diagnostics_preserve_paused_admm_gradient(gpu):
-    from tests.helpers.cg_diagnostics import diagnostics
+    from tests.helpers import cg_diagnostics as diagnostics
     from tomobar.reconstruction.iterative import RecToolsIR
 
     scan = Parallel3DGeometry(
