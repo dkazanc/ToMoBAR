@@ -21,11 +21,14 @@
 
 *  $\sf\color{red}!$ The current GPU-only iterative reconstruction interface is `tomobar.reconstruction.iterative.RecToolsIR`, using explicit projection and volume geometry. The dependency on the Regularisation Toolkit is dropped in favour of the internal CuPy routines. Please see more information in [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
 
+For the refactored imports, geometry and solver calls, see the
+[migration guide](https://dkazanc.github.io/ToMoBAR/howto/migration.html).
+
 ### CHANGELOG:
 See [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.
 
 ### ToMoBAR highlights:
-Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do). Please also see [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
+Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do). Please also see [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos).
 ToMoBAR
 
 ### Installation

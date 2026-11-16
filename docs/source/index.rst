@@ -21,6 +21,7 @@
     howto/installation
     howto/use
     howto/geometry
+    howto/migration
 
 .. _tutorials:
 

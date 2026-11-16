@@ -33,13 +33,13 @@ Public standalone regulariser functions remain in `tomobar.regularisers`.
 Removed historical import shims and the `tomobar.supp` package. Import
 reconstructors from `tomobar.reconstruction.direct` and
 `tomobar.reconstruction.iterative`, the projection operator from
-`tomobar.projectors.operator`, and solver state from `tomobar._solvers.state`.
+`tomobar.projectors.operator`, and solver state from `tomobar.reconstruction.state`.
 Other former aliases (`fourier`, `fourier_plan`, `data_fidelities` and
 `reconstruction_geometry`) likewise use their canonical implementation modules.
 ASTRA implementations live under `tomobar.projectors._astra`.
 
 Shared array handling lives in `_arrays`, solver buffers/subsets/updates in
-`_solvers`, and memory estimation in `_reconstruction.memory`. Use
+`_solvers`, and memory estimation in `reconstruction.memory`. Use
 `tomobar.preprocessing` and `tomobar.postprocessing` directly instead of
 `suppTools`. Internal reconstruction output processing uses the explicit
 `postprocess_reconstruction` helper; `check_kwargs` has been removed.

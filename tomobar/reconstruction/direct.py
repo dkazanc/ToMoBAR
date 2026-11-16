@@ -32,11 +32,8 @@ from tomobar.reconstruction.fourier_plan import (
     FourierPlan,
     build_fourier_plan,
     resolve_fourier_options,
-    CENTER_SIZE_MIN,
 )
 from tomobar.reconstruction.fourier_execution import FourierExecutor
-
-_CENTER_SIZE_MIN = CENTER_SIZE_MIN  # Legacy import used by kernel tests.
 
 
 class RecToolsDIR(GeometryReconstruction):

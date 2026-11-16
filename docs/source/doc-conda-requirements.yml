@@ -2,7 +2,7 @@ name: tomobar-docs
 channels:
   - conda-forge
 dependencies:
-  - python>=3.10
+  - python>=3.12
   - scipy
   - sphinx
   - sphinx-book-theme

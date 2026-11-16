@@ -2,41 +2,38 @@
 
 Dependencies
 ************
-ToMoBAR relies on several dependencies which we list bellow in the order of priority.
-In general, we would recommend installing 1,2 and 3 packages.
 
-* 1. `ASTRA-toolbox <https://www.astra-toolbox.com/>`_ is the important dependency
-  as ToMoBAR relies on the GPU-accelerated projection/backprojection routines of the toolbox. With
-  the package installed, one can perform :ref:`tutorials_direct` and :ref:`examples_basic_iter`,
-  note that for regularised iterative methods you either need
-  `CCPi-Regularisation-Toolkit <https://github.com/TomographicImaging/CCPi-Regularisation-Toolkit/>`_ [KAZ2019]_
-  or a CuPy installation, see bellow for more details.
+ToMoBAR requires Python 3.12 or newer and NumPy 2 or newer. Package installation
+also supplies SciPy, scikit-image and Pillow. The reconstruction classes and
+projection operators use CuPy arrays and require a CUDA-capable NVIDIA GPU.
 
-  Normally ASTRA Toolbox is included into the list of dependencies of ToMoBAR, but one can install it with:
+* 1. `ASTRA Toolbox <https://www.astra-toolbox.com/>`_ version 2.5 or newer
+  supplies the ``backend="astra"`` projection pair and flexible geometry.
+  This is the default backend for both reconstruction classes.
 
-.. code-block:: console
+* 2. `CuPy <https://cupy.dev/>`_ version 14 or newer supplies GPU arrays, FFTs,
+  CUDA kernel execution and the native regularisers. The
+  ``tomobar.reconstruction.direct.RecToolsDIR`` and
+  ``tomobar.reconstruction.iterative.RecToolsIR`` classes use this common GPU
+  implementation. Select ``backend="usfft"`` for Fourier-based projection and
+  backprojection with the supported parallel geometry. Centre-of-rotation
+  offsets are supported; detector shifts require ASTRA.
 
-   $ conda install -c astra-toolbox -c nvidia astra-toolbox
+  Regularisers are included in ToMoBAR; CCPi-Regularisation-Toolkit is no longer
+  required. Geometry and settings modules, and NumPy preprocessing, remain
+  usable without allocating GPU resources. Reconstruction imports require the
+  numerical dependencies even when a particular call uses just one backend.
 
-.. note:: For faster device-to-device regularised iterative reconstruction, consider using the CuPy-based version of ToMoBAR (see point 3).
+Install a compatible CUDA environment, for example with Conda::
 
-* 2. `CuPy <https://cupy.dev/>`_ dependency provides access to GPU-accelerated routines that are separate from the main host-device-host implementation approach. The CuPy-driven algorithms operate on CuPy arrays that remain on the GPU, rather than on NumPy arrays stored in CPU memory.
-  CuPy and a CUDA-capable GPU are required. Users can access methods from the following classes:
-  :mod:`tomobar.reconstruction.direct` and :mod:`tomobar.reconstruction.iterative`. For example, the ultra-fast reconstruction method
-  :func:`tomobar.reconstruction.direct.RecToolsDIR.FOURIER_INV`, based on the Fourier transform [NIKITIN2017]_, is available in :mod:`tomobar.reconstruction.direct`.
-  In addition, faster regularised iterative reconstruction methods are also provided (see point 4).
-  We plan to continue developing and supporting this capability, as it offers significant efficiency gains f
-  or GPU-based computations without requiring explicit software builds.
+    conda install -c conda-forge "astra-toolbox>=2.5" "cupy>=14" "numpy>=2" "python>=3.12"
 
-  For Python installation see `conda-cupy <https://anaconda.org/anaconda/cupy>`_ page.
-
-.. code-block:: console
-
-   $ conda install conda-forge::cupy
+Optional tools
+==============
 
 * 3. `TomoPhantom <https://github.com/dkazanc/TomoPhantom>`_  is optional but can be very
   handy to generate synthethic tomographic data and play with :ref:`examples_synth_iter`.
-  Also most of the `Demos <https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python>`_ in ToMoBAR
+  Also most of the `Demos <https://github.com/dkazanc/ToMoBAR/tree/master/Demos>`_ in ToMoBAR
   using TomoPhantom.
 
   For Python installation see the `installation guide <https://dkazanc.github.io/TomoPhantom/howto/installation.html>`_.

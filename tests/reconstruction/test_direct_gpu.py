@@ -40,7 +40,7 @@ EPSILON = 2e-06
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2])
 @pytest.mark.parametrize(
     "center_size", [256, 512, 1024]
-)  # must be greater than or equal to methodsDIR._CENTER_SIZE_MIN
+)  # must be greater than or equal to tomobar.reconstruction.fourier_plan.CENTER_SIZE_MIN
 def test_fourier3d_inv_prune(
     projection_count,
     theta_range,
@@ -83,7 +83,7 @@ def test_fourier3d_inv_prune(
 @pytest.mark.parametrize("theta_shuffle_iteration_count", [2, 8, 32])
 @pytest.mark.parametrize(
     "center_size", [256, 512, 1024, 2048, 6144]
-)  # must be greater than or equal to methodsDIR._CENTER_SIZE_MIN
+)  # must be greater than or equal to tomobar.reconstruction.fourier_plan.CENTER_SIZE_MIN
 def test_fourier3d_inv_prune_full(
     projection_count,
     theta_range,

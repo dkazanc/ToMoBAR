@@ -8,19 +8,22 @@ source:
 build:
   noarch: python
   number: 0
-  script: python -m pip install --no-deps --ignore-installed .
+  script: python -m pip install --no-deps --no-build-isolation --ignore-installed .
 
 requirements:
   host:
-    - python
+    - python>=3.12
     - pip
     - setuptools>=77.0.3
+    - wheel
   run:
     - python>=3.12
-    - numpy
-    - setuptools
+    - numpy>=2
+    - cupy>=14
+    - astra-toolbox>=2.5
+    - scipy
+    - scikit-image
     - pillow
-    - pytest
 
 about:
   license: Apache-2.0 AND GPL-3.0-only

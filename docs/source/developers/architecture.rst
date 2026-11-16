@@ -295,3 +295,24 @@ ASTRA/USFFT working-grid forward and backward operators. Their small dense
 normal equations check the production CG data step, including detector padding.
 ASTRA's backward projector is sampled independently rather than assumed to equal
 the forward matrix transpose. No handwritten model of ASTRA kernels is retained.
+
+
+Refactoring release checks
+--------------------------
+
+Build documentation from a clean checkout with warnings treated as errors.
+The canonical ``docs/source/api/*.rst`` pages are source files, not disposable
+local build output; include them when committing new modules or moved imports.
+The Sphinx configuration reads the package version from ``pyproject.toml`` and
+can build without a Git checkout or tags. Pull requests build an artifact with
+read-only repository access. Only validated master builds publish documentation.
+
+Keep Conda runtime requirements aligned with the Python package dependencies.
+Development tools come from the pinned ``.[dev]`` extra after creating the Conda
+environment. The upload script builds the explicit ``conda-recipe`` directory
+and uploads only artifacts from that invocation's fresh output directory.
+Publishing remains a separate operation from local validation.
+
+Before a breaking release, follow :ref:`ref_migration` and test downstream
+wrappers against the release candidate. Historical release notes remain a record
+of their original API, while Unreleased guidance must use the current paths.

@@ -10,7 +10,7 @@ in GPU device-to-device fashion on CuPy arrays therefore ensuring
 a better computational efficiency. With GPU device controlling API
 exposed it can also support multi-GPU parallel computing.
 
-See more in :ref:`intro_about` or go directly to :ref:`ref_installation` and try `Demos <https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python>`_.
+See more in :ref:`intro_about` or go directly to :ref:`ref_installation` and try `Demos <https://github.com/dkazanc/ToMoBAR/tree/master/Demos>`_.
 
 .. figure::  _static/recsFISTA_stud.png
     :scale: 85 %

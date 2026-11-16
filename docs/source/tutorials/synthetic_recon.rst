@@ -10,7 +10,7 @@ Synthethic data reconstruction
 This tutorial covers a concrete example when the data is synthetically generated using
 `Tomophantom <https://github.com/dkazanc/TomoPhantom>`_ software and reconstructed using ToMoBAR.
 We recommend installing TomoPhantom (see :ref:`ref_dependencies`) as most of **Demos** use it.
-This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dkazanc/ToMoBAR/blob/master/Demos/Python/methods_IR_legacy/DemoFISTA_real_artifacts3D.py>`_ demo.
+This tutorial loosely follows `tomophantom_3D_artifacts_recon.py <https://github.com/dkazanc/ToMoBAR/blob/master/Demos/tomophantom_3D_artifacts_recon.py>`_ demo.
 
 * Let us generate the 3D phantom first. For this we will use the model no.16 from the TomoPhantom's library of models.
 
@@ -115,7 +115,7 @@ This tutorial loosely follows `DemoFISTA_real_artifacts3D <https://github.com/dk
     )
 
     data_axes_labels3D = ["detY", "angles", "detX"]
-    FBP_Rec = Rectools.FBP(projData3D_norm, input_axes=data_axes_labels3D)
+    FBP_Rec = RectoolsDIR.FBP(projData3D_norm, input_axes=data_axes_labels3D)
 
 .. figure::  ../_static/tutorial/synth/FBP_recon.png
     :scale: 25 %

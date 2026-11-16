@@ -1,13 +1,11 @@
 #!/usr/bin/env python
-import os
 import sys
 from datetime import date
+from pathlib import Path
+import tomllib
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-
-sys.path.insert(0, os.path.abspath("../.."))
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 
 # -- Optional GPU dependencies ------------------------------------------------
 # Keep NumPy and ToMoBAR real so geometry, annotations and API links resolve.
@@ -21,11 +19,9 @@ copyright = f"{date.today().year}, Diamond Light Source and Manchester Universit
 # Specify a base language to help assistive technology
 language = "en"
 
-# Save the commit hash, this is displayed in the page title
-release = os.popen('git log -1 --format="%H"').read().strip()
-
-# Set version as the latest tag in the current branch
-version = os.popen("git describe --tags --abbrev=0").read().strip()
+# Match the package version, including source archives without Git metadata.
+release = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
+version = release
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -75,9 +71,9 @@ html_theme_options = {
 }
 
 html_context = {
-    "github_user": "tomobar",
-    "github_repo": "https://github.com/dkazanc/ToMoBAR",
-    "github_version": "main",
+    "github_user": "dkazanc",
+    "github_repo": "ToMoBAR",
+    "github_version": "master",
     "doc_path": "docs",
 }
 

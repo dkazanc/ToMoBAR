@@ -1,19 +1,22 @@
 #!/bin/bash
+set -euo pipefail
 
-PKG_NAME=tomobar
-USER=httomo-team
-OS=noarch
+: "${CONDA:?CONDA must point to a Conda installation}"
+: "${ANACONDA_API_TOKEN:?Set the upload token before publishing}"
 
-mkdir ~/conda-bld
-export CONDA_BLD_PATH=~/conda-bld
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+# Use a fresh output directory so only this build's packages can be uploaded.
+export CONDA_BLD_PATH
+CONDA_BLD_PATH="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/tomobar-conda.XXXXXX")"
+"$CONDA/bin/conda" build "$repo_root/conda-recipe" --no-anaconda-upload
 
-$CONDA/bin/conda install conda-build
-$CONDA/bin/conda install -c anaconda anaconda-client
-$CONDA/bin/conda build .
-
-# upload packages to conda
-find $CONDA_BLD_PATH/$OS -name *.conda | while read file
-do
-    echo $file
-    $CONDA/bin/anaconda -v --show-traceback -t $ANACONDA_API_TOKEN upload $file --force
+shopt -s nullglob
+artifacts=("$CONDA_BLD_PATH"/noarch/tomobar-*.conda "$CONDA_BLD_PATH"/noarch/tomobar-*.tar.bz2)
+if ((${#artifacts[@]} == 0)); then
+    echo "No ToMoBAR packages were produced" >&2
+    exit 1
+fi
+for artifact in "${artifacts[@]}"; do
+    echo "Uploading $artifact"
+    "$CONDA/bin/anaconda" -v --show-traceback -t "$ANACONDA_API_TOKEN" upload "$artifact" --force
 done
