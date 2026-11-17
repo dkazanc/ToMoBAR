@@ -8,6 +8,118 @@ import pytest
 from tests.helpers.sinc_reference import sinc_response, filter_sinc
 
 
+@pytest.mark.parametrize("filter_type", ["RAM-LAK", "SINC"])
+@pytest.mark.parametrize("endpoint", [False, True])
+@pytest.mark.parametrize(
+    "tilt_degrees,turn_fraction", [(68.704, 1.0), (90, 1.0), (90, 0.5)]
+)
+def test_laminography_fbp_weights_both_filters(
+    mock_reconstruction, monkeypatch, filter_type, endpoint, tilt_degrees, turn_fraction
+):
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+
+    tilt = np.deg2rad(tilt_degrees)
+    views = 12 + int(endpoint)
+    # Exercise decreasing, wrapped angles and float32 stage readbacks.
+    angles = np.mod(
+        0.3 - np.linspace(0, 2 * np.pi * turn_fraction, views, endpoint=endpoint),
+        2 * np.pi,
+    )
+    scan = Parallel3DGeometry.laminography(
+        angles=angles.astype(np.float32), detector_shape=(3, 9), tilt_angle=tilt
+    )
+    data = np.random.default_rng(42).random(scan.projection_shape, dtype=np.float32)
+    direct = mock_reconstruction.direct
+    filter_name = "_filterramlak3D" if filter_type == "RAM-LAK" else "_filtersinc3D"
+
+    def filter_stub(projections, *, view_weight, **options):
+        return projections * np.float32(view_weight)
+
+    monkeypatch.setattr(direct, filter_name, filter_stub)
+    with direct.RecToolsDIR(
+        projection_geometry=scan,
+        volume_geometry=Volume3DGeometry((3, 6, 6)),
+        detector_padding=2,
+    ) as rec:
+        rec.FBP(data, filter_type=filter_type)
+
+    weights = np.full(views, np.pi * np.sin(tilt) / 12)
+    if endpoint:
+        weights[[0, -1]] *= 0.5
+    expected = np.pad(data, ((0, 0), (0, 0), (2, 2)), mode="edge")
+    np.testing.assert_allclose(
+        mock_reconstruction.backend.direct_arrays[-1],
+        expected * weights[None, :, None],
+        rtol=2e-7,
+    )
+
+
+@pytest.mark.parametrize("filter_type", ["RAM-LAK", "SINC"])
+def test_laminography_fbp_matches_cpu_filter_and_astra_backprojection(gpu, filter_type):
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.reconstruction.direct import RecToolsDIR
+
+    tilt = np.deg2rad(68.704)
+    scan = Parallel3DGeometry.laminography(
+        angles=np.linspace(0, 2 * np.pi, 25),
+        detector_shape=(9, 15),
+        tilt_angle=tilt,
+        centre_of_rotation=0.25,
+    )
+    grid = Volume3DGeometry((7, 11, 13))
+    phantom = np.zeros(grid.shape, dtype=np.float32)
+    phantom[2:4, 3:6, 7:10] = 1
+    phantom[4:6, 7:9, 3:5] = 0.4
+    with RecToolsDIR(projection_geometry=scan, volume_geometry=grid) as rec:
+        data = rec.forward(phantom)
+        if filter_type == "SINC":
+            filtered = filter_sinc(data, 0.35) * scan.view_count / np.pi
+        else:
+            columns = np.arange(scan.detector_shape[1])
+            lag = columns[:, None] - columns
+            kernel = np.eye(columns.size) / 4
+            odd = lag % 2 != 0
+            kernel[odd] = -1 / (np.pi * lag[odd]) ** 2
+            filtered = data @ kernel.T
+        filtered *= np.pi * np.sin(tilt) / (scan.view_count - 1)
+        filtered[:, [0, -1]] *= 0.5
+        expected = rec.backproject(filtered.astype(np.float32))
+        actual = rec.FBP(data, filter_type=filter_type)
+
+    np.testing.assert_allclose(actual, expected, rtol=3e-5, atol=2e-7)
+
+
+@pytest.mark.parametrize("filter_type", ["RAM-LAK", "SINC"])
+@pytest.mark.parametrize("endpoint", [False, True])
+def test_laminography_fbp_tomography_limit(gpu, filter_type, endpoint):
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.reconstruction.direct import RecToolsDIR
+
+    angles = np.linspace(0, np.pi, 12, endpoint=False)
+    half_turn = Parallel3DGeometry.tomography(angles=angles, detector_shape=(5, 16))
+    full_angles = np.concatenate((angles, angles + np.pi))
+    if endpoint:
+        full_angles = np.append(full_angles, 2 * np.pi)
+    full_turn = Parallel3DGeometry.laminography(
+        angles=full_angles,
+        detector_shape=half_turn.detector_shape,
+        tilt_angle=np.pi / 2,
+    )
+    grid = Volume3DGeometry((5, 10, 12))
+    phantom = np.zeros(grid.shape, dtype=np.float32)
+    phantom[1:4, 2:5, 7:10] = 1
+    with RecToolsDIR(projection_geometry=half_turn, volume_geometry=grid) as rec:
+        data = rec.forward(phantom)
+        expected = rec.FBP(data, filter_type=filter_type)
+    with RecToolsDIR(projection_geometry=full_turn, volume_geometry=grid) as rec:
+        full_data = np.concatenate((data, data[..., ::-1]), axis=1)
+        if endpoint:
+            full_data = np.concatenate((full_data, data[:, :1]), axis=1)
+        actual = rec.FBP(full_data, filter_type=filter_type)
+
+    np.testing.assert_allclose(actual, expected, rtol=3e-5, atol=2e-6)
+
+
 @pytest.fixture
 def sinc(gpu):
     from tomobar._filters.responses import _filtersinc3D
@@ -107,21 +219,6 @@ def test_fbp_rejects_bad_input_before_filtering(gpu):
         assert not rec.Atools._projector_handles
 
 
-@pytest.mark.parametrize("width", [1, 2, 8, 9, 64, 65])
-def test_legacy_sinc_removes_detector_dc_for_even_and_odd_widths(gpu, sinc, width):
-    # A different constant per detector row/view must still have no column DC.
-    constants = np.random.default_rng(5).normal(size=(3, 7, 1)).astype(np.float32)
-    data = gpu.asarray(np.broadcast_to(constants, (3, 7, width)).copy())
-    original = data.copy()
-
-    filtered = sinc(data, legacy_scaling=True)
-
-    gpu.testing.assert_allclose(filtered, 0, atol=1e-7)
-    gpu.testing.assert_array_equal(data, original)
-    assert filtered.shape == data.shape
-    assert filtered.dtype == gpu.float32
-
-
 @pytest.mark.parametrize(
     "shape",
     [
@@ -163,23 +260,6 @@ def test_sinc_filters_detector_rows_independently(gpu, width, sinc):
     separate = gpu.concatenate([sinc(data[row : row + 1]) for row in range(3)])
 
     gpu.testing.assert_allclose(batched, separate, rtol=3e-6, atol=1e-7)
-
-
-@pytest.mark.parametrize("width", [2, 8, 14, 64, 160])
-def test_sinc_preserves_even_width_legacy_response(gpu, width, sinc):
-    data = np.random.default_rng(9).normal(size=(3, 7, width)).astype(np.float32)
-    w = np.linspace(-np.pi, np.pi - 2 * np.pi / width, width, dtype=np.float32)
-    rd = (1.1 * w / 2).astype(np.float64)
-    legacy = np.abs(2 / 1.1 * np.sin(1.1 * w / 2))
-    legacy *= (np.sin(1.1 * w / 2) @ np.linalg.pinv(rd[None])) ** 2
-    expected = (
-        np.fft.ifft(np.fft.fft(data, axis=-1) * np.fft.fftshift(legacy), axis=-1).real
-        / data.shape[1]
-    )
-
-    actual = sinc(data, legacy_scaling=True)
-
-    np.testing.assert_allclose(actual.get(), expected, rtol=3e-6, atol=1e-7)
 
 
 @pytest.mark.parametrize("width", [8, 9])
@@ -274,31 +354,24 @@ def test_public_cutoff_matches_numpy_reference(gpu, cutoff, width):
     ],
 )
 @pytest.mark.parametrize("width", [1, 2, 8, 9, 14, 64, 65, 160, 181, 512, 4096])
-def test_legacy_cuda_sinc_coefficients_match_independent_reference(gpu, width, cutoff):
+def test_cuda_sinc_coefficients_match_independent_reference(gpu, width, cutoff):
+    from tomobar._filters.ramlak import ramlak_response
     from tomobar.cuda_kernels.loader import load_cuda_module
 
-    # Generate native-bin reference in double precision, independently of the
-    # production sinc reformulation, shared-memory reduction and output mapping.
-    a = float(np.float32(cutoff))
-    w = 2 * np.pi * np.fft.fftfreq(width)
-    x = a * w / 2
-    denominator = np.dot(x, x)
-    fit = np.dot(np.sin(x), x) / denominator if denominator else 0.0
-    expected = (np.abs(2 / a * np.sin(x)) * fit**2)[: width // 2 + 1]
+    ramp = ramlak_response(width)
+    length = (ramp.size - 1) * 2
+    actual = gpu.asarray(ramp)
     multiplier = 0.25
-    actual = gpu.full(width // 2 + 1, gpu.nan, dtype=gpu.float32)
     kernel = load_cuda_module("generate_filtersync").get_function("generate_filtersinc")
-
     kernel(
         (1, 1, 1),
         (256, 1, 1),
-        (gpu.float32(a), actual, np.int32(width), gpu.float32(multiplier), np.int32(1)),
-        shared_mem=2 * 256 * 8,
+        (gpu.float32(cutoff), actual, np.int32(length), np.float32(multiplier)),
     )
 
+    expected = sinc_response(width, cutoff)[: ramp.size] * (multiplier / np.pi)
     assert bool(gpu.isfinite(actual).all())
-    gpu.testing.assert_allclose(actual, expected * multiplier, rtol=3e-6, atol=1e-7)
-    assert float(actual[0]) == 0
+    gpu.testing.assert_allclose(actual, expected, rtol=3e-6, atol=1e-7)
 
 
 @pytest.mark.parametrize(
@@ -328,28 +401,3 @@ def test_unknown_filter_fails_before_data_preparation(mock_reconstruction, monke
         with pytest.raises(ValueError, match="SINC"):
             rec.FBP(None, filter_type="unknown")
         assert not rec.Atools._projector_handles
-
-
-@pytest.mark.parametrize(
-    "options,error",
-    [
-        ({"legacy_scaling": 1}, TypeError),
-        ({"legacy_scaling": True, "filter_type": "RAM-LAK"}, ValueError),
-    ],
-)
-def test_invalid_legacy_scaling_fails_before_preparation(
-    mock_reconstruction, monkeypatch, options, error
-):
-    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-
-    scan = Parallel3DGeometry(angles=[0, 0.5, 1], detector_shape=(3, 8))
-    with mock_reconstruction.direct.RecToolsDIR(
-        projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 6, 6))
-    ) as rec:
-
-        def unexpected(*args, **kwargs):
-            pytest.fail("invalid legacy_scaling reached input preparation")
-
-        monkeypatch.setattr(rec, "_prepare_projection", unexpected)
-        with pytest.raises(error, match="legacy_scaling"):
-            rec.FBP(None, **options)

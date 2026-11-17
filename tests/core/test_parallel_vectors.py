@@ -119,9 +119,10 @@ def test_public_vector_geometry(mock_reconstruction, kind):
             )
             assert rec.forward(np.ones((2, 4, 6)), subset_index=1).shape == (3, 2, 7)
         else:
-            for method in (rec.FBP, rec.FOURIER_INV):
-                with pytest.raises(ValueError, match="standard Z-axis"):
-                    method(np.ones((3, 5, 7)))
+            with pytest.raises(ValueError, match="uniformly sampled full turn"):
+                rec.FBP(np.ones((3, 5, 7)))
+            with pytest.raises(ValueError, match="standard Z-axis"):
+                rec.FOURIER_INV(np.ones((3, 5, 7)))
 
 
 def test_rigid_transform_composition_with_pixel_shifts():

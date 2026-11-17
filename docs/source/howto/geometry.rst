@@ -218,8 +218,6 @@ axis convention or select the filter.
 ``ram-lak`` and ``ramp`` also select Ram-Lak. Both NumPy and CuPy inputs use
 GPU detector-column real FFTs. The duplicate host-FFT implementation has been
 removed.
-Use ``filter_type="SINC", cutoff_freq=1.1, legacy_scaling=True`` to reproduce
-the previous SINC response with the corrected odd-width frequency grid.
 
 For SINC, the default ``cutoff_freq`` is 0.35; passing ``None`` also selects
 this default. The cutoff is a filter shape parameter in the positive normal
@@ -235,17 +233,14 @@ For RAM-LAK, ``cutoff_freq`` is instead a fraction of detector Nyquist in
 ASTRA's Ram-Lak convention. Its finite FFT response includes a small DC
 correction. The FFT is zero-padded to the next power of two at least twice
 the detector width, then cropped back after filtering to avoid wraparound at
-opposite detector edges. Angular normalization is ``pi/view_count`` and
-assumes uniformly spaced views over a half turn, with unit detector spacing.
-SINC now uses the same padded discrete ramp, multiplied by a sinc window with
+opposite detector edges. Both filters use the same geometry-based angular
+weights. For uniformly spaced half-turn tomography with unit detector
+spacing and the final endpoint excluded, the weight is ``pi/view_count``.
+SINC uses the same padded discrete ramp, multiplied by a sinc window with
 unit low-frequency gain. Its cutoff changes the smoothing without introducing
 a cutoff-dependent global amplitude factor. The default cutoff remains 0.35.
 Both filters therefore preserve reconstruction units; smoothing and sampling can
 still change individual pixel values. No phantom-dependent rescaling is applied.
-
-Quantitative scaling is the default. To reproduce older 3D SINC results, pass
-``legacy_scaling=True``; this restores its native-width FFT and global gain.
-The option is unsupported for Ram-Lak and 2D FBP.
 
 .. code-block:: python
 
@@ -615,9 +610,15 @@ incorporated once. The returned geometry uses explicit vectors. Use the returned
 calls; changing geometry during a running solver is not supported.
 
 Forward/backprojection and iterative reconstruction accept general parallel
-vectors. Existing FBP and Fourier inversion require angle-based standard
-Z-axis tomography and reject explicit-vector trajectories, even if supplied
-vectors happen to describe a conventional scan.
+vectors. ``RecToolsDIR.FBP()`` also accepts scans created with
+``Parallel3DGeometry.laminography()`` using either ``filter_type="RAM-LAK"``
+or ``filter_type="SINC"``. For tilted scans, supply at least three unique
+views uniformly spaced over a full turn. At a beam-to-axis angle of 90 degrees,
+FBP supports uniformly sampled half turns and full turns. Both filters give
+each endpoint half weight when both endpoints of
+the angular interval are present. The tilt factor is the sine of the
+beam-to-axis angle and equals one at 90 degrees.
+Fourier inversion still requires angle-based standard Z-axis tomography.
 
 Replacing geometry between reconstruction calls
 -----------------------------------------------

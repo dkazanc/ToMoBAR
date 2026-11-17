@@ -6,6 +6,8 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
+from tests.helpers.sinc_reference import backproject_sinc_reference
+
 cp = pytest.importorskip("cupy")
 pytest.importorskip("astra")
 
@@ -16,6 +18,7 @@ from cupy import float32
 from cupyx.profiler import time_range
 
 from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.postprocessing import apply_circular_mask
 
 pytestmark = pytest.mark.usefixtures("gpu")
 
@@ -477,11 +480,12 @@ def test_fbp3d(data_cupy, angles, ensure_clean_memory):
             filter_type="SINC",
             data_axes_labels_order=["angles", "detY", "detX"],
             cutoff_freq=1.1,
-            legacy_scaling=True,
+        )
+        expected = backproject_sinc_reference(
+            RecToolsCP, data_cupy.transpose(1, 0, 2), 1.1
         )
     recon_data = FBPrec_cupy.get()
-    assert_allclose(np.min(recon_data), -0.014693323, rtol=EPSILON)
-    assert_allclose(np.max(recon_data), 0.0340156, rtol=EPSILON)
+    assert_allclose(recon_data, expected, rtol=3e-5, atol=2e-7)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
@@ -512,8 +516,7 @@ def test_fbp3d_synth_misaligned(data_shifted_cupy, synth_data_shifts):
             data_axes_labels_order=input_data_labels,
             cutoff_freq=1.1,
         )
-        # Independent native-bin NumPy filter: old extrema encoded the odd-
-        # width half-bin offset and nonzero DC of the former CUDA generator.
+        # Independently filter the odd-width projections before backprojection.
         from tests.helpers.sinc_reference import filter_sinc
 
         filtered = filter_sinc(cp.asnumpy(data_shifted_cupy), 1.1)
@@ -546,13 +549,12 @@ def test_fbp3d_pad(data_cupy, angles, ensure_clean_memory):
             filter_type="SINC",
             data_axes_labels_order=["angles", "detY", "detX"],
             cutoff_freq=1.1,
-            legacy_scaling=True,
+        )
+        expected = backproject_sinc_reference(
+            RecToolsCP, data_cupy.transpose(1, 0, 2), 1.1
         )
     recon_data = FBPrec_cupy.get()
-    # Float64 coefficient preparation can shift these recorded float32 extrema
-    # by a few ulps without changing the established even-width response.
-    assert_allclose(np.min(recon_data), -0.013320832, rtol=EPSILON, atol=1e-7)
-    assert_allclose(np.max(recon_data), 0.03534874, rtol=EPSILON)
+    assert_allclose(recon_data, expected, rtol=3e-5, atol=2e-7)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
@@ -577,10 +579,12 @@ def test_fbp3d_swaped_axis_pad(data_cupy, angles, ensure_clean_memory):
             filter_type="SINC",
             data_axes_labels_order=axis_labels,
             cutoff_freq=1.1,
-            legacy_scaling=True,
+        )
+        expected = backproject_sinc_reference(
+            RecToolsCP, data_cupy.transpose(2, 1, 0), 1.1
         )
     recon_data = FBPrec_cupy.get()
-    assert_allclose(np.mean(recon_data), 0.001496, atol=1e-04)
+    assert_allclose(recon_data, expected, rtol=3e-5, atol=2e-7)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 
@@ -602,11 +606,13 @@ def test_fbp3d_mask(data_cupy, angles, ensure_clean_memory):
             recon_mask_radius=0.7,
             data_axes_labels_order=["angles", "detY", "detX"],
             cutoff_freq=1.1,
-            legacy_scaling=True,
         )
+        expected = backproject_sinc_reference(
+            RecToolsCP, data_cupy.transpose(1, 0, 2), 1.1
+        )
+        apply_circular_mask(expected, 0.7)
     recon_data = FBPrec_cupy.get()
-    assert_allclose(np.min(recon_data), -0.0129751, rtol=EPSILON)
-    assert_allclose(np.max(recon_data), 0.0340156, rtol=EPSILON)
+    assert_allclose(recon_data, expected, rtol=3e-5, atol=2e-7)
     assert recon_data.dtype == np.float32
     assert recon_data.shape == (128, 160, 160)
 

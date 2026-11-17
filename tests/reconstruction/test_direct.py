@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
+from tests.helpers.sinc_reference import backproject_sinc_reference
+
 cp = pytest.importorskip("cupy")
 pytest.importorskip("astra")
 
@@ -238,10 +240,9 @@ def test_fbp3d_1(data, angles):
             data_axes_labels_order=["angles", "detY", "detX"],
             filter_type="SINC",
             cutoff_freq=1.1,
-            legacy_scaling=True,
         )
-    assert_allclose(np.min(FBPrec), -0.014693323, rtol=EPSILON)
-    assert_allclose(np.max(FBPrec), 0.0340156, rtol=EPSILON)
+        expected = backproject_sinc_reference(rec, data.transpose(1, 0, 2), 1.1)
+    assert_allclose(FBPrec, expected, rtol=3e-5, atol=2e-7)
     assert FBPrec.dtype == np.float32
     assert FBPrec.shape == (128, 160, 160)
 
@@ -263,10 +264,9 @@ def test_fbp3d_1_pad(data, angles):
             data_axes_labels_order=["angles", "detY", "detX"],
             filter_type="SINC",
             cutoff_freq=1.1,
-            legacy_scaling=True,
         )
-    assert_allclose(np.min(FBPrec), -0.013320876, rtol=EPSILON)
-    assert_allclose(np.max(FBPrec), 0.03534868, rtol=EPSILON)
+        expected = backproject_sinc_reference(rec, data.transpose(1, 0, 2), 1.1)
+    assert_allclose(FBPrec, expected, rtol=3e-5, atol=2e-7)
     assert FBPrec.dtype == np.float32
     assert FBPrec.shape == (128, 160, 160)
 
@@ -288,9 +288,8 @@ def test_fbp3d_normalisation(angles, raw_data, flats, darks):
             data_axes_labels_order=["angles", "detY", "detX"],
             filter_type="SINC",
             cutoff_freq=1.1,
-            legacy_scaling=True,
         )
-    assert_allclose(np.min(FBPrec), -0.014656051, rtol=EPSILON)
-    assert_allclose(np.max(FBPrec), 0.0338298, rtol=EPSILON)
+        expected = backproject_sinc_reference(rec, normalised.transpose(1, 0, 2), 1.1)
+    assert_allclose(FBPrec, expected, rtol=3e-5, atol=2e-7)
     assert FBPrec.dtype == np.float32
     assert FBPrec.shape == (128, 160, 160)

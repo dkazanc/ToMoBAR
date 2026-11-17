@@ -158,13 +158,14 @@ class RecToolsDIR(GeometryReconstruction):
         filter_type: str | None = None,
         cutoff_freq: float | None = None,
         clear_gpu_cache: bool = False,
-        legacy_scaling: bool = False,
-        **kwargs,
+        data_axes_labels_order: list[str] | tuple[str, ...] | None = None,
+        filter_parameter: float | None = None,
+        filter_d: float | None = None,
+        recon_mask_radius: float | None = None,
     ) -> np.ndarray | cp.ndarray:
         """Reconstruct 2D or 3D projection data by filtered backprojection.
 
         Args:
-            **kwargs: Legacy axis-order and method-specific reconstruction options.
             data (numpy.ndarray or cupy.ndarray): Projection data, converted to
                 contiguous float32 storage for reconstruction. Default axis order
                 is (angles, detX) in 2D and (detY, angles, detX) in 3D.
@@ -188,10 +189,6 @@ class RecToolsDIR(GeometryReconstruction):
                 unused memory-pool blocks for reuse. True releases unused cache
                 storage between FFT stages and before ASTRA output allocation.
                 Later calls repeat FFT setup and allocation. True requires 3D.
-            legacy_scaling (bool): Default False uses quantitative scaling.
-                True restores the previous SINC global gain and native-width
-                FFT. Only supported for 3D SINC. To reproduce the historical
-                SINC response, also set ``cutoff_freq=1.1``.
             data_axes_labels_order (list[str] or tuple[str, ...] or None): Legacy
                 alias for ``input_axes``, default None. Conflicting axis orders
                 raise ValueError.
@@ -211,25 +208,25 @@ class RecToolsDIR(GeometryReconstruction):
 
         Notes:
             Quantitative 3D SINC and RAM-LAK use a zero-padded discrete ramp
-            with pi/view_count angular normalization. This assumes uniformly
-            sampled half-turn views and unit spacing. SINC adds a window with
-            unit low-frequency gain; its cutoff controls smoothing. General
-            projection vectors and laminography require iterative reconstruction.
+            with pi/view_count angular normalization for uniformly sampled
+            half-turn tomography with unit spacing. Both filters also support
+            uniformly sampled full turns. Tilted laminography requires a full
+            turn and adds a sin(tilt_angle) factor. When both endpoints of a
+            supported angular interval are present, they each get half weight.
+            SINC adds a window with unit low-frequency gain; its cutoff controls
+            smoothing.
+            FBP of vector geometries requires a trajectory created by
+            Parallel3DGeometry.laminography().
         """
-        if (
-            isinstance(self.projection_geometry, Parallel3DGeometry)
-            and not self.projection_geometry.is_standard_tomography
-        ):
-            raise ValueError(
-                "This analytical method requires standard Z-axis tomography; use iterative reconstruction for general vectors or laminography"
-            )
         self._ensure_open()
         _boolean(clear_gpu_cache, "clear_gpu_cache")
-        _boolean(legacy_scaling, "legacy_scaling")
+        geometry = self.projection_geometry
+        view_weight, repeated_endpoint = None, False
+        if isinstance(geometry, Parallel3DGeometry):
+            view_weight, repeated_endpoint = geometry._fbp_weights()
         if clear_gpu_cache and self.geom != "3D":
             raise ValueError("clear_gpu_cache is supported only for 3D FBP")
         cupyrun = not isinstance(data, np.ndarray) and isinstance(data, cp.ndarray)
-        kwargs["cupyrun"] = cupyrun
         selected_filter = (
             filter_type
             if filter_type is not None
@@ -244,8 +241,6 @@ class RecToolsDIR(GeometryReconstruction):
             raise ValueError("3D FBP filter_type must be 'SINC' or 'RAM-LAK'")
         if self.geom == "2D" and selected_filter == "SINC":
             raise ValueError("SINC requires 3D geometry")
-        if legacy_scaling and (self.geom != "3D" or selected_filter != "SINC"):
-            raise ValueError("legacy_scaling is supported only for 3D SINC FBP")
         if self.geom == "3D":
             if selected_filter == "SINC":
                 cutoff_freq = validate_sinc_cutoff(
@@ -259,16 +254,16 @@ class RecToolsDIR(GeometryReconstruction):
             data,
             array_module=cp,
             input_axes=input_axes,
-            legacy_axes=kwargs.get("data_axes_labels_order"),
+            legacy_axes=data_axes_labels_order,
             gpu=self.geom == "3D",
             pack=True,
             target_axes=(("angles", "detY", "detX") if self.geom == "3D" else None),
         )
-        if self.geom == "2D":
+        if isinstance(geometry, Parallel2DGeometry):
             # ASTRA's algorithm/data API takes host storage, unlike direct_BP.
             self.Atools.fbp_filter_type = selected_filter
-            self.Atools.fbp_filter_parameter = kwargs.get("filter_parameter")
-            self.Atools.fbp_filter_d = kwargs.get("filter_d")
+            self.Atools.fbp_filter_parameter = filter_parameter
+            self.Atools.fbp_filter_d = filter_d
             host_data = cp.asnumpy(data) if cupyrun else data
             reconstruction = self.Atools._fbp(
                 np.ascontiguousarray(host_data, dtype=np.float32)
@@ -276,16 +271,18 @@ class RecToolsDIR(GeometryReconstruction):
             if cupyrun:
                 reconstruction = cp.asarray(reconstruction)
         else:
-            # The CUDA filter normalises by its first (angles) dimension.
             apply_filter = (
                 _filtersinc3D if selected_filter == "SINC" else _filterramlak3D
             )
-            options = (
-                {"legacy_scaling": legacy_scaling} if selected_filter == "SINC" else {}
-            )
             filtered = apply_filter(
-                data, cutoff=cutoff_freq, clear_gpu_cache=clear_gpu_cache, **options
+                data,
+                cutoff=cutoff_freq,
+                clear_gpu_cache=clear_gpu_cache,
+                view_weight=view_weight,
             )
+            if repeated_endpoint:
+                filtered[0] *= np.float32(0.5)
+                filtered[-1] *= np.float32(0.5)
             filtered = cp.ascontiguousarray(filtered.swapaxes(0, 1))
             del data
             if clear_gpu_cache:
@@ -295,7 +292,7 @@ class RecToolsDIR(GeometryReconstruction):
                 reconstruction = cp.asnumpy(reconstruction)
         return postprocess_reconstruction(
             reconstruction,
-            recon_mask_radius=kwargs.get("recon_mask_radius"),
+            recon_mask_radius=recon_mask_radius,
             cupyrun=cupyrun,
         )
 

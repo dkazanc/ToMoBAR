@@ -82,6 +82,13 @@ def _validate_centre_of_rotation(value: float) -> float:
     return correction
 
 
+@dataclass(frozen=True, eq=False)
+class _LaminographyTrajectory:
+    angles: NDArray[np.float64]
+    tilt_angle: float
+    vectors: NDArray[np.float64]
+
+
 @dataclass(frozen=True, eq=False, init=False)
 class Parallel3DGeometry:
     """Parallel acquisition from Z-axis scan angles or general 3D vectors.
@@ -103,6 +110,7 @@ class Parallel3DGeometry:
     detector_shape: tuple[int, int]
     detector_shifts: NDArray[np.float64]
     centre_of_rotation: float
+    _laminography: _LaminographyTrajectory | None
 
     def __init__(
         self,
@@ -112,13 +120,22 @@ class Parallel3DGeometry:
         detector_shape: tuple[int, int],
         detector_shifts: ArrayLike | None = None,
         centre_of_rotation: float = 0.0,
+        _laminography: _LaminographyTrajectory | None = None,
     ) -> None:
         if (angles is None) == (vectors is None):
             raise ValueError("provide exactly one of angles or vectors")
         angle_values = None
         vector_values = None
+        # Padding and shift updates preserve the base vectors. Replacing them
+        # with different vectors invalidates the original trajectory metadata.
+        if _laminography is not None and vectors is not _laminography.vectors:
+            _laminography = None
         if vectors is not None:
-            vector_values = _freeze_array(np.asarray(vectors), "vectors")
+            vector_values = (
+                _laminography.vectors
+                if _laminography is not None
+                else _freeze_array(np.asarray(vectors), "vectors")
+            )
             if (
                 vector_values.ndim != 2
                 or vector_values.shape[1] != 12
@@ -160,6 +177,7 @@ class Parallel3DGeometry:
 
         object.__setattr__(self, "angles", angle_values)
         object.__setattr__(self, "vectors", vector_values)
+        object.__setattr__(self, "_laminography", _laminography)
         object.__setattr__(self, "detector_shape", (rows, columns))
         object.__setattr__(
             self, "detector_shifts", _freeze_array(shifts, "detector_shifts")
@@ -256,12 +274,15 @@ class Parallel3DGeometry:
         u = cosine * e1 + sine * e2
         ray = np.sin(tilt_angle) * (sine * e1 - cosine * e2) + np.cos(tilt_angle) * axis
         v = np.cross(ray, u)
-        vectors = np.column_stack((ray, np.zeros_like(ray), u, v))
-        return cls.from_vectors(
+        vectors = _freeze_array(
+            np.column_stack((ray, np.zeros_like(ray), u, v)), "vectors"
+        )
+        return cls(
             vectors=vectors,
             detector_shape=detector_shape,
             detector_shifts=scan.detector_shifts,
             centre_of_rotation=centre_of_rotation,
+            _laminography=_LaminographyTrajectory(scan.angles, tilt_angle, vectors),
         )
 
     @property
@@ -276,6 +297,42 @@ class Parallel3DGeometry:
     def is_standard_tomography(self) -> bool:
         """Whether the existing slice-based analytical methods are supported."""
         return self.vectors is None
+
+    def _fbp_weights(self) -> tuple[float, bool]:
+        """Return the common view weight and whether to halve the endpoints."""
+        if self.angles is not None:
+            angles = self.angles
+            tilt = np.pi / 2
+        elif self._laminography is not None:
+            angles = self._laminography.angles
+            tilt = self._laminography.tilt_angle
+        else:
+            raise ValueError(
+                "FBP requires standard Z-axis tomography or geometry "
+                "constructed by Parallel3DGeometry.laminography()"
+            )
+
+        tilted = tilt != np.pi / 2
+        # Allow angle rounding when the stage positions come from float32.
+        atol = 2e-6
+        steps = np.diff(np.unwrap(angles))
+        step = float(steps.mean()) if steps.size else 0.0
+        span = abs(step) * steps.size
+        uniform = steps.size >= 2 and np.allclose(steps, step, atol=atol, rtol=0)
+        repeated_endpoint = uniform and (
+            (steps.size >= 3 and abs(span - 2 * np.pi) <= atol)
+            or (not tilted and abs(span - np.pi) <= atol)
+        )
+        if tilted:
+            full_turn = uniform and abs(span + abs(step) - 2 * np.pi) <= atol
+            if not (repeated_endpoint or full_turn):
+                raise ValueError(
+                    "Laminography FBP requires a uniformly sampled full turn "
+                    "with at least three unique views"
+                )
+        # Conventional tomography has historically accepted other angle lists.
+        intervals = steps.size if repeated_endpoint else angles.size
+        return np.pi * float(np.sin(tilt)) / intervals, repeated_endpoint
 
     def transformed(
         self, *, rotation: ArrayLike, translation: ArrayLike = (0.0, 0.0, 0.0)

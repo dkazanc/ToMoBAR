@@ -92,8 +92,8 @@ OSEM require ASTRA. See :doc:`geometry` for coordinates and geometry constraints
 Check angle signs, array orientation, centre-offset signs, padding and output
 scaling against the original application. In particular, a wrapper that used
 ``AnglesVec=-angles`` must verify the new geometry convention instead of changing
-only the keyword name. The quantitative SINC/Fourier scaling and supported
-``legacy_scaling`` options are documented on the relevant direct methods.
+only the keyword name. The direct methods document quantitative FBP scaling
+and the separate Fourier inversion scaling options.
 
 Downstream release checks
 -------------------------
