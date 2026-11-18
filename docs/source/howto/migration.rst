@@ -1,7 +1,7 @@
 .. _ref_migration:
 
-Migrating to the refactored API
-===============================
+Upgrade from an older version
+=============================
 
 The refactored API removes the historical import modules and constructor
 arguments. Update both direct callers and downstream wrappers before deploying
@@ -38,6 +38,11 @@ old documentation URLs remain migration pages where available.
 
 Geometry and solver calls
 -------------------------
+
+The iterative reconstructor now uses ``num_subsets`` for its subset-count
+constructor keyword and read-only property. Update callers using the former
+subset-count name; no alias is provided. ``None`` or 1 selects all views.
+FISTA and OSEM can use multiple subsets; ADMM still uses full-data updates.
 
 Replace ``DetectorsDimH``, ``DetectorsDimV``, ``AnglesVec``, ``ObjSize`` and
 ``CenterRotOffset`` constructor arguments with explicit projection and volume
@@ -87,7 +92,7 @@ Backend and numerical compatibility
 supported parallel Fourier geometry. USFFT supports scalar centre-of-rotation
 corrections, while detector shifts and flexible geometry require ASTRA. The
 supported USFFT iterative methods are Landweber, CGLS, FISTA and ADMM. SIRT and
-OSEM require ASTRA. See :doc:`geometry` for coordinates and geometry constraints.
+OSEM require ASTRA. See :doc:`../concepts/array_axes` for coordinates and :doc:`../concepts/backends` for geometry constraints.
 
 Check angle signs, array orientation, centre-offset signs, padding and output
 scaling against the original application. In particular, a wrapper that used
@@ -104,3 +109,7 @@ operations and representative reconstructions through those wrappers, including
 shape, axis order and scale, before removing any dependency upper bound or
 publishing a stable breaking release. Passing ToMoBAR's own tests does not
 establish compatibility with a wrapper that still uses the removed API.
+
+Historical ring-correction examples using Group-Huber [PM2015]_ have no direct
+setting in the current API. Use the supported LS, PWLS or SWLS fidelity as
+appropriate; the converted notebooks demonstrate PWLS-TV and SWLS-TV.

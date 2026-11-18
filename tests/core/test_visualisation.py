@@ -204,3 +204,118 @@ else:
         capture_output=True,
         text=True,
     )
+
+
+def test_laboratory_frame_keeps_instrument_fixed_and_rotates_sample(plotting):
+    from tomobar.visualisation import _laboratory_transforms
+
+    angles = np.array([0.3, -0.4, -1.1])
+    tilt = np.deg2rad(70)
+    scan = Parallel3DGeometry.laminography(
+        angles=angles,
+        detector_shape=(3, 7),
+        tilt_angle=tilt,
+        centre_of_rotation=0.75,
+    )
+    original = scan.to_vectors().copy()
+    rotations, axis = _laboratory_transforms(scan, [0, 1, 2])
+    np.testing.assert_allclose(axis, [0, -np.cos(tilt), np.sin(tilt)], atol=1e-14)
+    instrument = [
+        vector.reshape(4, 3) @ rotation.T
+        for vector, rotation in zip(original, rotations)
+    ]
+    for pose in instrument:
+        np.testing.assert_allclose(pose, instrument[0], atol=1e-14)
+        np.testing.assert_allclose(pose[0], [0, -1, 0], atol=1e-14)
+        np.testing.assert_allclose(pose[2:], [[1, 0, 0], [0, 0, 1]], atol=1e-14)
+    assert not np.allclose(rotations[0], rotations[1])
+    for i in range(3):
+        figure, ax = plot_geometry(
+            scan, Volume3DGeometry((2, 5, 7)), view_indices=[i], frame="laboratory"
+        )
+        figure.canvas.draw()
+        assert ax.get_xlabel().startswith("Lab X")
+    for detector in plotting.detectors[1:]:
+        np.testing.assert_allclose(detector, plotting.detectors[0], atol=1e-13)
+    volumes = [
+        segments for segments in plotting.volumes if segments.shape == (12, 2, 3)
+    ]
+    assert not np.allclose(volumes[0], volumes[1])
+    np.testing.assert_array_equal(scan.to_vectors(), original)
+
+
+def test_laboratory_tomography_axis_and_unsupported_vectors(plotting):
+    from tomobar.visualisation import _laboratory_transforms
+
+    scan = Parallel3DGeometry.tomography(angles=[0, 0.7], detector_shape=(3, 7))
+    rotations, axis = _laboratory_transforms(scan, [0, 1])
+    np.testing.assert_array_equal(axis, [0, 0, 1])
+    np.testing.assert_allclose(
+        rotations[1] @ scan.to_vectors()[1, :3], [0, -1, 0], atol=1e-14
+    )
+    vectors = Parallel3DGeometry.from_vectors(
+        vectors=scan.to_vectors(), detector_shape=(3, 7)
+    )
+    with pytest.raises(ValueError, match="trajectory"):
+        plot_geometry(vectors, Volume3DGeometry((2, 5, 7)), frame="laboratory")
+    with pytest.raises(ValueError, match="frame"):
+        plot_geometry(scan, Volume3DGeometry((2, 5, 7)), frame="unknown")
+
+
+@pytest.mark.parametrize("angle_sign", [-1, 1])
+@pytest.mark.parametrize(
+    "rotation_axis", [(0, 0, 1), (1, 0, 0), (1, 1, 1), (1, 1e-12, 0)]
+)
+@pytest.mark.parametrize("view_index", [0, 7])
+def test_rotation_arc_follows_sample_motion_in_acquisition_order(
+    angle_sign, rotation_axis, view_index
+):
+    from tomobar.visualisation import _laboratory_transforms, _sample_rotation_arc
+
+    scan = Parallel3DGeometry.laminography(
+        angles=0.3 + angle_sign * np.linspace(0, 2 * np.pi, 30),
+        detector_shape=(3, 7),
+        tilt_angle=np.deg2rad(70),
+        rotation_axis=rotation_axis,
+    )
+    rotations, axis = _laboratory_transforms(scan, [view_index])
+    arc = _sample_rotation_arc(scan, rotations[0], axis, 10.0)
+    np.testing.assert_allclose(arc @ axis, 3.5, atol=1e-14)
+    radial = arc - 3.5 * axis
+    np.testing.assert_allclose(np.linalg.norm(radial, axis=1), 2.4, atol=1e-14)
+    # Cross product along +axis is positive sample rotation. It must be
+    # opposite to the signed acquisition-frame angles in both scan directions.
+    handedness = np.cross(radial[:-1], radial[1:]) @ axis
+    assert np.all(handedness * angle_sign < 0)
+
+
+@pytest.mark.parametrize("angles", [[0], [0, 0], [0, 0.5, 0]])
+def test_no_rotation_arrow_for_undefined_or_reversing_motion(angles):
+    from tomobar.visualisation import _laboratory_transforms, _sample_rotation_arc
+
+    scan = Parallel3DGeometry.tomography(angles=angles, detector_shape=(3, 7))
+    rotations, axis = _laboratory_transforms(scan, [0])
+    assert _sample_rotation_arc(scan, rotations[0], axis, 10.0) is None
+
+
+@pytest.mark.parametrize("rotation_axis", [(0, 0, 1), (1, 0, 0), (1, 1, 1)])
+def test_rotation_symbol_is_attached_to_axis_without_an_inset(plotting, rotation_axis):
+    scan = Parallel3DGeometry.laminography(
+        angles=[0, -0.2, -0.4],
+        detector_shape=(3, 7),
+        tilt_angle=0.8,
+        rotation_axis=rotation_axis,
+    )
+    figure, ax = plot_geometry(
+        scan, Volume3DGeometry((2, 5, 7)), view_indices=[0], frame="laboratory"
+    )
+    assert not ax.child_axes
+    symbols = [
+        artist
+        for artist in ax.artists
+        if artist.get_label() == "Rotation arrow at axis tip"
+    ]
+    assert len(symbols) == 1
+    for elevation, azimuth in [(5, 10), (30, -55), (90, 0)]:
+        ax.view_init(elev=elevation, azim=azimuth)
+        figure.canvas.draw()

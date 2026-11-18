@@ -108,7 +108,7 @@ def test_iterative_projection_weights_and_settings_reuse(gpu, padding):
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry(shape=(3, 6, 8)),
         detector_padding=padding,
-        OS_number=3,
+        num_subsets=3,
     ) as rec:
         first, first_weights = rec._prepare_inputs(
             supplied, weights=weights, input_axes=labels, fidelity=fidelity

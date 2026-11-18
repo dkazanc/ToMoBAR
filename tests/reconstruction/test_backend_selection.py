@@ -49,7 +49,7 @@ def test_iterative_selection_and_transactional_replacement(mock_reconstruction):
         projection_geometry=scan,
         volume_geometry=grid,
         backend="usfft",
-        OS_number=2,
+        num_subsets=2,
         detector_padding=1,
     ) as rec:
         assert rec.backend == "usfft"
@@ -229,7 +229,7 @@ def test_ray_weight_solvers_reject_usfft_before_data_preparation(
 def test_neutral_backend_ownership_and_replacement(mock_reconstruction, backend):
     scan, grid = geometries()
     with mock_reconstruction.iterative.RecToolsIR(
-        projection_geometry=scan, volume_geometry=grid, backend=backend, OS_number=2
+        projection_geometry=scan, volume_geometry=grid, backend=backend, num_subsets=2
     ) as rec:
         original = rec._projection_backend
         assert original is rec.operator._backend
@@ -252,7 +252,7 @@ def test_usfft_geometry_replacement_discards_execution_caches(gpu):
 
     scan, grid = geometries()
     with RecToolsIR(
-        projection_geometry=scan, volume_geometry=grid, backend="usfft", OS_number=2
+        projection_geometry=scan, volume_geometry=grid, backend="usfft", num_subsets=2
     ) as rec:
         image = gpu.ones(grid.shape, dtype=gpu.float32)
         rec.operator.forward(image, subset_index=1)

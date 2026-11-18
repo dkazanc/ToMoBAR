@@ -310,7 +310,10 @@ def test_gpu_solvers_match_eager_subsets_for_uneven_views(
             weights=weights if fidelity in ("PWLS", "SWLS") else None,
         )
     with iterative.RecToolsIR(
-        projection_geometry=scan, volume_geometry=grid, OS_number=3, detector_padding=2
+        projection_geometry=scan,
+        volume_geometry=grid,
+        num_subsets=3,
+        detector_padding=2,
     ) as rec:
         result = getattr(rec, method)(
             data, iterations=3, initial=initial, recon_mask_radius=None, **options
@@ -334,7 +337,7 @@ def test_cpu_solver_state_uses_patched_subset_provider(
 
     # Reuse the independent linear operator and explicit CPU solver harness.
     rec = cpu_rec
-    rec.OS_number = 2  # Three views split unevenly into two subsets.
+    rec.num_subsets = 2  # Three views split unevenly into two subsets.
     data = np.arange(2, 8, dtype=np.float32).reshape(rec.shape)
     options = dict(return_energy=True)
     if method != "OSEM":

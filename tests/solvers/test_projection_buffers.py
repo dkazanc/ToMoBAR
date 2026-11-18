@@ -95,7 +95,7 @@ def test_native_scratch_is_private_reused_and_rebuilt_after_geometry_change(
     with RecToolsIR(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry((3, 6, 6)),
-        OS_number=3 if method in ("FISTA", "OSEM") else 1,
+        num_subsets=3 if method in ("FISTA", "OSEM") else 1,
     ) as rec:
         data = rec.forward(gpu.ones((3, 6, 6), dtype=gpu.float32))
         options = {"lipschitz_constant": 100.0} if method in ("FISTA", "ADMM") else {}

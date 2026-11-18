@@ -72,7 +72,7 @@ def test_numpy_direct_full_and_uneven_subsets_share_handles_between_operations(
     scan = Parallel3DGeometry(angles=[1.4, 0.3, -0.5, 0.0, 0.7], detector_shape=(2, 7))
     volume = Volume3DGeometry(shape=(3, 4, 6))
     with iterative.RecToolsIR(
-        projection_geometry=scan, volume_geometry=volume, OS_number=2
+        projection_geometry=scan, volume_geometry=volume, num_subsets=2
     ) as rec:
         for subset, views in ((None, 5), (1, 2), (0, 3), (1, 2), (None, 5)):
             projected = rec.forward(np.ones(volume.shape), subset_index=subset)
@@ -220,7 +220,7 @@ def test_admm_keeps_volume_sized_warm_start_when_detector_padding_is_enabled(
         volume_geometry=grid,
         detector_padding=2,
         output_shape=(1, 2, 4),
-        OS_number=2,
+        num_subsets=2,
     ) as rec:
         prepared, _ = rec._prepare_inputs(data)
         initial = rec._initial_volume(warm_start)
@@ -228,7 +228,7 @@ def test_admm_keeps_volume_sized_warm_start_when_detector_padding_is_enabled(
         assert initial is not warm_start
         assert initial.shape == grid.shape
         assert rec.output_shape == (1, 2, 4)
-        assert rec.OS_number == 2
+        assert rec.num_subsets == 2
         assert prepared.shape == (3, 3, 11)
         assert data.shape == scan.projection_shape
     assert "incorrect dimensions" not in capsys.readouterr().out
@@ -347,7 +347,7 @@ def test_iterative_algorithms_only_require_projection_operations(
         volume_geometry=grid,
         detector_padding=2,
         output_shape=(1, 2, 4),
-        OS_number=count,
+        num_subsets=count,
     ) as rec:
         for actual, expected in zip(rec.subset_indices, subsets):
             np.testing.assert_array_equal(actual, expected)

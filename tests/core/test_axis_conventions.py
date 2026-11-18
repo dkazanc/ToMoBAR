@@ -87,32 +87,19 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
                 native = np.arange(np.prod(shape)).reshape(shape)
                 rec = self.reconstructor(cls, native, len(shape))
                 for target in permutations(axes):
-                    for legacy in (False, True):
-                        with self.subTest(
-                            cls=cls.__name__, target=target, legacy=legacy
-                        ):
-                            out_kw = {
-                                (
-                                    "data_axes_labels_order"
-                                    if legacy
-                                    else "output_axes"
-                                ): target
-                            }
-                            in_kw = {
-                                (
-                                    "data_axes_labels_order" if legacy else "input_axes"
-                                ): target
-                            }
-                            result = rec.forward(np.zeros((2,) * len(shape)), **out_kw)
-                            expected = native.transpose(
-                                tuple(axes.index(a) for a in target)
-                            )
-                            np.testing.assert_array_equal(result, expected)
-                            np.testing.assert_array_equal(
-                                rec.backproject(result, **in_kw), native
-                            )
+                    with self.subTest(cls=cls.__name__, target=target):
+                        result = rec.forward(
+                            np.zeros((2,) * len(shape)), output_axes=target
+                        )
+                        expected = native.transpose(
+                            tuple(axes.index(a) for a in target)
+                        )
+                        np.testing.assert_array_equal(result, expected)
+                        np.testing.assert_array_equal(
+                            rec.backproject(result, input_axes=target), native
+                        )
 
-    def test_default_orders_and_matching_aliases_preserve_behavior(self):
+    def test_default_and_explicit_orders_preserve_behavior(self):
         axes = ("detY", "angles", "detX")
         native = np.arange(30).reshape(2, 3, 5)
         for cls in self.classes:
@@ -120,15 +107,11 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
             self.assertIs(rec.forward(native), native)
             self.assertIs(rec.backproject(native), native)
             self.assertIs(
-                rec.forward(
-                    native, output_axes=axes, data_axes_labels_order=list(axes)
-                ),
+                rec.forward(native, output_axes=axes),
                 native,
             )
             self.assertIs(
-                rec.backproject(
-                    native, input_axes=axes, data_axes_labels_order=list(axes)
-                ),
+                rec.backproject(native, input_axes=axes),
                 native,
             )
 
@@ -140,15 +123,14 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
             filter_input = native.swapaxes(0, 1)
             for order in permutations(astra_axes):
                 supplied = native.transpose(tuple(astra_axes.index(a) for a in order))
-                for key in ("input_axes", "data_axes_labels_order"):
-                    with self.subTest(filter_type=filter_type, order=order, key=key):
-                        np.testing.assert_array_equal(
-                            rec.FBP(supplied, filter_type=filter_type, **{key: order}),
-                            native,
-                        )
-                        np.testing.assert_array_equal(
-                            self.filter.call_args.args[0], filter_input
-                        )
+                with self.subTest(filter_type=filter_type, order=order):
+                    np.testing.assert_array_equal(
+                        rec.FBP(supplied, filter_type=filter_type, input_axes=order),
+                        native,
+                    )
+                    np.testing.assert_array_equal(
+                        self.filter.call_args.args[0], filter_input
+                    )
 
     def test_fourier_inv_normalizes_arrays_and_estimator_shapes_before_kernels(self):
         axes = ("detY", "angles", "detX")
@@ -174,19 +156,16 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
             for shape_only in (False, True):
                 for order in permutations(axes):
                     supplied = native.transpose(tuple(axes.index(a) for a in order))
-                    for key in ("input_axes", "data_axes_labels_order"):
-                        with self.subTest(shape_only=shape_only, order=order, key=key):
-                            with self.assertRaisesRegex(
-                                RuntimeError, "stop before CUDA"
-                            ):
-                                rec.FOURIER_INV(
-                                    supplied.shape if shape_only else supplied,
-                                    **{key: order},
-                                )
-                            if shape_only:
-                                self.assertEqual(self.normalized, native.shape)
-                            else:
-                                np.testing.assert_array_equal(self.normalized, native)
+                    with self.subTest(shape_only=shape_only, order=order):
+                        with self.assertRaisesRegex(RuntimeError, "stop before CUDA"):
+                            rec.FOURIER_INV(
+                                supplied.shape if shape_only else supplied,
+                                input_axes=order,
+                            )
+                        if shape_only:
+                            self.assertEqual(self.normalized, native.shape)
+                        else:
+                            np.testing.assert_array_equal(self.normalized, native)
                 with self.assertRaisesRegex(RuntimeError, "stop before CUDA"):
                     rec.FOURIER_INV(native.shape if shape_only else native)
                 if shape_only:
@@ -194,7 +173,7 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
                 else:
                     self.assertIs(self.normalized, native)
 
-    def test_bad_labels_rank_and_conflicting_aliases_are_rejected(self):
+    def test_bad_labels_and_rank_are_rejected(self):
         valid = ("detY", "angles", "detX")
         invalid = (
             ("angles", "angles", "detX"),
@@ -222,37 +201,12 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
                 ("backproject", "input_axes"),
                 ("FBP", "input_axes"),
             ):
-                with self.assertRaisesRegex(ValueError, "Conflicting"):
-                    getattr(rec, method)(
-                        data,
-                        **{
-                            alias: valid,
-                            "data_axes_labels_order": ("angles", "detX", "detY"),
-                        },
-                    )
                 for labels in invalid:
                     with self.assertRaises(ValueError):
                         getattr(rec, method)(data, **{alias: labels})
 
             rec.Atools.forward.assert_not_called()
             rec.Atools.backproject.assert_not_called()
-
-    def test_legacy_swap_sequences_are_unchanged_and_accept_tuples(self):
-        cases = (
-            (("detY", "angles", "detX"), ("detY", "angles", "detX"), [None, None]),
-            (("angles", "detY", "detX"), ("detY", "angles", "detX"), [(0, 1), None]),
-            (("angles", "detX", "detY"), ("detY", "angles", "detX"), [(0, 2), (1, 2)]),
-            (("detX", "angles"), ("angles", "detX"), [(0, 1), None]),
-        )
-        for source, target, expected in cases:
-            labels = list(source)
-            self.assertEqual(
-                self.axes._swap_data_axes_to_accepted(labels, target), expected
-            )
-            self.assertEqual(labels, list(source))
-            self.assertEqual(
-                self.axes._swap_data_axes_to_accepted(source, target), expected
-            )
 
 
 if __name__ == "__main__":

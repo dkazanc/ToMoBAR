@@ -1,0 +1,834 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1440"
+   height="1150"
+   viewBox="0 0 1440 1150"
+   font-family="DejaVu Sans, Arial, sans-serif"
+   role="img"
+   aria-labelledby="capabilities-title capabilities-description"
+   version="1.1"
+   id="svg50"
+   sodipodi:docname="capabilities_dark.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   inkscape:export-filename="capabilities_dark.png"
+   inkscape:export-xdpi="100"
+   inkscape:export-ydpi="100"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <sodipodi:namedview
+     id="namedview50"
+     pagecolor="#1c252d"
+     bordercolor="#cccccc"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="1"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.69236111"
+     inkscape:cx="718.55567"
+     inkscape:cy="575.5667"
+     inkscape:window-width="1920"
+     inkscape:window-height="1011"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg50"
+     inkscape:export-bgcolor="#ffffff00" />
+  <title
+     id="capabilities-title">ToMoBAR capabilities at a glance</title>
+  <desc
+     id="capabilities-description">Six panels summarise acquisition geometry and backends, direct and iterative reconstruction, LS/PWLS/SWLS data models, six native regularisers, translation alignment and geometry inspection, and energy monitoring with solver continuation. CUDA is required for reconstruction. USFFT has method and geometry restrictions.</desc>
+  <defs
+     id="defs1">
+    <clipPath
+       id="p21558ae567">
+      <rect
+         x="40.32"
+         y="46.096564"
+         width="333.93865"
+         height="361.766871"
+         id="rect59" />
+    </clipPath>
+    <clipPath
+       id="p426eeee489">
+      <rect
+         x="417.670675"
+         y="46.096564"
+         width="333.93865"
+         height="361.766871"
+         id="rect60" />
+    </clipPath>
+  </defs>
+  <rect
+     width="1440"
+     height="1150"
+     fill="#14181e"
+     id="rect1" />
+  <text
+     x="42"
+     y="57"
+     fill="#edf3f2"
+     font-size="40"
+     font-weight="700"
+     id="text1">ToMoBAR capabilities at a glance</text>
+  <text
+     x="43"
+     y="96"
+     fill="#adbec6"
+     font-size="24px"
+     font-weight="400"
+     id="text2">Flexible geometry, GPU reconstruction and regularisation</text>
+  <g
+     id="g8">
+    <rect
+       x="40"
+       y="142"
+       width="668"
+       height="272"
+       rx="20"
+       fill="#1c252d"
+       stroke="#35444f"
+       stroke-width="1.5"
+       id="rect2" />
+    <line
+       x1="70"
+       y1="167"
+       x2="124"
+       y2="167"
+       stroke="#a3d67b"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="line2" />
+    <text
+       x="70"
+       y="209"
+       fill="#edf3f2"
+       font-size="28"
+       font-weight="700"
+       id="text3">Geometry &amp; backends</text>
+    <text
+       x="70"
+       y="255"
+       fill="#edf3f2"
+       font-size="23"
+       font-weight="400"
+       id="text4">Parallel-beam tomography</text>
+    <text
+       x="70"
+       y="291"
+       fill="#edf3f2"
+       font-size="23px"
+       font-weight="400"
+       id="text5">Laminography</text>
+    <text
+       x="70"
+       y="327"
+       fill="#edf3f2"
+       font-size="23"
+       font-weight="400"
+       id="text6">Per-view detector shifts</text>
+    <svg
+       x="410"
+       y="232"
+       width="265"
+       height="165"
+       viewBox="420 125 332 205"
+       preserveAspectRatio="xMidYMid meet"
+       version="1.1"
+       id="svg6">
+      <g
+         id="axes_2">
+        <g
+           id="patch_9">
+          <path
+             d="M 510.483357 261.909983  L 662.202817 207.032731  L 658.796643 197.615661  L 507.077183 252.492913  z "
+             clip-path="url(#p426eeee489)"
+             style="fill: #65cbd5; fill-opacity: 0.2; stroke: #65cbd5; stroke-width: 2.2; stroke-linejoin: miter"
+             id="path17" />
+        </g>
+        <g
+           id="patch_10">
+          <path
+             d="M 436.368049 242.007239  Q 572.950969 242.007239 707.745034 242.007239  "
+             clip-path="url(#p426eeee489)"
+             style="fill: none; stroke: #f2c879; stroke-width: 1.6; stroke-linecap: round"
+             id="path18" />
+          <path
+             d="M 701.345034 238.807239  L 707.745034 242.007239  L 701.345034 245.207239  z "
+             clip-path="url(#p426eeee489)"
+             style="fill: #f2c879; stroke: #f2c879; stroke-width: 1.6; stroke-linecap: round"
+             id="path19" />
+        </g>
+        <g
+           id="patch_11">
+          <path
+             d="M 436.368049 229.762822  Q 572.950969 229.762822 707.745034 229.762822  "
+             clip-path="url(#p426eeee489)"
+             style="fill: none; stroke: #f2c879; stroke-width: 1.6; stroke-linecap: round"
+             id="path20" />
+          <path
+             d="M 701.345034 226.562822  L 707.745034 229.762822  L 701.345034 232.962822  z "
+             clip-path="url(#p426eeee489)"
+             style="fill: #f2c879; stroke: #f2c879; stroke-width: 1.6; stroke-linecap: round"
+             id="path21" />
+        </g>
+        <g
+           id="patch_12">
+          <path
+             d="M 436.368049 217.518405  Q 572.950969 217.518405 707.745034 217.518405  "
+             clip-path="url(#p426eeee489)"
+             style="fill: none; stroke: #f2c879; stroke-width: 1.6; stroke-linecap: round"
+             id="path22" />
+          <path
+             d="M 701.345034 214.318405  L 707.745034 217.518405  L 701.345034 220.718405  z "
+             clip-path="url(#p426eeee489)"
+             style="fill: #f2c879; stroke: #f2c879; stroke-width: 1.6; stroke-linecap: round"
+             id="path23" />
+        </g>
+        <g
+           id="patch_13">
+          <path
+             d="M 715.432638 271.505153  L 723.781104 271.505153  L 723.781104 190.803313  L 715.432638 190.803313  z "
+             clip-path="url(#p426eeee489)"
+             style="fill: #65cbd5; fill-opacity: 0.333333; stroke: #65cbd5; stroke-width: 1.5; stroke-linejoin: miter"
+             id="path24" />
+        </g>
+        <g
+           id="patch_14">
+          <path
+             d="M 574.790302 154.905695  Q 574.96176 154.784054 573.309492 155.956253  "
+             clip-path="url(#p426eeee489)"
+             style="fill: none; stroke: #65cbd5; stroke-width: 2; stroke-linecap: round"
+             id="path25" />
+          <path
+             d="M 566.238089 157.049532  L 573.309492 155.956253  L 569.941274 162.269343  z "
+             clip-path="url(#p426eeee489)"
+             style="fill: #65cbd5; stroke: #65cbd5; stroke-width: 2; stroke-linecap: round"
+             id="path26" />
+        </g>
+        <g
+           id="line2d_2">
+          <path
+             d="M 610.186307 300.390847  L 557.201374 153.903092  "
+             clip-path="url(#p426eeee489)"
+             style="fill: none; stroke-dasharray: 5.55,2.4; stroke-dashoffset: 0; stroke: #edf3f2; stroke-width: 1.5"
+             id="path27" />
+        </g>
+        <g
+           id="line2d_3">
+          <path
+             d="M 579.797409 142.932706  L 579.232885 142.665981  L 578.607593 142.430252  L 577.923257 142.226168  L 577.181764 142.054292  L 576.38516 141.915097  L 575.535642 141.80897  L 574.635553 141.7362  L 573.687376 141.696991  L 572.693726 141.691449  L 571.657344 141.71959  L 570.581089 141.781337  L 569.467928 141.876518  L 568.320934 142.004872  L 567.143268 142.166045  L 565.938181 142.359591  L 564.708994 142.584978  L 563.4591 142.841583  L 562.191945 143.128698  L 560.911025 143.445532  L 559.619873 143.791211  L 558.32205 144.164781  L 557.021136 144.565212  L 555.720718 144.9914  L 554.424385 145.442168  L 553.135712 145.916274  L 551.858253 146.41241  L 550.595531 146.929206  L 549.35103 147.465239  L 548.128183 148.019029  L 546.930362 148.589049  L 545.760871 149.173726  L 544.622936 149.771449  L 543.519696 150.380567  L 542.454193 150.999402  L 541.429367 151.626245  L 540.448045 152.259369  L 539.512933 152.897027  L 538.62661 153.537459  L 537.791521 154.178901  L 537.00997 154.819581  L 536.284112 155.457733  L 535.61595 156.091598  L 535.007326 156.719426  L 534.459919 157.339485  L 533.97524 157.950067  L 533.554624 158.549485  L 533.199232 159.136088  L 532.910044 159.708256  L 532.687859 160.264413  L 532.533288 160.803023  L 532.446759 161.322601  L 532.428509 161.821714  L 532.47859 162.298986  L 532.596863 162.753099  L 532.783001 163.182802  L 533.036492 163.586909  L 533.356636 163.964305  L 533.74255 164.31395  L 534.193171 164.634879  L 534.707253 164.926207  L 535.283381 165.18713  L 535.919964 165.416928  L 536.615248 165.614968  L 537.367313 165.780704  L 538.174086 165.913678  L 539.033341 166.013524  L 539.942708 166.079966  L 540.89968 166.112821  L 541.901616 166.111998  L 542.945753 166.0775  L 544.029211 166.009422  L 545.149001 165.907951  L 546.302034 165.773367  L 547.485131 165.606042  L 548.695028 165.406437  L 549.928388 165.175103  L 551.181809 164.912677  L 552.451833 164.619884  L 553.734958 164.297532  L 555.027644 163.946509  L 556.326325 163.567783  L 557.627421 163.162399  L 558.927341 162.731476  L 560.2225 162.276202  L 561.509327 161.797833  L 562.784271 161.297687  L 564.043816 160.777146  L 565.284487 160.237644  L 566.502863 159.680669  L 567.695584 159.107759  L 568.859358 158.520492  L 569.990976 157.92049  L 571.087318 157.309406  L 572.145358 156.688927  L 573.162179 156.060764  L 574.134975 155.42665  L 575.061064 154.788333  L 575.937891 154.147574  L 576.763038 153.506141  "
+             clip-path="url(#p426eeee489)"
+             style="fill: none; stroke: #65cbd5; stroke-width: 2; stroke-linecap: square"
+             id="path28" />
+        </g>
+        <g
+           id="line2d_4">
+          <path
+             d="M 620.260123 229.762822  L 620.252461 230.501576  L 620.22948 231.240011  L 620.191188 231.977811  L 620.137603 232.714659  L 620.068747 233.450236  L 619.98465 234.184228  L 619.885349 234.916317  L 619.770886 235.646189  L 619.64131 236.373531  L 619.496676 237.098028  L 619.337049 237.81937  L 619.162494 238.537246  L 618.973089 239.251348  L 618.768915 239.961368  L 618.550058 240.667  L 618.316614 241.367942  L 618.068683 242.063891  L 617.806371 242.754549  L 617.529792 243.439618  L 617.239064 244.118803  L 616.934312 244.791813  L 616.615668 245.458357  L 616.283268 246.118149  L 615.937256 246.770906  L 615.57778 247.416346  L 615.204996 248.054191  L 614.819062 248.684168  L 614.420147 249.306005  L 614.00842 249.919435  L 613.584059 250.524194  L 613.147247 251.120022  L 612.698172 251.706662  L 612.237026 252.283863  L 611.764009 252.851375  L 611.279323 253.408955  L 610.783178 253.956362  L 610.275786 254.493362  L 609.757366 255.019723  L 609.228141 255.535219  L 608.688338 256.039629  L 608.138191 256.532734  L 607.577934 257.014323  L 607.00781 257.484189  L 606.428064 257.94213  L 605.838945 258.387949  L 605.240707 258.821453  L 604.633606 259.242457  L 604.017904 259.650779  L 603.393867 260.046244  L 602.761761 260.428681  L 602.12186 260.797926  L 601.474439 261.153821  L 600.819776 261.496211  L 600.158152 261.824951  L 599.489853 262.139898  L 598.815165 262.440916  L 598.13438 262.727877  L 597.447789 263.000657  L 596.755689 263.259139  "
+             clip-path="url(#p426eeee489)"
+             style="fill: none; stroke: #edf3f2; stroke-opacity: 0.7; stroke-linecap: square"
+             id="path29" />
+        </g>
+        <g
+           id="line2d_5">
+          <path
+             d="M 437.150429 343.858528  L 732.129571 343.858528  "
+             clip-path="url(#p426eeee489)"
+             style="fill: none; stroke: #adbec6; stroke-opacity: 0.2; stroke-width: 1.5; stroke-linecap: square"
+             id="path30" />
+        </g>
+        <g
+           id="text_6" />
+        <g
+           id="text_7" />
+        <g
+           id="text_8" />
+        <g
+           id="text_9" />
+        <g
+           id="text_10">
+          <g
+             style="fill: #edf3f2"
+             transform="translate(623.958589 258.224899)"
+             id="g34">
+            <text
+               id="text34"><tspan
+                 x="0"
+                 y="-0.484375"
+                 style="font-style: oblique; font-size: 15px; font-family: 'DejaVu Sans'; fill: #edf3f2"
+                 id="tspan33">θ</tspan></text>
+          </g>
+        </g>
+        <g
+           id="text_11" />
+      </g>
+    </svg>
+    <text
+       x="70"
+       y="374"
+       fill="#a3d67b"
+       font-size="22"
+       font-weight="700"
+       id="text7">ASTRA: flexible geometry</text>
+    <text
+       x="70"
+       y="400"
+       fill="#adbec6"
+       font-size="20"
+       font-weight="400"
+       id="text8">USFFT: restricted angle-based tomography</text>
+  </g>
+  <g
+     id="g16">
+    <rect
+       x="732"
+       y="142"
+       width="668"
+       height="272"
+       rx="20"
+       fill="#1c252d"
+       stroke="#35444f"
+       stroke-width="1.5"
+       id="rect8" />
+    <line
+       x1="762"
+       y1="167"
+       x2="816"
+       y2="167"
+       stroke="#ff9987"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="line8" />
+    <text
+       x="762"
+       y="209"
+       fill="#edf3f2"
+       font-size="28"
+       font-weight="700"
+       id="text9">Direct &amp; iterative reconstruction</text>
+    <text
+       x="762"
+       y="253"
+       fill="#ff9987"
+       font-size="19"
+       font-weight="700"
+       letter-spacing="1"
+       id="text10">DIRECT</text>
+    <text
+       x="762"
+       y="286"
+       fill="#edf3f2"
+       font-size="23px"
+       font-weight="400"
+       id="text11">ASTRA - FBP (2D / 3D) · Fast Fourier inversion (3D)</text>
+    <text
+       x="762"
+       y="339"
+       fill="#a3d67b"
+       font-size="19"
+       font-weight="700"
+       letter-spacing="1"
+       id="text12">3D ITERATIVE</text>
+    <text
+       x="762"
+       y="373"
+       fill="#edf3f2"
+       font-size="23"
+       font-weight="400"
+       id="text13">Landweber · SIRT · CGLS</text>
+    <text
+       x="762"
+       y="402"
+       fill="#edf3f2"
+       font-size="23"
+       font-weight="400"
+       id="text14">FISTA · ADMM · OSEM</text>
+    <path
+       d="M1236 372 l64 -24 45 25 -64 24 z"
+       fill="#25372f"
+       stroke="#65cbd5"
+       stroke-width="2"
+       id="path14" />
+    <path
+       d="M1236 359 l64 -24 45 25 -64 24 z"
+       fill="#25372f"
+       stroke="#65cbd5"
+       stroke-width="2"
+       id="path15" />
+    <path
+       d="M1236 346 l64 -24 45 25 -64 24 z"
+       fill="#25372f"
+       stroke="#65cbd5"
+       stroke-width="2"
+       id="path16" />
+    <line
+       x1="1300"
+       y1="371"
+       x2="1300"
+       y2="409"
+       stroke="#65cbd5"
+       stroke-width="2"
+       stroke-linecap="round"
+       id="line16" />
+  </g>
+  <g
+     id="g23">
+    <rect
+       x="40"
+       y="438"
+       width="668"
+       height="272"
+       rx="20"
+       fill="#1c252d"
+       stroke="#35444f"
+       stroke-width="1.5"
+       id="rect16" />
+    <line
+       x1="70"
+       y1="463"
+       x2="124"
+       y2="463"
+       stroke="#65cbd5"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="line17" />
+    <text
+       x="70"
+       y="505"
+       fill="#edf3f2"
+       font-size="28"
+       font-weight="700"
+       id="text17">Data models &amp; update strategies</text>
+    <text
+       x="70"
+       y="550"
+       fill="#adbec6"
+       font-size="23"
+       font-weight="400"
+       id="text18">FISTA / ADMM data fidelities</text>
+    <rect
+       x="70"
+       y="568"
+       width="106"
+       height="46"
+       rx="11"
+       fill="#25372f"
+       id="rect18" />
+    <text
+       x="123.0"
+       y="600"
+       fill="#a3d67b"
+       font-size="25"
+       font-weight="700"
+       text-anchor="middle"
+       id="text19">LS</text>
+    <rect
+       x="200"
+       y="568"
+       width="136"
+       height="46"
+       rx="11"
+       fill="#25372f"
+       id="rect19" />
+    <text
+       x="268.0"
+       y="600"
+       fill="#a3d67b"
+       font-size="25"
+       font-weight="700"
+       text-anchor="middle"
+       id="text20">PWLS</text>
+    <rect
+       x="360"
+       y="568"
+       width="136"
+       height="46"
+       rx="11"
+       fill="#25372f"
+       id="rect20" />
+    <text
+       x="428.0"
+       y="600"
+       fill="#a3d67b"
+       font-size="25"
+       font-weight="700"
+       text-anchor="middle"
+       id="text21">SWLS</text>
+    <text
+       x="72"
+       y="651"
+       fill="#edf3f2"
+       font-size="23px"
+       font-weight="400"
+       id="text22">FISTA / OSEM: ordered subsets</text>
+    <text x="72" y="687" fill="#edf3f2" font-size="23px"
+          font-weight="400" id="admm-update">ADMM: full-data updates</text>
+  </g>
+  <g
+     id="g36">
+    <rect
+       x="732"
+       y="438"
+       width="668"
+       height="272"
+       rx="20"
+       fill="#1c252d"
+       stroke="#35444f"
+       stroke-width="1.5"
+       id="rect23" />
+    <line
+       x1="762"
+       y1="463"
+       x2="816"
+       y2="463"
+       stroke="#a3d67b"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="line23" />
+    <text
+       x="762"
+       y="505"
+       fill="#edf3f2"
+       font-size="28px"
+       font-weight="700"
+       id="text24">Regularisation</text>
+    <path
+       d="M 773 560 l18 -9 11 15 12 -18 13 8 10 -12 13 15 13 -7 15 7 15 -14 12 10 17 -7 14 13"
+       fill="none"
+       stroke="#f2c879"
+       stroke-width="3"
+       stroke-linejoin="round"
+       id="path31" />
+    <line
+       x1="994"
+       y1="555"
+       x2="1064"
+       y2="555"
+       stroke="#adbec6"
+       stroke-width="2.5"
+       stroke-linecap="round"
+       id="line31" />
+    <path
+       d="M 1055 548 l10 7 -10 7"
+       fill="none"
+       stroke="#adbec6"
+       stroke-width="2.5"
+       id="path32" />
+    <path
+       d="M 1092 560 C 1126 542 1154 548 1180 557 S 1236 560 1270 550"
+       fill="none"
+       stroke="#65cbd5"
+       stroke-width="3"
+       id="path33" />
+    <text
+       x="762"
+       y="630"
+       fill="#edf3f2"
+       font-size="24px"
+       font-weight="400"
+       id="text33"><tspan
+         sodipodi:role="line"
+         id="tspan50"
+         x="762"
+         y="630">Various Total Variation models</tspan><tspan
+         sodipodi:role="line"
+         id="tspan51"
+         x="762"
+         y="660" /></text>
+    <text
+       x="762"
+       y="668"
+       fill="#edf3f2"
+       font-size="24px"
+       font-weight="400"
+       id="text35">Nonlinear diffusion</text>
+  </g>
+  <g
+     id="g42">
+    <rect
+       x="40"
+       y="734"
+       width="668"
+       height="272"
+       rx="20"
+       fill="#1c252d"
+       stroke="#35444f"
+       stroke-width="1.5"
+       id="rect36" />
+    <line
+       x1="70"
+       y1="759"
+       x2="124"
+       y2="759"
+       stroke="#f2c879"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="line36" />
+    <text
+       x="70"
+       y="801"
+       fill="#edf3f2"
+       font-size="28"
+       font-weight="700"
+       id="text37">Alignment &amp; geometry inspection</text>
+    <svg
+       x="70"
+       y="820"
+       width="260"
+       height="160"
+       viewBox="125 145 160 160"
+       preserveAspectRatio="xMidYMid meet"
+       version="1.1"
+       id="svg37">
+      <g
+         id="axes_1">
+        <g
+           id="patch_2">
+          <path
+             d="M 149.96319 258.704172  L 197.271166 258.704172  L 213.968098 228.093129  L 200.610552 175.219509  L 158.311656 166.871043  L 144.397546 205.830552  L 149.96319 258.704172  z "
+             clip-path="url(#p21558ae567)"
+             style="fill: none; opacity: 0.55; stroke: #f2c879; stroke-width: 1.6; stroke-linejoin: miter"
+             id="path2" />
+        </g>
+        <g
+           id="patch_3">
+          <path
+             d="M 202.83681 292.654601  L 250.144785 292.654601  L 266.841718 262.043558  L 253.484172 209.169939  L 211.185276 200.821472  L 197.271166 239.780982  L 202.83681 292.654601  z "
+             clip-path="url(#p21558ae567)"
+             style="fill: none; opacity: 0.55; stroke: #f2c879; stroke-width: 1.6; stroke-linejoin: miter"
+             id="path3" />
+        </g>
+        <g
+           id="patch_4">
+          <path
+             d="M 185.026748 255.92135  L 232.334724 255.92135  L 249.031656 225.310307  L 235.67411 172.436687  L 193.375215 164.088221  L 179.461104 203.04773  L 185.026748 255.92135  z "
+             clip-path="url(#p21558ae567)"
+             style="fill: none; opacity: 0.55; stroke: #f2c879; stroke-width: 1.6; stroke-linejoin: miter"
+             id="path4" />
+        </g>
+        <g
+           id="patch_5">
+          <path
+             d="M 176.678282 279.85362  L 223.986258 279.85362  L 240.68319 249.242577  L 227.325644 196.368957  L 185.026748 188.020491  L 171.112638 226.98  L 176.678282 279.85362  z "
+             clip-path="url(#p21558ae567)"
+             style="fill: none; stroke: #65cbd5; stroke-width: 2.6; stroke-linejoin: miter"
+             id="path5" />
+        </g>
+        <g
+           id="patch_6">
+          <path
+             d="M 147.618513 192.065978  Q 158.034474 200.544085 167.063066 207.89294  "
+             clip-path="url(#p21558ae567)"
+             style="fill: none; stroke: #65cbd5; stroke-width: 1.6; stroke-linecap: round"
+             id="path6" />
+          <path
+             d="M 164.119538 201.371004  L 167.063066 207.89294  L 160.079401 206.334601  z "
+             clip-path="url(#p21558ae567)"
+             style="fill: #65cbd5; stroke: #65cbd5; stroke-width: 1.6; stroke-linecap: round"
+             id="path7" />
+        </g>
+        <g
+           id="patch_7">
+          <path
+             d="M 266.858295 270.378029  Q 256.266948 263.156656 247.153602 256.943011  "
+             clip-path="url(#p21558ae567)"
+             style="fill: none; stroke: #65cbd5; stroke-width: 1.6; stroke-linecap: round"
+             id="path8" />
+          <path
+             d="M 250.638779 263.192294  L 247.153602 256.943011  L 254.244135 257.904439  z "
+             clip-path="url(#p21558ae567)"
+             style="fill: #65cbd5; stroke: #65cbd5; stroke-width: 1.6; stroke-linecap: round"
+             id="path9" />
+        </g>
+        <g
+           id="patch_8">
+          <path
+             d="M 227.363962 160.211565  Q 220.647 170.766792 214.89043 179.812831  "
+             clip-path="url(#p21558ae567)"
+             style="fill: none; stroke: #65cbd5; stroke-width: 1.6; stroke-linecap: round"
+             id="path10" />
+          <path
+             d="M 221.02615 176.131399  L 214.89043 179.812831  L 215.626716 172.695396  z "
+             clip-path="url(#p21558ae567)"
+             style="fill: #65cbd5; stroke: #65cbd5; stroke-width: 1.6; stroke-linecap: round"
+             id="path11" />
+        </g>
+        <g
+           id="line2d_1">
+          <path
+             d="M 59.799755 343.858528  L 354.778896 343.858528  "
+             clip-path="url(#p21558ae567)"
+             style="fill: none; stroke: #adbec6; stroke-opacity: 0.2; stroke-width: 1.5; stroke-linecap: square"
+             id="path12" />
+        </g>
+        <g
+           id="text_1" />
+        <g
+           id="text_2" />
+        <g
+           id="text_3" />
+        <g
+           id="text_4" />
+        <g
+           id="text_5" />
+      </g>
+    </svg>
+    <text
+       x="355"
+       y="857"
+       fill="#edf3f2"
+       font-size="23"
+       font-weight="400"
+       id="text38">Visualise geometry</text>
+    <text
+       x="355"
+       y="896"
+       fill="#edf3f2"
+       font-size="22"
+       font-weight="400"
+       id="text39">Estimate per-view translations</text>
+    <text
+       x="355"
+       y="935"
+       fill="#edf3f2"
+       font-size="21"
+       font-weight="400"
+       id="text40">Update geometry between calls</text>
+    <text
+       x="70"
+       y="985"
+       fill="#f2c879"
+       font-size="18"
+       font-weight="400"
+       id="text41">Measured positions</text>
+    <text
+       x="248"
+       y="985"
+       fill="#65cbd5"
+       font-size="18"
+       font-weight="400"
+       id="text42">→ aligned sample</text>
+  </g>
+  <g
+     id="g47">
+    <rect
+       x="732"
+       y="734"
+       width="668"
+       height="272"
+       rx="20"
+       fill="#1c252d"
+       stroke="#35444f"
+       stroke-width="1.5"
+       id="rect42" />
+    <line
+       x1="762"
+       y1="759"
+       x2="816"
+       y2="759"
+       stroke="#65cbd5"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="line42" />
+    <text
+       x="762"
+       y="801"
+       fill="#edf3f2"
+       font-size="28"
+       font-weight="700"
+       id="text43">Monitor &amp; continue</text>
+    <text
+       x="762"
+       y="857"
+       fill="#edf3f2"
+       font-size="23"
+       font-weight="400"
+       id="text44">Track reconstruction energy</text>
+    <text
+       x="762"
+       y="898"
+       fill="#edf3f2"
+       font-size="23"
+       font-weight="400"
+       id="text45">Continue solver state</text>
+    <text
+       x="762"
+       y="939"
+       fill="#edf3f2"
+       font-size="23"
+       font-weight="400"
+       id="text46">Inspect convergence</text>
+    <line
+       x1="1146"
+       y1="961"
+       x2="1360"
+       y2="961"
+       stroke="#35444f"
+       stroke-width="2"
+       stroke-linecap="round"
+       id="line46" />
+    <line
+       x1="1146"
+       y1="961"
+       x2="1146"
+       y2="831"
+       stroke="#35444f"
+       stroke-width="2"
+       stroke-linecap="round"
+       id="line47" />
+    <path
+       d="M1160 849 L1183 880 L1203 892 L1220 884 L1242 914 L1262 920 L1280 918 L1300 937 L1322 940 L1347 946"
+       fill="none"
+       stroke="#65cbd5"
+       stroke-width="3"
+       stroke-linejoin="round"
+       id="path47" />
+    <text
+       x="1250"
+       y="986"
+       fill="#adbec6"
+       font-size="17"
+       font-weight="400"
+       text-anchor="middle"
+       id="text47">Schematic energy history</text>
+  </g>
+  <rect
+     x="40"
+     y="1034"
+     width="1360"
+     height="76"
+     rx="16"
+     fill="#25343d"
+     id="rect47" />
+  <text
+     x="720"
+     y="1066"
+     fill="#edf3f2"
+     font-size="23"
+     font-weight="600"
+     text-anchor="middle"
+     id="text48">CUDA reconstruction · NumPy or CuPy inputs · Iterative outputs: CuPy</text>
+  <text
+     x="720"
+     y="1095"
+     fill="#edf3f2"
+     font-size="20"
+     font-weight="400"
+     text-anchor="middle"
+     id="text49">Geometry plotting and NumPy preprocessing can run without a GPU.</text>
+  <metadata
+     id="metadata51">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>ToMoBAR capabilities at a glance</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

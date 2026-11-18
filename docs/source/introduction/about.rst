@@ -1,50 +1,25 @@
-.. _intro_about:
+:orphan:
+
+.. raw:: html
+
+   <span id="intro-about"></span>
 
 About ToMoBAR
-**************
+=============
+
+This page has moved to :doc:`../getting_started/overview`. Use the new page for the current documentation.
 
 The general concept:
-====================
+--------------------
 
-ToMoBAR is a Python library of direct and model-based regularised iterative reconstruction
-algorithms with a plug-and-play capability.
-ToMoBAR offers you a selection of various data models and regularisers resulting in
-complex objectives for tomographic reconstruction. ToMoBAR uses ASTRA-Toolbox [VanAarle2015]_,
-for projection-backprojection parallel-beam geometry routines, which is
-a common geometry for X-ray synchrotron imaging [SX2022]_.
+See :doc:`../getting_started/overview`.
 
 Where it is used:
-=================
+-----------------
 
-ToMoBAR is currently used in production at `Diamond Light Source <https://www.diamond.ac.uk/Home.html>`_, which is
-the United Kingdom's national synchrotron science facility. ToMoBAR's API is exploited through the
-`HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_ library which is the backend for the
-`HTTomo <https://diamondlightsource.github.io/httomo/>`_'s framework for big-data processing and
-reconstruction.
-
+See :doc:`../getting_started/overview`.
 
 What can ToMoBAR do:
-====================
+--------------------
 
-ToMoBAR operates in device-to-device fashion on CuPy arrays on a GPU, therefore ensuring a better computational
-efficiency. With the GPU device controlling :ref:`ref_api` exposed it can also support multi-GPU parallel computing [CT2020]_ .
-
-* Reconstruct parallel-beam projection data in 2D and 3D using GPU-accelerated routines from ASTRA-toolbox [VanAarle2015]_.
-* Access to fast GPU-accelerated direct methods, such as FBP method in :mod:`tomobar.reconstruction.direct` and very fast CuPy-accelerated Fourier
-  reconstruction :func:`FOURIER_INV` [NIKITIN2017]_ in :mod:`tomobar.reconstruction.direct`.
-* Use advanced model-based regularised iterative schemes such as FISTA and ADMM proximal splitting algorithms. Note that more
-  data fidelities are accessible in the release `2026.2.0.0`` using :mod:`tomobar.reconstruction.iterative`. It is possible to construct different combinations of the objective function.
-* The FISTA iterative algorithm [BT2009]_, [Xu2016]_ offers various modifications: convergence acceleration with ordered-subsets,
-  different data fidelities: PWLS, Huber, Group-Huber [PM2015]_, Students't [KAZ1_2017]_, and SWLS [HOA2017]_
-  to deal with noise and various imaging artefacts, such as, rings, streaks. Regularisers from the CCPi-Regularisation Toolkit [KAZ2019]_ are required.
-* The ADMM iterative algorithm [Boyd2011]_ uses full-data updates with either
-  linearised or conjugate-gradient data solves, relaxation, warm starts,
-  optional TV/nonnegativity and residual stopping.
-  Its objective and update sequence are independent of the ordered-subset setting.
-* Use CuPy accelerated FISTA and ADMM methods in :mod:`tomobar.reconstruction.iterative`. This GPU-only class is actively developed.
-
-.. figure::  ../_static/TomoRec_surf2.jpg
-    :scale: 30 %
-    :alt: ToMoBAR in action
-
-See more on ToMoBAR's API in :ref:`ref_api`.
+See :doc:`../getting_started/overview`.

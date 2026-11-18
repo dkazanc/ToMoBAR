@@ -47,7 +47,7 @@ class CPURec:
 
     backend = "astra"
     device_index = 0
-    OS_number = 1
+    num_subsets = 1
     geometry_version = 0
     closed = False
     scale = 1.0
@@ -103,7 +103,7 @@ class CPURec:
 
     def _run_options(self, iterations, *, default, allow_subsets=True, **kw):
         self._ensure_open()
-        if not allow_subsets and self.OS_number > 1:
+        if not allow_subsets and self.num_subsets > 1:
             raise ValueError("subsets")
         return _positive_integer(
             default if iterations is None else iterations, "iterations"
@@ -128,7 +128,7 @@ class CPURec:
         self.projection_calls += 1
         y = self.scale * np.arange(1, 7, dtype=np.float32).reshape(self.shape) * x
         result = (
-            y[:, subset_index :: self.OS_number, :] if subset_index is not None else y
+            y[:, subset_index :: self.num_subsets, :] if subset_index is not None else y
         )
         if out is not None:
             out[...] = result
@@ -138,7 +138,7 @@ class CPURec:
     def _backproject(self, b, *, out=None, subset_index=None):
         x = np.zeros(self.shape, dtype=np.float32)
         if subset_index is not None:
-            x[:, subset_index :: self.OS_number, :] = b
+            x[:, subset_index :: self.num_subsets, :] = b
         else:
             x[:] = b
         result = self.scale * np.arange(1, 7, dtype=np.float32).reshape(self.shape) * x

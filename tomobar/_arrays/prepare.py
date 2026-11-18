@@ -56,7 +56,6 @@ def prepare_projection(
     device_index,
     array_module,
     input_axes=None,
-    legacy_axes=None,
     padding=0,
     gpu=False,
     pack=False,
@@ -78,7 +77,7 @@ def prepare_projection(
         allow_single_row and len(shape) == 3 and shape[0] == 1 and data.ndim == 2
     )
     axes = native_axes[1:] if single_row else native_axes
-    supplied_axes = _resolve_data_axes(input_axes, legacy_axes, axes)
+    supplied_axes = _resolve_data_axes(input_axes, axes)
     data = _transpose_data_axes(data, source_axes=supplied_axes, target_axes=axes)
     if single_row:
         data = data[None, ...]

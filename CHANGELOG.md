@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Renamed the iterative reconstructor subset-count keyword and property to
+`num_subsets` throughout the package, tests and examples. The previous name is
+removed; subset selection and solver behaviour are unchanged.
+
 Use 64-bit voxel coordinates, flattened indices and slice offsets throughout
 ROF-TV, PD-TV, SB-TV, FGP-TV, TGV and NDF CUDA kernels. Fix multiplication-order
 overflow in ROF slice offsets and 32-bit indexing in all Split Bregman stages.
@@ -76,7 +80,7 @@ Changes:
 * Dependency on [Regularisation Toolkit](https://github.com/TomographicImaging/CCPi-Regularisation-Toolk) is dropped.
 * Significant refactoring of the `RecToolsIRCuPy` class.
 * Breaking change that removes `datafidelity` from the class and one can control data fidelities from the `_data_` dictionary given as `_data_["data_fidelity"]`.
-* `OS_number` added to `RecToolsIRCuPy` class as it is a geometry related parameter.
+* `num_subsets` added to `RecToolsIRCuPy` class as it is a geometry related parameter.
 * Ordered Subsets Expectation Maximization (OSEM) and MLEM added in `RecToolsIRCuPy` for emission-type data.
 * Upgrade of dependencies to CuPy 14.* and numpy 2.4.
 
@@ -113,6 +117,6 @@ to the previous version and potentially a magnitude faster compared to FISTA in 
 ## v.2025.08
 
 ### Changed
-- $\sf\color{red}Breaking$ $\sf\color{red}changes!$ The API for initializing geometry in both direct and iterative methods (the `RecTools` class) has been updated. A new parameter, `DetectorsDimH_pad`, has been [introduced](https://dkazanc.github.io/ToMoBAR/api/tomobar.methodsDIR.html) to control edge padding along the detector's horizontal dimension. This parameter can help reduce circular/arc [artifacts](https://dkazanc.github.io/ToMoBAR/tutorials/real_data_recon.html) in reconstructions, such as saturated circles or arcs. See updated [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
+- $\sf\color{red}Breaking$ $\sf\color{red}changes!$ The API for initializing geometry in both direct and iterative methods (the `RecTools` class) has been updated. A new parameter, `DetectorsDimH_pad`, has been [introduced](https://dkazanc.github.io/ToMoBAR/api/tomobar.methodsDIR.html) to control edge padding along the detector's horizontal dimension. This parameter can help reduce circular/arc [artifacts](https://dkazanc.github.io/ToMoBAR/tutorials/real_data_recon.html) in reconstructions, such as saturated circles or arcs. See updated [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/demos/Python).
 - Log-Polar method (`FOURIER_INV` in `RecToolsDIRCuPy`) has been further accelerated and it is significantly faster FBP.
 

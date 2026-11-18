@@ -100,7 +100,9 @@ API_KEYWORDS = api_keywords()
 
 
 @pytest.mark.parametrize(
-    "path", sorted((ROOT / "Demos").glob("*.py")), ids=lambda p: p.name
+    "path",
+    sorted((ROOT / "demos").rglob("*.py")),
+    ids=lambda p: str(p.relative_to(ROOT / "demos")),
 )
 def test_demo_keywords_match_current_api(path):
     tree = ast.parse(path.read_text(), filename=str(path))

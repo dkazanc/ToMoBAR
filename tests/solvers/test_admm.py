@@ -94,7 +94,7 @@ def test_full_objective_solution_does_not_depend_on_subsets(
     two_pixel_rec, fidelity, subsets, strength, data_solver
 ):
     rec = two_pixel_rec
-    rec.OS_number = subsets
+    rec.num_subsets = subsets
 
     # Five views intentionally split unevenly. Only the full-data operator is
     # used by ADMM, regardless of this reconstructor's subset configuration.

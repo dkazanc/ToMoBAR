@@ -21,7 +21,7 @@ def make_rec(n=8, rows=1, *, subsets=1, cor=0, padding=0, crop=False):
     return RecToolsIR(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry((rows, n, n)),
-        OS_number=subsets,
+        num_subsets=subsets,
         backend="usfft",
         detector_padding=padding,
         output_shape=(rows, n - 2, n - 2) if crop else None,

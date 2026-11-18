@@ -6,7 +6,6 @@ import pytest
 cp = pytest.importorskip("cupy")
 
 from tomobar._arrays.prepare import prepare_projection
-from tomobar._arrays.axes import _swap_data_axes_to_accepted
 
 from tomobar.preprocessing import normaliser
 
@@ -36,38 +35,3 @@ def test_normaliser_axis1(raw_data, flats, darks):
     assert 2 <= np.max(normalised) <= 3
     assert normalised.shape == (128, 180, 160)
     assert normalised.dtype == np.float32
-
-
-@pytest.mark.parametrize("labels", [["detY", "angles", "detX"]])
-def test_swap_data_axis_to_accepted1(labels):
-    labels_order = ["detY", "angles", "detX"]
-    result = _swap_data_axes_to_accepted(labels, labels_order)
-    assert result[0] is None
-    assert result[1] is None
-
-
-@pytest.mark.parametrize("labels", [["angles", "detY", "detX"]])
-@pytest.mark.parametrize("result", [[(0, 1), None]])
-def test_swap_data_axis_to_accepted2(labels, result):
-    labels_order = ["detY", "angles", "detX"]
-    swap_list = _swap_data_axes_to_accepted(labels, labels_order)
-    assert swap_list[0] == result[0]
-    assert swap_list[1] == result[1]
-
-
-@pytest.mark.parametrize("labels", [["angles", "detX", "detY"]])
-@pytest.mark.parametrize("result", [[(0, 2), (1, 2)]])
-def test_swap_data_axis_to_accepted3(labels, result):
-    labels_order = ["detY", "angles", "detX"]
-    swap_list = _swap_data_axes_to_accepted(labels, labels_order)
-    assert swap_list[0] == result[0]
-    assert swap_list[1] == result[1]
-
-
-@pytest.mark.parametrize("labels", [["detX", "angles"]])
-@pytest.mark.parametrize("result", [[(0, 1), None]])
-def test_swap_data_axis_to_accepted4(labels, result):
-    labels_order = ["angles", "detX"]
-    swap_list = _swap_data_axes_to_accepted(labels, labels_order)
-    assert swap_list[0] == result[0]
-    assert swap_list[1] == result[1]

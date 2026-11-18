@@ -72,7 +72,7 @@ def test_inplace_proximal_matches_out_of_place_continuation(
     cpu_rec, monkeypatch, method, subsets
 ):
     rec = cpu_rec
-    rec.OS_number = subsets
+    rec.num_subsets = subsets
     data = np.arange(2, 8, dtype=np.float32).reshape(rec.shape)
     options = dict(
         regularisation=Regularisation(strength=0.05),
@@ -115,7 +115,7 @@ def test_warmed_gpu_iterations_do_not_allocate_volume_sized_temporaries(gpu, met
     with RecToolsIR(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry(shape),
-        OS_number=3 if method == "FISTA" else 1,
+        num_subsets=3 if method == "FISTA" else 1,
     ) as rec:
         data = rec.forward(cp.ones(shape, dtype=cp.float32))
         options = {"lipschitz_constant": 2000} if method in ("FISTA", "ADMM") else {}

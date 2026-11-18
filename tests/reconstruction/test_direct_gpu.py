@@ -247,7 +247,7 @@ def test_fourier3d_inv(data_cupy, angles):
     ) as RecToolsCP:
         Fourier_rec_cupy = RecToolsCP.FOURIER_INV(
             data_cupy,
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             recon_mask_radius=2.0,
             legacy_scaling=True,
         )
@@ -281,7 +281,7 @@ def test_fourier3d_inv_vert_blocks(data_cupy, angles, blocks):
             lprec_block_recon = RecToolsCP.FOURIER_INV(
                 proj_data_block,
                 recon_mask_radius=2.0,
-                data_axes_labels_order=["angles", "detY", "detX"],
+                input_axes=["angles", "detY", "detX"],
                 legacy_scaling=True,
             )
             recon_vol_block_size[index_start:index_end, :, :] = lprec_block_recon
@@ -317,7 +317,7 @@ def test_fourier3d_inv_vert_blocks_last_odd(data_cupy, angles):
         lprec_block_recon1 = RecToolsCP.FOURIER_INV(
             data_cupy[:, 0 : detY - odd_block_size_last, :],
             recon_mask_radius=2.0,
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             legacy_scaling=True,
         )
 
@@ -333,7 +333,7 @@ def test_fourier3d_inv_vert_blocks_last_odd(data_cupy, angles):
         lprec_block_recon2 = RecToolsCP.FOURIER_INV(
             data_cupy[:, detY - odd_block_size_last :, :],
             recon_mask_radius=2.0,
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             legacy_scaling=True,
         )
 
@@ -365,7 +365,7 @@ def test_fourier3d_y_odd_to_even(ensure_clean_memory):
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
-            data, data_axes_labels_order=["angles", "detY", "detX"], legacy_scaling=True
+            data, input_axes=["angles", "detY", "detX"], legacy_scaling=True
         )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
@@ -388,7 +388,7 @@ def test_fourier3d_y_even_to_odd(ensure_clean_memory):
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
-            data, data_axes_labels_order=["angles", "detY", "detX"], legacy_scaling=True
+            data, input_axes=["angles", "detY", "detX"], legacy_scaling=True
         )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
@@ -411,7 +411,7 @@ def test_fourier3d_y_even_to_even(ensure_clean_memory):
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
-            data, data_axes_labels_order=["angles", "detY", "detX"], legacy_scaling=True
+            data, input_axes=["angles", "detY", "detX"], legacy_scaling=True
         )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
@@ -434,7 +434,7 @@ def test_fourier3d_y_odd_to_odd(ensure_clean_memory):
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
-            data, data_axes_labels_order=["angles", "detY", "detX"], legacy_scaling=True
+            data, input_axes=["angles", "detY", "detX"], legacy_scaling=True
         )
     assert recon.dtype == np.float32
     assert recon.shape == (3, N_size, N_size)
@@ -458,7 +458,7 @@ def test_fourier3d_y_z_variations(ensure_clean_memory, slices, detectorX):
         device_index=0,
     ) as RecToolsCP:
         recon = RecToolsCP.FOURIER_INV(
-            data, data_axes_labels_order=["angles", "detY", "detX"], legacy_scaling=True
+            data, input_axes=["angles", "detY", "detX"], legacy_scaling=True
         )
     assert recon.dtype == np.float32
     assert recon.shape == (slices, detX, detX)
@@ -478,7 +478,7 @@ def test_fbp3d(data_cupy, angles, ensure_clean_memory):
         FBPrec_cupy = RecToolsCP.FBP(
             data_cupy,
             filter_type="SINC",
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             cutoff_freq=1.1,
         )
         expected = backproject_sinc_reference(
@@ -513,7 +513,7 @@ def test_fbp3d_synth_misaligned(data_shifted_cupy, synth_data_shifts):
         FBPrec_cupy = RecToolsCP.FBP(
             data_shifted_cupy,
             filter_type="SINC",
-            data_axes_labels_order=input_data_labels,
+            input_axes=input_data_labels,
             cutoff_freq=1.1,
         )
         # Independently filter the odd-width projections before backprojection.
@@ -547,7 +547,7 @@ def test_fbp3d_pad(data_cupy, angles, ensure_clean_memory):
         FBPrec_cupy = RecToolsCP.FBP(
             data_cupy,
             filter_type="SINC",
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             cutoff_freq=1.1,
         )
         expected = backproject_sinc_reference(
@@ -577,7 +577,7 @@ def test_fbp3d_swaped_axis_pad(data_cupy, angles, ensure_clean_memory):
         FBPrec_cupy = RecToolsCP.FBP(
             data_cupy,
             filter_type="SINC",
-            data_axes_labels_order=axis_labels,
+            input_axes=axis_labels,
             cutoff_freq=1.1,
         )
         expected = backproject_sinc_reference(
@@ -604,7 +604,7 @@ def test_fbp3d_mask(data_cupy, angles, ensure_clean_memory):
             data_cupy,
             filter_type="SINC",
             recon_mask_radius=0.7,
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             cutoff_freq=1.1,
         )
         expected = backproject_sinc_reference(
@@ -630,9 +630,7 @@ def test_forwproj3d(data_cupy, angles, ensure_clean_memory):
         volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as RecToolsCP:
-        frw_proj = RecToolsCP.forward(
-            phantom, data_axes_labels_order=["detY", "angles", "detX"]
-        )
+        frw_proj = RecToolsCP.forward(phantom, output_axes=["detY", "angles", "detX"])
     frw_proj_np = frw_proj.get()
     assert_allclose(np.min(frw_proj_np), 67.27458, rtol=EPSILON)
     assert_allclose(np.max(frw_proj_np), 225.27428, rtol=EPSILON)
@@ -652,7 +650,7 @@ def test_backproj3d(data_cupy, angles, ensure_clean_memory):
         device_index=0,
     ) as RecToolsCP:
         rec_cupy = RecToolsCP.backproject(
-            data=data_cupy, data_axes_labels_order=["angles", "detY", "detX"]
+            data=data_cupy, input_axes=["angles", "detY", "detX"]
         )
     recon_data = rec_cupy.get()
     assert_allclose(np.min(recon_data), -3.8901403, rtol=EPSILON)

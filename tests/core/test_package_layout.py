@@ -65,7 +65,7 @@ def test_live_imports_use_canonical_implementation_paths():
     legacy = {"tomobar." + name for name in REMOVED}
     paths = [
         path
-        for folder in ("tomobar", "tests", "Demos", ".github/scripts")
+        for folder in ("tomobar", "tests", "demos", ".github/scripts")
         for path in (ROOT / folder).rglob("*.py")
     ]
     for path in paths:

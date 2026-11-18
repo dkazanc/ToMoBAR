@@ -85,7 +85,7 @@ def matrix_reconstructor(mock_reconstruction, monkeypatch):
         rec = iterative.RecToolsIR(
             projection_geometry=scan,
             volume_geometry=Volume3DGeometry(shape=projector.shape),
-            OS_number=subsets,
+            num_subsets=subsets,
         )
         return rec, projector
 
@@ -220,7 +220,7 @@ def test_gpu_osem_preserves_exact_solution_and_input_arrays(gpu, subsets):
     )
     initial = truth.copy()
     with RecToolsIR(
-        projection_geometry=scan, volume_geometry=grid, OS_number=subsets
+        projection_geometry=scan, volume_geometry=grid, num_subsets=subsets
     ) as rec:
         data = rec.forward(truth)
         original = data.copy()

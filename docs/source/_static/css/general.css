@@ -1,0 +1,64 @@
+/* Colour dropdown for dark mode */
+.sphinx-bs.dropdown.card{
+    background-color: var(--pst-color-surface);
+}
+
+/* Blend the dark logo's charcoal matte into the active theme background.
+   Limit this to the logo so figures and notebook outputs keep their colours. */
+html[data-theme="dark"] .navbar-brand.logo {
+    background-color: var(--pst-color-background);
+    isolation: isolate;
+}
+
+html[data-theme="dark"] .navbar-brand.logo img.logo__image.only-dark {
+    filter: brightness(0.85);
+    mix-blend-mode: lighten;
+}
+
+/* Four entry points: a two-by-two grid that stacks on narrow screens. */
+.tomobar-start-card {
+    aspect-ratio: 1;
+    border-radius: 1rem;
+    border-top: 4px solid var(--pst-color-primary);
+    background-color: var(--pst-color-surface);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.tomobar-start-card .sd-card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.tomobar-start-card .sd-card-title {
+    font-size: 1.35rem;
+    line-height: 1.3;
+}
+
+.tomobar-start-card .sd-card-footer {
+    border-top: 0;
+    background: transparent;
+    color: var(--pst-color-primary);
+    padding: 0 1.5rem 1.5rem;
+    font-weight: 600;
+}
+
+.tomobar-start-card:hover,
+.tomobar-start-card:focus-within {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1.25rem rgb(0 0 0 / 12%);
+}
+
+@media (max-width: 575.98px) {
+    .tomobar-start-card {
+        aspect-ratio: auto;
+        min-height: 13rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tomobar-start-card {
+        transition: none;
+    }
+}

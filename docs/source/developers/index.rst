@@ -1,7 +1,11 @@
-Developer guide
-===============
+Development
+===========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
+   installation
+   documentation
    architecture
+   examples
+   cuda_cache

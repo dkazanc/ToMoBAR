@@ -293,7 +293,7 @@ def test_cuda_archive_joint_alignment(
 
 
 class CPUReferenceReconstructor:
-    OS_number = 1
+    num_subsets = 1
     geometry_version = 0
 
     def __init__(self):

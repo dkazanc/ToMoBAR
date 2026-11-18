@@ -234,7 +234,7 @@ def test_power_method_covers_every_subset(
     )
     monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
     with iterative.RecToolsIR(
-        projection_geometry=scan, volume_geometry=grid, OS_number=subset_count
+        projection_geometry=scan, volume_geometry=grid, num_subsets=subset_count
     ) as rec:
         estimate = rec.powermethod(iterations=30)
     expected = max(np.linalg.norm(A, 2) ** 2 for A in blocks)
@@ -255,7 +255,7 @@ def test_power_method_skips_zero_subset(mock_reconstruction, monkeypatch):
     )
     monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
     with iterative.RecToolsIR(
-        projection_geometry=scan, volume_geometry=grid, OS_number=2
+        projection_geometry=scan, volume_geometry=grid, num_subsets=2
     ) as rec:
         np.testing.assert_allclose(rec.powermethod(), 9.0, rtol=1e-6)
         projector.backproject = lambda b, **kw: np.zeros(grid.shape, dtype=np.float32)
@@ -286,7 +286,7 @@ def test_admm_power_method_uses_full_operator(mock_reconstruction, monkeypatch):
     )
     monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
     with iterative.RecToolsIR(
-        projection_geometry=scan, volume_geometry=grid, OS_number=3
+        projection_geometry=scan, volume_geometry=grid, num_subsets=3
     ) as rec:
         state = rec.initialise_solver(
             "ADMM", np.ones(scan.projection_shape, dtype=np.float32)

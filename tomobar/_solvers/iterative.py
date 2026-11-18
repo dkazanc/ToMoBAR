@@ -53,7 +53,7 @@ def setup(rec, state: SolverState, xp, buffers) -> SolverWork:
         fidelity = getattr(options, "fidelity", DataFidelity())
         subsets = ProjectionSubsets(
             state.projections,
-            subset_count=rec.OS_number,
+            subset_count=rec.num_subsets,
             array_module=xp,
             weights=state.weights,
             beta_swls=fidelity.beta_swls if fidelity.method == "SWLS" else None,
@@ -168,8 +168,8 @@ def _fista_step(rec, state: SolverState, regularisation, *, xp, gradient, proxim
         cast(FISTAOptions, state._options),
         cast(FISTAWork, state._work),
     )
-    use_subsets = rec.OS_number > 1
-    for subset_index in range(rec.OS_number):
+    use_subsets = rec.num_subsets > 1
+    for subset_index in range(rec.num_subsets):
         projections, weights, weight_sum = work.subsets[subset_index]
         previous_image, previous_momentum = image, work.t
         data_gradient = gradient(
@@ -217,8 +217,8 @@ def _osem_step(rec, state: SolverState, regularisation, *, xp, proximal):
         cast(OSEMOptions, state._options),
         cast(OSEMWork, state._work),
     )
-    use_subsets = rec.OS_number > 1
-    for subset_index in range(rec.OS_number):
+    use_subsets = rec.num_subsets > 1
+    for subset_index in range(rec.num_subsets):
         projections, _, _ = work.subsets[subset_index]
         if work.sensitivity is None:
             work.sensitivity = rec.operator.backproject(

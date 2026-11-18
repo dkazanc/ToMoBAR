@@ -92,7 +92,7 @@ and cleanup. Backend-selection tests also verify that geometry replacement
 invalidates all old execution caches.
 
 `core/test_demo_arguments.py` checks the ToMoBAR keyword names used throughout
-`Demos/` against the current source signatures and typed Fourier settings,
+`demos/` against the current source signatures and typed Fourier settings,
 without importing CUDA or requiring optional demo datasets. It also checks the
 explicit settings dictionaries in the denoising example.
 

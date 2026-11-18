@@ -117,7 +117,7 @@ def _setup(rec, state: SolverState, xp) -> SolverWork:
     buffers = ProjectionBuffers(
         state.projections,
         state.image,
-        rec.OS_number if state.method in ("FISTA", "OSEM") else 1,
+        rec.num_subsets if state.method in ("FISTA", "OSEM") else 1,
         xp,
     )
     execution = _admm if state.method == "ADMM" else _iterative_solvers
@@ -145,7 +145,7 @@ def _scaled_regularisation(rec, state: SolverState):
         return None
     if state.method == "FISTA":
         # Split the full-data penalty across the subset objectives.
-        scale = rec.OS_number * cast(FISTAWork, state._work).lipschitz_constant
+        scale = rec.num_subsets * cast(FISTAWork, state._work).lipschitz_constant
         return replace(regularisation, strength=regularisation.strength / scale)
     if state.method == "ADMM":
         return replace(

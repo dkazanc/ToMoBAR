@@ -57,7 +57,7 @@ class RecToolsIR(GeometryReconstruction):
             FISTA, ADMM and powermethod.
             USFFT applies a circular mask and uses a matched transpose with
             unit-pixel line-integral scaling, without angular normalisation.
-        OS_number (int or None): Interleaved ordered-subset count, default None
+        num_subsets (int or None): Interleaved ordered-subset count, default None
             for one subset (all views). Must be positive and no greater than the
             view count. Landweber, SIRT and CGLS require None or 1; ADMM always uses
             full data; FISTA and OSEM can iterate over multiple subsets.
@@ -78,7 +78,7 @@ class RecToolsIR(GeometryReconstruction):
         detector_padding: int = 0,
         output_shape: tuple[int, int, int] | None = None,
         device_index: int = 0,
-        OS_number: Optional[int] = None,
+        num_subsets: Optional[int] = None,
         backend: BackendName = "astra",
     ):
         if not isinstance(projection_geometry, Parallel3DGeometry):
@@ -96,16 +96,16 @@ class RecToolsIR(GeometryReconstruction):
         ):
             raise ValueError("output_shape must fit inside volume_geometry.shape")
         self._subset_indices = interleaved_view_indices(
-            projection_geometry.view_count, OS_number
+            projection_geometry.view_count, num_subsets
         )
         self._projection_backend = create_projection_backend(
             backend=backend,
             projection_geometry=self.padded_projection_geometry,
             volume_geometry=volume_geometry,
             device_index=self.device_index,
-            subset_count=self.OS_number,
+            subset_count=self.num_subsets,
         )
-        self._init_operator(ProjectionOperator, subset_count=self.OS_number)
+        self._init_operator(ProjectionOperator, subset_count=self.num_subsets)
 
     @property
     def backend(self) -> BackendName:
@@ -113,7 +113,7 @@ class RecToolsIR(GeometryReconstruction):
         return self.operator.backend
 
     @property
-    def OS_number(self) -> int:
+    def num_subsets(self) -> int:
         """int: Number of interleaved subsets; one means all views."""
         return len(self.subset_indices)
 
@@ -199,8 +199,8 @@ class RecToolsIR(GeometryReconstruction):
         allow_subsets=True,
     ):
         self._ensure_open()
-        if not allow_subsets and self.OS_number > 1:
-            raise ValueError("This method requires OS_number=None or 1")
+        if not allow_subsets and self.num_subsets > 1:
+            raise ValueError("This method requires num_subsets=None or 1")
         iterations = _positive_integer(
             default if iterations is None else iterations, "iterations"
         )
@@ -522,9 +522,9 @@ class RecToolsIR(GeometryReconstruction):
             "Landweber": 1500,
             "SIRT": 200,
             "CGLS": 30,
-            "FISTA": 20 if self.OS_number > 1 else 400,
+            "FISTA": 20 if self.num_subsets > 1 else 400,
             "ADMM": 400,
-            "OSEM": 15 if self.OS_number > 1 else 300,
+            "OSEM": 15 if self.num_subsets > 1 else 300,
         }
         iterations = self._run_options(
             iterations,
@@ -594,7 +594,7 @@ class RecToolsIR(GeometryReconstruction):
                 output_shape. With return_energy=True, returns (image, energy_history).
 
         Notes:
-            This method requires OS_number=None or 1. Step size must be chosen
+            This method requires num_subsets=None or 1. Step size must be chosen
             for the acquisition geometry to obtain a stable iteration.
         """
         return self._solve(
@@ -659,7 +659,7 @@ class RecToolsIR(GeometryReconstruction):
                 output_shape. With return_energy=True, returns (image, energy_history).
 
         Notes:
-            This method requires OS_number=None or 1.
+            This method requires num_subsets=None or 1.
         """
         return self._solve(
             "SIRT",
@@ -723,7 +723,7 @@ class RecToolsIR(GeometryReconstruction):
                 output_shape. With return_energy=True, returns (image, energy_history).
 
         Notes:
-            This method requires OS_number=None or 1.
+            This method requires num_subsets=None or 1.
         """
         return self._solve(
             "CGLS",
@@ -758,7 +758,9 @@ class RecToolsIR(GeometryReconstruction):
         _boolean(full_data, "full_data")
         initial = cp.random.randn(*self.volume_geometry.shape, dtype=cp.float32)
         subsets = (
-            range(self.OS_number) if self.OS_number > 1 and not full_data else (None,)
+            range(self.num_subsets)
+            if self.num_subsets > 1 and not full_data
+            else (None,)
         )
         largest = 0.0
         for subset in subsets:
@@ -851,7 +853,7 @@ class RecToolsIR(GeometryReconstruction):
         Notes:
             The configured regularisation strength weights the penalty in the
             objective; each proximal step uses strength /
-            (OS_number * lipschitz_constant). Ordered-subset iterations visit every
+            (num_subsets * lipschitz_constant). Ordered-subset iterations visit every
             subset in acquisition-index interleaving order.
         """
         return self._solve(
@@ -975,7 +977,7 @@ class RecToolsIR(GeometryReconstruction):
 
         Notes:
             Each iteration performs one data update, a relaxed constrained proximal
-            update, and one dual update. OS_number does not change the objective or
+            update, and one dual update. num_subsets does not change the objective or
             update sequence: ADMM uses full projections, including global SWLS sums.
             The CG data solver starts from the previous data image and requires no
             operator-norm estimate.
@@ -1024,7 +1026,7 @@ class RecToolsIR(GeometryReconstruction):
         diagnostics: Diagnostics = Diagnostics(),
         recon_mask_radius: float | None = 1.0,
     ) -> cp.ndarray | tuple[cp.ndarray, np.ndarray]:
-        """ASTRA-only emission OSEM, or MLEM when OS_number is one.
+        """ASTRA-only emission OSEM, or MLEM when num_subsets is one.
 
         Args:
             projections (numpy.ndarray or cupy.ndarray):

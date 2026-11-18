@@ -81,12 +81,10 @@ class RecToolsDIR(GeometryReconstruction):
         data: np.ndarray | cp.ndarray,
         *,
         output_axes: list[str] | tuple[str, ...] | None = None,
-        **kwargs,
     ) -> np.ndarray | cp.ndarray:
         """Forward-project a 2D image or 3D volume.
 
         Args:
-            **kwargs: Legacy axis-order and method-specific reconstruction options.
             data (numpy.ndarray or cupy.ndarray): Real object matching
                 volume_geometry.shape, in (Y, X) or (Z, Y, X) order.
                 Noncontiguous or non-float32 input is packed as float32.
@@ -94,8 +92,6 @@ class RecToolsDIR(GeometryReconstruction):
         Keyword Args:
             output_axes (list[str] or tuple[str, ...] or None): Projection axis labels.
                 Default None uses (angles, detX) in 2D and (detY, angles, detX) in 3D.
-            data_axes_labels_order (list[str] or tuple[str, ...] or None): Legacy alias
-                for output_axes, default None. Conflicting aliases raise ValueError.
 
         Returns:
             numpy.ndarray or cupy.ndarray: Float32 projections matching the input
@@ -105,9 +101,7 @@ class RecToolsDIR(GeometryReconstruction):
         native_axes = (
             ("angles", "detX") if self.geom == "2D" else ("detY", "angles", "detX")
         )
-        axes = _resolve_data_axes(
-            output_axes, kwargs.get("data_axes_labels_order"), native_axes
-        )
+        axes = _resolve_data_axes(output_axes, native_axes)
         self._ensure_open()
         projected = self.Atools.forward(data)
         projected = self._crop_projection(projected)
@@ -121,20 +115,16 @@ class RecToolsDIR(GeometryReconstruction):
         data: np.ndarray | cp.ndarray,
         *,
         input_axes: list[str] | tuple[str, ...] | None = None,
-        **kwargs,
     ) -> np.ndarray | cp.ndarray:
         """Backproject 2D or 3D measured projections.
 
         Args:
-            **kwargs: Legacy axis-order and method-specific reconstruction options.
             data (numpy.ndarray or cupy.ndarray): Real projection data matching the
                 acquisition geometry. Non-float32 input is packed as float32.
 
         Keyword Args:
             input_axes (list[str] or tuple[str, ...] or None): Projection axis labels.
                 Default None uses (angles, detX) in 2D and (detY, angles, detX) in 3D.
-            data_axes_labels_order (list[str] or tuple[str, ...] or None): Legacy alias
-                for input_axes, default None. Conflicting aliases raise ValueError.
 
         Returns:
             numpy.ndarray or cupy.ndarray: Unnormalised float32 backprojection,
@@ -145,7 +135,6 @@ class RecToolsDIR(GeometryReconstruction):
             data,
             array_module=cp,
             input_axes=input_axes,
-            legacy_axes=kwargs.get("data_axes_labels_order"),
         )
         return self.Atools.backproject(data)
 
@@ -158,7 +147,6 @@ class RecToolsDIR(GeometryReconstruction):
         filter_type: str | None = None,
         cutoff_freq: float | None = None,
         clear_gpu_cache: bool = False,
-        data_axes_labels_order: list[str] | tuple[str, ...] | None = None,
         filter_parameter: float | None = None,
         filter_d: float | None = None,
         recon_mask_radius: float | None = None,
@@ -189,9 +177,6 @@ class RecToolsDIR(GeometryReconstruction):
                 unused memory-pool blocks for reuse. True releases unused cache
                 storage between FFT stages and before ASTRA output allocation.
                 Later calls repeat FFT setup and allocation. True requires 3D.
-            data_axes_labels_order (list[str] or tuple[str, ...] or None): Legacy
-                alias for ``input_axes``, default None. Conflicting axis orders
-                raise ValueError.
             filter_parameter (float or None): ASTRA FilterParameter for 2D
                 filters that use it. Default None leaves ASTRA's default in
                 effect. Unused in 3D.
@@ -254,7 +239,6 @@ class RecToolsDIR(GeometryReconstruction):
             data,
             array_module=cp,
             input_axes=input_axes,
-            legacy_axes=data_axes_labels_order,
             gpu=self.geom == "3D",
             pack=True,
             target_axes=(("angles", "detY", "detX") if self.geom == "3D" else None),
@@ -357,8 +341,6 @@ class RecToolsDIR(GeometryReconstruction):
             options (FourierOptions or None): Fourier settings. Default None uses
                 FourierOptions(). Supply either this object or individual Fourier
                 keyword options; combining both raises TypeError.
-            data_axes_labels_order (list[str] or tuple[str, ...] or None): Legacy alias
-                for input_axes, default None. Conflicting aliases raise ValueError.
             data_dtype (numpy.dtype or type or str): Input storage dtype for shape-only
                 memory estimation, default numpy.float32. Unused with array inputs.
             **kwargs: Individual FourierOptions fields with their declared types and
@@ -381,11 +363,10 @@ class RecToolsDIR(GeometryReconstruction):
             Based on [NIKITIN2017]_ and Viktor Nikitin's radonusfft/TomoCuPy implementation.
         """
         self._ensure_open()
-        legacy_axes = kwargs.pop("data_axes_labels_order", None)
         data_dtype = kwargs.pop("data_dtype", np.float32)
         kwargs.pop("cupyrun", None)  # Legacy internal output-library flag.
         settings = resolve_fourier_options(options, kwargs)
-        axes = _resolve_data_axes(input_axes, legacy_axes, ("detY", "angles", "detX"))
+        axes = _resolve_data_axes(input_axes, ("detY", "angles", "detX"))
         shape_only = isinstance(data, tuple)
         if not shape_only and not isinstance(data, (np.ndarray, cp.ndarray)):
             raise TypeError(

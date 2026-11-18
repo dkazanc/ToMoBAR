@@ -20,7 +20,7 @@ def test_batches_equal_uninterrupted_and_oneshot(cpu_rec, method, subsets):
     if subsets > 1 and method in METHODS[:3]:
         pytest.skip("method does not support subsets")
     rec = cpu_rec
-    rec.OS_number = subsets
+    rec.num_subsets = subsets
     data = np.arange(2, 8, dtype=np.float32).reshape(rec.shape)
     options = dict(return_energy=True, nonnegativity=True)
     if method in ("FISTA", "ADMM", "OSEM"):
@@ -221,7 +221,7 @@ def test_fista_scales_only_local_prox_settings(
     cpu_rec, monkeypatch, method, subset_count
 ):
     rec = cpu_rec
-    rec.OS_number = subset_count
+    rec.num_subsets = subset_count
     calls = []
 
     def capture_prox(image, settings, *, device_index, **kwargs):
@@ -311,7 +311,7 @@ def test_fista_subsets_preserve_full_objective_tv_strength(
     two_pixel_rec, subset_count, fidelity
 ):
     rec = two_pixel_rec
-    rec.OS_number = subset_count
+    rec.num_subsets = subset_count
     rec.operator.forward = lambda x, *, subset_index=None, **kwargs: (
         x.copy() if subset_index is not None else np.repeat(x, subset_count, axis=1)
     )

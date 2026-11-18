@@ -104,7 +104,7 @@ def test_public_vector_geometry(mock_reconstruction, kind):
         if kind == "direct"
         else mock_reconstruction.iterative.RecToolsIR
     )
-    kwargs = dict(OS_number=2) if kind == "iterative" else {}
+    kwargs = dict(num_subsets=2) if kind == "iterative" else {}
     with cls(
         projection_geometry=scan(),
         volume_geometry=Volume3DGeometry((2, 4, 6)),

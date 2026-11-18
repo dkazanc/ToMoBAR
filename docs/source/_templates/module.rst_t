@@ -1,5 +1,5 @@
 {%- if show_headings %}:mod:`{{ basename }}`
-============================================
+{{ '=' * (basename|length + 7) }}
 {%- endif %}
 .. automodule:: {{ qualname }}
 {%- for option in automodule_options %}

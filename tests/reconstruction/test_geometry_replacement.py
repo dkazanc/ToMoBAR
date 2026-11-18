@@ -40,7 +40,7 @@ def make_rec(mock, kind, padding=2):
         )
         grid = Volume3DGeometry((2, 4, 6))
     cls = mock.iterative.RecToolsIR if kind == "iterative" else mock.direct.RecToolsDIR
-    options = dict(OS_number=2, output_shape=(1, 2, 4)) if kind == "iterative" else {}
+    options = dict(num_subsets=2, output_shape=(1, 2, 4)) if kind == "iterative" else {}
     return cls(
         projection_geometry=scan,
         volume_geometry=grid,
@@ -172,7 +172,7 @@ def test_cuda_replacement_matches_fresh_reconstructor(gpu):
     with RecToolsIR(
         projection_geometry=original,
         volume_geometry=grid,
-        OS_number=2,
+        num_subsets=2,
         detector_padding=2,
     ) as rec:
         for subset in (None, 0, 1):
@@ -183,7 +183,7 @@ def test_cuda_replacement_matches_fresh_reconstructor(gpu):
         with RecToolsIR(
             projection_geometry=updated,
             volume_geometry=grid,
-            OS_number=2,
+            num_subsets=2,
             detector_padding=2,
         ) as fresh:
             for subset in (None, 0, 1):
@@ -286,7 +286,10 @@ def test_cuda_subset_continuation_uses_replacement_operator(gpu, method):
         dtype=gpu.float32,
     )
     with RecToolsIR(
-        projection_geometry=scan, volume_geometry=grid, OS_number=3, detector_padding=2
+        projection_geometry=scan,
+        volume_geometry=grid,
+        num_subsets=3,
+        detector_padding=2,
     ) as rec:
         options = {"lipschitz_constant": rec.powermethod()} if method == "FISTA" else {}
         state = rec.initialise_solver(method, data, **options)
@@ -303,7 +306,7 @@ def test_cuda_subset_continuation_uses_replacement_operator(gpu, method):
         with RecToolsIR(
             projection_geometry=changed,
             volume_geometry=grid,
-            OS_number=3,
+            num_subsets=3,
             detector_padding=2,
         ) as fresh:
             reference = fresh.initialise_solver(method, data, initial=image, **options)

@@ -40,7 +40,7 @@ def make_iterative_reconstructor():
                 centre_of_rotation=centre_of_rotation,
             ),
             volume_geometry=Volume3DGeometry(shape=volume_shape),
-            OS_number=subsets,
+            num_subsets=subsets,
             detector_padding=detector_padding,
             output_shape=output_shape,
             device_index=0,
@@ -424,7 +424,7 @@ def test_fista_regul_pdtv_cp_3d(
             return_energy=True,
             regularisation=Regularisation(
                 method="PD_TV",
-                strength=0.0005 * lipschitz_constant * reconstructor.OS_number,
+                strength=0.0005 * lipschitz_constant * reconstructor.num_subsets,
                 iterations=10,
             ),
         )
@@ -462,7 +462,7 @@ def test_fista_regul_pdtv_cp_2d(
             return_energy=True,
             regularisation=Regularisation(
                 method="PD_TV",
-                strength=0.0005 * lipschitz_constant * reconstructor.OS_number,
+                strength=0.0005 * lipschitz_constant * reconstructor.num_subsets,
                 iterations=50,
             ),
         )
@@ -498,7 +498,7 @@ def test_fista_regul_roftv_cp_3d(
             lipschitz_constant=lipschitz_constant,
             regularisation=Regularisation(
                 method="ROF_TV",
-                strength=0.0005 * lipschitz_constant * reconstructor.OS_number,
+                strength=0.0005 * lipschitz_constant * reconstructor.num_subsets,
                 iterations=50,
                 time_step=0.001,
             ),
@@ -626,7 +626,7 @@ def test_fista_os_regul_pdtv_cp_3d(
             return_energy=True,
             regularisation=Regularisation(
                 method="PD_TV",
-                strength=0.0005 * lipschitz_constant * reconstructor.OS_number,
+                strength=0.0005 * lipschitz_constant * reconstructor.num_subsets,
                 iterations=10,
             ),
         )
@@ -667,7 +667,7 @@ def test_fista_os_regul_pdtv_cp_2d(
             return_energy=True,
             regularisation=Regularisation(
                 method="PD_TV",
-                strength=0.0005 * lipschitz_constant * reconstructor.OS_number,
+                strength=0.0005 * lipschitz_constant * reconstructor.num_subsets,
                 iterations=30,
             ),
         )
@@ -705,7 +705,7 @@ def test_fista_os_regul_roftv_cp_3d(
             lipschitz_constant=lipschitz_constant,
             regularisation=Regularisation(
                 method="ROF_TV",
-                strength=0.0005 * lipschitz_constant * reconstructor.OS_number,
+                strength=0.0005 * lipschitz_constant * reconstructor.num_subsets,
                 iterations=20,
                 time_step=0.001,
             ),
@@ -751,7 +751,7 @@ def test_fista_os_pwls_regul_pdtv_cp_3d(
             return_energy=True,
             regularisation=Regularisation(
                 method="PD_TV",
-                strength=1e-05 * lipschitz_constant * reconstructor.OS_number,
+                strength=1e-05 * lipschitz_constant * reconstructor.num_subsets,
                 iterations=10,
             ),
         )
@@ -796,7 +796,7 @@ def test_fista_os_pwls_regul_roftv_cp_3d(
             lipschitz_constant=lipschitz_constant,
             regularisation=Regularisation(
                 method="ROF_TV",
-                strength=0.0005 * lipschitz_constant * reconstructor.OS_number,
+                strength=0.0005 * lipschitz_constant * reconstructor.num_subsets,
                 iterations=10,
                 time_step=0.001,
             ),

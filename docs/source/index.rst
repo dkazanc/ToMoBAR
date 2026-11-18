@@ -1,50 +1,120 @@
-.. include:: ../../README.rst
+ToMoBAR documentation
+=====================
+
+ToMoBAR provides GPU reconstruction for parallel-beam tomography and
+laminography, with direct methods, iterative solvers and native regularisers.
+
+The tutorials include saved figures; reading the documentation needs no GPU.
+
+Where should I start?
+---------------------
+
+.. grid:: 1 2 2 2
+   :gutter: 3
+   :class-container: tomobar-start-grid
+
+   .. grid-item-card:: Your first reconstruction
+      :link: getting_started/first_reconstruction
+      :link-type: doc
+      :class-card: tomobar-start-card
+
+      Generate a sample, reconstruct it and save your first result.
+
+      .. card-footer::
+
+         Start here →
+
+   .. grid-item-card:: Learn with notebooks
+      :link: tutorials/index
+      :link-type: doc
+      :class-card: tomobar-start-card
+
+      Explore geometry, synthetic reconstructions and experimental datasets.
+
+      .. card-footer::
+
+         Open the tutorials →
+
+   .. grid-item-card:: Work with your own data
+      :link: howto/data_geometry
+      :link-type: doc
+      :class-card: tomobar-start-card
+
+      Prepare projections and configure your acquisition geometry.
+
+      .. card-footer::
+
+         Find a how-to guide →
+
+   .. grid-item-card:: Explore the API
+      :link: reference/api
+      :link-type: doc
+      :class-card: tomobar-start-card
+
+      Look up reconstruction classes, methods and settings.
+
+      .. card-footer::
+
+         Browse the reference →
+
+Need to set up your environment? Start with :doc:`getting_started/installation`.
 
 .. _intro_content:
 
 .. toctree::
-    :caption: Introduction
-    :maxdepth: 2
-    :glob:
+   :caption: Getting started
+   :maxdepth: 1
 
-    introduction/about
-    introduction/dependencies
-    introduction/references
-
-
-.. _how_to_content:
-
-.. toctree::
-    :caption: How To's
-    :maxdepth: 2
-
-    howto/installation
-    howto/use
-    howto/geometry
-    howto/migration
+   getting_started/overview
+   getting_started/installation
+   getting_started/requirements
+   getting_started/first_reconstruction
+   howto/migration
 
 .. _tutorials:
 
 .. toctree::
-    :caption: Tutorials
-    :maxdepth: 2
+   :caption: Tutorials
+   :maxdepth: 3
 
-    tutorials/direct_recon
-    tutorials/basic_iter_recon
-    tutorials/regul_iter_recon
-    tutorials/synthetic_recon
-    tutorials/real_data_recon
+   tutorials/index
+
+.. _how_to_content:
+
+.. toctree::
+   :caption: How-to guides
+   :maxdepth: 1
+
+   howto/data_geometry
+   howto/reconstruction
+   howto/monitoring_alignment
+
+.. toctree::
+   :caption: Concepts
+   :maxdepth: 1
+
+   concepts/array_axes
+   concepts/projection_operators
+   concepts/reconstruction_methods
+   concepts/backends
+   concepts/laminography
+   concepts/fista
+   concepts/admm
+   concepts/emission
+   concepts/usfft
+   concepts/gpu_memory
 
 .. _reference_content:
 
 .. toctree::
-    :caption: Reference guides
-    :maxdepth: 2
+   :caption: Reference
+   :maxdepth: 1
 
-    reference/api
+   reference/api
+   reference/bibliography
 
 .. toctree::
-    :caption: Developers
-    :maxdepth: 2
+   :caption: Development
+   :maxdepth: 2
 
-    developers/index
+   developers/index

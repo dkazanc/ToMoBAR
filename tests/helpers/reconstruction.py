@@ -345,7 +345,7 @@ class ResourceHarness(_Harness):
                 angles=np.arange(float(n_views)), detector_shape=(1, 2)
             ),
             volume_geometry=Volume3DGeometry(shape=(1, 2, 2)),
-            OS_number=count,
+            num_subsets=count,
         )
         self._cleanup.callback(rec.close)
         return rec

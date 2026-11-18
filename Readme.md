@@ -1,54 +1,88 @@
-<table>
-    <tr>
-        <td>
-        <div align="left">
-          <img src="docs/source/_static//tomobar_logo.png" width="450"><br>
-        </div>
-        </td>
-        <td>
-        <font size="5"><b> TOmographic MOdel-BAsed Reconstruction software <a href="https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf">PAPER (CT Meeting 2020)</a></b></font>
-        <br><font size="3" face="verdana" color="green"><b> ToMoBAR</b> is a Python library of fast direct and model-based regularised iterative  algorithms with a plug-and-play capability for reconstruction of parallel-beam geometry data. ToMoBAR offers you a selection of various data models and regularisers resulting in complex objectives for tomographic reconstruction. As ToMoBAR relies on device-to-device methods operating on CuPy arrays it offers significant speed-ups. It also can handle multi-GPU parallel reconstruction through the <a href="https://diamondlightsource.github.io/httomo/">HTTomo</a> framework for big-data processing and reconstruction. ToMoBAR is used in production at <a href="https://www.diamond.ac.uk/Home.html">Diamond Light Source</a>.</font></br>
-        </td>
-    </tr>
-</table>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/source/_static/tomobar_logo_v3_dark.png">
+  <img src="docs/source/_static/tomobar_logo_v3_light.png" alt="ToMoBAR in classic serif lettering beneath a red and green faceted object with a tilted acquisition arrow" width="450">
+</picture>
+
+# ToMoBAR
+
+**TOmographic MOdel-BAsed Reconstruction** is a Python library for GPU-accelerated
+direct and model-based iterative reconstruction of parallel-beam tomography and
+laminography data.
 
 | Master | Anaconda binaries |
 |--------|-------------------|
 | ![Github Actions](https://github.com/dkazanc/ToMoBAR/actions/workflows/tomobar_conda_upload.yml/badge.svg) | ![conda version](https://anaconda.org/httomo/tomobar/badges/version.svg) ![conda last release](https://anaconda.org/httomo/tomobar/badges/latest_release_date.svg) [![conda platforms](https://anaconda.org/httomo/tomobar/badges/platforms.svg) ![conda dowloads](https://anaconda.org/httomo/tomobar/badges/downloads.svg)](https://anaconda.org/httomo/tomobar/) |
 
-## Anouncements:
-*  $\sf\color{red}!$ 2026.4.0.0 version requires ASTRA-Toolbox version 2.5 or newer [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
+## Capabilities
 
-*  $\sf\color{red}!$ The current GPU-only iterative reconstruction interface is `tomobar.reconstruction.iterative.RecToolsIR`, using explicit projection and volume geometry. The dependency on the Regularisation Toolkit is dropped in favour of the internal CuPy routines. Please see more information in [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md)
+- Explicit projection and volume geometry, with centre-of-rotation corrections,
+  per-view detector shifts and general parallel vectors.
+- FBP in 2D and 3D, plus Fourier inversion for supported 3D tomography scans.
+- Landweber, SIRT, CGLS, FISTA, ADMM and OSEM for 3D iterative reconstruction.
+- ASTRA projection/backprojection for flexible geometry and laminography; USFFT
+  for supported angle-based tomography with scalar centre-of-rotation corrections.
+- LS, PWLS and SWLS data fidelities for FISTA and ADMM. FISTA supports ordered
+  subsets; ADMM uses full-data updates with linearised or conjugate-gradient
+  data solves, relaxation and optional residual stopping.
+- Bundled CuPy regularisers: ROF-TV, PD-TV, split-Bregman TV, fast-gradient
+  projection TV, TGV and nonlinear diffusion. CCPi-Regularisation-Toolkit is
+  not required.
+- Geometry visualisation, reconstruction-energy diagnostics, solver continuation
+  and per-view translation alignment.
 
-For the refactored imports, geometry and solver calls, see the
+Direct forward projection, backprojection and FBP accept NumPy or CuPy arrays and
+return the same array library. Iterative methods accept either and return CuPy
+images. Geometry visualisation and NumPy preprocessing can run without a GPU;
+reconstruction requires a CUDA-capable NVIDIA GPU.
+
+## Requirements and installation
+
+The package declares Python >=3.12, NumPy >=2, CuPy >=14 and ASTRA Toolbox >=2.5,
+plus SciPy, scikit-image and Pillow. Choose Python and CUDA versions supported by
+your CuPy and ASTRA distributions. Matplotlib is optional for plotting; JupyterLab
+and a Python kernel are needed to run notebooks interactively.
+
+Follow the [installation guide](https://dkazanc.github.io/ToMoBAR/getting_started/installation.html)
+and [requirements](https://dkazanc.github.io/ToMoBAR/getting_started/requirements.html).
+For changes to imports, geometry and solver calls, use the
 [migration guide](https://dkazanc.github.io/ToMoBAR/howto/migration.html).
+See [CHANGELOG.md](CHANGELOG.md) for release details.
 
-### CHANGELOG:
-See [CHANGELOG](https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md) for all detailed changes.
+## Learn and run examples
 
-### ToMoBAR highlights:
-Check what ToMoBAR can [do](https://dkazanc.github.io/ToMoBAR/introduction/about.html#what-tomobar-can-do). Please also see [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos).
-ToMoBAR
+Start with the [notebook tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/index.html):
+geometry visualisation, synthetic 3D tomography, and synthetic laminography with
+FBP and CGLS. They contain saved results and generate their own inputs; no
+experimental dataset or TomoPhantom installation is required.
 
-### Installation
-Please check the detailed [installation](https://dkazanc.github.io/ToMoBAR/howto/installation.html) guide where all [software dependencies](https://dkazanc.github.io/ToMoBAR/introduction/dependencies.html) are listed.
+Notebook sources are in [docs/source/tutorials](docs/source/tutorials).
+Standalone scripts are grouped by topic in [demos](demos/README.rst), including
+experimental datasets, alignment, regularisation and solver diagnostics.
 
-### Software includes:
- * Wrappers around [ASTRA-toolbox](https://www.astra-toolbox.com/) to simplify access to various reconstruction methods available in ASTRA-Toolbox
- * CuPy driven forward/backward projectors to enable faster device-to-device operations and all-in-GPU memory prototyping of algorithms.
- * Optimised CUDA/CuPy implementation of the fast [Log-Polar]( https://epubs.siam.org/doi/10.1137/15M1023762) (Fourier-based) direct reconstruction method.
- * Regularisation modules that can be used for denoising or for regularisation in iterative methods.
- * Regularised iterative ordered-subsets [FISTA](https://epubs.siam.org/doi/10.1137/080716542) reconstruction algorithm with linear and non-linear data fidelities.
- * Regularised iterative ordered-subsets [ADMM](https://ieeexplore.ieee.org/document/7744574/) reconstruction algorithm. Very fast, especially with warm start, relaxation and ordered-subsets enabled.
- * [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos) to reconstruct synthetic and also real data
+## Related software
+
+[HTTomolibGPU](https://diamondlightsource.github.io/httomolibgpu/) provides GPU
+processing pipelines and reconstruction wrappers. [HTTomo](https://diamondlightsource.github.io/httomo/)
+provides a larger processing framework with MPI-based distributed execution.
+ToMoBAR exposes device selection but does not itself split a reconstruction
+across GPUs or MPI processes. Check downstream wrapper compatibility when
+upgrading to the current API.
+
+## Historical illustrations
+
+These images are retained from earlier ToMoBAR versions. They do not demonstrate
+the current supported fidelity settings or current numerical results; use the
+executed notebook tutorials for current examples.
 
 <div align="center">
-  <img src="docs/source/_static/recsFISTA_stud.png" width="550">
+  <img src="docs/source/_static/recsFISTA_stud.png" alt="Historical reconstruction comparison from an earlier ToMoBAR version" width="550">
 </div>
 <div align="center">
-  <img src="docs/source/_static/TomoRec_surf2.jpg" width="600">
+  <img src="docs/source/_static/TomoRec_surf2.jpg" alt="Historical three-dimensional reconstruction illustration" width="600">
 </div>
 
-### To cite this software please use:
- [D. Kazantsev and N. Wadeson 2020. TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software for high resolution synchrotron X-ray tomography. CT Meeting 2020](https://github.com/dkazanc/ToMoBAR/tree/master/docs/Kazantsev_CT_20.pdf)
+## Citation
+
+[D. Kazantsev and N. Wadeson (2020), Tomographic MOdel-BAsed Reconstruction
+(ToMoBAR) software for high resolution synchrotron X-ray tomography, CT Meeting
+2020](https://github.com/dkazanc/ToMoBAR/blob/master/docs/Kazantsev_CT_20.pdf).

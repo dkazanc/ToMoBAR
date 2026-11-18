@@ -37,7 +37,7 @@ def test_backproj2d(data, angles):
         volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
         device_index=0,
     ) as rec:
-        FBPrec = rec.backproject(data2D, data_axes_labels_order=["angles", "detX"])
+        FBPrec = rec.backproject(data2D, input_axes=["angles", "detX"])
 
     assert 22 <= np.min(FBPrec) <= 25
     assert 130 <= np.max(FBPrec) <= 150
@@ -57,8 +57,8 @@ def test_forwproj2d(data, angles):
         volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
         device_index=0,
     ) as rec:
-        frw_proj = rec.forward(phantom, data_axes_labels_order=["angles", "detX"])
-        frw_proj_order = rec.forward(phantom, data_axes_labels_order=["detX", "angles"])
+        frw_proj = rec.forward(phantom, output_axes=["angles", "detX"])
+        frw_proj_order = rec.forward(phantom, output_axes=["detX", "angles"])
     assert 60 <= np.min(frw_proj) <= 75
     assert 200 <= np.max(frw_proj) <= 300
     assert frw_proj.dtype == np.float32
@@ -78,7 +78,7 @@ def test_fbp2d(data, angles):
         volume_geometry=Volume2DGeometry(shape=(N_size, N_size)),
         device_index=0,
     ) as rec:
-        FBPrec = rec.FBP(data2D, data_axes_labels_order=["angles", "detX"])
+        FBPrec = rec.FBP(data2D, input_axes=["angles", "detX"])
 
     assert np.min(FBPrec) <= -0.0001
     assert np.max(FBPrec) >= 0.001
@@ -99,7 +99,7 @@ def test_fbp2d_pad(data, angles):
         detector_padding=20,
         device_index=0,
     ) as rec:
-        FBPrec = rec.FBP(data2D, data_axes_labels_order=["angles", "detX"])
+        FBPrec = rec.FBP(data2D, input_axes=["angles", "detX"])
 
     assert np.min(FBPrec) <= -0.0001
     assert np.max(FBPrec) >= 0.001
@@ -126,7 +126,7 @@ def test_fbp2d_astra_gpu(data, angles, filter_type, filter_d):
     ) as rec:
         FBPrec = rec.FBP(
             data2D,
-            data_axes_labels_order=["angles", "detX"],
+            input_axes=["angles", "detX"],
             filter_type=filter_type,
             filter_d=filter_d,
         )
@@ -151,7 +151,7 @@ def test_fbp2d_recon_circ_mask(data, angles):
     ) as rec:
         FBPrec = rec.FBP(
             data2D,
-            data_axes_labels_order=["angles", "detX"],
+            input_axes=["angles", "detX"],
             recon_mask_radius=0.85,
         )
 
@@ -194,9 +194,7 @@ def test_backproj3d(data, angles):
         volume_geometry=Volume3DGeometry(shape=(detY, N_size, N_size)),
         device_index=0,
     ) as rec:
-        backproj = rec.backproject(
-            data, data_axes_labels_order=["angles", "detY", "detX"]
-        )
+        backproj = rec.backproject(data, input_axes=["angles", "detY", "detX"])
     assert_allclose(np.min(backproj), -3.8901403, rtol=EPSILON)
     assert_allclose(np.max(backproj), 350.38193, rtol=EPSILON)
     assert backproj.dtype == np.float32
@@ -215,9 +213,7 @@ def test_backproj3d_pad(data, angles):
         detector_padding=20,
         device_index=0,
     ) as rec:
-        backproj = rec.backproject(
-            data, data_axes_labels_order=["angles", "detY", "detX"]
-        )
+        backproj = rec.backproject(data, input_axes=["angles", "detY", "detX"])
     assert_allclose(np.min(backproj), -3.8901403, rtol=EPSILON)
     assert_allclose(np.max(backproj), 350.38193, rtol=EPSILON)
     assert backproj.dtype == np.float32
@@ -237,7 +233,7 @@ def test_fbp3d_1(data, angles):
     ) as rec:
         FBPrec = rec.FBP(
             data,
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             filter_type="SINC",
             cutoff_freq=1.1,
         )
@@ -261,7 +257,7 @@ def test_fbp3d_1_pad(data, angles):
     ) as rec:
         FBPrec = rec.FBP(
             data,
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             filter_type="SINC",
             cutoff_freq=1.1,
         )
@@ -285,7 +281,7 @@ def test_fbp3d_normalisation(angles, raw_data, flats, darks):
     ) as rec:
         FBPrec = rec.FBP(
             normalised,
-            data_axes_labels_order=["angles", "detY", "detX"],
+            input_axes=["angles", "detY", "detX"],
             filter_type="SINC",
             cutoff_freq=1.1,
         )

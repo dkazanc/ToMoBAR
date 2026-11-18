@@ -125,8 +125,8 @@ ignore = ["D100", "D104", "D105", "D107", "D418"]
 [tool.ruff.lint.per-file-ignores]
 # Tests import optional GPU libraries before importing production GPU modules.
 "tests/**" = ["D", "E402"]
-# Demos use staged imports to keep each example section self-contained.
-"Demos/**" = ["D", "E402"]
+# demos use staged imports to keep each example section self-contained.
+"demos/**" = ["D", "E402"]
 "docs/**" = ["D"]
 ".github/**" = ["D"]
 

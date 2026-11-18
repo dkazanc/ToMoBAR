@@ -46,7 +46,12 @@ extensions = [
 ]
 autosummary_generate = True
 numfig = True
+sd_card_legacy_separators = False
 template_patterns = ["_templates"]
+# Publish the outputs saved by notebook authors without executing any cells.
+nbsphinx_execute = "never"
+# Ignore generated files left over from the previous gallery workflow.
+exclude_patterns = ["auto_examples/**"]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
@@ -54,19 +59,20 @@ pygments_style = "sphinx"
 # -- Options for HTML output --------------------------------------------------
 
 html_theme = "sphinx_book_theme"
-html_logo = "_static/tomobar_logo_light.png"
-html_title = "Tomobar Documentation page"
+html_logo = "_static/tomobar_logo_v3_light.png"
+html_title = "ToMoBAR documentation"
 html_copy_source = True
-html_favicon = "_static/tomobar_logo_light.png"
+html_favicon = "_static/tomobar_icon_v3.png"
 html_last_updated_fmt = ""
 html_static_path = ["_static"]
 html_use_smartypants = True
 
 html_theme_options = {
     "logo": {
-        "image_dark": "_static/tomobar_logo_dark.png",
+        "image_dark": "_static/tomobar_logo_v3_dark.png",
     },
     "show_toc_level": 1,
+    "navbar_persistent": [],  # Keep the search field in the sidebar only.
     "navbar_align": "left",  # [left, content, right] For testing that the navbar items align properly
 }
 
