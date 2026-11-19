@@ -9,6 +9,7 @@ cp = pytest.importorskip("cupy")
 pytestmark = pytest.mark.usefixtures("gpu")
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("array_library", ["numpy", "cupy"])
 def test_direct_full_and_subset_projection_on_cuda(array_library):
     xp = np
@@ -58,6 +59,7 @@ def test_direct_full_and_subset_projection_on_cuda(array_library):
     assert not wrapper._projector_handles
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize(
     "method", ["Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM"]
 )

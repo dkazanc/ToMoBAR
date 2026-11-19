@@ -10,6 +10,7 @@ from tests.helpers.tv_reference import reference_tv
 from tomobar.options import Regularisation
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("shape", [(2, 2), (2, 2, 2), (1, 2), (1, 1, 2)])
 @pytest.mark.parametrize("strength", [0.1, 1.0])
 @pytest.mark.parametrize("anisotropic", [0, 1])
@@ -62,6 +63,7 @@ def test_every_returned_primal_image_is_nonnegative(pd_tv, iterations):
         assert np.all(result >= 0)
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("nonnegative", [0, 1])
 def test_zero_strength_is_identity_or_nonnegative_projection(pd_tv, nonnegative):
     denoise, _ = pd_tv
@@ -130,7 +132,7 @@ def test_admm_warm_tv_continuation_and_geometry_reset(
 ):
     rec, install_identity = identity_rec
     from tomobar._regularisers.proximal import prox_regul
-    from tomobar.reconstruction import iterative
+    from tomobar.reconstruction import iterative_state
 
     cache_calls = []
 
@@ -144,7 +146,7 @@ def test_admm_warm_tv_continuation_and_geometry_reset(
             dual_state=dual_state,
         )
 
-    monkeypatch.setattr(iterative, "prox_regul", proximal)
+    monkeypatch.setattr(iterative_state, "prox_regul", proximal)
     options = dict(
         data_solver=data_solver,
         rho=1,

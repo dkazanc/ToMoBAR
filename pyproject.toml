@@ -65,6 +65,7 @@ addopts = [
    "--strict-config",
 ]
 markers = [
+    "essential: curated numerical and public-behaviour checks for routine development",
     "gpu: requires a working CUDA device (including tests using host arrays with ASTRA)",
     "perf: opt-in performance measurements; run with --performance",
     "full: opt-in large memory/computation cases; run with --full",
@@ -141,6 +142,8 @@ include = [
     "tomobar/options.py",
     "tomobar/_solvers/options.py",
     "tomobar/_solvers/types.py",
+    "tomobar/_solvers/interface.py",
+    "typings/solver_contracts.py",
     "tomobar/reconstruction/state.py",
 ]
 pythonVersion = "3.12"

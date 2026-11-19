@@ -45,6 +45,7 @@ def test_archive_registration_sign_order_and_truth(data_shifted, synth_data_shif
     np.testing.assert_array_equal(data_shifted, measured)
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("normalization", [None, "phase"])
 def test_fractional_translation(normalization):
     rng = np.random.default_rng(2)
@@ -120,6 +121,7 @@ class AlignmentRec:
         return state.image.copy()
 
 
+@pytest.mark.essential
 def test_alignment_geometry_updates_and_final_state():
     rec = AlignmentRec()
     motion = np.array([[2, -1], [-1, 2], [-1, -1]])
@@ -307,12 +309,6 @@ class CPUReferenceReconstructor:
         )
 
     def _ensure_open(self):
-        pass
-
-    def _run_options(self, iterations, **kwargs):
-        return iterations
-
-    def _regularisation_options(self, r):
         pass
 
     def _prepare_inputs(self, p, **kw):
@@ -525,6 +521,7 @@ def test_reference_view_keeps_its_nonzero_starting_offset(monkeypatch):
     assert len(result.convergence) == 3
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("failure_point", ["final_solve", "output_snapshot"])
 def test_failure_after_geometry_update_rolls_back(monkeypatch, failure_point):
     import tomobar.alignment as module

@@ -283,6 +283,23 @@ remain to check overflow beyond 32-bit sizes without allocating large volumes.
 Solver tests
 ------------
 
+``_solvers/interface.py`` defines structural ``SolverReconstructor`` and
+``SolverOperator`` protocols for the services consumed by the continuation
+engine and numerical updates. The contracts cover geometry versions, subsets,
+device selection, input preparation, norm estimation and projection
+operations with optional output buffers. They import no CUDA implementation;
+concrete hosts need no protocol inheritance or runtime checks.
+``typings/solver_contracts.py`` checks that ``RecToolsIR`` and
+``ProjectionOperator`` satisfy these contracts as part of the configured
+Pyright checks.
+
+Method-specific option classes in ``_solvers/options.py`` validate solver
+settings for both one-shot and continuation calls. The continuation API does
+not inspect public method signatures at runtime. Tests compare public parameter
+names and defaults with the option classes to catch drift. Run iteration counts
+and output masks are validated separately from persistent solver settings;
+subset restrictions are enforced centrally before preparing input arrays.
+
 ``tests/helpers/solver.py`` supplies an explicit NumPy reconstructor harness.
 It calls ``_solvers.state.initialise`` and ``run`` directly, injecting a simple
 linear operator, gradient and proximal function. It does not extract production

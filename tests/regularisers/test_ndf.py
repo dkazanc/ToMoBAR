@@ -106,6 +106,7 @@ def test_convex_modes_match_independent_minimisation(regularise, sigma, nonneg):
     np.testing.assert_allclose(actual[0], result.x.reshape(data.shape), atol=2e-5)
 
 
+@pytest.mark.essential
 def test_validation_and_zero_strength(regularise):
     data = np.array([[-1, 2], [3, -4]], dtype=np.float32)
     for nonneg in (0, 1):

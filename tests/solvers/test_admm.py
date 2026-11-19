@@ -6,6 +6,7 @@ import pytest
 from tomobar.options import DataFidelity, Regularisation
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("rho", [0.1, 1.0, 10.0])
 @pytest.mark.parametrize("relaxation", [0.5, 1.0, 1.6, 1.99])
 def test_first_step_uses_relaxed_data_for_prox_and_dual(two_pixel_rec, rho, relaxation):
@@ -291,6 +292,7 @@ def test_one_call_accepts_stopping_options_and_returns_shorter_energy(two_pixel_
     np.testing.assert_allclose(image, [[[0.6, 3.4]]], atol=1e-4)
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize(
     "fidelity,beta", [("LS", 0.2), ("PWLS", 0.2), ("SWLS", 0.2), ("SWLS", 0.0)]
 )

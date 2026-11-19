@@ -153,6 +153,8 @@ def test_public_planning_and_validation_need_no_gpu(mock_reconstruction):
         assert plan.output_shape == (2, 4, 4)
         with pytest.raises(TypeError, match="unexpected"):
             rec.FOURIER_INV(native, chunk_cout=2)
+        with pytest.raises(TypeError, match="cupyrun"):
+            rec.FOURIER_INV(native, cupyrun=True)
         with pytest.raises(ValueError, match="positive integer"):
             rec.FOURIER_INV(native, chunk_count=0)
 

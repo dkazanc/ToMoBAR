@@ -346,7 +346,8 @@ class RecToolsDIR(GeometryReconstruction):
             **kwargs: Individual FourierOptions fields with their declared types and
                 defaults. Examples: filter_type="shepp", cutoff_freq=1.0,
                 center_size=32768, legacy_scaling=False. None-valued keyword options
-                retain defaults; unknown names raise TypeError.
+                retain defaults; unknown names, including the removed ``cupyrun``
+                compatibility keyword, raise TypeError.
 
         Returns:
             cupy.ndarray or tuple[int, int, int]: Float32 (Z, Y, X) reconstruction
@@ -364,7 +365,6 @@ class RecToolsDIR(GeometryReconstruction):
         """
         self._ensure_open()
         data_dtype = kwargs.pop("data_dtype", np.float32)
-        kwargs.pop("cupyrun", None)  # Legacy internal output-library flag.
         settings = resolve_fourier_options(options, kwargs)
         axes = _resolve_data_axes(input_axes, ("detY", "angles", "detX"))
         shape_only = isinstance(data, tuple)

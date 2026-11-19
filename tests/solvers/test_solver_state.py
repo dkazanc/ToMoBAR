@@ -14,6 +14,7 @@ from tomobar.options import (
 METHODS = ["Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM"]
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("method", METHODS)
 @pytest.mark.parametrize("subsets", [1, 2])
 def test_batches_equal_uninterrupted_and_oneshot(cpu_rec, method, subsets):
@@ -45,6 +46,7 @@ def test_batches_equal_uninterrupted_and_oneshot(cpu_rec, method, subsets):
     np.testing.assert_array_equal(a.image, before)
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("method", METHODS)
 def test_geometry_restart_matches_fresh_warm_start(cpu_rec, method):
     rec = cpu_rec
@@ -69,6 +71,7 @@ def test_geometry_restart_matches_fresh_warm_start(cpu_rec, method):
     assert state.energy_iterations == [0, 1, 2, 2, 3, 4]
 
 
+@pytest.mark.essential
 def test_owns_data_and_reuses_preparation_and_norm(cpu_rec):
     rec = cpu_rec
     data = np.full(rec.shape, 3.0, dtype=np.float32)
@@ -120,6 +123,7 @@ def test_admm_scaling_does_not_modify_original_regularisation(cpu_rec):
     assert state.options["regularisation"] is reg and reg.strength == 0.02
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("method", METHODS)
 def test_cuda_continuation(method, gpu):
     cp = gpu

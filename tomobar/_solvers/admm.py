@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 import numpy as np
 from tomobar._solvers.types import ADMMWork
-from tomobar._solvers.options import ADMMOptions
+from tomobar._solvers.options import ADMMOptions, require_options
 from tomobar._solvers.updates import (
     admm_data_step,
     admm_proximal_input,
@@ -12,12 +12,13 @@ from tomobar._solvers.updates import (
 )
 
 if TYPE_CHECKING:
+    from tomobar._solvers.interface import SolverReconstructor
     from tomobar.reconstruction.state import SolverState
 
 
-def setup(rec, state: SolverState, xp, buffers) -> ADMMWork:
+def setup(rec: SolverReconstructor, state: SolverState, xp, buffers) -> ADMMWork:
     """Build ADMM's geometry-dependent data, dual and proximal work."""
-    options = cast(ADMMOptions, state._options)
+    options = require_options(state._options, ADMMOptions)
     image = state.image
     lipschitz = None
     if options.data_solver == "linearised":
@@ -37,7 +38,14 @@ def setup(rec, state: SolverState, xp, buffers) -> ADMMWork:
     return work
 
 
-def _admm_gradient(rec, state: SolverState, image, gradient, *, normal_operator=False):
+def _admm_gradient(
+    rec: SolverReconstructor,
+    state: SolverState,
+    image,
+    gradient,
+    *,
+    normal_operator=False,
+):
     """Return gradient scratch, overwritten by the next call on this state.
 
     Includes SWLS's full-view correction. The cached ADMM gradient may share
@@ -52,13 +60,13 @@ def _admm_gradient(rec, state: SolverState, image, gradient, *, normal_operator=
         0,
         state.weights,
         work.weight_sum,
-        fidelity=cast(ADMMOptions, state._options).fidelity.method,
+        fidelity=require_options(state._options, ADMMOptions).fidelity.method,
         projection_out=work.buffers.projection(),
         out=work.buffers.volume(),
     )
 
 
-def _admm_cg_data_step(rec, state: SolverState, *, xp, gradient):
+def _admm_cg_data_step(rec: SolverReconstructor, state: SolverState, *, xp, gradient):
     """Warm-start CG for (H + rho*I)z = A.T*Q*b + rho*(x-u).
 
     H is the quadratic data Hessian (including the full SWLS correction).
@@ -66,7 +74,9 @@ def _admm_cg_data_step(rec, state: SolverState, *, xp, gradient):
     side or zero-projection array needs to be stored. Restart directions for
     each new ADMM subproblem while retaining the previous data image.
     """
-    options, work = cast(ADMMOptions, state._options), cast(ADMMWork, state._work)
+    options, work = require_options(state._options, ADMMOptions), cast(
+        ADMMWork, state._work
+    )
     rho = options.rho
     image = work.z.copy()
     residual = -(work.gradient + rho * (image - state.image + work.u))
@@ -103,14 +113,24 @@ def _admm_cg_data_step(rec, state: SolverState, *, xp, gradient):
     return image, options.cg_iterations
 
 
-def step(rec, state: SolverState, regularisation, *, xp, gradient, proximal):
+def step(
+    rec: SolverReconstructor,
+    state: SolverState,
+    regularisation,
+    *,
+    xp,
+    gradient,
+    proximal,
+):
     """One data solve, relaxed proximal update and scaled dual update.
 
     Split f(z) + g(x) subject to z=x. The data update solves or majorises f;
     g contains TV and the optional nonnegativity constraint. Keep the raw data
     variable separate from its relaxed value, as in scaled, relaxed ADMM.
     """
-    options, work = cast(ADMMOptions, state._options), cast(ADMMWork, state._work)
+    options, work = require_options(state._options, ADMMOptions), cast(
+        ADMMWork, state._work
+    )
     previous_image, previous_data = state.image, work.z
     rho, relaxation = options.rho, options.relaxation
     if work.gradient is None:

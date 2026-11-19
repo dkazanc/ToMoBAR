@@ -114,6 +114,7 @@ def test_solver_can_import_public_state():
     assert not list(_violations(module, _imports(source, module)))
 
 
+@pytest.mark.essential
 def test_metadata_state_and_kernel_package_work_without_gpu_imports(tmp_path):
     code = """
 import importlib.abc
@@ -130,6 +131,7 @@ import tomobar._validation
 import tomobar.options
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.reconstruction.state import SolverState
+from tomobar._solvers.interface import SolverOperator, SolverReconstructor
 from tomobar.reconstruction.fourier_plan import build_fourier_plan
 assert SolverState.__module__ == 'tomobar.reconstruction.state'
 scan = Parallel3DGeometry(angles=[0.0, 1.0], detector_shape=(1, 17))

@@ -134,6 +134,7 @@ def test_osem_preserves_exact_noiseless_solution(matrix_reconstructor, subsets):
     np.testing.assert_allclose(result.ravel(), TRUE_VOXELS, rtol=2e-6, atol=2e-7)
 
 
+@pytest.mark.essential
 def test_mlem_two_voxel_regression(matrix_reconstructor):
     matrix = np.array([[1.0, 1.0], [1.0, 2.0]], dtype=np.float32)
     rec, _ = matrix_reconstructor(matrix, 1)

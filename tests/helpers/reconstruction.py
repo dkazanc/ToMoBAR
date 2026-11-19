@@ -313,6 +313,7 @@ class ResourceHarness(_Harness):
         fidelities.grad_data_term = Mock(
             side_effect=lambda rec, x, *args, **kwargs: np.zeros_like(x)
         )
+        self.gradient_mock = fidelities.grad_data_term
         import importlib
 
         importlib.import_module("tomobar._solvers.state")
@@ -337,7 +338,24 @@ class ResourceHarness(_Harness):
                 with patch.dict(
                     "sys.modules", {"tomobar.projectors.operator": operators}
                 ):
-                    return load_module("_subset_test_ir", "reconstruction/iterative.py")
+                    # Reload the mixins as well: their decorators and globals
+                    # must capture this harness's backends, not cached CUDA ones.
+                    methods = load_module(
+                        "_subset_test_methods", "reconstruction/iterative_methods.py"
+                    )
+                    state = load_module(
+                        "_subset_test_state", "reconstruction/iterative_state.py"
+                    )
+                    with patch.dict(
+                        "sys.modules",
+                        {
+                            "tomobar.reconstruction.iterative_methods": methods,
+                            "tomobar.reconstruction.iterative_state": state,
+                        },
+                    ):
+                        return load_module(
+                            "_subset_test_ir", "reconstruction/iterative.py"
+                        )
 
     def make_iterative(self, module, n_views, count):
         rec = module.RecToolsIR(

@@ -105,6 +105,7 @@ def test_validation_and_energy_are_explicit(regularise):
         regularisation_energy(data, Regularisation(method="TGV"))
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("nonneg", [False, True])
 def test_one_iteration_returns_true_primal_and_safe_step(regularise, nonneg):
     from tests.helpers.tv_reference import forward_gradient, gradient_adjoint

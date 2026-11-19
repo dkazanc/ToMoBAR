@@ -109,6 +109,7 @@ def test_shapes_geometry_and_device_are_read_only(operator_backend, dim):
     assert operator.device_index == 0
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("dim", [2, 3])
 def test_lazy_shared_projector_and_output_buffer_identity(operator_backend, dim):
     operator = operator_backend.create(dim)
@@ -188,6 +189,7 @@ def test_input_validation_precedes_projector_allocation(operator_backend, dim, m
     operator_backend.harness.astra.create_projector.assert_not_called()
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("dim", [2, 3])
 def test_context_failure_and_closed_calls_release_resources(operator_backend, dim):
     operator = operator_backend.create(dim)

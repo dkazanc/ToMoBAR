@@ -43,6 +43,7 @@ def plotting(monkeypatch, tmp_path):
     plt.close("all")
 
 
+@pytest.mark.essential
 def test_volume_zyx_bounds_and_odd_detector_pixel_edges(plotting):
     scan = Parallel3DGeometry.from_vectors(
         vectors=[[0, -2, 0, 7, 8, 9, 2, 0, 0, 0.5, 0, 3]],
@@ -207,7 +208,7 @@ else:
 
 
 def test_laboratory_frame_keeps_instrument_fixed_and_rotates_sample(plotting):
-    from tomobar.visualisation import _laboratory_transforms
+    from tomobar._visualisation_laboratory import _laboratory_transforms
 
     angles = np.array([0.3, -0.4, -1.1])
     tilt = np.deg2rad(70)
@@ -245,7 +246,7 @@ def test_laboratory_frame_keeps_instrument_fixed_and_rotates_sample(plotting):
 
 
 def test_laboratory_tomography_axis_and_unsupported_vectors(plotting):
-    from tomobar.visualisation import _laboratory_transforms
+    from tomobar._visualisation_laboratory import _laboratory_transforms
 
     scan = Parallel3DGeometry.tomography(angles=[0, 0.7], detector_shape=(3, 7))
     rotations, axis = _laboratory_transforms(scan, [0, 1])
@@ -270,7 +271,10 @@ def test_laboratory_tomography_axis_and_unsupported_vectors(plotting):
 def test_rotation_arc_follows_sample_motion_in_acquisition_order(
     angle_sign, rotation_axis, view_index
 ):
-    from tomobar.visualisation import _laboratory_transforms, _sample_rotation_arc
+    from tomobar._visualisation_laboratory import (
+        _laboratory_transforms,
+        _sample_rotation_arc,
+    )
 
     scan = Parallel3DGeometry.laminography(
         angles=0.3 + angle_sign * np.linspace(0, 2 * np.pi, 30),
@@ -291,7 +295,10 @@ def test_rotation_arc_follows_sample_motion_in_acquisition_order(
 
 @pytest.mark.parametrize("angles", [[0], [0, 0], [0, 0.5, 0]])
 def test_no_rotation_arrow_for_undefined_or_reversing_motion(angles):
-    from tomobar.visualisation import _laboratory_transforms, _sample_rotation_arc
+    from tomobar._visualisation_laboratory import (
+        _laboratory_transforms,
+        _sample_rotation_arc,
+    )
 
     scan = Parallel3DGeometry.tomography(angles=angles, detector_shape=(3, 7))
     rotations, axis = _laboratory_transforms(scan, [0])

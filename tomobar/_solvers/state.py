@@ -18,7 +18,7 @@ keys remain stable for callers inspecting SolverState.algorithm_state.
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import cast
+from typing import TYPE_CHECKING, cast
 import weakref
 
 from tomobar._solvers.types import (
@@ -27,12 +27,15 @@ from tomobar._solvers.types import (
 )
 from tomobar.options import DataFidelity
 from tomobar._validation import _positive_integer, _boolean
-from tomobar._solvers.options import ADMMOptions, solver_options
+from tomobar._solvers.options import ADMMOptions, require_options, solver_options
 from tomobar._solvers import admm as _admm
 from tomobar._solvers import iterative as _iterative_solvers
 from tomobar.energy import EnergyHistory
 from tomobar._solvers.buffers import ProjectionBuffers
 from tomobar.reconstruction.state import SolverState
+
+if TYPE_CHECKING:
+    from tomobar._solvers.interface import SolverReconstructor
 
 
 def _record(state: SolverState, *, force=False):
@@ -48,7 +51,7 @@ def _record(state: SolverState, *, force=False):
 
 
 def initialise(
-    rec,
+    rec: SolverReconstructor,
     method,
     projections,
     *,
@@ -59,18 +62,13 @@ def initialise(
     **parameters,
 ):
     """Validate method-specific settings before owning arrays or CUDA resources."""
+    rec._ensure_open()
     weights = parameters.pop("weights", None) if method in ("FISTA", "ADMM") else None
     options = solver_options(method, **parameters)
     regularisation = getattr(options, "regularisation", None)
     fidelity = getattr(options, "fidelity", DataFidelity())
-    rec._run_options(
-        1,
-        default=1,
-        nonnegativity=options.nonnegativity,
-        recon_mask_radius=None,
-        allow_subsets=method not in ("Landweber", "SIRT", "CGLS"),
-    )
-    rec._regularisation_options(regularisation)
+    if method in ("Landweber", "SIRT", "CGLS") and rec.num_subsets > 1:
+        raise ValueError("This method requires num_subsets=None or 1")
     _boolean(return_energy, "return_energy")
     if (
         return_energy
@@ -112,7 +110,7 @@ def initialise(
     return state
 
 
-def _setup(rec, state: SolverState, xp) -> SolverWork:
+def _setup(rec: SolverReconstructor, state: SolverState, xp) -> SolverWork:
     """Allocate independent scratch and delegate geometry-dependent setup."""
     buffers = ProjectionBuffers(
         state.projections,
@@ -124,7 +122,7 @@ def _setup(rec, state: SolverState, xp) -> SolverWork:
     return execution.setup(rec, state, xp, buffers)
 
 
-def _restart_for_geometry(rec, state: SolverState, xp):
+def _restart_for_geometry(rec: SolverReconstructor, state: SolverState, xp):
     """Rebuild geometry-dependent buffers, retaining the image and histories."""
     if state.geometry_version == rec.geometry_version:
         return
@@ -138,7 +136,7 @@ def _restart_for_geometry(rec, state: SolverState, xp):
     _record(state, force=True)
 
 
-def _scaled_regularisation(rec, state: SolverState):
+def _scaled_regularisation(rec: SolverReconstructor, state: SolverState):
     """Scale proximal strength while preserving the stored objective settings."""
     regularisation = getattr(state._options, "regularisation", None)
     if regularisation is None:
@@ -150,12 +148,15 @@ def _scaled_regularisation(rec, state: SolverState):
     if state.method == "ADMM":
         return replace(
             regularisation,
-            strength=regularisation.strength / cast(ADMMOptions, state._options).rho,
+            strength=regularisation.strength
+            / require_options(state._options, ADMMOptions).rho,
         )
     return regularisation
 
 
-def run(rec, state: SolverState, iterations, *, xp, gradient, proximal):
+def run(
+    rec: SolverReconstructor, state: SolverState, iterations, *, xp, gradient, proximal
+):
     """Continue a solver, recording each completed outer iteration centrally."""
     rec._ensure_open()
     if not isinstance(state, SolverState) or state._owner() is not rec:

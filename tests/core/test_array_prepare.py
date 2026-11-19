@@ -21,6 +21,7 @@ def test_numpy_storage_reuse_and_deferred_packing():
     np.testing.assert_array_equal(packed, view)
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("padding", [0, 2])
 def test_numpy_axes_and_padding_without_input_mutation(padding):
     axes = ("detY", "angles", "detX")
@@ -42,6 +43,7 @@ def test_numpy_axes_and_padding_without_input_mutation(padding):
         np.testing.assert_array_equal(data, np.arange(30).reshape(2, 3, 5))
 
 
+@pytest.mark.essential
 def test_single_detector_row_and_invalid_shapes():
     data = np.ones((3, 5), dtype=np.float32)
     options = dict(shape=(1, 3, 5), device_index=0, array_module=np)
@@ -135,6 +137,7 @@ def test_iterative_projection_weights_and_settings_reuse(gpu, padding):
         )
 
 
+@pytest.mark.essential
 def test_cgls_preserves_projection_input(gpu):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry

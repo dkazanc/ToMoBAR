@@ -17,9 +17,17 @@ reference checks, tests with isolated backend doubles, and CUDA integration test
 
 ## Running tests
 
+For a smaller, documented starting point, see the [essential suite](ESSENTIAL.md).
+It selects 40 existing test functions with `@pytest.mark.essential`, covering
+geometry, reconstruction, solvers, regularisation, alignment and resource
+ownership. Parameter combinations remain intact. The full suite and default
+test selection are unchanged.
+
 From the repository root, using the environment's Python:
 
 ```sh
+python -m pytest -m essential               # Curated everyday suite (CPU and GPU)
+python -m pytest -m essential --cpu-only    # CPU portion of the essential suite
 python -m pytest --cpu-only                 # CPU suite used by release CI
 python -m pytest                           # All ordinary tests; CUDA cases skip if unavailable
 python -m pytest tests/solvers              # One category

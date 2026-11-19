@@ -1,13 +1,18 @@
 """Data fidelities to be used with the iterative methods such as FISTA, ADMM."""
 
+from __future__ import annotations
+
 import cupy as cp
 import numpy as np
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from tomobar.cuda_kernels.loader import get_cuda_kernel, load_cuda_module
+
+if TYPE_CHECKING:
+    from tomobar._solvers.interface import SolverReconstructor
 
 
 def grad_data_term(
-    self,
+    self: SolverReconstructor,
     x: cp.ndarray,
     b: Optional[cp.ndarray],
     use_os: bool,

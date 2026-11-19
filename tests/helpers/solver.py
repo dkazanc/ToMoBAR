@@ -6,8 +6,6 @@ from types import SimpleNamespace
 import numpy as np
 
 from tomobar._solvers import state as solver_state
-from tomobar.options import Regularisation
-from tomobar._validation import _positive_integer
 
 
 def gradient(
@@ -100,18 +98,6 @@ class CPURec:
     def _ensure_open(self):
         if self.closed:
             raise RuntimeError("closed")
-
-    def _run_options(self, iterations, *, default, allow_subsets=True, **kw):
-        self._ensure_open()
-        if not allow_subsets and self.num_subsets > 1:
-            raise ValueError("subsets")
-        return _positive_integer(
-            default if iterations is None else iterations, "iterations"
-        )
-
-    def _regularisation_options(self, r):
-        if r is not None and not isinstance(r, Regularisation):
-            raise TypeError("regularisation")
 
     def _prepare_inputs(self, p, weights=None, **kw):
         self.preparations += 1

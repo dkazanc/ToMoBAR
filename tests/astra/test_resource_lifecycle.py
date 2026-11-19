@@ -679,7 +679,7 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
                             1, n_views, 2
                         )
                         weights = None if fidelity == "LS" else data + 100
-                        module.grad_data_term.reset_mock()
+                        self.gradient_mock.reset_mock()
                         getattr(rec, method)(
                             data,
                             weights=weights,
@@ -690,11 +690,11 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
                         if weights is not None:
                             weights = weights / weights.max()
                         self.assertEqual(
-                            module.grad_data_term.call_count,
+                            self.gradient_mock.call_count,
                             2 if method == "ADMM" else count,
                         )
                         for subset, call in enumerate(
-                            module.grad_data_term.call_args_list
+                            self.gradient_mock.call_args_list
                         ):
                             selected = (
                                 np.arange(n_views)

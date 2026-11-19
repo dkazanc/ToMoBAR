@@ -12,6 +12,7 @@ from tomobar import preprocessing, postprocessing
 from tomobar.reconstruction.postprocess import postprocess_reconstruction
 
 
+@pytest.mark.essential
 def test_processing_needs_only_numpy(tmp_path):
     code = """
 import importlib.abc
@@ -74,6 +75,7 @@ def test_dynamic_options_defaults_and_order(monkeypatch, options, expected):
     np.testing.assert_allclose(result, np.log(2))
 
 
+@pytest.mark.essential
 def test_explicit_postprocessing_preserves_mask_behavior():
     image = np.ones((2, 5, 7))
     assert postprocess_reconstruction(image) is image

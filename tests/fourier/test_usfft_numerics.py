@@ -33,6 +33,7 @@ def cpu_backend(monkeypatch):
     return create
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("n,rows,width", [(8, 1, 8), (9, 3, 9), (8, 3, 9), (9, 2, 12)])
 @pytest.mark.parametrize("cor", [0, -1.25, 0.375])
 def test_matches_direct_plane_wave_reference(cpu_backend, n, rows, width, cor):
@@ -69,6 +70,7 @@ def test_adjoint_and_uneven_subsets(cpu_backend, n, rows, width, cor):
     )
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("n", [8, 9])
 def test_cardinal_angles_orientation_mass_and_angle_count(cpu_backend, n):
     angles = np.array([0, np.pi / 2], dtype=np.float32)

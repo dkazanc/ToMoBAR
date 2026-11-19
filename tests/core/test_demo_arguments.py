@@ -18,6 +18,8 @@ def api_keywords():
     paths = (
         "reconstruction/direct.py",
         "reconstruction/iterative.py",
+        "reconstruction/iterative_methods.py",
+        "reconstruction/iterative_state.py",
         "projectors/operator.py",
         "geometry.py",
         "reconstruction/base.py",
@@ -56,6 +58,11 @@ def api_keywords():
         for name, body in list(registry.items()):
             if name.startswith("GeometryReconstruction."):
                 registry.setdefault(cls + name[len("GeometryReconstruction") :], body)
+    # RecToolsIR exposes these methods through private implementation mixins.
+    for mixin in ("_IterativeMethods", "_IterativeStateMethods"):
+        for name, body in list(registry.items()):
+            if name.startswith(mixin + "."):
+                registry.setdefault("RecToolsIR." + name[len(mixin) + 1 :], body)
     allowed = {}
     for name, body in registry.items():
         if body is None:

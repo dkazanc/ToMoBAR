@@ -6,6 +6,7 @@ import pytest
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
 
+@pytest.mark.essential
 def test_geometry_preserves_axis_and_view_order():
     angles = np.array([1.2, 0.0, 0.4])
     shifts = np.array([[1.5, -2.0], [0.0, 3.0], [-0.5, 0.0]])
@@ -33,6 +34,7 @@ def test_geometry_defaults_to_zero_shifts():
     np.testing.assert_array_equal(projection.detector_shifts, [[0.0, 0.0]])
 
 
+@pytest.mark.essential
 def test_cor_correction_does_not_populate_detector_shifts():
     projection = Parallel3DGeometry.tomography(
         angles=[0.0, 0.5], detector_shape=(7, 11), centre_of_rotation=2.5
@@ -61,6 +63,7 @@ def test_cor_requires_a_finite_real_scalar(cor, error):
         )
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize(
     ("angles", "error"),
     [
@@ -107,6 +110,7 @@ def test_geometry_rejects_invalid_dimensions(shape, error):
         Volume3DGeometry(shape=(*shape, 7))
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("view_count", [1, 5, 8])
 def test_view_subsets_are_backend_independent_immutable_partitions(view_count):
     from tomobar.geometry import interleaved_view_indices

@@ -2,6 +2,7 @@
 
 from contextlib import ExitStack
 from dataclasses import FrozenInstanceError, fields
+from inspect import signature
 from unittest.mock import Mock
 
 import numpy as np
@@ -16,6 +17,7 @@ from tomobar._solvers.options import (
     OSEMOptions,
     SIRTOptions,
     solver_options,
+    OPTION_TYPES,
 )
 from tomobar.options import Diagnostics
 
@@ -58,6 +60,7 @@ def test_state_contains_only_method_settings(cpu_rec, method, option_type, extra
         state._options.nonnegativity = True
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize(
     "method,unused",
     [
@@ -101,6 +104,7 @@ def test_unused_options_fail_before_preparing_arrays(
         assert cpu_rec.projection_calls == cpu_rec.power_calls == 0
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize(
     "method", ["Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM"]
 )
@@ -137,4 +141,37 @@ def test_numpy_scalars_preserve_canonical_execution_types():
 def test_unknown_method_is_rejected_without_input_preparation(cpu_rec):
     with pytest.raises(ValueError, match="method"):
         solver_state.initialise(cpu_rec, "unknown", None, xp=np)
+    assert cpu_rec.preparations == 0
+
+
+@pytest.mark.essential
+@pytest.mark.parametrize("method", tuple(OPTION_TYPES))
+def test_public_signatures_match_option_schema_and_defaults(
+    mock_reconstruction, method
+):
+    parameters = dict(
+        signature(getattr(mock_reconstruction.iterative.RecToolsIR, method)).parameters
+    )
+    for name in (
+        "self",
+        "projections",
+        "iterations",
+        "recon_mask_radius",
+        "initial",
+        "input_axes",
+        "return_energy",
+    ):
+        parameters.pop(name)
+    if method in ("FISTA", "ADMM"):
+        assert parameters.pop("weights").default is None
+    defaults = solver_options(method)
+    assert set(parameters) == {item.name for item in fields(defaults)}
+    for name, parameter in parameters.items():
+        assert parameter.default == getattr(defaults, name), name
+
+
+@pytest.mark.parametrize("option", ["iterations", "recon_mask_radius"])
+def test_continuation_rejects_run_options_before_preparation(cpu_rec, option):
+    with pytest.raises(TypeError, match="set iterations in run"):
+        cpu_rec.initialise_solver("FISTA", None, **{option: 1})
     assert cpu_rec.preparations == 0

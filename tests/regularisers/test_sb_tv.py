@@ -100,6 +100,7 @@ def test_sb_matches_independent_convex_dual(
     )
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("nonneg", [False, True])
 def test_sb_solves_tv_objective_at_boundaries(regularise, nonneg):
     data = np.tile(np.array([-1, 0, 1, 2], dtype=np.float32), (3, 1))

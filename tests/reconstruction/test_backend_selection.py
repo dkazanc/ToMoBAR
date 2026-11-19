@@ -77,6 +77,7 @@ def test_invalid_selection(mock_reconstruction, backend):
             cls(projection_geometry=scan, volume_geometry=grid, backend=backend)
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("case", ["rectangular", "rows", "width", "shifts", "vectors"])
 def test_unsupported_geometry_rejected_without_cuda(case):
     scan, grid = geometries()

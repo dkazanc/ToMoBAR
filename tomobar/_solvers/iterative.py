@@ -15,15 +15,21 @@ from tomobar._solvers.types import (
     SolverWork,
 )
 from tomobar.options import DataFidelity
-from tomobar._solvers.options import LandweberOptions, FISTAOptions, OSEMOptions
+from tomobar._solvers.options import (
+    FISTAOptions,
+    LandweberOptions,
+    OSEMOptions,
+    require_options,
+)
 from tomobar._solvers.subsets import ProjectionSubsets
 from tomobar._solvers.updates import gradient_step, fista_momentum
 
 if TYPE_CHECKING:
+    from tomobar._solvers.interface import SolverReconstructor
     from tomobar.reconstruction.state import SolverState
 
 
-def setup(rec, state: SolverState, xp, buffers) -> SolverWork:
+def setup(rec: SolverReconstructor, state: SolverState, xp, buffers) -> SolverWork:
     """Build fresh geometry-dependent quantities without modifying state."""
     image, options, method = state.image, state._options, state.method
     if method == "Landweber":
@@ -61,7 +67,7 @@ def setup(rec, state: SolverState, xp, buffers) -> SolverWork:
         if method == "OSEM":
             return OSEMWork(buffers=buffers, subsets=subsets)
     if method == "FISTA":
-        options = cast(FISTAOptions, options)
+        options = require_options(options, FISTAOptions)
         lipschitz = options.lipschitz_constant
         if lipschitz is None:
             lipschitz = rec.powermethod()
@@ -75,7 +81,7 @@ def setup(rec, state: SolverState, xp, buffers) -> SolverWork:
     raise ValueError(f"unsupported solver method: {method}")
 
 
-def _forward(rec, state: SolverState, image, subset_index=None):
+def _forward(rec: SolverReconstructor, state: SolverState, image, subset_index=None):
     buffer_index = 0 if subset_index is None else subset_index
     return rec.operator.forward(
         image,
@@ -84,7 +90,9 @@ def _forward(rec, state: SolverState, image, subset_index=None):
     )
 
 
-def _backproject(rec, state: SolverState, projections, subset_index=None):
+def _backproject(
+    rec: SolverReconstructor, state: SolverState, projections, subset_index=None
+):
     return rec.operator.backproject(
         projections,
         subset_index=subset_index,
@@ -92,18 +100,18 @@ def _backproject(rec, state: SolverState, projections, subset_index=None):
     )
 
 
-def _landweber_step(rec, state: SolverState):
+def _landweber_step(rec: SolverReconstructor, state: SolverState):
     """Apply one full-data gradient step in place."""
     image = state.image
     projected = _forward(rec, state, image)
     projected -= state.projections
     update = _backproject(rec, state, projected)
-    update *= cast(LandweberOptions, state._options).step_size
+    update *= require_options(state._options, LandweberOptions).step_size
     image -= update
     return image
 
 
-def _sirt_step(rec, state: SolverState):
+def _sirt_step(rec: SolverReconstructor, state: SolverState):
     """Apply one update with projection and volume normalisation in place."""
     image, work = state.image, cast(SIRTWork, state._work)
     projected = _forward(rec, state, image)
@@ -116,7 +124,7 @@ def _sirt_step(rec, state: SolverState):
     return image
 
 
-def _cgls_step(rec, state: SolverState, xp):
+def _cgls_step(rec: SolverReconstructor, state: SolverState, xp):
     """Advance CG; return None if no update can be made.
 
     A zero residual or projected direction stops before counting an iteration.
@@ -147,7 +155,9 @@ def _cgls_step(rec, state: SolverState, xp):
     return image
 
 
-def _apply_constraints(rec, image, regularisation, *, nonnegativity, xp, proximal):
+def _apply_constraints(
+    rec: SolverReconstructor, image, regularisation, *, nonnegativity, xp, proximal
+):
     """Apply the proximal map before clipping to preserve its objective."""
     if regularisation is not None:
         image = proximal(
@@ -161,11 +171,19 @@ def _apply_constraints(rec, image, regularisation, *, nonnegativity, xp, proxima
     return image
 
 
-def _fista_step(rec, state: SolverState, regularisation, *, xp, gradient, proximal):
+def _fista_step(
+    rec: SolverReconstructor,
+    state: SolverState,
+    regularisation,
+    *,
+    xp,
+    gradient,
+    proximal,
+):
     """Advance all subsets, updating momentum after each proximal step."""
     image, options, work = (
         state.image,
-        cast(FISTAOptions, state._options),
+        require_options(state._options, FISTAOptions),
         cast(FISTAWork, state._work),
     )
     use_subsets = rec.num_subsets > 1
@@ -210,11 +228,13 @@ def _fista_step(rec, state: SolverState, regularisation, *, xp, gradient, proxim
     return image
 
 
-def _osem_step(rec, state: SolverState, regularisation, *, xp, proximal):
+def _osem_step(
+    rec: SolverReconstructor, state: SolverState, regularisation, *, xp, proximal
+):
     """Advance all subsets, retaining sensitivity only for full-data updates."""
     image, options, work = (
         state.image,
-        cast(OSEMOptions, state._options),
+        require_options(state._options, OSEMOptions),
         cast(OSEMWork, state._work),
     )
     use_subsets = rec.num_subsets > 1

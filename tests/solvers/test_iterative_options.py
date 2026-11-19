@@ -137,7 +137,7 @@ def test_gpu_warm_starts_are_preserved(gpu, method):
 
 def test_admm_scales_a_local_regularisation_copy(gpu, monkeypatch):
     cp = gpu
-    import tomobar.reconstruction.iterative as iterative
+    import tomobar.reconstruction.iterative_state as iterative_state
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.reconstruction.iterative import RecToolsIR
 
@@ -147,7 +147,7 @@ def test_admm_scales_a_local_regularisation_copy(gpu, monkeypatch):
         seen.append(settings)
         return x
 
-    monkeypatch.setattr(iterative, "prox_regul", prox)
+    monkeypatch.setattr(iterative_state, "prox_regul", prox)
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     settings = Regularisation(strength=0.04)
     with RecToolsIR(

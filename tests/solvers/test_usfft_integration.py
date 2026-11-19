@@ -68,6 +68,7 @@ def test_power_estimate_matches_dense_singular_value(gpu, subsets, full_data):
         np.testing.assert_allclose(estimated, expected, rtol=1e-3)
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize(
     "method", ["Landweber", "CGLS", "FISTA", "ADMM-linearised", "ADMM-cg"]
 )

@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("width", [64, 65])
 @pytest.mark.parametrize("view_count", [91, 181])
 @pytest.mark.parametrize("amplitude", [0.2, 1.7])

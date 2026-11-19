@@ -7,6 +7,7 @@ from tomobar.energy import EnergyHistory, data_energy, regularisation_energy
 from tomobar.options import DataFidelity, Regularisation
 
 
+@pytest.mark.essential
 @pytest.mark.parametrize("method", ["LS", "PWLS", "SWLS"])
 def test_fidelity_gradient(method):
     rng = np.random.default_rng(12)
@@ -32,6 +33,7 @@ def test_fidelity_gradient(method):
     np.testing.assert_allclose(numerical, np.sum(gradient * direction), rtol=1e-7)
 
 
+@pytest.mark.essential
 def test_tv_energy():
     x = np.array([[0.0, 1.0], [1.0, 2.0]])
     assert regularisation_energy(x, Regularisation(strength=2, tv_type=1)) == 8

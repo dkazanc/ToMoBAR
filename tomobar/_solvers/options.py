@@ -1,7 +1,7 @@
 """Immutable, method-specific solver configuration without CUDA dependencies."""
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, TypeVar
 
 from tomobar.options import DataFidelity, Diagnostics, Regularisation
 from tomobar._validation import _boolean, _positive_integer, _real
@@ -33,14 +33,18 @@ class LandweberOptions(SolverOptions):
 
 @dataclass(frozen=True, slots=True)
 class SIRTOptions(SolverOptions):
-    """Validated simultaneous-iteration constraint settings."""
+    """Method marker for SIRT, which currently uses only shared settings.
+
+    Keeping a distinct type lets the continuation engine represent and inspect
+    every solver configuration uniformly, even when a method adds no options.
+    """
 
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class CGLSOptions(SolverOptions):
-    """Validated settings for conjugate-gradient least squares."""
+    """Method marker for CGLS, which currently uses only shared settings."""
 
     pass
 
@@ -146,9 +150,24 @@ OPTION_TYPES = {
     "OSEM": OSEMOptions,
 }
 
+_OptionsT = TypeVar("_OptionsT", bound=SolverOptions)
+
+
+def require_options(options: SolverOptions, expected: type[_OptionsT]) -> _OptionsT:
+    """Narrow a validated method configuration and guard dispatch invariants."""
+    if not isinstance(options, expected):
+        raise TypeError(
+            f"solver options must be {expected.__name__}, got {type(options).__name__}"
+        )
+    return options
+
 
 def solver_options(method, **options) -> SolverOptions:
     """Reject unsupported fields, including explicitly supplied default values."""
+    if "iterations" in options or "recon_mask_radius" in options:
+        raise TypeError(
+            "set iterations in run(); set recon_mask_radius in solver_image()"
+        )
     if method not in OPTION_TYPES:
         raise ValueError(f"method must be one of {tuple(OPTION_TYPES)}")
     return OPTION_TYPES[method](**options)
