@@ -1,28 +1,36 @@
-===================================
-How to build the html pages locally
-===================================
+Building the documentation locally
+=================================
 
-Create a conda environment
-==========================
+From the repository root, create and activate the documentation environment::
 
-Setup a new conda environment using the requirements file docs/source/doc-conda-requirements.yml
+    conda env create --file docs/source/doc-conda-requirements.yml
+    conda activate tomobar-docs
 
-    >>> conda env create --prefix /path/to/env/doc-env --file /path/to/tomobar/docs/source/doc-conda-requirements.yml
+To update an existing environment after dependency changes::
 
+    conda env update --name tomobar-docs --file docs/source/doc-conda-requirements.yml
 
-Update API documentation and build
-==================================
+Build the HTML pages using the maintained API sources::
 
-While inside your virtual environment, run the sphinx-build.sh script.
+    python -m sphinx -W --keep-going -b html docs/source docs/build
 
-    >>> conda activate /path/to/env/doc-env
-    >>> source /path/to/tomobar/docs/sphinx-build.sh
+Alternatively, run ``bash docs/sphinx-build.sh``. This builds the maintained API
+sources and saved notebooks without deleting or regenerating source pages.
 
-The script will:
+Open ``docs/build/index.html`` to view the result.
 
-1. Remove previous api and build directories.
-2. Generate current tomobar api files
-3. Run a python script to add yaml file downloads for every function for every module rst file.
-4. Run sphinx to create html documentation pages in docs/build.
+Notebook examples
+-----------------
 
-You can view the completed pages by opening the tomobar/docs/build/index.html page inside a browser.
+The environment includes JupyterLab, a Python kernel and Matplotlib. Launch the
+notebook examples with::
+
+    python -m jupyterlab docs/source/tutorials
+
+The geometry visualisation notebook can run in this environment. Reconstruction
+notebooks require your working ToMoBAR CUDA environment, including CuPy and ASTRA.
+Run those notebooks there and save their outputs before building the docs.
+
+Documentation builds display saved notebook figures and results without executing
+cells. They do not require a GPU. See ``docs/source/developers/examples.rst`` for
+the complete run, save and publish workflow.

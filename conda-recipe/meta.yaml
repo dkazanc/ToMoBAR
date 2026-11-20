@@ -1,6 +1,6 @@
 package:
   name: tomobar
-  version: "2026.3.0.0"
+  version: "2026.4.0.0"
 
 source:
   path: ../
@@ -8,21 +8,26 @@ source:
 build:
   noarch: python
   number: 0
-  script: python -m pip install --no-deps --ignore-installed .
+  script: python -m pip install --no-deps --no-build-isolation --ignore-installed .
 
 requirements:
   host:
-    - python
+    - python>=3.12
     - pip
-    - setuptools
+    - setuptools>=77.0.3
+    - wheel
   run:
     - python>=3.12
-    - numpy
-    - setuptools
+    - numpy>=2
+    - cupy>=14
+    - astra-toolbox>=2.5
+    - scipy
+    - scikit-image
     - pillow
-    - pytest
 
 about:
+  license: Apache-2.0 AND GPL-3.0-only
+  license_file: LICENSE
   home: https://github.com/dkazanc/ToMoBAR
   summary: 'TOmographic MOdel-BAsed Reconstruction (ToMoBAR) software'
   description: |

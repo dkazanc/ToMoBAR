@@ -1,14 +1,54 @@
-name: Upload Python Package to PyPI when `v` tag is pushed to any branch
+name: Test and publish Python package
 
-# Run the workflow whenever a tag beginning with `v` is pushed to any branch
 on:
+  pull_request:
   push:
-    tags:
-      - v*
+    branches: [master]
+    tags: ["v*"]
+
+permissions:
+  contents: read
 
 jobs:
+  validate:
+    name: CPU tests and wheel validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install CPU test and build dependencies
+        run: python -m pip install --upgrade build twine numpy scipy scikit-image matplotlib pytest
+      - name: Run CPU-compatible tests
+        env:
+          MPLBACKEND: Agg
+        # CuPy and ASTRA remain optional; CUDA cases are excluded explicitly.
+        run: python -m pytest --cpu-only
+      - name: Build distributions
+        run: python -m build
+      - name: Check distribution metadata
+        run: python -m twine check --strict dist/*
+      - name: Install wheel without GPU dependencies
+        run: python -m pip install --no-deps dist/*.whl
+      - name: Check installed wheel outside the source tree
+        working-directory: ${{ runner.temp }}
+        run: python "$GITHUB_WORKSPACE/.github/scripts/check_wheel.py"
+      - name: Store validated distributions
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-distributions
+          path: dist/
+          if-no-files-found: error
+
   pypi-publish:
     name: Publish release to PyPI
+    needs: validate
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -16,18 +56,10 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Download validated distributions
+        uses: actions/download-artifact@v8
         with:
-          python-version: "3.x"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel
-          pip install --upgrade build
-      - name: Build package
-        run: |
-          python -m build
+          name: python-distributions
+          path: dist/
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

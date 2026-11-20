@@ -2,16 +2,17 @@ name: tomobar
 channels:
   - conda-forge
 dependencies:
-  - conda-forge::astra-toolbox
+  - conda-forge::astra-toolbox>=2.5
   - conda-forge::cupy>=14.0.0
-  - conda-forge::numpy>=2.4
+  - conda-forge::numpy>=2
   - conda-forge::python>=3.12
+  - conda-forge::pip
   - conda-forge::pytest
   - conda-forge::pytest-xdist
   - conda-forge::pytest-cov
-  - conda-forge::flake8
-  - conda-forge::pyproject-flake8
-  - conda-forge::pydocstyle
-  - conda-forge::setuptools
+  - conda-forge::setuptools>=77.0.3
   - conda-forge::ipython
 
+
+# Install the pinned developer tools from pyproject.toml with:
+# python -m pip install -e ".[dev]"
