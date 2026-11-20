@@ -1,10 +1,9 @@
 Reconstruction and regularisation
 =================================
 
-Choose a direct or iterative method, then configure its solver, regulariser
-and supported backend. For an explanation of the choices, see
-:doc:`../concepts/reconstruction_methods`. For complete worked examples,
-start with the :doc:`tutorial notebooks <../tutorials/index>`.
+Choose a method, then configure its solver, regulariser and backend. Compare
+methods in :doc:`../concepts/reconstruction_methods`, or start with the
+:doc:`tutorial notebooks <../tutorials/index>`.
 
 .. toctree::
    :maxdepth: 1
@@ -15,3 +14,4 @@ start with the :doc:`tutorial notebooks <../tutorials/index>`.
    regularisation
    ordered_subsets
    usfft_reconstruction
+   gpu_execution

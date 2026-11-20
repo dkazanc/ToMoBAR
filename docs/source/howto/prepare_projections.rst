@@ -1,34 +1,30 @@
 Prepare and normalise projections
 =================================
 
-For transmission measurements, normalise raw intensities using flat and dark
-fields before reconstruction. This example assumes arrays with axis order
-``(detY, angles, detX)`` and uses axis 1 for the projection, flat and dark view
-counts. The number of flat or dark views can differ from the projection count.::
+For transmission data, normalise raw intensities with flat and dark fields.
+This example uses ``(detY, angles, detX)`` arrays, with view counts along axis 1::
 
-    import numpy as np
     from tomobar.preprocessing import normaliser
 
-    data_norm = normaliser(
-        dataRaw, flats, darks, log=True, method="mean", axis=1
-    )
+    projections = normaliser(dataRaw, flats, darks, log=True, method="mean", axis=1)
 
-``log=True`` applies the negative logarithm to normalised transmission.
-Fluorescence emission data use a different measurement model; do not apply
-transmission normalisation to them. See :doc:`../concepts/emission` and the
-XRF example in :doc:`experimental_data`.
+Flat and dark view counts can differ from the projection count. ``log=True``
+applies the negative logarithm. Pass NumPy stacks for all three inputs; this
+helper runs on the CPU. Do not use transmission normalisation for
+:doc:`emission data <../concepts/reconstruction_methods>`.
 
-Keep projection data and geometry angles in the same acquisition order. Angles
-are NumPy arrays in radians. Choose the detector shape from the data and the
-working-volume shape independently. See :doc:`configure_geometry`.
+For a broader suite of GPU-accelerated preprocessing tools, see
+`HTTomolibGPU <https://diamondlightsource.github.io/httomolibgpu/>`_. It includes
+normalisation, outlier filtering, stripe removal and phase retrieval for
+preparing tomography data before reconstruction.
 
-Array axes and storage
-----------------------
+.. _array-axes-and-storage:
 
-Direct reconstruction accepts NumPy or CuPy projections. Iterative methods
-also accept either library, but return CuPy images. Use ``input_axes`` when the
-supplied axes differ from the default; weights follow the same axis labels.
-See :doc:`../concepts/array_axes` and :func:`tomobar.preprocessing.normaliser`.
+Keep projections and geometry angles in the same acquisition order. Use
+``input_axes`` if reconstruction inputs differ from the default layout; weights
+follow the same labels. Direct and iterative methods accept NumPy or CuPy data,
+but iterative output is always a CuPy array.
 
-Once the data and geometry agree, follow :doc:`direct_reconstruction` or
-:doc:`iterative_reconstruction`.
+Next, :doc:`configure_geometry` and choose :doc:`direct_reconstruction` or
+:doc:`iterative_reconstruction`. See :doc:`../concepts/array_axes` and
+:func:`~tomobar.preprocessing.normaliser` for array conventions and options.

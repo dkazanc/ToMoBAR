@@ -361,8 +361,7 @@ class IterativeReconstructor(
             remain unchanged. Solver state resets safely after geometry updates.
             Requires backend="astra" because alignment updates detector shifts.
             Initial shifts and scalar CoR are respected; CoR is not optimised.
-            References: Gürsoy et al., Scientific Reports 7, 11818 (2017),
-            doi:10.1038/s41598-017-12141-9; TomoPy align_seq and align_joint.
+            References: Gürsoy et al. [GURSOY2017]_; TomoPy align_seq and align_joint.
         """
         from tomobar.alignment import align
 

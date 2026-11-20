@@ -7,7 +7,7 @@ CUDA execution or notebook kernels do not behave as expected.
 Common problems
 ---------------
 
-* **Missing CuPy or ASTRA:** check the ``sys.executable`` output above. Activate
+* **Missing CuPy or ASTRA:** check ``sys.executable`` using the verification below. Activate
   the reconstruction environment or select its Jupyter kernel; the
   ``tomobar-docs`` environment is for documentation and CPU geometry plotting.
 * **No CUDA device:** check the NVIDIA driver and the compatibility of the CUDA
@@ -17,7 +17,7 @@ Common problems
   custom-installation guidance in the
   `CuPy installation guide <https://docs.cupy.dev/en/stable/install.html>`_.
   Device detection alone does not exercise kernel compilation; use the array,
-  FFT and reconstruction checks above.
+  FFT and reconstruction checks below.
 * **Imports or arguments from an older release:** follow
   :doc:`../howto/migration` and check which ToMoBAR version is installed.
 

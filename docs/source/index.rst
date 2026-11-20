@@ -1,6 +1,15 @@
 ToMoBAR documentation
 =====================
 
+.. warning::
+
+   **Breaking API change:** this refactored version is incompatible with previous
+   versions. The changes enable more flexible acquisition geometry for iterative
+   alignment and laminography. Existing scripts must be migrated; compatibility
+   aliases are not provided. Read the :doc:`migration guide <howto/migration>`
+   and `changelog <https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md>`_
+   before upgrading.
+
 ToMoBAR provides GPU reconstruction for parallel-beam tomography and
 laminography, with direct methods, iterative solvers and native regularisers.
 
@@ -94,15 +103,9 @@ Need to set up your environment? Start with :doc:`getting_started/installation`.
    :maxdepth: 1
 
    concepts/array_axes
-   concepts/projection_operators
    concepts/reconstruction_methods
    concepts/backends
-   concepts/laminography
-   concepts/fista
-   concepts/admm
-   concepts/emission
-   concepts/usfft
-   concepts/gpu_memory
+   concepts/convergence
 
 .. _reference_content:
 
@@ -111,6 +114,10 @@ Need to set up your environment? Start with :doc:`getting_started/installation`.
    :maxdepth: 1
 
    reference/api
+   reference/geometry_conventions
+   reference/projection_operators
+   reference/solver_conventions
+   reference/usfft_conventions
    reference/bibliography
 
 .. toctree::

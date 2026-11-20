@@ -215,10 +215,10 @@ combining data, rather than to a duplicate ``tomobar/tomobar`` path. For example
 Static typing
 -------------
 
-Pyright runs in basic mode against six CPU-safe modules listed explicitly in
-``[tool.pyright].include``: scalar validation, geometry, public options,
-method-specific solver options, solver work types and public solver state.
-Numerical execution modules, tests and demos are outside this initial scope.
+Pyright runs in basic mode against the CPU-safe modules and contract checks
+listed in ``[tool.pyright].include``: validation, geometry, settings, solver
+protocols and work types, public solver state and ``typings/solver_contracts.py``.
+Numerical execution modules, tests and demos are outside this scope.
 Imported code can supply type information without becoming an additional
 checked entry point.
 

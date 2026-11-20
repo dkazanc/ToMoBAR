@@ -1,39 +1,50 @@
-Choose a reconstruction method
-==============================
+.. _choose-a-reconstruction-method:
 
-Choose a method according to the acquisition geometry and the objective of
-your reconstruction. Start with the known-sample comparisons in
-:doc:`../tutorials/index` before tuning an experimental workflow.
+Choosing reconstruction methods
+===============================
+
+Choose a method for the measurement model, geometry and image quality you need.
+Use the :doc:`tutorial comparisons <../tutorials/index>` before tuning a measured
+acquisition.
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 45 30
+   :widths: 25 50 25
 
    * - Method
      - Typical use
-     - Guide
+     - Example
    * - FBP
-     - Direct reconstruction with SINC or Ram-Lak filtering; supported
-       laminography requires a uniform full turn.
+     - Direct reconstruction with SINC or Ram-Lak filtering.
      - :doc:`../howto/direct_reconstruction`
    * - Fourier inversion
-     - Direct angle-based Z-axis tomography with the supported geometry.
+     - Direct reconstruction of supported standard 3D tomography.
      - :doc:`../howto/direct_reconstruction`
-   * - CGLS
+   * - CGLS, SIRT or Landweber
      - Least-squares iterative reconstruction.
      - :doc:`../howto/iterative_reconstruction`
    * - FISTA or ADMM
-     - Iterative reconstruction with data-fidelity weights and regularisation.
+     - Iterative reconstruction with data-fidelity weights and image penalties.
      - :doc:`../howto/regularisation`
-   * - SIRT or OSEM
-     - ASTRA-based iterative reconstruction; OSEM uses an emission model.
-     - :doc:`emission` and :doc:`../howto/configure_solvers`
+   * - OSEM / MLEM
+     - Nonnegative emission reconstruction [HL1994]_; one subset gives MLEM.
+     - :meth:`~tomobar.reconstruction.iterative.IterativeReconstructor.OSEM`
 
-Backprojection alone does not apply a reconstruction filter or preserve the
-phantom intensity scale. See :doc:`projection_operators`. Backend choice also
-limits geometry and available methods; see :doc:`backends`.
+Data model and regularisation
+-----------------------------
 
-Regularisation introduces a model preference and changes the objective. Its
-strength and iteration budget need to be assessed against your data. The
-:doc:`FISTA <fista>` and :doc:`ADMM <admm>` pages describe their scaling and
-convergence controls. Monitor results with :doc:`../howto/monitor_energy`.
+Transmission data normally need flat/dark correction and a negative logarithm;
+emission measurements use a different model. Do not apply transmission
+normalisation to emission data. See :doc:`../howto/prepare_projections`.
+
+For FISTA and ADMM, LS uses unweighted residuals, PWLS uses measurement weights,
+and SWLS also models stripe-like detector errors. Regularisation favours image
+properties such as smooth regions or edges and changes the objective. Its
+strength must be assessed against both noise suppression and retained detail.
+Parameter meanings and applicability are in :class:`~tomobar.options.DataFidelity`
+and :class:`~tomobar.options.Regularisation`.
+
+Backprojection alone is unfiltered and does not preserve reconstruction
+intensity scale. Use FBP or an iterative reconstruction method for an image.
+Also check :doc:`backends`: geometry limits and available methods differ.
+See :doc:`convergence` for iteration budgets, subsets and stopping criteria.

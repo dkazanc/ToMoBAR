@@ -1,8 +1,7 @@
 """Translation alignment by alternating reconstruction and reprojection.
 
 Algorithmic references (independent implementation, no TomoPy dependency):
-Gürsoy et al., Scientific Reports 7, 11818 (2017),
-https://doi.org/10.1038/s41598-017-12141-9 and TomoPy align_seq/align_joint,
+Gürsoy et al. [GURSOY2017]_ and TomoPy align_seq/align_joint,
 https://tomopy.readthedocs.io/en/latest/_modules/tomopy/prep/alignment.html.
 Unlike their projection-warping implementation, shifts update the forward
 model here; the original measured projections are never repeatedly resampled.

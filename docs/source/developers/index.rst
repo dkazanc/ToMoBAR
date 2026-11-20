@@ -9,3 +9,5 @@ Development
    architecture
    examples
    cuda_cache
+   execution
+   numerical_methods

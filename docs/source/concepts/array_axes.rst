@@ -1,63 +1,57 @@
-Array axes and working volumes
+.. _array-axes-and-working-volumes:
+
+Data and geometry conventions
 ==============================
 
-Projection arrays use ``(angles, detX)`` in 2D and
-``(detY, angles, detX)`` in 3D by default. Volumes use ``(Y, X)`` or
-``(Z, Y, X)``. Geometry vectors use physical XYZ coordinates, so vector
-coordinates and array axis order are different conventions.
+Arrays and coordinates
+-----------------------
 
-``DirectReconstructor`` accepts both NumPy and CuPy arrays for ``forward``,
-``backproject`` and ``FBP``; results use the input array library. All three
-methods default to ``(detY, angles, detX)`` in 3D, with ``input_axes`` or
-``output_axes`` available for other layouts. Array type does not change the
-axis convention or select the filter.
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
 
+   * - Data
+     - 2D axes
+     - 3D axes
+   * - Projections
+     - ``(angles, detX)``
+     - ``(detY, angles, detX)``
+   * - Volume
+     - ``(Y, X)``
+     - ``(Z, Y, X)``
 
+Geometry vectors use XYZ coordinates, independently of array axis order.
+Angles are in radians and follow the same acquisition order as projections.
+Use ``input_axes`` or ``output_axes`` when an array has another layout.
 
-Array sizes come from the geometry objects: ``scan.projection_shape`` is
-``(detector rows, views, detector columns)`` in 3D, and ``(views, columns)`` in
-2D. ``rec.padded_projection_geometry.projection_shape`` includes the optional
-detector padding; ``rec.volume_geometry.shape`` describes the full working
-volume independently of the final output crop.
+The scan determines projection dimensions; the volume geometry determines the
+working grid. Detector padding and the final output crop are separate choices.
+Warm starts and solver state use the full working grid, even when output is
+cropped. See :doc:`../howto/configure_geometry` and :doc:`../howto/padding_cropping`.
 
-``rec.subset_indices`` contains immutable acquisition-order view indices for
-each interleaved subset, including unequal subset lengths. Reconstruction
-algorithms allocate and select data using these geometry descriptions. ASTRA
-geometry dictionaries and projector handles remain inside the wrappers.
+Tomography and laminography
+---------------------------
 
-In both ASTRA wrappers, ``None`` selects all views even when subsets are enabled.
-One handle is created lazily for all views and one for each subset first used.
-Forward projection and backprojection share each handle, and repeated calls
-reuse it until ``close()``. A context manager closes all handles, including when
-an exception is raised. Calls after closing raise an error. The selected device
-is fixed for the wrapper's lifetime.
+Standard tomography has its rotation axis perpendicular to the beam.
+Laminography tilts that axis relative to the beam; ``tilt_angle`` is the
+beam-to-axis angle, so 90 degrees gives standard tomography. Detector shifts
+and CoR are pixel offsets; positive values follow increasing detector columns
+and rows. They do not move the physical rotation axis.
 
-ASTRA 2.5's ``astra.projector.direct_FP`` / ``direct_BP`` (2D) and
-``astra.projector3d.direct_FP`` / ``direct_BP`` (3D) operate on NumPy or
-CuPy DLPack arrays without intermediate ASTRA data or algorithm objects. Real
-inputs are packed into contiguous float32 storage when needed. CuPy inputs must
-reside on the selected device; outputs stay on that device. NumPy outputs remain
-NumPy arrays. Both 2D and 3D reconstruction require an ASTRA CUDA device.
-Only GPU projectors are supported, with NumPy or CuPy inputs.
-The 2D and 3D wrappers share array validation, device handling and lazy handle
-ownership. The previous private 2D ``_forwproj*`` / ``_backproj*`` methods have
-been replaced by ``forward()`` / ``backproject()``.
+Tilted laminography leaves spatial-frequency directions unmeasured: the
+*missing cone*. This can blur and spread features along the rotation axis.
+It is distinct from detector truncation and from a spatial region missing at
+the top of an image.
 
-Filtered 2D FBP retains its separate ASTRA algorithm path and filter options.
-It uses FBP_CUDA; its temporary data and algorithm objects are released after
-each call.
+Inspect a scan with :doc:`../howto/visualise_geometry`, or compare known objects
+in the :doc:`laminography notebook <../tutorials/synthetic_laminography>`.
+For explicit vectors, axis orientation and geometry transformations, see
+:doc:`../reference/geometry_conventions`.
 
-For 2D direct reconstruction, use ``Parallel2DGeometry`` with detector shape
-``(columns,)`` and ``Volume2DGeometry`` with shape ``(y, x)``. Both ASTRA wrappers
-accept geometry objects and convert vectors once before selecting subset rows.
-The 2D ASTRA wrapper also supports rectangular volumes. The GPU ``FOURIER_INV`` method requires
-square slices, one volume slice per detector row, and zero detector shifts.
+Arrays and GPU execution
+------------------------
 
-Axis-order helpers live in ``tomobar._arrays.axes`` and device selection in
-``tomobar._arrays.device``. The old ``tomobar.supp.funcs`` module and its vector and
-offset-normalisation helpers have been removed; CoR and detector shifts are
-validated separately by the geometry objects.
-
-The previous dimension/angle/CoR constructor arguments and uppercase
-``FORWPROJ`` / ``BACKPROJ`` entry points have been removed. Use geometry objects
-and ``forward()`` / ``backproject()`` instead.
+Direct projection/backprojection and FBP preserve the input array library:
+NumPy in gives NumPy out, and CuPy in gives CuPy out. Iterative methods and
+Fourier inversion return CuPy images. NumPy input still uses GPU computation;
+CuPy arrays must reside on the selected device. See :doc:`../howto/gpu_execution`.

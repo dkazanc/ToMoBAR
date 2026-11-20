@@ -3,6 +3,12 @@
 Build documentation without a GPU
 =================================
 
+The root ``README.rst`` is the shared project overview for GitHub and PyPI.
+Keep its images and links absolute so they also work on the package page.
+It uses standard reStructuredText; Sphinx-specific roles belong in the guides.
+The Sphinx home page is ``docs/source/index.rst``; it does not include the README
+automatically. Keep the upgrade warning consistent on both front pages.
+
 From the repository root, create the separate documentation environment::
 
     conda env create --file docs/source/doc-conda-requirements.yml

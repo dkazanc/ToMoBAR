@@ -1,44 +1,26 @@
 Reconstruct with the USFFT backend
 ==================================
 
-The code snippets use a projection geometry ``scan``, a working-volume geometry ``grid`` and projection data ``projections``. See :doc:`configure_geometry` for geometry construction and :doc:`../concepts/array_axes` for array layout.
-
-The power method, Landweber, CGLS, FISTA and ADMM use the shared operator and
-support ``backend="usfft"``. CGLS is the conjugate-gradient least-squares method;
-ADMM also supports ``data_solver="cg"`` for its quadratic data subproblem or
-``data_solver="linearised"`` for gradient updates. FISTA and ADMM support LS,
-PWLS and SWLS objectives and the existing proximal regularisers. No Fourier
-projector has been added to direct FBP methods.
-
-SIRT and OSEM/MLEM require ``backend="astra"``. Their current row/column
-normalisation and emission updates assume positive ray weights. Fourier
-interpolation is a signed linear operator, so those algorithms are rejected
-for USFFT before data preparation, both in one-shot calls and through
-``initialise_solver``. Shift-based alignment also remains ASTRA-only.
-
-For Landweber choose a step size from the full-data norm estimate, for example::
+Select ``backend="usfft"`` for supported angle-based parallel tomography.
+With ``scan``, ``grid`` and ``projections`` from :doc:`iterative_reconstruction`::
 
     from tomobar.reconstruction.iterative import IterativeReconstructor
 
     with IterativeReconstructor(
-        projection_geometry=scan,
-        volume_geometry=grid,
-        backend="usfft",
+        projection_geometry=scan, volume_geometry=grid, backend="usfft"
     ) as rec:
-        norm_squared = rec.powermethod(iterations=30, full_data=True)
-        image = rec.Landweber(
-            projections, step_size=0.9 / norm_squared, iterations=100
-        )
+        image = rec.CGLS(projections, iterations=20)
 
-The estimate is not a certified upper bound. FISTA estimates the largest
-subset norm automatically; ADMM's linearised solve estimates the full-data
-norm, even when subsets are configured. CGLS and Landweber require one subset.
-FISTA visits all configured subsets, while ADMM always uses full data.
+USFFT supports Landweber, CGLS, FISTA and ADMM, including regularisation and
+continuation. SIRT, OSEM and shift-based alignment require ASTRA.
+Landweber and CGLS require one subset; FISTA supports ordered subsets, while
+ADMM always uses all views.
 
-Continuation, nonnegativity, regularisation, output cropping and geometry
-restart use the existing solver state machinery. Scalar CoR replacement
-rebuilds geometry-dependent work. Atomic scatter is not bitwise deterministic;
-CG comparisons should check fitted-data/normal-equation residuals and image
-norm errors, rather than demanding bit-identical Krylov trajectories.
+Check :doc:`../concepts/backends` before switching: USFFT supports scalar CoR
+corrections but not per-view detector shifts or laminography. Its geometry
+constraints and scaling are described in :doc:`../reference/usfft_conventions`.
+For Landweber step selection, use the full-data norm estimate; see
+:meth:`~tomobar.reconstruction.iterative.IterativeReconstructor.powermethod`.
 
-See :doc:`experimental_data` for the USFFT dendrites workflow and :doc:`../concepts/backends` for geometry restrictions.
+Run ``demos/experimental/dendrites_usfft.py`` for a worked experimental example,
+or follow :doc:`experimental_data` to choose a dataset.

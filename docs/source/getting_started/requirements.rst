@@ -59,6 +59,11 @@ See :doc:`../developers/examples` for the run, save and publish workflow.
 Optional data and processing tools
 ----------------------------------
 
+Mean/median projection normalisation needs NumPy alone. Dynamic flat-field
+normalisation additionally requires ``bm3d`` (not installed by default), SciPy
+and scikit-image; see :func:`~tomobar.preprocessing.normaliser` for its layout
+requirements.
+
 `TomoPhantom <https://github.com/dkazanc/TomoPhantom>`_ supplies analytical
 phantoms for ``demos/synthetic/tomophantom_*.py``. It is also needed for the
 :doc:`noise and artefact notebook <../tutorials/synthetic_artifacts>`; see its `installation guide

@@ -26,22 +26,35 @@ def normaliser(
     """Normalise projection data using flat and dark fields.
 
     Args:
-        data (np.ndarray): 3d numpy array of raw data.
-        flats (np.ndarray): 2d numpy array for flat field.
-        darks (np.ndarray): 2d numpy array for dark field.
-        log (bool, optional): Take negative log. Defaults to True.
-        method (str, optional): Normalisation method, choose "mean", "median" or "dynamic". Defaults to "mean".
-        axis (int, optional): Define the ANGLES axis.
-        **kwargs: Dynamic flat-field options described below.
-        dyn_downsample (int, optional): Parameter for "dynamic" method. Defaults to 2.
-        dyn_iterations (int, optional): Parameter for "dynamic" method. Defaults to 10.
+        data (np.ndarray): Raw 3D transmission intensities, with views on
+            ``axis`` and the other dimensions describing the detector.
+        flats (np.ndarray): Stack of flat-field frames in the same axis layout
+            as ``data``. Its frame count can differ from the projection count.
+        darks (np.ndarray or None): Stack of dark-field frames with matching
+            detector dimensions, or None to use zero dark current.
+        log (bool): Apply the negative logarithm to positive normalised values
+            and clip negative results to zero. Default True.
+        method (str): ``"mean"`` (default) or ``"median"`` averages calibration
+            frames before correction; ``"dynamic"`` fits per-view flat fields.
+        axis (int): View/frame axis for mean/median correction: 0 (default) for
+            ``(views, detY, detX)``, or 1 for ``(detY, views, detX)``.
+        **kwargs: Dynamic correction only: ``dyn_downsample`` (default 2)
+            downsamples images for coefficient fitting; ``dyn_iterations``
+            (default 10) controls repetitions of the parallel analysis used
+            to select eigen flat fields. Ignored by mean/median correction.
 
+    Notes:
+        Dynamic correction requires ``(detY, views, detX)`` stacks for all
+        inputs, regardless of ``axis``. It additionally imports SciPy,
+        scikit-image and the optional ``bm3d`` package. Standard mean/median
+        correction requires NumPy alone.
 
     Raises:
-        NameError: method error
+        NameError: If data is 2D or the normalisation method is unknown.
+        ImportError: If a dynamic-correction dependency is unavailable.
 
     Returns:
-        np.ndarray: 3d numpy array of normalised data
+        np.ndarray: Normalised data with the input shape and axis order.
     """
     if np.ndim(data) == 2:
         raise NameError("Normalisation is implemented for 3d data input")

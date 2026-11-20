@@ -1,10 +1,8 @@
 Monitoring, continuation and alignment
 ======================================
 
-Inspect reconstruction progress, continue a solver in batches, or update
-the acquisition geometry between calls. Translation alignment combines
-reconstruction and reprojection; its guide describes the assumptions
-and available diagnostics.
+Monitor progress, continue a solver in batches, or correct geometry through
+translation alignment.
 
 .. toctree::
    :maxdepth: 1

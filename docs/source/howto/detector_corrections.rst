@@ -1,17 +1,9 @@
 Correct detector shifts and centre of rotation
 ==============================================
 
-``centre_of_rotation`` is a finite scalar horizontal correction in pixels.
-``detector_shifts`` holds actual horizontal/vertical displacements for each view,
-with shape ``(n_views, 2)``. They remain separate in the scan object. ASTRA
-conversion adds the CoR correction to the horizontal shift; the vertical shift
-is unaffected. Positive values follow increasing detector columns and rows.
-
-
-
 Use ``centre_of_rotation`` for a common horizontal correction and
-``detector_shifts`` for per-view horizontal and vertical displacements. Both
-are expressed in detector pixels. Construct a corrected scan, for example::
+``detector_shifts`` for per-view horizontal/vertical offsets, all in detector
+pixels. With ``scan`` from :doc:`configure_geometry`::
 
     from dataclasses import replace
 
@@ -21,6 +13,10 @@ are expressed in detector pixels. Construct a corrected scan, for example::
         detector_shifts=estimated_shifts,
     )
 
-Here ``estimated_shifts`` has shape ``(scan.view_count, 2)`` in acquisition
-order. For an existing reconstructor, follow :doc:`update_geometry`. To
-estimate unknown translations, follow :doc:`align_projections`.
+``estimated_shifts`` has shape ``(scan.view_count, 2)`` in acquisition order.
+Positive offsets follow increasing detector columns and rows. CoR is added to
+the horizontal shift during projection conversion; keep it separate in the
+scan settings.
+
+Apply the scan with :doc:`update_geometry`, or estimate unknown translations
+with :doc:`align_projections`. See :mod:`tomobar.geometry` for conventions.

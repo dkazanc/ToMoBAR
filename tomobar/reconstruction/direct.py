@@ -361,7 +361,8 @@ class DirectReconstructor(GeometryReconstruction):
             the former Fourier amplitude (8/pi times the physical scale) and odd-width
             crop. See FourierOptions for all execution settings and their defaults.
 
-            Based on [NIKITIN2017]_ and Viktor Nikitin's radonusfft/TomoCuPy implementation.
+            Based on [NIKITIN2017]_ and Viktor Nikitin's radonusfft/TomoCuPy
+            implementation [NIKITIN2023]_.
         """
         self._ensure_open()
         data_dtype = kwargs.pop("data_dtype", np.float32)

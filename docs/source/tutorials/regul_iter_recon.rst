@@ -12,12 +12,12 @@ This page has moved to :doc:`../howto/regularisation`. Use the new page for the 
 FISTA regularisation strength
 -----------------------------
 
-See :doc:`../concepts/fista`.
+See :doc:`../reference/solver_conventions`.
 
 ADMM updates and convergence
 ----------------------------
 
-See :doc:`../concepts/admm`.
+See :doc:`../reference/solver_conventions`.
 
 Recording the reconstruction energy
 -----------------------------------

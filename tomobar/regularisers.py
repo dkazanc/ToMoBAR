@@ -35,7 +35,7 @@ def ROF_TV_cupy(
     """Total Variation using Rudin-Osher-Fatemi (ROF) explicit iteration scheme to perform edge-preserving image denoising.
 
        This is a gradient-based algorithm for a smoothed TV term which requires a small time marching parameter and a significant number of iterations.
-       Ref: Rudin, Osher, Fatemi, "Nonlinear Total Variation based noise removal algorithms", 1992.
+       Mathematical background: Rudin, Osher and Fatemi [ROF1992]_.
 
     Args:
         data (cp.ndarray): A finite float32 2D/3D CuPy array on gpu_id.
@@ -97,8 +97,7 @@ def PD_TV_cupy(
 ) -> cp.ndarray:
     """Primal Dual algorithm for non-smooth convex Total Variation functional.
 
-       Ref: Chambolle, Pock, "A First-Order Primal-Dual Algorithm for Convex Problems
-       with Applications to Imaging", 2010.
+       Mathematical background: Chambolle and Pock [CP2011]_.
        Forward differences have zero boundary flux. The returned array is the
        primal image; nonnegativity is applied to each primal update.
        The internal _dual_state cache retains unit-ball dual fields for ADMM;
@@ -164,7 +163,7 @@ def SB_TV_cupy(
 ) -> cp.ndarray:
     """Split Bregman TV denoising, ported from CCPi's TV_SB_GPU_core.cu.
 
-    Implements Goldstein and Osher (2009) with two image-update sweeps per
+    Implements Goldstein and Osher [GO2009]_ with two image-update sweeps per
     iteration and zero-flux forward differences with their exact adjoint. ``methodTV`` selects
     isotropic (0) or anisotropic (1) shrinkage. The fidelity weight is
     1/regularisation_parameter and the splitting penalty is twice that weight.
@@ -221,7 +220,7 @@ def FGP_TV_cupy(
 ) -> cp.ndarray:
     """Fast Gradient Projection TV, adapted from CCPi TV_FGP_GPU_core.cu.
 
-    Beck and Teboulle's accelerated dual projected-gradient method minimises
+    Beck and Teboulle's accelerated dual projected-gradient method [FGP2009]_ minimises
     0.5*||u-data||^2 + strength*TV(u), optionally over u>=0. Forward differences
     use zero boundary flux. methodTV=0 selects isotropic TV, 1 anisotropic TV.
     Nonnegativity projects every primal evaluation, including the final output.
@@ -277,6 +276,7 @@ def TGV_cupy(
 ) -> cp.ndarray:
     """Second-order isotropic TGV, adapted from CCPi TGV_GPU_core.cu.
 
+    The TGV penalty follows Bredies, Kunisch and Pock [TGV2010]_.
     Minimises 0.5*||u-data||^2 + strength*(alpha1*||Du-v||_2,1
     + alpha0*||Ev||_F,1) over u,v. E is the symmetrised forward gradient;
     all derivatives have zero boundary flux and exact adjoints. Nonnegativity
@@ -337,6 +337,8 @@ def NDF_cupy(
 ) -> cp.ndarray:
     """Explicit nonlinear diffusion adapted from CCPi NonlDiff_GPU_core.cu.
 
+    Perona--Malik diffusion background is given in [PM1990]_; the method also
+    supports the other edge-stopping penalties listed below.
     sigma=0 selects linear diffusion; otherwise the effective edge threshold
     is sigma/sqrt(2), matching CCPi. Penalties are 1 Huber, 2 Perona-Malik,
     3 Tukey biweight, 4 truncated quadratic, 5 truncated Huber. The latter

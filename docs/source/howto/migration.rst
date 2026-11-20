@@ -3,10 +3,14 @@
 Upgrade from an older version
 =============================
 
-The refactored API removes the historical import modules and constructor
-arguments. Update both direct callers and downstream wrappers before deploying
-the breaking release. Python 3.12 or newer, NumPy 2 or newer, CuPy 14 or newer and
-ASTRA Toolbox 2.5 or newer are required; see :ref:`ref_dependencies`.
+Update imports, geometry and solver calls together. The current API requires
+Python >=3.12, NumPy >=2, CuPy >=14 and ASTRA >=2.5; see
+:ref:`ref_dependencies`. Removed names have no compatibility aliases.
+
+The refactoring enables more flexible acquisition geometry for iterative
+alignment and laminography. See the
+`changelog <https://github.com/dkazanc/ToMoBAR/blob/master/CHANGELOG.md>`_
+for the full release history.
 
 Canonical imports
 -----------------
@@ -17,9 +21,9 @@ Canonical imports
 
    * - Historical import
      - Current import
-   * - ``tomobar.methodsDIR.RecToolsDIR`` or ``tomobar.methodsDIR_CuPy.RecToolsDIRCuPy``
+   * - ``tomobar.methodsDIR.RecToolsDIR`` / ``methodsDIR_CuPy.RecToolsDIRCuPy``
      - ``tomobar.reconstruction.direct.DirectReconstructor``
-   * - ``tomobar.methodsIR.RecToolsIR`` or ``tomobar.methodsIR_CuPy.RecToolsIRCuPy``
+   * - ``tomobar.methodsIR.RecToolsIR`` / ``methodsIR_CuPy.RecToolsIRCuPy``
      - ``tomobar.reconstruction.iterative.IterativeReconstructor``
    * - ``tomobar.operators.ProjectionOperator``
      - ``tomobar.projectors.operator.ProjectionOperator``
@@ -30,91 +34,57 @@ Canonical imports
    * - ``tomobar.supp.suppTools`` mask/crop helpers
      - ``tomobar.postprocessing``
 
-The reconstruction classes are named ``DirectReconstructor`` and
-``IterativeReconstructor`` in all current imports and calls. The former class
-names have been removed, including from the ``reconstruction.direct`` and
-``reconstruction.iterative`` modules; no compatibility aliases are provided.
-
-Reconstruction classes and the shared operator are the public entry points.
-``tomobar.projectors._astra`` and ``tomobar.projectors._usfft`` are private
-implementation packages. The historical ``_reconstruction`` and ``_projectors``
-package names have also been removed. Python import aliases are not provided;
-old documentation URLs remain migration pages where available.
+The former class names are also removed from ``reconstruction.direct`` and
+``reconstruction.iterative``. Use the public ``reconstruction`` and ``projectors``
+packages; their former underscored names are removed.
 
 Geometry and solver calls
 -------------------------
 
-The iterative reconstructor now uses ``num_subsets`` for its subset-count
-constructor keyword and read-only property. Update callers using the former
-subset-count name; no alias is provided. ``None`` or 1 selects all views.
-FISTA and OSEM can use multiple subsets; ADMM still uses full-data updates.
-
-Replace ``DetectorsDimH``, ``DetectorsDimV``, ``AnglesVec``, ``ObjSize`` and
-``CenterRotOffset`` constructor arguments with explicit projection and volume
-geometry. Replace ``DetectorsDimH_pad`` with ``detector_padding``. For example,
-for data in ``(detector rows, views, detector columns)`` order:
-
-.. code-block:: python
+Replace detector/angle/volume constructor arguments with explicit geometry.
+Replace parameter dictionaries with solver keywords and settings objects::
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.options import DataFidelity, Regularisation
     from tomobar.reconstruction.iterative import IterativeReconstructor
 
-    scan = Parallel3DGeometry(
+    scan = Parallel3DGeometry.tomography(
         angles=angles_rad,
-        detector_shape=(data.shape[0], data.shape[2]),
+        detector_shape=(projections.shape[0], projections.shape[2]),
         centre_of_rotation=centre_offset,
     )
-    grid = Volume3DGeometry((data.shape[0], reconstruction_width, reconstruction_width))
-    with IterativeReconstructor(
-        projection_geometry=scan,
-        volume_geometry=grid,
-        detector_padding=0,
-        device_index=0,
-        backend="astra",
-    ) as rec:
-        image = rec.FISTA(
-            data,
-            iterations=20,
-            fidelity=DataFidelity("LS"),
-            regularisation=Regularisation(method="PD_TV", strength=0.001),
-            recon_mask_radius=None,
-        )
+    grid = Volume3DGeometry(
+        (projections.shape[0], reconstruction_width, reconstruction_width)
+    )
+    with IterativeReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
+        image = rec.FISTA(projections, iterations=20)
 
-Pass projection arrays and explicit keyword arguments to solvers. Replace the
-old data/algorithm/regularisation dictionaries with method arguments and
-``DataFidelity`` / ``Regularisation`` objects. Unknown arguments are rejected.
-For example, ``input_axes`` specifies data-axis order, and ``iterations`` selects
-the number of outer iterations. Reconstruction output is a CuPy array; use
-``cupy.asnumpy(image)`` when a downstream CPU consumer needs a NumPy array.
-Native regularisers are bundled with ToMoBAR; CCPi-Regularisation-Toolkit and
-historical wavelet regularisation settings are not part of this API.
+Use ``detector_padding`` for horizontal padding and ``num_subsets`` for subset
+count. FISTA and OSEM support subsets; ADMM uses full data. Iterative images
+are CuPy arrays; convert with ``cupy.asnumpy`` for CPU consumers.
+See :doc:`configure_geometry`, :doc:`configure_solvers` and :doc:`regularisation`.
 
 Backend and numerical compatibility
 -----------------------------------
 
-``backend="astra"`` remains the default. Select ``backend="usfft"`` for the
-supported parallel Fourier geometry. USFFT supports scalar centre-of-rotation
-corrections, while detector shifts and flexible geometry require ASTRA. The
-supported USFFT iterative methods are Landweber, CGLS, FISTA and ADMM. SIRT and
-OSEM require ASTRA. See :doc:`../concepts/array_axes` for coordinates and :doc:`../concepts/backends` for geometry constraints.
+ASTRA remains the default. USFFT supports restricted angle-based tomography;
+see :doc:`../concepts/backends` before switching. Check angle signs, axis order,
+CoR, padding and output scale against the original application. A previous
+``AnglesVec=-angles`` convention needs verification, not just a keyword rename.
+See the direct-method API for FBP scaling and Fourier ``legacy_scaling``.
 
-Check angle signs, array orientation, centre-offset signs, padding and output
-scaling against the original application. In particular, a wrapper that used
-``AnglesVec=-angles`` must verify the new geometry convention instead of changing
-only the keyword name. The direct methods document quantitative FBP scaling
-and the separate Fourier inversion scaling options.
+Regularised FISTA now scales its penalty by the step size and subset count;
+PD-TV boundary/constraint corrections can change reconstructed images. OSEM
+sensitivity corrections and full-data ADMM updates can also change previous
+results. Recheck tuned strengths, iteration counts and intensity scale; see
+:doc:`../reference/solver_conventions` for current conventions.
+
+Native regularisers replace CCPi-Regularisation-Toolkit dependencies. Historical
+wavelet and Group-Huber [PM2015]_ settings have no direct equivalents; use
+supported penalties and LS/PWLS/SWLS fidelities.
 
 Downstream release checks
 -------------------------
 
-HTTomolibGPU reconstruction wrappers and HTTomo integrations need to adopt the
-new imports, geometry and solver arguments together. Validate forward/backward
-operations and representative reconstructions through those wrappers, including
-shape, axis order and scale, before removing any dependency upper bound or
-publishing a stable breaking release. Passing ToMoBAR's own tests does not
-establish compatibility with a wrapper that still uses the removed API.
-
-Historical ring-correction examples using Group-Huber [PM2015]_ have no direct
-setting in the current API. Use the supported LS, PWLS or SWLS fidelity as
-appropriate; the converted notebooks demonstrate PWLS-TV and SWLS-TV.
+Update HTTomolibGPU/HTTomo wrappers with the new API before deployment. Validate
+representative projections and reconstructions, including shape, axis order and
+scale. Passing ToMoBAR's tests alone does not establish wrapper compatibility.

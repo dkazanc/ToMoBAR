@@ -1,47 +1,23 @@
 :orphan:
 
+Installation Guide
+==================
+
 .. raw:: html
 
    <span id="ref-installation"></span>
    <span id="ref-python"></span>
    <span id="ref-matlab"></span>
+   <span id="python"></span>
+   <span id="install-tomobar-as-a-pre-built-python-package"></span>
+   <span id="conda-environment-pip-install"></span>
+   <span id="install-tomobar-from-pypi"></span>
+   <span id="developers-environment"></span>
+   <span id="conda-build"></span>
+   <span id="matlab"></span>
 
-Installation Guide
-==================
+This guide has moved. Use the task-specific pages:
 
-This page has moved to :doc:`../getting_started/installation`. Use the new page for the current documentation.
-
-Python
-------
-
-See :doc:`../getting_started/installation`.
-
-Install ToMoBAR as a pre-built Python package:
-----------------------------------------------
-
-See :doc:`../getting_started/installation`.
-
-Conda environment + pip install:
---------------------------------
-
-See :doc:`../getting_started/alternative_installation`.
-
-Install ToMoBAR from PyPI:
---------------------------
-
-See :ref:`install-tomobar-from-pypi`.
-
-Developers environment
-----------------------
-
-See :doc:`../developers/installation`.
-
-Conda build
------------
-
-See :doc:`../developers/installation`.
-
-Matlab
-------
-
-See :doc:`../developers/installation`.
+* Python installation: :doc:`../getting_started/installation`.
+* Conda and pip alternatives: :doc:`../getting_started/alternative_installation`.
+* Source builds and development: :doc:`../developers/installation`.

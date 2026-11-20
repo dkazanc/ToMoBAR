@@ -1,58 +1,54 @@
-ASTRA and USFFT backends
-========================
+.. _astra-and-usfft-backends:
 
-``ProjectionOperator`` (2D/3D) and ``IterativeReconstructor`` (3D) accept
-``backend="astra"`` (the default) or ``backend="usfft"``. ASTRA supports the
-flexible acquisition geometries described in :doc:`laminography`, including detector shifts,
-explicit vectors and laminography. USFFT supports standard, unit-spaced,
-angle-based parallel tomography with these restrictions:
+Choosing a backend
+===================
 
-* Volume slices must be square: ``(N, N)`` in 2D or ``(Z, N, N)`` in 3D.
-* A 3D detector must have exactly ``Z`` rows. Slices are projected independently.
-* Detector width must be at least ``N``. For iterative reconstruction this
-  restriction applies to the internally padded detector width.
-* Angles are in radians and retain acquisition order, including for subsets.
-* ``centre_of_rotation`` accepts a finite scalar correction, including negative
-  and fractional pixel values. Zero means no additional CoR correction, for
-  both odd and even slice widths. Positive corrections move the effective
-  detector centre towards increasing columns, so projected features move
-  towards decreasing columns.
-* Every ``detector_shifts`` entry must be zero. Nonzero constant offsets and
-  per-view horizontal or vertical shifts are rejected. Use the scalar
-  ``centre_of_rotation`` for a CoR correction, or ASTRA for detector motion.
-* Explicit vector scans and laminography require ASTRA, even when the vectors
-  happen to describe standard tomography. Pass an angle-based geometry to USFFT.
+ASTRA is the default for projection operators and iterative reconstruction.
+Select USFFT for supported angle-based parallel tomography. The choice affects
+available geometries, algorithms and numerical results.
 
-For example::
+.. list-table::
+   :header-rows: 1
+   :widths: 40 30 30
 
-    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.projectors.operator import ProjectionOperator
+   * - Capability
+     - ASTRA
+     - USFFT
+   * - Standard parallel tomography
+     - Yes
+     - Yes, with the shape restrictions below
+   * - Laminography, explicit vectors or detector shifts
+     - Yes
+     - No
+   * - Scalar CoR correction
+     - Yes
+     - Yes
+   * - Landweber, CGLS, FISTA and ADMM
+     - Yes
+     - Yes
+   * - SIRT, OSEM and translation alignment
+     - Yes
+     - No
 
-    scan = Parallel3DGeometry.tomography(
-        angles=angles,
-        detector_shape=(Z, N),
-        centre_of_rotation=0.375,
-    )
-    grid = Volume3DGeometry((Z, N, N))
-    with ProjectionOperator(
-        projection_geometry=scan,
-        volume_geometry=grid,
-        backend="usfft",
-    ) as operator:
-        projections = operator.forward(volume)
+USFFT requires unit-spaced square volume slices, one detector row per volume
+slice in 3D, and a detector width at least as large as the slice width. For
+iterative reconstruction, this width includes detector padding. Supply an
+angle-based scan with zero detector shifts; a scalar CoR correction is allowed.
+See :doc:`../howto/usfft_reconstruction` for setup.
 
-USFFT applies the same circular support mask in both directions. Forward
-projection uses unit-pixel line-integral scaling, with no view-count or angular
-normalisation. Backprojection is the Euclidean transpose of this discrete
-operator up to floating-point roundoff. This replaces the extracted legacy
-pair's inconsistent scaling and odd-width handling. Detector CoR phases are
-applied on the working slice width, before forward detector padding and after
-backward detector cropping.
+Interpreting results
+--------------------
 
-Geometry replacement preserves the selected backend and checks its restrictions
-before closing the previous operator. USFFT can replace angles and scalar CoR,
-but cannot replace its geometry with shifted or vector geometry. Shift-based
-``IterativeReconstructor.align()`` requires ``backend="astra"`` and rejects USFFT before
-processing data. Analytical ``DirectReconstructor.FOURIER_INV()`` likewise permits scalar
-CoR corrections but rejects detector shifts, vectors and laminography; the
-ASTRA-based direct operations retain their geometry support.
+ASTRA and USFFT use different discretisations, so they need not agree pixel by
+pixel. Compare reconstructed structure, residuals and scale on representative
+data. USFFT applies a circular support mask in both projection directions.
+Its raw projection operator has a matched transpose within floating-point
+roundoff; ASTRA backprojection is an approximate adjoint. Public reconstructor
+edge padding changes this relationship; see :doc:`../reference/projection_operators`.
+
+The iterative USFFT backend is separate from direct ``FOURIER_INV``. Direct
+Fourier inversion also requires standard angle-based Z-axis tomography;
+tilted laminography FBP requires a supported uniformly sampled full turn.
+See the :class:`~tomobar.reconstruction.direct.DirectReconstructor` API for
+direct-method restrictions and :doc:`../reference/usfft_conventions` for exact
+USFFT coordinates and scaling.

@@ -1,10 +1,8 @@
 Data and geometry
 =================
 
-Prepare measurements, define the acquisition, and check detector and volume
-conventions before selecting a reconstruction method. Start with projection
-preparation and geometry configuration; use the later guides for corrections,
-cropping and experimental datasets.
+Prepare projections, define the scan and inspect its geometry. Then apply
+corrections or choose an experimental workflow.
 
 .. toctree::
    :maxdepth: 1

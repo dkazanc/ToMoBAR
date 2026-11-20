@@ -3,99 +3,34 @@
 Geometry objects and projector lifetime
 =======================================
 
-This page has moved to :doc:`configure_geometry`. Use the new page for the current documentation.
+.. raw:: html
 
-Geometry visualisation
-----------------------
+   <span id="geometry-visualisation"></span>
+   <span id="fixed-geometry-projection-operator"></span>
+   <span id="reconstructor-owned-operators"></span>
+   <span id="reconstruction-geometry-and-detector-padding"></span>
+   <span id="gpu-selection"></span>
+   <span id="projection-preparation-and-memory-use"></span>
+   <span id="typed-iterative-api"></span>
+   <span id="subset-storage"></span>
+   <span id="data-fidelity-workspaces"></span>
+   <span id="cuda-module-and-kernel-reuse"></span>
+   <span id="memory-pool-ownership"></span>
+   <span id="emission-normalization"></span>
+   <span id="general-parallel-trajectories-and-laminography"></span>
+   <span id="replacing-geometry-between-reconstruction-calls"></span>
+   <span id="projection-operator-demo"></span>
+   <span id="geometry-supported-by-each-backend"></span>
+   <span id="usfft-numerical-conventions"></span>
+   <span id="iterative-methods-with-usfft"></span>
+   <span id="usfft-output-buffers-and-cached-execution-data"></span>
 
-See :doc:`visualise_geometry`.
+This guide has moved. Use the task-specific pages:
 
-Fixed-geometry projection operator
-----------------------------------
-
-See :doc:`../concepts/projection_operators`.
-
-Reconstructor-owned operators
------------------------------
-
-See :doc:`../concepts/projection_operators`.
-
-Reconstruction geometry and detector padding
---------------------------------------------
-
-See :doc:`padding_cropping`.
-
-GPU selection
--------------
-
-See :doc:`../concepts/gpu_memory`.
-
-Projection preparation and memory use
--------------------------------------
-
-See :doc:`../concepts/gpu_memory`.
-
-Typed iterative API
--------------------
-
-See :doc:`configure_solvers`.
-
-Subset storage
---------------
-
-See :doc:`ordered_subsets`.
-
-Data-fidelity workspaces
-------------------------
-
-See :doc:`../concepts/gpu_memory`.
-
-CUDA module and kernel reuse
-----------------------------
-
-See :doc:`../developers/cuda_cache`.
-
-Memory-pool ownership
----------------------
-
-See :doc:`../concepts/gpu_memory`.
-
-Emission normalization
-----------------------
-
-See :doc:`../concepts/emission`.
-
-General parallel trajectories and laminography
-----------------------------------------------
-
-See :doc:`../concepts/laminography`.
-
-Replacing geometry between reconstruction calls
------------------------------------------------
-
-See :doc:`update_geometry`.
-
-Projection operator demo
-------------------------
-
-See :doc:`../concepts/projection_operators`.
-
-Geometry supported by each backend
-----------------------------------
-
-See :doc:`../concepts/backends`.
-
-USFFT numerical conventions
----------------------------
-
-See :doc:`../concepts/usfft`.
-
-Iterative methods with USFFT
-----------------------------
-
-See :doc:`usfft_reconstruction`.
-
-USFFT output buffers and cached execution data
-----------------------------------------------
-
-See :doc:`../concepts/gpu_memory`.
+* Acquisition setup: :doc:`configure_geometry` and :doc:`visualise_geometry`.
+* Corrections: :doc:`padding_cropping` and :doc:`update_geometry`.
+* Solvers: :doc:`configure_solvers`, :doc:`ordered_subsets` and :doc:`usfft_reconstruction`.
+* Operators and backends: :doc:`../reference/projection_operators`,
+  :doc:`../concepts/backends`, :doc:`../concepts/array_axes` and :doc:`../reference/usfft_conventions`.
+* Execution details: :doc:`gpu_execution`, :doc:`../developers/execution`
+  and :doc:`../developers/cuda_cache`.
