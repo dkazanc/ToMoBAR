@@ -52,7 +52,7 @@ class USFFTGeometryBackend:
         line-integral scaling and no angular normalisation. Backprojection is
         the discrete transpose up to float32 roundoff. Extra detector bins are
         zero in forward execution and centrally cropped in backprojection.
-        The numerical Gaussian interpolation target is 1e-6, not a bound on
+        The numerical Gaussian interpolation target is 1e-4, not a bound on
         total projection error. Atomic scatter is not bitwise deterministic.
 
         Numerical resources are created on first use. close() releases owned

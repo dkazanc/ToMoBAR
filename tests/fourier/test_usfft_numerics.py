@@ -18,6 +18,16 @@ def cpu_backend(monkeypatch):
     monkeypatch.setattr(module, "load_cuda_module", lambda *args: None)
     monkeypatch.setattr(module, "get_cuda_kernel", lambda *args: emulate_interpolation)
 
+    def finish(backend, padded, out):
+        n, left = backend.size, backend.left_pad
+        np.multiply(
+            padded[:, left : left + n, left : left + n].real * (2 * n) ** 2,
+            backend._get_parameters().deconvolution,
+            out=out,
+        )
+
+    monkeypatch.setattr(module.USFFTBackend, "_finish_backprojection", finish)
+
     def create(n, width, angles, cor=0, mask=1):
         backend = module.USFFTBackend.__new__(module.USFFTBackend)
         backend.size = n
@@ -25,8 +35,10 @@ def cpu_backend(monkeypatch):
         backend.centre_offset = cor
         backend._workspace = None
         backend._view_plans = {}
+        # Keep the tight CPU reference checks at 1e-6. Separate GPU tests
+        # validate the default 1e-4 target against exact Fourier summation.
         backend._initialize.__wrapped__(
-            backend, n, np.asarray(angles, dtype=np.float32), mask
+            backend, n, np.asarray(angles, dtype=np.float32), mask, 1e-6
         )
         return backend
 
@@ -118,7 +130,12 @@ def test_cuda_numerical_contract(gpu, n, rows, width, cor):
     host_y = rng.normal(size=(rows, len(angles), width)).astype(np.float32)
     x, y = gpu.asarray(host_x), gpu.asarray(host_y)
     with USFFTBackend(
-        size=n, detector_width=width, angles=angles, centre_offset=cor, subset_count=3
+        size=n,
+        detector_width=width,
+        angles=angles,
+        centre_offset=cor,
+        subset_count=3,
+        interpolation_tolerance=1e-6,
     ) as backend:
         ax = backend.forward(x)
         aty = backend.backproject(y)
@@ -136,6 +153,58 @@ def test_cuda_numerical_contract(gpu, n, rows, width, cor):
         if n <= 32:
             reference = direct_fourier_projection(host_x, angles, width, cor)
             np.testing.assert_allclose(gpu.asnumpy(ax), reference, rtol=1e-4, atol=1e-4)
+
+
+@pytest.mark.parametrize("n", [8, 9])
+@pytest.mark.parametrize("radius", [5, 7, 9])
+def test_cuda_gaussian_gather_scatter_match_dense_transpose(gpu, n, radius):
+    """Check the separable stencil and generic fallback against one dense matrix."""
+    from tests.helpers.usfft_reference import gaussian_weights
+    from tomobar.cuda_kernels.loader import get_cuda_kernel, load_cuda_module
+
+    angles = np.array([0, 0.41, np.pi / 2, np.pi, -0.41], dtype=np.float32)
+    mu = -np.log(1e-4 if radius == 5 else 1e-6) / (2 * n * n)
+    weights = gaussian_weights(
+        n, tuple(map(float, angles)), radius, float(np.float32(mu))
+    )
+    rng = np.random.default_rng(14)
+    cartesian = (
+        rng.normal(size=(2, 2 * n, 2 * n)) + 1j * rng.normal(size=(2, 2 * n, 2 * n))
+    ).astype(np.complex64)
+    polar = (
+        rng.normal(size=(2, len(angles), n)) + 1j * rng.normal(size=(2, len(angles), n))
+    ).astype(np.complex64)
+    kernel = get_cuda_kernel(
+        load_cuda_module("usfft_interpolation"), "usfft_interpolate"
+    )
+    device_angles = gpu.asarray(angles)
+    gathered = gpu.empty_like(gpu.asarray(polar))
+    scattered = gpu.zeros_like(gpu.asarray(cartesian))
+    settings = tuple(np.int32(v) for v in (n, len(angles), 2))
+    common = (device_angles, np.int32(radius), np.float32(mu), *settings)
+    grid, block = (1, 1, 2), (16, 16, 1)
+    kernel(grid, block, (gathered, gpu.asarray(cartesian), *common, np.int32(0)))
+    kernel(grid, block, (gpu.asarray(polar), scattered, *common, np.int32(1)))
+
+    # Float32 trigonometry, weight factorisation and unordered atomic sums
+    # introduce small rounding differences from the float64 dense reference.
+    np.testing.assert_allclose(
+        gpu.asnumpy(gathered),
+        np.einsum("akij,zij->zak", weights, cartesian),
+        rtol=2e-5,
+        atol=2e-5,
+    )
+    np.testing.assert_allclose(
+        gpu.asnumpy(scattered),
+        np.einsum("akij,zak->zij", weights, polar),
+        rtol=2e-5,
+        atol=2e-5,
+    )
+    lhs = np.vdot(gpu.asnumpy(gathered).astype(np.complex128), polar)
+    rhs = np.vdot(cartesian.astype(np.complex128), gpu.asnumpy(scattered))
+    scale = np.linalg.norm(gathered.get()) * np.linalg.norm(polar)
+    scale += np.linalg.norm(cartesian) * np.linalg.norm(scattered.get())
+    assert abs(lhs - rhs) / scale < 5e-6
 
 
 @pytest.mark.parametrize("n", [32, 33])

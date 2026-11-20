@@ -99,7 +99,7 @@ def test_cor_passed_without_implicit_half_pixel(
     monkeypatch.setattr(
         backend_type,
         "_initialize",
-        lambda self, n, theta, mask: received.append(self.centre_offset),
+        lambda self, n, theta, mask, tolerance: received.append(self.centre_offset),
     )
     backend = backend_type(
         size=size, detector_width=size, angles=[0, 1], centre_offset=offset

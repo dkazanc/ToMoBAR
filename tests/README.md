@@ -99,6 +99,23 @@ full/subset geometry reuse, bounded workspace replacement, NumPy transfer stagin
 and cleanup. Backend-selection tests also verify that geometry replacement
 invalidates all old execution caches.
 
+`fourier/test_usfft_scatter.py` compares tiled scatter with an independent dense
+Gaussian transpose. It checks periodic halos, partial tiles and bounded chunks,
+full/subset adjoints, input/output ownership, lazy plan reuse and release, fallback
+paths, and solver continuation across geometry replacement. The width-256/512
+scatter-only and complete-backprojection measurements are documented in
+[`benchmarks/usfft_scatter_profile.md`](../benchmarks/usfft_scatter_profile.md).
+
+`fourier/test_usfft_output.py` verifies fused final output against the unfused
+calculation, preservation of FFT storage, and the default `1e-4` interpolation
+target against direct Fourier summation. Dense gather/scatter and full/subset
+adjoint checks exercise both radius-five and radius-seven kernels; the default
+target is `1e-4`; explicit `1e-6` remains available on the low-level backend.
+Tight exact-reference checks explicitly use `1e-6`; ordinary solver and
+reconstruction tests, plus the default-accuracy checks, exercise `1e-4`.
+Timing and accuracy comparisons are recorded in
+[`benchmarks/usfft_output_profile.md`](../benchmarks/usfft_output_profile.md).
+
 `core/test_demo_arguments.py` checks the ToMoBAR keyword names used throughout
 `demos/` against the current source signatures and typed Fourier settings,
 without importing CUDA or requiring optional demo datasets. It also checks the

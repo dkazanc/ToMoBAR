@@ -78,6 +78,26 @@ initializers stay lightweight. Import numerical execution modules explicitly
 when their dependencies are needed. USFFT geometry adaptation and backend
 selection retain lazy numerical-resource construction.
 
+USFFT view plans own angles, phases and optional tiled-scatter metadata.
+``projectors/_usfft/scatter.py`` builds a slice-independent bin ordering only
+on the first eligible backprojection for a view selection. Widths at least 256
+with radius-five/seven Gaussians use 32-by-32 shared-memory tiles and
+bounded 512-sample chunks; smaller grids and other radii keep global scatter.
+The bin ordering is reused when slice count changes. Closing or replacing the
+numerical backend releases every full/subset plan. Bin construction synchronises
+once to transfer bin counts; warm scatter allocates no array storage.
+Forward and transpose retain identical interpolation weights, periodic wrapping,
+phases, units and masks. CUDA atomic accumulation order may differ between runs.
+
+Backprojection's final CUDA kernel scales and deconvolves only the real central
+crop into the caller's output; it does not scale the full complex FFT slab.
+The low-level numerical backend accepts an explicit interpolation target,
+defaulting to ``1e-4`` (radius five). Explicit ``1e-6`` selects radius seven.
+Both gather and scatter use the selected target with matching deconvolution.
+Public reconstruction/operator factories use this default target. Adjointness
+and approximation accuracy are distinct: validate both against independent
+references when changing the target, rather than relaxing transpose checks.
+
 Import CUDA utilities from their defining module::
 
     from tomobar.cuda_kernels.loader import (

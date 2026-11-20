@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from typing import TYPE_CHECKING
 
 import cupy as cp
 import numpy as np
@@ -18,9 +19,12 @@ from numpy.typing import ArrayLike
 from tomobar.projectors.interface import ProjectionArray
 from tomobar.cuda_kernels.loader import get_cuda_kernel, load_cuda_module
 from tomobar.geometry import interleaved_view_indices, _validate_centre_of_rotation
-from tomobar._validation import _positive_integer
+from tomobar._validation import _positive_integer, _real
 from tomobar._arrays.prepare import prepare_array, validate_array
 from tomobar._arrays.device import _on_device, _validate_device_index
+
+if TYPE_CHECKING:
+    from tomobar.projectors._usfft.scatter import ScatterPlan
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,13 +41,14 @@ class USFFTParameters:
     deconvolution: cp.ndarray
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class USFFTViewPlan:
-    """Device-resident angles and paired phases for one fixed view selection."""
+    """Fixed angles/phases and a lazy slice-independent scatter ordering."""
 
     angles: cp.ndarray
     phase: cp.ndarray
     adjoint_phase: cp.ndarray
+    scatter: ScatterPlan | None = None
 
 
 @dataclass(slots=True)
@@ -75,6 +80,9 @@ class USFFTBackend:
             directions; pixels on or outside the boundary are excluded.
         subset_count: Number of nonempty interleaved view partitions, default 1.
         device_index: Nonnegative CUDA device index, default 0.
+        interpolation_tolerance: Positive Gaussian interpolation target below
+            one, default 1e-4 (radius five). Explicit 1e-6 uses radius seven;
+            this target is not a bound on total projection error.
 
     Notes:
         Inputs are real arrays with axes (Z, Y, X) or (detY, angles, detX).
@@ -83,7 +91,7 @@ class USFFTBackend:
         Backprojection reverses the forward FFTs, phases, interpolation and
         padding with their Euclidean adjoints, up to float32 roundoff. There is
         no angular or view-count normalisation. The Gaussian interpolation
-        target is 1e-6; it is not a bound on total projection error.
+        target defaults to 1e-4; it is not a bound on total projection error.
 
         Odd slice widths are preserved. Additional detector bins are zero,
         with a matching central crop in backprojection. CoR translation is
@@ -98,6 +106,11 @@ class USFFTBackend:
         With GPU out, final packing writes directly into caller storage; FFT
         and shift operations still allocate some temporaries. Allocating calls
         return independent results that never alias reusable workspace storage.
+        For widths at least 256 and radius-five/seven stencils,
+        backprojection lazily bins each view selection for tiled shared-memory
+        scatter. Planning synchronises once; ordering is reused across slices
+        and iterations and released with the view plans. Smaller grids and
+        nonstandard radii retain the global scatter.
         Use the geometry adapter for 2D inputs and geometry validation.
     """
 
@@ -111,6 +124,7 @@ class USFFTBackend:
         mask_radius_squared: float = 1.0,
         subset_count: int = 1,
         device_index: int = 0,
+        interpolation_tolerance: float = 1e-4,
     ) -> None:
         self.size = _positive_integer(size, "size")
         self.detector_width = _positive_integer(detector_width, "detector_width")
@@ -133,16 +147,27 @@ class USFFTBackend:
         self._workspace: USFFTWorkspace | None = None
         self._parameters: USFFTParameters | None = None
         self.mask: cp.ndarray | None = None
-        self._initialize(self.size, angles, mask_radius_squared)
+        interpolation_tolerance = _real(
+            interpolation_tolerance, "interpolation_tolerance"
+        )
+        if interpolation_tolerance >= 1:
+            raise ValueError("interpolation_tolerance must be less than one")
+        self._initialize(
+            self.size, angles, mask_radius_squared, interpolation_tolerance
+        )
 
     @_on_device(cp)
     def _initialize(
-        self, n: int, angles: np.ndarray, mask_radius_squared: float
+        self,
+        n: int,
+        angles: np.ndarray,
+        mask_radius_squared: float,
+        interpolation_tolerance: float = 1e-4,
     ) -> None:
         """Allocate fixed Gaussian parameters on the selected CUDA device."""
         # Gaussian convolution in frequency is undone on the spatial lattice.
         # Use an even oversampled grid, without changing the slice width itself.
-        eps = 1e-6
+        eps = interpolation_tolerance
         mu = -math.log(eps) / (2 * n * n)
         m = math.ceil(
             2 * n / math.pi * math.sqrt(-mu * math.log(eps) + (mu * n) ** 2 / 4)
@@ -385,6 +410,47 @@ class USFFTBackend:
             ),
         )
 
+    def _scatter(self, polar, cartesian, plan: USFFTViewPlan) -> None:
+        """Accumulate a matched stencil using bounded, geometry-owned bin plans."""
+        parameters = self._get_parameters()
+        n = polar.shape[-1]
+        if (
+            n < 256
+            or parameters.stencil_radius not in (5, 7)
+            or n * len(plan.angles) > np.iinfo(np.int32).max
+        ):
+            self._grid(polar, cartesian, plan.angles, adjoint=True)
+            return
+        if plan.scatter is None:
+            from tomobar.projectors._usfft.scatter import ScatterPlan
+
+            plan.scatter = ScatterPlan.build(plan.angles, n)
+        plan.scatter.scatter(
+            polar,
+            cartesian,
+            parameters.gaussian_width,
+            radius=parameters.stencil_radius,
+        )
+
+    def _finish_backprojection(self, padded, out) -> None:
+        """Scale and deconvolve only the real crop, leaving FFT storage untouched."""
+        kernel = get_cuda_kernel(
+            load_cuda_module("usfft_interpolation"), "usfft_finish_backprojection"
+        )
+        kernel(
+            (math.ceil(out.size / 256),),
+            (256,),
+            (
+                padded,
+                self._get_parameters().deconvolution,
+                out,
+                np.int64(out.size),
+                np.int32(self.size),
+                np.int32(self.left_pad),
+                np.float32((2 * self.size) ** 2),
+            ),
+        )
+
     def _forward_impl(
         self,
         volume: cp.ndarray,
@@ -457,19 +523,13 @@ class USFFTBackend:
         cartesian = workspace.cartesian
         # Scatter accumulates, so every call must clear the reused grid.
         cartesian.fill(0)
-        self._grid(polar, cartesian, plan.angles, adjoint=True)
+        self._scatter(polar, cartesian, plan)
         axes = (-2, -1)
         padded = cp.fft.fftshift(
             cp.fft.ifft2(cp.fft.ifftshift(cartesian, axes=axes)), axes=axes
         )
-        # FFT2* = (2n)^2 IFFT2; scale in place before the matching crop.
-        padded *= (2 * n) ** 2
         if out is None:
             out = cp.empty((projections.shape[0], n, n), dtype=cp.float32)
-        start = self.left_pad
-        cp.multiply(
-            padded[:, start : start + n, start : start + n].real,
-            self._get_parameters().deconvolution,
-            out=out,
-        )
+        # FFT2* = (2n)^2 IFFT2. Fuse scaling, real crop and deconvolution.
+        self._finish_backprojection(padded, out)
         return out

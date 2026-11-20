@@ -1,6 +1,7 @@
 """GPU validation of native linear/quadratic solvers with the shared USFFT operator."""
 
 from dataclasses import replace
+from functools import partial
 
 import numpy as np
 import pytest
@@ -223,7 +224,16 @@ def test_admm_cg_matches_dense_normal_equation(gpu, fidelity):
         np.testing.assert_allclose(actual, expected, rtol=3e-4, atol=3e-5)
 
 
-def test_cgls_matches_independent_least_squares(gpu):
+def test_cgls_matches_independent_least_squares(gpu, monkeypatch):
+    from tomobar.projectors._usfft import backend as numerical
+
+    # This exact Fourier reference resolves weak singular directions and needs
+    # the high-accuracy target; ordinary solver tests exercise the 1e-4 default.
+    monkeypatch.setattr(
+        numerical,
+        "USFFTBackend",
+        partial(numerical.USFFTBackend, interpolation_tolerance=1e-6),
+    )
     with make_rec(cor=-0.375) as rec:
         n = rec.volume_geometry.shape[-1]
         scan = rec.padded_projection_geometry

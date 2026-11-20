@@ -1,0 +1,267 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+A script to generate 3D analytical phantoms and their projection data with added
+noise and then reconstruct using direct and iterative method implemented using CuPy API.
+
+"""
+
+from tomobar.options import DataFidelity, Regularisation
+import timeit
+import os
+import matplotlib.pyplot as plt
+import numpy as np
+import cupy as cp
+import tomophantom
+from tomophantom import TomoP3D
+from tomophantom.qualitymetrics import QualityTools
+from tomophantom.artefacts import artefacts_mix
+
+from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.iterative import RecToolsIR
+
+print("Building 3D phantom using TomoPhantom software")
+tic = timeit.default_timer()
+model = 13  # select a model number from the library
+N_size = 128  # Define phantom dimensions using a scalar value (cubic phantom)
+path = os.path.dirname(tomophantom.__file__)
+path_library3D = os.path.join(path, "phantomlib", "Phantom3DLibrary.dat")
+# This will generate a N_size x N_size x N_size phantom (3D)
+phantom_tm = TomoP3D.Model(model, N_size, path_library3D)
+toc = timeit.default_timer()
+Run_time = toc - tic
+print("Phantom has been built in {} seconds".format(Run_time))
+
+sliceSel = int(0.5 * N_size)
+# plt.gray()
+plt.figure()
+plt.subplot(131)
+plt.imshow(phantom_tm[sliceSel, :, :], vmin=0, vmax=1)
+plt.title("3D Phantom, axial view")
+
+plt.subplot(132)
+plt.imshow(phantom_tm[:, sliceSel, :], vmin=0, vmax=1)
+plt.title("3D Phantom, coronal view")
+
+plt.subplot(133)
+plt.imshow(phantom_tm[:, :, sliceSel], vmin=0, vmax=1)
+plt.title("3D Phantom, sagittal view")
+plt.show()
+
+# Projection geometry related parameters:
+Horiz_det = int(np.sqrt(2) * N_size)  # detector column count (horizontal)
+Vert_det = N_size  # detector row count (vertical) (no reason for it to be > N)
+angles_num = int(0.25 * np.pi * N_size)
+# angles number
+angles = np.linspace(0.0, 179.9, angles_num, dtype="float32")  # in degrees
+angles_rad = angles * (np.pi / 180.0)
+
+print("Generate 3D analytical projection data with TomoPhantom")
+projData3D_analyt = TomoP3D.ModelSino(
+    model, N_size, Horiz_det, Vert_det, angles, path_library3D
+)
+
+# adding a noise dictionary
+_noise_ = {
+    "noise_type": "Poisson",
+    "noise_sigma": 8000,  # noise amplitude
+    "noise_seed": 0,
+}
+
+# misalignment dictionary
+_datashifts_ = {"datashifts_maxamplitude_subpixel": 5}
+
+projData3D_analyt_noise = artefacts_mix(projData3D_analyt, **_noise_, **_datashifts_)
+
+projData3D_analyt_noise_shifted = projData3D_analyt_noise[0]
+exact_shifts = projData3D_analyt_noise[1]
+
+projData3D_analyt_cupy = cp.asarray(projData3D_analyt_noise_shifted, order="C")
+input_data_labels = ["detY", "angles", "detX"]
+
+intens_max = 45
+sliceSel = int(0.5 * N_size)
+plt.figure()
+plt.subplot(131)
+plt.imshow(projData3D_analyt_noise_shifted[:, sliceSel, :], vmin=0, vmax=intens_max)
+plt.title("2D Projection (analytical)")
+plt.subplot(132)
+plt.imshow(projData3D_analyt_noise_shifted[sliceSel, :, :], vmin=0, vmax=intens_max)
+plt.title("Sinogram view")
+plt.subplot(133)
+plt.imshow(projData3D_analyt_noise_shifted[:, :, sliceSel], vmin=0, vmax=intens_max)
+plt.title("Tangentogram view")
+plt.show()
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("%%%%%%%%%Reconstructing with 3D FBP-CuPy method %%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+# Note that we provide exact (known shifts) here to compensate for misalignment
+with RecToolsDIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+) as RecToolsCP:
+    tic = timeit.default_timer()
+    FBPrec_cupy = RecToolsCP.FBP(
+        projData3D_analyt_cupy,
+        filter_type="SINC",
+        recon_mask_radius=0.95,
+        input_axes=input_data_labels,
+        cutoff_freq=0.3,
+    )
+    toc = timeit.default_timer()
+Run_time = toc - tic
+print(
+    "FBP 3D reconstruction with FFT filtering using CuPy (GPU) in {} seconds".format(
+        Run_time
+    )
+)
+
+# bring data from the device to the host
+FBPrec_numpy = cp.asnumpy(FBPrec_cupy)
+
+sliceSel = int(0.5 * N_size)
+max_val = 1
+plt.figure()
+plt.subplot(131)
+plt.imshow(FBPrec_numpy[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("3D FBP Reconstruction, axial view")
+
+plt.subplot(132)
+plt.imshow(FBPrec_numpy[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("3D FBP Reconstruction, coronal view")
+
+plt.subplot(133)
+plt.imshow(FBPrec_numpy[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("3D FBP Reconstruction, sagittal view")
+plt.show()
+
+print(
+    "Min {} and Max {} of the volume".format(np.min(FBPrec_numpy), np.max(FBPrec_numpy))
+)
+
+# calculate errors
+Qtools = QualityTools(phantom_tm, FBPrec_numpy)
+RMSE = Qtools.rmse()
+print("Root Mean Square Error is {} for FBP".format(RMSE))
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+with RecToolsIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+    num_subsets=6,
+) as RectoolsCuPy:
+    lc = RectoolsCuPy.powermethod()  # calculate Lipschitz constant (run once)
+
+    # RUN THE FISTA METHOD:
+    tic = timeit.default_timer()
+    RecFISTA_os_tv = RectoolsCuPy.FISTA(
+        projData3D_analyt_cupy,
+        input_axes=input_data_labels,
+        fidelity=DataFidelity(method="LS"),
+        lipschitz_constant=lc,
+        regularisation=Regularisation(
+            method="PD_TV", strength=0.06, iterations=50, half_precision=True
+        ),
+        iterations=25,
+        recon_mask_radius=2.0,
+    )
+    toc = timeit.default_timer()
+Run_time = toc - tic
+print("FISTA OS-TV reconstruction done in {} seconds".format(Run_time))
+
+RecFISTA_os_tv = cp.asnumpy(RecFISTA_os_tv)
+
+sliceSel = int(0.5 * N_size)
+max_val = 1
+plt.figure()
+plt.subplot(131)
+plt.imshow(RecFISTA_os_tv[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("FISTA OS-TV (PD) Reconstruction, axial view")
+
+plt.subplot(132)
+plt.imshow(RecFISTA_os_tv[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("FISTA OS-TV (PD) Reconstruction, coronal view")
+
+plt.subplot(133)
+plt.imshow(RecFISTA_os_tv[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("FISTA OS-TV (PD) Reconstruction, sagittal view")
+plt.show()
+
+# calculate errors
+Qtools = QualityTools(phantom_tm, RecFISTA_os_tv)
+RMSE = Qtools.rmse()
+print("Root Mean Square Error is {} for FISTA OS-TV (PD) reconstruction".format(RMSE))
+# %%
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+print("Reconstructing with ADMM TV (PD) method %%%%%%%%%%%%%%%%")
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+with RecToolsIR(
+    projection_geometry=Parallel3DGeometry(
+        angles=angles_rad,
+        detector_shape=(Vert_det, Horiz_det),
+        centre_of_rotation=0.0,
+        detector_shifts=-exact_shifts,
+    ),
+    volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
+    device_index=0,
+    num_subsets=1,
+) as RectoolsCuPy:
+    # RUN THE ADMM METHOD:
+    tic = timeit.default_timer()
+    RecADMM_tv = RectoolsCuPy.ADMM(
+        projData3D_analyt_cupy,
+        input_axes=input_data_labels,
+        fidelity=DataFidelity(method="LS"),
+        initial=FBPrec_cupy,
+        rho=1.0,
+        data_solver="cg",
+        cg_iterations=5,
+        relaxation=1.7,
+        regularisation=Regularisation(
+            method="PD_TV", strength=0.1, iterations=60, half_precision=True
+        ),
+        iterations=100,
+        recon_mask_radius=2.0,
+    )
+    toc = timeit.default_timer()
+Run_time = toc - tic
+print("ADMM TV reconstruction done in {} seconds".format(Run_time))
+
+RecADMM_tv = cp.asnumpy(RecADMM_tv)
+
+sliceSel = int(0.5 * N_size)
+max_val = 1
+plt.figure()
+plt.subplot(131)
+plt.imshow(RecADMM_tv[sliceSel, :, :], vmin=0, vmax=max_val)
+plt.title("ADMM TV (PD) Reconstruction, axial view")
+
+plt.subplot(132)
+plt.imshow(RecADMM_tv[:, sliceSel, :], vmin=0, vmax=max_val)
+plt.title("ADMM TV (PD) Reconstruction, coronal view")
+
+plt.subplot(133)
+plt.imshow(RecADMM_tv[:, :, sliceSel], vmin=0, vmax=max_val)
+plt.title("ADMM TV (PD) Reconstruction, sagittal view")
+plt.show()
+
+# calculate errors
+Qtools = QualityTools(phantom_tm, RecADMM_tv)
+RMSE = Qtools.rmse()
+print("Root Mean Square Error is {} for ADMM TV (PD) reconstruction".format(RMSE))
