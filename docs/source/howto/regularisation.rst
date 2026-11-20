@@ -35,11 +35,11 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 .. code-block:: python
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
-    Rectools = RecToolsIR(
+    Rectools = IterativeReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles_rad,
             detector_shape=(detectorVert, detectorHoriz),
@@ -83,11 +83,11 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.options import DataFidelity, Regularisation
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
-    Rectools = RecToolsIR(
+    Rectools = IterativeReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles_rad,
             detector_shape=(detectorVert, detectorHoriz),
@@ -121,7 +121,7 @@ reconstructed object characteristics (geometry, texture etc.) and if your data c
 data inaccuracies? See the :doc:`noise and artefact notebook <../tutorials/synthetic_artifacts>`.
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-Use :class:`tomobar.reconstruction.iterative.RecToolsIR` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.
+Use :class:`tomobar.reconstruction.iterative.IterativeReconstructor` for GPU iterative reconstruction. Supply the geometry angles as a NumPy array.
 
 Stripe-weighted least squares (SWLS) [HOA2017]_ provides a model for stripe-like
 detector errors. Compare it with PWLS on the same data and inspect fine

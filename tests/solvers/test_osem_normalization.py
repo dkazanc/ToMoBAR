@@ -82,7 +82,7 @@ def matrix_reconstructor(mock_reconstruction, monkeypatch):
             angles=np.linspace(0, np.pi, matrix.shape[0], endpoint=False),
             detector_shape=(1, 1),
         )
-        rec = iterative.RecToolsIR(
+        rec = iterative.IterativeReconstructor(
             projection_geometry=scan,
             volume_geometry=Volume3DGeometry(shape=projector.shape),
             num_subsets=subsets,
@@ -210,7 +210,7 @@ def test_mlem_likelihood_improves(matrix_reconstructor):
 @pytest.mark.parametrize("subsets", [1, 3, 7])
 def test_gpu_osem_preserves_exact_solution_and_input_arrays(gpu, subsets):
     cp = gpu
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, 12)
@@ -220,7 +220,7 @@ def test_gpu_osem_preserves_exact_solution_and_input_arrays(gpu, subsets):
         np.linspace(0.2, 1, np.prod(grid.shape), dtype=np.float32).reshape(grid.shape)
     )
     initial = truth.copy()
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, num_subsets=subsets
     ) as rec:
         data = rec.forward(truth)

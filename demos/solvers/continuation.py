@@ -9,7 +9,7 @@ import cupy as cp
 import numpy as np
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
     grid = Volume3DGeometry((8, 32, 32))
     phantom = cp.zeros(grid.shape, dtype=cp.float32)
     phantom[:, 8:24, 10:22] = 1
-    with RecToolsIR(projection_geometry=scan, volume_geometry=grid) as rec:
+    with IterativeReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
         projections = rec.forward(phantom)
         # Deliberately start with an incorrect horizontal offset.
         rec.replace_geometry(replace(scan, centre_of_rotation=1.0))

@@ -11,12 +11,21 @@ provides explicit geometry objects, projection operators and reconstruction with
 .. image:: ../_static/capabilities_light.svg
    :class: only-light
    :width: 100%
-   :alt: Six-panel overview of ToMoBAR geometry and backends, direct and iterative reconstruction, data models, native regularisation, translation alignment, and energy monitoring with solver continuation. Reconstruction requires CUDA; USFFT has method and geometry restrictions.
+   :alt: Six-panel overview of ToMoBAR geometry and backends, direct and iterative reconstruction, data models, native regularisation, translation alignment, and energy monitoring with solver continuation. Data models are illustrated with Gaussian and Poisson distribution graphs. Iterative updates are illustrated on a two-dimensional objective field approaching a global minimum. Reconstruction requires CUDA; USFFT has method and geometry restrictions.
 
 .. image:: ../_static/capabilities_dark.svg
    :class: only-dark
    :width: 100%
-   :alt: Six-panel overview of ToMoBAR geometry and backends, direct and iterative reconstruction, data models, native regularisation, translation alignment, and energy monitoring with solver continuation. Reconstruction requires CUDA; USFFT has method and geometry restrictions.
+   :alt: Six-panel overview of ToMoBAR geometry and backends, direct and iterative reconstruction, data models, native regularisation, translation alignment, and energy monitoring with solver continuation. Data models are illustrated with Gaussian and Poisson distribution graphs. Iterative updates are illustrated on a two-dimensional objective field approaching a global minimum. Reconstruction requires CUDA; USFFT has method and geometry restrictions.
+
+The data-model panel shows a continuous Gaussian density and a discrete Poisson
+probability mass function as schematic examples of statistical models.
+
+The iterative reconstruction illustration is a schematic optimisation landscape:
+contours show a two-dimensional objective field, and arrows show successive
+updates approaching its global minimum. It illustrates the optimisation idea;
+convergence depends on the objective, solver and settings. See
+:doc:`../concepts/reconstruction_methods` for method details.
 
 
 Detailed capabilities

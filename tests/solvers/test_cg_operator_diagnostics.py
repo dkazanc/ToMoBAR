@@ -32,7 +32,7 @@ def test_precision_matrix_matches_full_fidelity(method):
 @pytest.mark.parametrize("backend", ["astra", "usfft"])
 @pytest.mark.parametrize("padding", [0, 2])
 def test_actual_working_operator_matches_sampled_normal_equation(gpu, backend, padding):
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 5, endpoint=False) + 0.03,
@@ -40,7 +40,7 @@ def test_actual_working_operator_matches_sampled_normal_equation(gpu, backend, p
         centre_of_rotation=0.25,
     )
     grid = Volume3DGeometry((1, 4, 4))
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         backend=backend,

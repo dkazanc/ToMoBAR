@@ -3,7 +3,7 @@ Update geometry between reconstruction calls
 
 The code snippets use a projection geometry ``scan``, a working-volume geometry ``grid`` and projection data ``projections``. See :doc:`configure_geometry` for geometry construction and :doc:`../concepts/array_axes` for array layout.
 
-Both ``RecToolsIR`` and ``RecToolsDIR`` support ``replace_geometry(new_scan)``.
+Both ``IterativeReconstructor`` and ``DirectReconstructor`` support ``replace_geometry(new_scan)``.
 For example, an external alignment loop can update per-view detector shifts::
 
     from dataclasses import replace

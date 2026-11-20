@@ -60,7 +60,7 @@ def test_gpu_storage_and_filter_layout_reuse(gpu, monkeypatch):
     cp = gpu
     import tomobar.reconstruction.direct as direct
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     grid = Volume3DGeometry(shape=(3, 6, 8))
@@ -81,7 +81,7 @@ def test_gpu_storage_and_filter_layout_reuse(gpu, monkeypatch):
         return array
 
     monkeypatch.setattr(direct, "_filtersinc3D", filter_input)
-    with RecToolsDIR(projection_geometry=scan, volume_geometry=grid) as rec:
+    with DirectReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
         result = rec.FBP(
             angles_first, input_axes=("angles", "detY", "detX"), filter_type="SINC"
         )
@@ -93,7 +93,7 @@ def test_gpu_storage_and_filter_layout_reuse(gpu, monkeypatch):
 def test_iterative_projection_weights_and_settings_reuse(gpu, padding):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     data = cp.arange(np.prod(scan.projection_shape), dtype=cp.float32).reshape(
@@ -106,7 +106,7 @@ def test_iterative_projection_weights_and_settings_reuse(gpu, padding):
 
     fidelity = DataFidelity("PWLS")
     weights = supplied + 1
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry(shape=(3, 6, 8)),
         detector_padding=padding,
@@ -141,10 +141,10 @@ def test_iterative_projection_weights_and_settings_reuse(gpu, padding):
 def test_cgls_preserves_projection_input(gpu):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry(shape=(3, 6, 8))
     ) as rec:
         data = cp.ones(scan.projection_shape, dtype=cp.float32)

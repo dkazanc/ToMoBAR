@@ -45,7 +45,7 @@ def test_usfft_selection_is_lazy_and_closes(mock_reconstruction, dim):
 
 def test_iterative_selection_and_transactional_replacement(mock_reconstruction):
     scan, grid = geometries()
-    with mock_reconstruction.iterative.RecToolsIR(
+    with mock_reconstruction.iterative.IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         backend="usfft",
@@ -72,7 +72,10 @@ def test_invalid_selection(mock_reconstruction, backend):
     ProjectionOperator = mock_reconstruction.ProjectionOperator
 
     scan, grid = geometries()
-    for cls in (ProjectionOperator, mock_reconstruction.iterative.RecToolsIR):
+    for cls in (
+        ProjectionOperator,
+        mock_reconstruction.iterative.IterativeReconstructor,
+    ):
         with pytest.raises(ValueError, match="backend"):
             cls(projection_geometry=scan, volume_geometry=grid, backend=backend)
 
@@ -200,7 +203,7 @@ def test_all_nonzero_shifts_rejected(dim, constant):
 
 def test_usfft_alignment_fails_before_processing_data(mock_reconstruction):
     scan, grid = geometries()
-    with mock_reconstruction.iterative.RecToolsIR(
+    with mock_reconstruction.iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, backend="usfft"
     ) as rec:
         with pytest.raises(ValueError, match="alignment requires backend='astra'"):
@@ -214,7 +217,7 @@ def test_ray_weight_solvers_reject_usfft_before_data_preparation(
     mock_reconstruction, method
 ):
     scan, grid = geometries()
-    with mock_reconstruction.iterative.RecToolsIR(
+    with mock_reconstruction.iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, backend="usfft"
     ) as rec:
         for initialise in (
@@ -229,7 +232,7 @@ def test_ray_weight_solvers_reject_usfft_before_data_preparation(
 @pytest.mark.parametrize("backend", ["astra", "usfft"])
 def test_neutral_backend_ownership_and_replacement(mock_reconstruction, backend):
     scan, grid = geometries()
-    with mock_reconstruction.iterative.RecToolsIR(
+    with mock_reconstruction.iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, backend=backend, num_subsets=2
     ) as rec:
         original = rec._projection_backend
@@ -249,10 +252,10 @@ def test_neutral_backend_ownership_and_replacement(mock_reconstruction, backend)
 
 
 def test_usfft_geometry_replacement_discards_execution_caches(gpu):
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan, grid = geometries()
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, backend="usfft", num_subsets=2
     ) as rec:
         image = gpu.ones(grid.shape, dtype=gpu.float32)

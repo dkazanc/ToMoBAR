@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 import cupy as cp
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.preprocessing import normaliser
-from tomobar.reconstruction.iterative import RecToolsIR
-from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
+from tomobar.reconstruction.direct import DirectReconstructor
 
 # Load bundled data relative to this script, regardless of the working folder.
 data_path = Path(__file__).resolve().parents[2] / "tests/test_data/DendrRawData.npz"
@@ -55,7 +55,7 @@ working_grid = Volume3DGeometry(
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%Reconstructing with Log-Polar Fourier method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsDIR(
+with DirectReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
@@ -64,15 +64,15 @@ with RecToolsDIR(
     volume_geometry=reconstruction_grid,
     detector_padding=100,
     device_index=0,
-) as RecToolsCP:
-    FourierLP_cupy = RecToolsCP.FOURIER_INV(
+) as direct_reconstructor:
+    FourierLP_cupy = direct_reconstructor.FOURIER_INV(
         data_norm_cupy,
         cutoff_freq=1.1,
         recon_mask_radius=2.0,
         input_axes=data_labels3D,
     )
 
-    FBPrec_cupy = RecToolsCP.FBP(
+    FBPrec_cupy = direct_reconstructor.FBP(
         data_norm_cupy,
         filter_type="SINC",
         recon_mask_radius=2.0,
@@ -92,7 +92,7 @@ plt.title("FBP reconstruction")
 # Initialise the IR class once here
 # Set scanning geometry parameters and initiate a class object
 
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
@@ -124,7 +124,7 @@ with RecToolsIR(
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA OS-PWLS-TV (PD) method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
@@ -164,7 +164,7 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA OS-SWLS-TV (PD) method %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
@@ -204,7 +204,7 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM PWLS-TV (SB) method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
@@ -246,7 +246,7 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM SWLS-TV (SB) method %%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),

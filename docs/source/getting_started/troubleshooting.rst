@@ -32,8 +32,8 @@ ToMoBAR. In Python or a notebook cell::
 
     import astra
     import cupy as cp
-    from tomobar.reconstruction.direct import RecToolsDIR
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.direct import DirectReconstructor
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     print("Python:", sys.executable)
     print("ToMoBAR:", version("tomobar"))

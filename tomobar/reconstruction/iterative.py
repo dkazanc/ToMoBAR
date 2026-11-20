@@ -1,11 +1,11 @@
 """Reconstruction class for regularised iterative methods using CuPy library.
 
-* :func:`RecToolsIR.FISTA` iterative regularised algorithm [BT2009]_, [Xu2016]_.
-* :func:`RecToolsIR.ADMM` iterative regularised algorithm [Boyd2011]_.
-* :func:`RecToolsIR.Landweber` algorithm.
-* :func:`RecToolsIR.SIRT` algorithm.
-* :func:`RecToolsIR.CGLS` algorithm.
-* :func:`RecToolsIR.OSEM` algorithm.
+* :func:`IterativeReconstructor.FISTA` iterative regularised algorithm [BT2009]_, [Xu2016]_.
+* :func:`IterativeReconstructor.ADMM` iterative regularised algorithm [Boyd2011]_.
+* :func:`IterativeReconstructor.Landweber` algorithm.
+* :func:`IterativeReconstructor.SIRT` algorithm.
+* :func:`IterativeReconstructor.CGLS` algorithm.
+* :func:`IterativeReconstructor.OSEM` algorithm.
 """
 
 from __future__ import annotations
@@ -35,7 +35,9 @@ from tomobar.reconstruction.iterative_methods import _IterativeMethods
 from tomobar.reconstruction.iterative_state import _IterativeStateMethods
 
 
-class RecToolsIR(_IterativeMethods, _IterativeStateMethods, GeometryReconstruction):
+class IterativeReconstructor(
+    _IterativeMethods, _IterativeStateMethods, GeometryReconstruction
+):
     """Iterative reconstruction using explicit 3D geometry and CuPy solvers.
 
     Keyword Args:

@@ -55,7 +55,7 @@ Like the ASTRA dendrites demo, this is a cell-based script. Edit the settings
 near the top (``iterations``, ``tv_iterations``, ``device_index``,
 ``centre_of_rotation``, ``N_size`` and ``padding_value``), then run the whole
 script or individual ``# %%`` reconstruction cells. Each method has an explicit
-``RecToolsIR(..., backend="usfft")`` block, solver call, timing and plot.
+``IterativeReconstructor(..., backend="usfft")`` block, solver call, timing and plot.
 
 For noninteractive execution::
 

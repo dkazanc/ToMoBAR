@@ -119,7 +119,7 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
         astra_axes = ("detY", "angles", "detX")
         native = np.arange(30, dtype=np.float32).reshape(2, 3, 5)
         for filter_type in (None, "SINC", "RAM-LAK", "ram-lak", "ramp"):
-            rec = self.reconstructor(self.direct_module.RecToolsDIR, native)
+            rec = self.reconstructor(self.direct_module.DirectReconstructor, native)
             filter_input = native.swapaxes(0, 1)
             for order in permutations(astra_axes):
                 supplied = native.transpose(tuple(astra_axes.index(a) for a in order))
@@ -135,7 +135,7 @@ class TestAxisConventions(unittest.TestCase, DirectHarness):
     def test_fourier_inv_normalizes_arrays_and_estimator_shapes_before_kernels(self):
         axes = ("detY", "angles", "detX")
         native = np.arange(24, dtype=np.float32).reshape(2, 3, 4)
-        rec = self.reconstructor(self.direct_module.RecToolsDIR, native)
+        rec = self.reconstructor(self.direct_module.DirectReconstructor, native)
 
         def capture(data, **kwargs):
             self.normalized = self.axes._transpose_data_axes(data, **kwargs)

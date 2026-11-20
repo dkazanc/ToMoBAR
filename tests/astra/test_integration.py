@@ -65,7 +65,7 @@ def test_direct_full_and_subset_projection_on_cuda(array_library):
 )
 def test_iterative_output_crop_matches_full_working_volume(method):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 6, endpoint=False), detector_shape=(4, 10)
@@ -77,7 +77,7 @@ def test_iterative_output_crop_matches_full_working_volume(method):
     )
     results = []
     for crop in (None, output_shape):
-        with RecToolsIR(
+        with IterativeReconstructor(
             projection_geometry=scan,
             volume_geometry=grid,
             detector_padding=2,
@@ -144,9 +144,9 @@ def test_direct_2d_full_and_subset_array_projection(array_library):
 
 def test_public_2d_numpy_projection_uses_cuda():
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(
             angles=[0.0, 0.5, 1.0], detector_shape=(9,)
         ),
@@ -165,7 +165,7 @@ def test_public_2d_cupy_projection_and_detector_padding():
 
     from tomobar.projectors._astra.parallel2d import AstraTools2D
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel2DGeometry(
         angles=np.linspace(0, np.pi, 5, endpoint=False),
@@ -173,7 +173,7 @@ def test_public_2d_cupy_projection_and_detector_padding():
         centre_of_rotation=0.25,
     )
     grid = Volume2DGeometry(shape=(4, 6))
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan, volume_geometry=grid, detector_padding=2
     ) as rec:
         projected = rec.forward(cp.ones(grid.shape, dtype=cp.float64))

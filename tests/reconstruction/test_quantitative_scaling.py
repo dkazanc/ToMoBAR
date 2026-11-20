@@ -10,8 +10,8 @@ import pytest
 @pytest.mark.parametrize("amplitude", [0.2, 1.7])
 def test_known_phantom_has_consistent_physical_scale(gpu, width, view_count, amplitude):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.direct import DirectReconstructor
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     y, x = np.mgrid[-16:16, -16:16] + 0.5
     plane = amplitude * np.exp(-(x * x + y * y) / 50).astype(np.float32)
@@ -22,7 +22,7 @@ def test_known_phantom_has_consistent_physical_scale(gpu, width, view_count, amp
         detector_shape=(3, width),
     )
     volume = Volume3DGeometry((3, 32, 32))
-    with RecToolsDIR(projection_geometry=scan, volume_geometry=volume) as rec:
+    with DirectReconstructor(projection_geometry=scan, volume_geometry=volume) as rec:
         data = rec.forward(phantom)
         estimates = {
             "SINC-default": rec.FBP(data),
@@ -31,7 +31,9 @@ def test_known_phantom_has_consistent_physical_scale(gpu, width, view_count, amp
             "Fourier": rec.FOURIER_INV(data, center_size=0),
             "Fourier-default": rec.FOURIER_INV(data),
         }
-    with RecToolsIR(projection_geometry=scan, volume_geometry=volume) as rec:
+    with IterativeReconstructor(
+        projection_geometry=scan, volume_geometry=volume
+    ) as rec:
         estimates["CGLS"] = rec.CGLS(data, iterations=40)
     true_mean = float(plane[region].mean())
     for method, image in estimates.items():
@@ -43,7 +45,7 @@ def test_known_phantom_has_consistent_physical_scale(gpu, width, view_count, amp
 
 def test_fourier_legacy_scale_is_explicit_and_linear(gpu):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 47, endpoint=False), detector_shape=(3, 128)
@@ -51,7 +53,7 @@ def test_fourier_legacy_scale_is_explicit_and_linear(gpu):
     data = gpu.asarray(
         np.random.default_rng(5).random(scan.projection_shape), dtype=gpu.float32
     )
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 64, 64))
     ) as rec:
         quantitative = rec.FOURIER_INV(data, center_size=0)

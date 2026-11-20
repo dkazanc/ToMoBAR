@@ -106,13 +106,13 @@ def test_inplace_proximal_matches_out_of_place_continuation(
 def test_warmed_gpu_iterations_do_not_allocate_volume_sized_temporaries(gpu, method):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     shape = (8, 64, 64)
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 17, endpoint=False), detector_shape=(8, 64)
     )
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry(shape),
         num_subsets=3 if method == "FISTA" else 1,
@@ -146,7 +146,7 @@ def test_gpu_admm_diagnostics_and_stopping_match_cpu_reference(
 ):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     def identity(data, *args, subset_index=None, out=None):
         if out is None:
@@ -158,7 +158,7 @@ def test_gpu_admm_diagnostics_and_stopping_match_cpu_reference(
     cpu_rec.operator.forward = cpu_rec.operator.backproject = identity
     host = np.array([[[-1, 2]]], dtype=np.float32)
     scan = Parallel3DGeometry(angles=np.array([0.0]), detector_shape=(1, 2))
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry(host.shape)
     ) as rec:
         rec._operator = SimpleNamespace(forward=identity, backproject=identity)

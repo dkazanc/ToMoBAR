@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 import cupy as cp
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.preprocessing import normaliser
-from tomobar.reconstruction.iterative import RecToolsIR
-from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
+from tomobar.reconstruction.direct import DirectReconstructor
 
 # Resolve the dataset relative to this script, regardless of the working folder.
 data_path = Path(__file__).resolve().parents[2] / "tests/test_data/geant4_dataset1.npz"
@@ -42,7 +42,7 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%Reconstructing with FBP method %%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsDIR(
+with DirectReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
@@ -69,7 +69,7 @@ print("Reconstructing with ADMM TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # The FBP warm start must match the explicitly requested volume geometry.
 
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),

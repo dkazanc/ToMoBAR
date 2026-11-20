@@ -54,15 +54,17 @@ def api_keywords():
                         if isinstance(n, ast.AnnAssign)
                         and isinstance(n.target, ast.Name)
                     }
-    for cls in ("RecToolsDIR", "RecToolsIR"):
+    for cls in ("DirectReconstructor", "IterativeReconstructor"):
         for name, body in list(registry.items()):
             if name.startswith("GeometryReconstruction."):
                 registry.setdefault(cls + name[len("GeometryReconstruction") :], body)
-    # RecToolsIR exposes these methods through private implementation mixins.
+    # IterativeReconstructor exposes these methods through private implementation mixins.
     for mixin in ("_IterativeMethods", "_IterativeStateMethods"):
         for name, body in list(registry.items()):
             if name.startswith(mixin + "."):
-                registry.setdefault("RecToolsIR." + name[len(mixin) + 1 :], body)
+                registry.setdefault(
+                    "IterativeReconstructor." + name[len(mixin) + 1 :], body
+                )
     allowed = {}
     for name, body in registry.items():
         if body is None:
@@ -93,13 +95,16 @@ def api_keywords():
                 keys.add("recon_mask_radius")  # Applied by postprocess_reconstruction.
         allowed[name] = keys
     # initialise_solver is defined before solver methods in the source.
-    allowed["RecToolsIR.initialise_solver"] |= set().union(
+    allowed["IterativeReconstructor.initialise_solver"] |= set().union(
         *(
-            allowed["RecToolsIR." + method]
+            allowed["IterativeReconstructor." + method]
             for method in ("Landweber", "SIRT", "CGLS", "FISTA", "ADMM", "OSEM")
         )
     )
-    allowed["RecToolsIR.initialise_solver"] -= {"iterations", "recon_mask_radius"}
+    allowed["IterativeReconstructor.initialise_solver"] -= {
+        "iterations",
+        "recon_mask_radius",
+    }
     return allowed
 
 

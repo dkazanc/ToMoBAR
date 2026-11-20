@@ -42,7 +42,7 @@
   <title
      id="capabilities-title">ToMoBAR capabilities at a glance</title>
   <desc
-     id="capabilities-description">Six panels summarise acquisition geometry and backends, direct and iterative reconstruction, LS/PWLS/SWLS data models, six native regularisers, translation alignment and geometry inspection, and energy monitoring with solver continuation. CUDA is required for reconstruction. USFFT has method and geometry restrictions.</desc>
+     id="capabilities-description">Six panels summarise acquisition geometry and backends, direct and iterative reconstruction, LS/PWLS/SWLS data models, six native regularisers, translation alignment and geometry inspection, and energy monitoring with solver continuation. The data-model illustration shows Gaussian and Poisson distributions. The iterative illustration shows update vectors on a schematic two-dimensional objective field approaching its global minimum. CUDA is required for reconstruction. USFFT has method and geometry restrictions.</desc>
   <defs
      id="defs1">
     <clipPath
@@ -349,33 +349,38 @@
        font-size="23"
        font-weight="400"
        id="text14">FISTA · ADMM · OSEM</text>
-    <path
-       d="M1236 372 l64 -24 45 25 -64 24 z"
-       fill="#eaf2ef"
-       stroke="#137d89"
-       stroke-width="2"
-       id="path14" />
-    <path
-       d="M1236 359 l64 -24 45 25 -64 24 z"
-       fill="#eaf2ef"
-       stroke="#137d89"
-       stroke-width="2"
-       id="path15" />
-    <path
-       d="M1236 346 l64 -24 45 25 -64 24 z"
-       fill="#eaf2ef"
-       stroke="#137d89"
-       stroke-width="2"
-       id="path16" />
-    <line
-       x1="1300"
-       y1="371"
-       x2="1300"
-       y2="409"
-       stroke="#137d89"
-       stroke-width="2"
-       stroke-linecap="round"
-       id="line16" />
+    <g id="iterative-optimisation" role="img"
+       aria-labelledby="optimisation-title optimisation-description">
+      <title id="optimisation-title">Iterative optimisation</title>
+      <desc id="optimisation-description">Contours of a schematic two-dimensional objective field. Successive update vectors approach the global minimum at the centre.</desc>
+      <defs>
+        <marker id="update-arrow" viewBox="0 0 8 8" refX="7" refY="4"
+                markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M 0 0 L 8 4 L 0 8 Z" fill="#b84435" />
+        </marker>
+      </defs>
+      <g transform="translate(0 -8)">
+      <g transform="rotate(-12 1260 352)" stroke="#137d89" stroke-width="1.5">
+        <ellipse cx="1260" cy="352" rx="111" ry="37" fill="#eaf2ef" />
+        <ellipse cx="1260" cy="352" rx="88" ry="29" fill="none" />
+        <ellipse cx="1260" cy="352" rx="64" ry="21" fill="none" />
+        <ellipse cx="1260" cy="352" rx="40" ry="13" fill="none" />
+        <ellipse cx="1260" cy="352" rx="17" ry="6" fill="none" />
+      </g>
+      <g fill="none" stroke="#b84435" stroke-width="2.3"
+         stroke-linecap="round" marker-end="url(#update-arrow)">
+        <path d="M 1162 337 L 1208 366" />
+        <path d="M 1208 366 L 1228 340" />
+        <path d="M 1228 340 L 1246 357" />
+        <path d="M 1246 357 L 1260 352" />
+      </g>
+      <circle cx="1162" cy="337" r="3" fill="#b84435" />
+      <circle cx="1260" cy="352" r="4.5" fill="#267447" stroke="#ffffff" stroke-width="1.5" />
+      </g>
+      <path d="M 1260 351 L 1271 381" fill="none" stroke="#526c76" stroke-width="1.2" />
+      <text x="1271" y="403" text-anchor="middle" fill="#526c76"
+            font-size="16">Global minimum</text>
+    </g>
   </g>
   <g
      id="g23">
@@ -469,6 +474,48 @@
        id="text22">FISTA / OSEM: ordered subsets</text>
     <text x="72" y="687" fill="#20383f" font-size="23px"
           font-weight="400" id="admm-update">ADMM: full-data updates</text>
+    <g id="data-model-distributions" role="img"
+       aria-labelledby="distributions-title distributions-description">
+      <title id="distributions-title">Gaussian and Poisson models</title>
+      <desc id="distributions-description">A continuous symmetric Gaussian probability density and a discrete, right-skewed Poisson probability mass function, shown schematically on separate axes.</desc>
+      <g fill="none" stroke="#d8e1e5" stroke-width="1.5">
+        <path d="M 533 533 V 587 H 682" />
+        <path d="M 533 622 V 674 H 682" />
+      </g>
+      <path d="M 538.0 586.89 L 540.0 586.84 L 542.0 586.78 L 544.0 586.69 L 546.0 586.58 L 548.0 586.43 L 550.0 586.24 L 552.0 586.00 L 554.0 585.69 L 556.0 585.30 L 558.0 584.81 L 560.0 584.22 L 562.0 583.50 L 564.0 582.64 L 566.0 581.62 L 568.0 580.43 L 570.0 579.05 L 572.0 577.48 L 574.0 575.72 L 576.0 573.76 L 578.0 571.62 L 580.0 569.31 L 582.0 566.86 L 584.0 564.29 L 586.0 561.65 L 588.0 558.98 L 590.0 556.34 L 592.0 553.79 L 594.0 551.38 L 596.0 549.18 L 598.0 547.24 L 600.0 545.61 L 602.0 544.35 L 604.0 543.49 L 606.0 543.05 L 608.0 543.05 L 610.0 543.49 L 612.0 544.35 L 614.0 545.61 L 616.0 547.24 L 618.0 549.18 L 620.0 551.38 L 622.0 553.79 L 624.0 556.34 L 626.0 558.98 L 628.0 561.65 L 630.0 564.29 L 632.0 566.86 L 634.0 569.31 L 636.0 571.62 L 638.0 573.76 L 640.0 575.72 L 642.0 577.48 L 644.0 579.05 L 646.0 580.43 L 648.0 581.62 L 650.0 582.64 L 652.0 583.50 L 654.0 584.22 L 656.0 584.81 L 658.0 585.30 L 660.0 585.69 L 662.0 586.00 L 664.0 586.24 L 666.0 586.43 L 668.0 586.58 L 670.0 586.69 L 672.0 586.78 L 674.0 586.84 L 676.0 586.89 L 676 587 L 538 587 Z"
+            fill="#137d89" fill-opacity="0.10" />
+      <path d="M 538.0 586.89 L 540.0 586.84 L 542.0 586.78 L 544.0 586.69 L 546.0 586.58 L 548.0 586.43 L 550.0 586.24 L 552.0 586.00 L 554.0 585.69 L 556.0 585.30 L 558.0 584.81 L 560.0 584.22 L 562.0 583.50 L 564.0 582.64 L 566.0 581.62 L 568.0 580.43 L 570.0 579.05 L 572.0 577.48 L 574.0 575.72 L 576.0 573.76 L 578.0 571.62 L 580.0 569.31 L 582.0 566.86 L 584.0 564.29 L 586.0 561.65 L 588.0 558.98 L 590.0 556.34 L 592.0 553.79 L 594.0 551.38 L 596.0 549.18 L 598.0 547.24 L 600.0 545.61 L 602.0 544.35 L 604.0 543.49 L 606.0 543.05 L 608.0 543.05 L 610.0 543.49 L 612.0 544.35 L 614.0 545.61 L 616.0 547.24 L 618.0 549.18 L 620.0 551.38 L 622.0 553.79 L 624.0 556.34 L 626.0 558.98 L 628.0 561.65 L 630.0 564.29 L 632.0 566.86 L 634.0 569.31 L 636.0 571.62 L 638.0 573.76 L 640.0 575.72 L 642.0 577.48 L 644.0 579.05 L 646.0 580.43 L 648.0 581.62 L 650.0 582.64 L 652.0 583.50 L 654.0 584.22 L 656.0 584.81 L 658.0 585.30 L 660.0 585.69 L 662.0 586.00 L 664.0 586.24 L 666.0 586.43 L 668.0 586.58 L 670.0 586.69 L 672.0 586.78 L 674.0 586.84 L 676.0 586.89" fill="none" stroke="#137d89" stroke-width="2.5" />
+      <text x="607" y="610" text-anchor="middle" fill="#137d89"
+            font-size="17">Gaussian</text>
+      <g fill="#a8701e" stroke="#a8701e" stroke-width="1.8">
+        <path d="M 541 674 V 667.56" />
+        <circle cx="541" cy="667.56" r="2.5" />
+        <path d="M 553 674 V 651.47" />
+        <circle cx="553" cy="651.47" r="2.5" />
+        <path d="M 565 674 V 634.57" />
+        <circle cx="565" cy="634.57" r="2.5" />
+        <path d="M 577 674 V 628.00" />
+        <circle cx="577" cy="628.00" r="2.5" />
+        <path d="M 589 674 V 633.75" />
+        <circle cx="589" cy="633.75" r="2.5" />
+        <path d="M 601 674 V 645.83" />
+        <circle cx="601" cy="645.83" r="2.5" />
+        <path d="M 613 674 V 657.56" />
+        <circle cx="613" cy="657.56" r="2.5" />
+        <path d="M 625 674 V 665.78" />
+        <circle cx="625" cy="665.78" r="2.5" />
+        <path d="M 637 674 V 670.40" />
+        <circle cx="637" cy="670.40" r="2.5" />
+        <path d="M 649 674 V 672.60" />
+        <circle cx="649" cy="672.60" r="2.5" />
+        <path d="M 661 674 V 673.51" />
+        <circle cx="661" cy="673.51" r="2.5" />
+        <path d="M 673 674 V 673.84" />
+        <circle cx="673" cy="673.84" r="2.5" />
+      </g>
+      <text x="607" y="697" text-anchor="middle" fill="#a8701e"
+            font-size="17">Poisson</text>
+    </g>
   </g>
   <g
      id="g36">

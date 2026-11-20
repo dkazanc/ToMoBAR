@@ -36,7 +36,7 @@ def test_laminography_fbp_weights_both_filters(
         return projections * np.float32(view_weight)
 
     monkeypatch.setattr(direct, filter_name, filter_stub)
-    with direct.RecToolsDIR(
+    with direct.DirectReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry((3, 6, 6)),
         detector_padding=2,
@@ -57,7 +57,7 @@ def test_laminography_fbp_weights_both_filters(
 @pytest.mark.parametrize("filter_type", ["RAM-LAK", "SINC"])
 def test_laminography_fbp_matches_cpu_filter_and_astra_backprojection(gpu, filter_type):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     tilt = np.deg2rad(68.704)
     scan = Parallel3DGeometry.laminography(
@@ -70,7 +70,7 @@ def test_laminography_fbp_matches_cpu_filter_and_astra_backprojection(gpu, filte
     phantom = np.zeros(grid.shape, dtype=np.float32)
     phantom[2:4, 3:6, 7:10] = 1
     phantom[4:6, 7:9, 3:5] = 0.4
-    with RecToolsDIR(projection_geometry=scan, volume_geometry=grid) as rec:
+    with DirectReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
         data = rec.forward(phantom)
         if filter_type == "SINC":
             filtered = filter_sinc(data, 0.35) * scan.view_count / np.pi
@@ -93,7 +93,7 @@ def test_laminography_fbp_matches_cpu_filter_and_astra_backprojection(gpu, filte
 @pytest.mark.parametrize("endpoint", [False, True])
 def test_laminography_fbp_tomography_limit(gpu, filter_type, endpoint):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     angles = np.linspace(0, np.pi, 12, endpoint=False)
     half_turn = Parallel3DGeometry.tomography(angles=angles, detector_shape=(5, 16))
@@ -108,10 +108,14 @@ def test_laminography_fbp_tomography_limit(gpu, filter_type, endpoint):
     grid = Volume3DGeometry((5, 10, 12))
     phantom = np.zeros(grid.shape, dtype=np.float32)
     phantom[1:4, 2:5, 7:10] = 1
-    with RecToolsDIR(projection_geometry=half_turn, volume_geometry=grid) as rec:
+    with DirectReconstructor(
+        projection_geometry=half_turn, volume_geometry=grid
+    ) as rec:
         data = rec.forward(phantom)
         expected = rec.FBP(data, filter_type=filter_type)
-    with RecToolsDIR(projection_geometry=full_turn, volume_geometry=grid) as rec:
+    with DirectReconstructor(
+        projection_geometry=full_turn, volume_geometry=grid
+    ) as rec:
         full_data = np.concatenate((data, data[..., ::-1]), axis=1)
         if endpoint:
             full_data = np.concatenate((full_data, data[:, :1]), axis=1)
@@ -135,7 +139,7 @@ def sinc(gpu):
 def test_fbp_filters_layout_storage_and_normalization(gpu, padding):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     # Unequal numbers of rows and views catch normalization on the wrong axis.
     scan = Parallel3DGeometry(
@@ -149,7 +153,7 @@ def test_fbp_filters_layout_storage_and_normalization(gpu, padding):
     # Independent detector-only NumPy filtering before ASTRA backprojection.
     expected_projections = cp.asarray(filter_sinc(padded, 1.1), dtype=cp.float32)
     axes = ("detY", "angles", "detX")
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan, volume_geometry=grid, detector_padding=padding
     ) as rec:
         expected = cp.asnumpy(rec.Atools.backproject(expected_projections))
@@ -180,14 +184,14 @@ def test_fbp_filters_layout_storage_and_normalization(gpu, padding):
 def test_shared_2d_fbp_storage_and_filter_reset(gpu):
     cp = gpu
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel2DGeometry(
         angles=np.linspace(0, np.pi, 9, endpoint=False), detector_shape=(12,)
     )
     grid = Volume2DGeometry(shape=(8, 10))
     data = np.random.default_rng(2).random(scan.projection_shape).astype(np.float32)
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan, volume_geometry=grid, detector_padding=2
     ) as rec:
         default = rec.FBP(data)
@@ -203,10 +207,10 @@ def test_shared_2d_fbp_storage_and_filter_reset(gpu):
 def test_fbp_rejects_bad_input_before_filtering(gpu):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry(angles=[0, 0.5, 1], detector_shape=(2, 8))
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry(shape=(2, 6, 6))
     ) as rec:
         for xp in (np, cp):
@@ -265,7 +269,7 @@ def test_sinc_filters_detector_rows_independently(gpu, width, sinc):
 @pytest.mark.parametrize("width", [8, 9])
 def test_fbp_default_is_cuda_sinc_with_cutoff_035(gpu, width):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, width)
@@ -273,7 +277,7 @@ def test_fbp_default_is_cuda_sinc_with_cutoff_035(gpu, width):
     data = gpu.asarray(
         np.random.default_rng(6).random(scan.projection_shape), dtype=gpu.float32
     )
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 6, 6))
     ) as rec:
         implicit = rec.FBP(data)
@@ -307,7 +311,7 @@ def test_invalid_fbp_cutoff_fails_before_preparing_data(
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(angles=[0, 0.5, 1], detector_shape=(3, 8))
-    with mock_reconstruction.direct.RecToolsDIR(
+    with mock_reconstruction.direct.DirectReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 6, 6))
     ) as rec:
 
@@ -324,7 +328,7 @@ def test_invalid_fbp_cutoff_fails_before_preparing_data(
 @pytest.mark.parametrize("cutoff", [0.35, 0.6, 1.1])
 def test_public_cutoff_matches_numpy_reference(gpu, cutoff, width):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, width)
@@ -332,7 +336,7 @@ def test_public_cutoff_matches_numpy_reference(gpu, cutoff, width):
     data = gpu.asarray(
         np.random.default_rng(8).random(scan.projection_shape), dtype=gpu.float32
     )
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 6, 6))
     ) as rec:
         actual = rec.FBP(data, filter_type="SINC", cutoff_freq=cutoff)
@@ -390,7 +394,7 @@ def test_unknown_filter_fails_before_data_preparation(mock_reconstruction, monke
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(angles=[0, 0.5, 1], detector_shape=(3, 8))
-    with mock_reconstruction.direct.RecToolsDIR(
+    with mock_reconstruction.direct.DirectReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 6, 6))
     ) as rec:
 

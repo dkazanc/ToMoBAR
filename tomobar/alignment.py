@@ -87,7 +87,7 @@ def align(
     recon_mask_radius=1.0,
     xp,
 ) -> AlignmentResult:
-    """Internal driver; see RecToolsIR.align for the public parameter contract."""
+    """Internal driver; see IterativeReconstructor.align for the public parameter contract."""
     reconstructor._ensure_open()
     if getattr(reconstructor, "backend", "astra") != "astra":
         raise ValueError(

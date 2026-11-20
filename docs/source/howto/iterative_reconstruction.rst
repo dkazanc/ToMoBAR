@@ -24,11 +24,11 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     import cupy as cp
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
-    Rectools = RecToolsIR(
+    Rectools = IterativeReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles_rad,
             detector_shape=(detectorVert, detectorHoriz),

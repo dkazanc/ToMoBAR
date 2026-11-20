@@ -23,11 +23,11 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
 .. code-block:: python
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     detectorVert, angles_number, detectorHoriz = np.shape(data_norm)
 
-    Rectools = RecToolsDIR(
+    Rectools = DirectReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles_rad,
             detector_shape=(detectorVert, detectorHoriz),
@@ -47,7 +47,7 @@ and with axes labels given as :mod:`["detY", "angles", "detX"]`. We also provide
     FBP_Rec = Rectools.FBP(data_norm, input_axes=data_axes_labels3D)
 
 One can also operate purely on CuPy arrays if :ref:`ref_dependencies` are satisfied for the CuPy package.
-Use :class:`tomobar.reconstruction.direct.RecToolsDIR` with either NumPy or CuPy arrays. Select ``filter_type="SINC"`` in ``FBP`` for the custom CUDA SINC filter. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
+Use :class:`tomobar.reconstruction.direct.DirectReconstructor` with either NumPy or CuPy arrays. Select ``filter_type="SINC"`` in ``FBP`` for the custom CUDA SINC filter. Note that the array of angles for the CuPy modules should be provided as a Numpy array.
 
 Filters, angular weighting and scaling
 --------------------------------------
@@ -91,7 +91,7 @@ unchanged. For example:
 
 .. code-block:: python
 
-    with RecToolsDIR(projection_geometry=scan, volume_geometry=grid) as rec:
+    with DirectReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
         result = rec.FBP(
             projections,
             filter_type="SINC",
@@ -108,7 +108,7 @@ FFT setup and allocations on subsequent calls. This option applies only to 3D FB
 
 2D ``FBP`` uses ASTRA ``FBP_CUDA`` filters (default ``ram-lak``). CuPy inputs
 are transferred through ASTRA's host data API and the result returns to the
-selected GPU. ``FOURIER_INV`` remains available on ``RecToolsDIR`` and accepts
+selected GPU. ``FOURIER_INV`` remains available on ``DirectReconstructor`` and accepts
 CuPy arrays or shape tuples for memory estimation. Its quantitative angular
 normalization corrects the former amplitude by ``pi/8``, and its output crop
 centers odd detector widths. Pass ``legacy_scaling=True`` directly or through

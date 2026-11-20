@@ -29,7 +29,7 @@ created when required by a filter or ASTRA. Suitable CuPy storage is reused.
 into ASTRA's projection layout before filtering. Fourier inversion validates
 through the same layer but applies its padding inside the FFT implementation.
 
-``RecToolsIR`` accepts projection arrays directly. ``input_axes`` describes
+``IterativeReconstructor`` accepts projection arrays directly. ``input_axes`` describes
 both projections and optional raw-data weights. Preparation preserves caller
 arrays, so they can be reused for another reconstruction. NumPy projection
 inputs are transferred to the selected GPU; iterative results are CuPy arrays.

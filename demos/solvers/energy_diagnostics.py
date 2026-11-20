@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 from tomobar.options import DataFidelity, Regularisation
 
 # %% Create a small phantom and matching parallel-beam geometry.
@@ -29,7 +29,7 @@ regularisation = Regularisation(method="PD_TV", strength=0.01, iterations=50)
 
 # %% Enable return_energy to receive (reconstruction, energy_vector).
 # The ordinary image-only return remains the default when it is omitted.
-with RecToolsIR(projection_geometry=scan, volume_geometry=grid) as rec:
+with IterativeReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
     projections = rec.forward(phantom)
 
     # Gaussian measurement noise: standard deviation is 2% of the peak signal.

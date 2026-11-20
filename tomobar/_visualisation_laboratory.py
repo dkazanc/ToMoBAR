@@ -55,7 +55,7 @@ def _sample_rotation_arc(scan, rotation, axis, scale):
     )
 
 
-def _plot_laboratory(scan, volume, indices, figure, ax):
+def _plot_laboratory(scan, volume, indices, figure, ax, detector_position="downstream"):
     """Stationary instrument with tilted, rotating sample; distances schematic."""
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
@@ -71,7 +71,7 @@ def _plot_laboratory(scan, volume, indices, figure, ax):
         if np.count_nonzero(corners[i] != corners[j]) == 1
     ]
     scale = float(max(volume.shape + scan.detector_shape))
-    distance = 1.15 * scale
+    distance = 1.15 * scale if detector_position == "downstream" else 0.0
     bounds, legend = [], []
     vectors = scan.to_vectors()[indices]
     rows, columns = scan.detector_shape
@@ -156,7 +156,7 @@ def _plot_laboratory(scan, volume, indices, figure, ax):
         bounds.extend([sample, detector])
     axis_ends = np.array([-0.6 * scale * axis, 0.6 * scale * axis])
     ax.plot(*axis_ends.T, "k--", linewidth=1.5)
-    ax.text(*(1.22 * axis_ends[1]), "Tilted rotation axis")
+    ax.text(*(1.22 * axis_ends[1]), "Rotation axis")
     bounds.append(axis_ends)
     arc = _sample_rotation_arc(scan, rotations[0], axis, scale)
     if arc is not None:
@@ -178,7 +178,12 @@ def _plot_laboratory(scan, volume, indices, figure, ax):
     ax.set_box_aspect((1, 1, 1))
     ax.view_init(elev=23, azim=-55)
     ax.set_title(
-        "Fixed beam and detector; rotating sample\nDetector distance schematic"
+        "Fixed beam and detector; rotating sample"
+        + (
+            "\nDetector distance schematic"
+            if detector_position == "downstream"
+            else "\nDetector reference planes"
+        )
     )
     legend.extend(
         [

@@ -1,6 +1,6 @@
 """In-memory continuation state for iterative reconstruction.
 
-Construct states through RecToolsIR.initialise_solver(). States belong to one
+Construct states through IterativeReconstructor.initialise_solver(). States belong to one
 reconstructor/device and retain prepared data and full-grid GPU arrays. They
 are not a portable checkpoint format.
 

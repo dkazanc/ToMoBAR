@@ -64,7 +64,7 @@ def test_invalid_solver_options_create_no_projector(
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(angles=[0.0, 0.5, 1.0], detector_shape=(2, 7))
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry(shape=(2, 4, 6))
     ) as rec:
         with pytest.raises(error):
@@ -98,7 +98,9 @@ def test_cgls_warm_start_uses_its_residual_and_preserves_storage(
     expected = (
         initial.ravel() + (direction @ direction) / (projected @ projected) * direction
     )
-    with iterative.RecToolsIR(projection_geometry=scan, volume_geometry=grid) as rec:
+    with iterative.IterativeReconstructor(
+        projection_geometry=scan, volume_geometry=grid
+    ) as rec:
         result = rec.CGLS(data, initial=initial, iterations=1, recon_mask_radius=None)
         np.testing.assert_allclose(result.ravel(), expected, rtol=2e-6)
         np.testing.assert_array_equal(initial, before)
@@ -115,7 +117,7 @@ def test_cgls_warm_start_uses_its_residual_and_preserves_storage(
 def test_gpu_warm_starts_are_preserved(gpu, method):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     grid = Volume3DGeometry(shape=(3, 6, 8))
@@ -125,7 +127,7 @@ def test_gpu_warm_starts_are_preserved(gpu, method):
     original = initial.copy()
     data = cp.ones(scan.projection_shape, dtype=cp.float32)
     options = {"lipschitz_constant": 1000.0} if method in ("FISTA", "ADMM") else {}
-    with RecToolsIR(projection_geometry=scan, volume_geometry=grid) as rec:
+    with IterativeReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
         result = getattr(rec, method)(
             data, iterations=1, initial=initial, recon_mask_radius=None, **options
         )
@@ -139,7 +141,7 @@ def test_admm_scales_a_local_regularisation_copy(gpu, monkeypatch):
     cp = gpu
     import tomobar.reconstruction.iterative_state as iterative_state
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     seen = []
 
@@ -150,7 +152,7 @@ def test_admm_scales_a_local_regularisation_copy(gpu, monkeypatch):
     monkeypatch.setattr(iterative_state, "prox_regul", prox)
     scan = Parallel3DGeometry(angles=np.linspace(0, np.pi, 7), detector_shape=(3, 9))
     settings = Regularisation(strength=0.04)
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry(shape=(3, 6, 8))
     ) as rec:
         data = cp.ones(scan.projection_shape, dtype=cp.float32)
@@ -172,7 +174,7 @@ def test_weight_validation_precedes_projection(mock_reconstruction, fidelity, ba
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(angles=[0.0, 0.5, 1.0], detector_shape=(1, 3))
-    with mock_reconstruction.iterative.RecToolsIR(
+    with mock_reconstruction.iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry(shape=(1, 2, 2))
     ) as rec:
         weights = np.full(scan.projection_shape, bad, dtype=np.float32)
@@ -191,7 +193,7 @@ def test_weights_preserve_zeros_and_relative_values(mock_reconstruction, fidelit
     scan = Parallel3DGeometry(angles=[0.0, 0.5, 1.0], detector_shape=(1, 3))
     weights = np.array([[[0, 2, 4], [1e-9, 3, 1], [2, 0, 4]]], dtype=np.float32)
     original = weights.copy()
-    with mock_reconstruction.iterative.RecToolsIR(
+    with mock_reconstruction.iterative.IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry(shape=(1, 2, 2)),
         detector_padding=1,
@@ -233,7 +235,7 @@ def test_power_method_covers_every_subset(
         close=Mock(),
     )
     monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, num_subsets=subset_count
     ) as rec:
         estimate = rec.powermethod(iterations=30)
@@ -254,7 +256,7 @@ def test_power_method_skips_zero_subset(mock_reconstruction, monkeypatch):
         close=Mock(),
     )
     monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, num_subsets=2
     ) as rec:
         np.testing.assert_allclose(rec.powermethod(), 9.0, rtol=1e-6)
@@ -285,7 +287,7 @@ def test_admm_power_method_uses_full_operator(mock_reconstruction, monkeypatch):
         close=Mock(),
     )
     monkeypatch.setattr(iterative, "create_projection_backend", lambda **kw: projector)
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, num_subsets=3
     ) as rec:
         state = rec.initialise_solver(

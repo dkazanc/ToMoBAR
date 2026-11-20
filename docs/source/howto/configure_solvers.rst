@@ -9,9 +9,9 @@ dictionaries or ``dicts_check``. For example:
 .. code-block:: python
 
     from tomobar.options import DataFidelity, Regularisation
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=grid, num_subsets=4, device_index=0
     ) as rec:
         tv = Regularisation(method="PD_TV", strength=0.001, iterations=50)

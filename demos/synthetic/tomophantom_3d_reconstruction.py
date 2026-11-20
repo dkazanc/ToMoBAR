@@ -18,8 +18,8 @@ from tomophantom.qualitymetrics import QualityTools
 from tomophantom.artefacts import artefacts_mix
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.reconstruction.direct import RecToolsDIR
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.direct import DirectReconstructor
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
 print("Building 3D phantom using TomoPhantom software")
 tic = timeit.default_timer()
@@ -98,7 +98,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%Reconstructing with 3D FBP-CuPy method %%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # Note that we provide exact (known shifts) here to compensate for misalignment
-with RecToolsDIR(
+with DirectReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(Vert_det, Horiz_det),
@@ -107,9 +107,9 @@ with RecToolsDIR(
     ),
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
-) as RecToolsCP:
+) as direct_reconstructor:
     tic = timeit.default_timer()
-    FBPrec_cupy = RecToolsCP.FBP(
+    FBPrec_cupy = direct_reconstructor.FBP(
         projData3D_analyt_cupy,
         filter_type="SINC",
         recon_mask_radius=0.95,
@@ -155,7 +155,7 @@ print("Root Mean Square Error is {} for FBP".format(RMSE))
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA OS-TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(Vert_det, Horiz_det),
@@ -211,7 +211,7 @@ print("Root Mean Square Error is {} for FISTA OS-TV (PD) reconstruction".format(
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM TV (PD) method %%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(Vert_det, Horiz_det),

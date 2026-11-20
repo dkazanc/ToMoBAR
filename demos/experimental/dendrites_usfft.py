@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import cupy as cp
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.preprocessing import normaliser
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
 # Settings shared by the reconstruction cells.
 N_size = 1000
@@ -72,7 +72,7 @@ working_grid = Volume3DGeometry(
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%Reconstructing with USFFT CGLS method %%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=projection_geometry,
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
@@ -101,7 +101,7 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with USFFT FISTA OS-PWLS-TV (PD) method")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=projection_geometry,
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
@@ -137,7 +137,7 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with USFFT FISTA OS-SWLS-TV (PD) method")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=projection_geometry,
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
@@ -173,7 +173,7 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with USFFT ADMM PWLS-TV (PD) method")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=projection_geometry,
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,
@@ -212,7 +212,7 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with USFFT ADMM SWLS-TV (PD) method")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=projection_geometry,
     volume_geometry=working_grid,
     output_shape=reconstruction_grid.shape,

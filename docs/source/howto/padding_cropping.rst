@@ -20,10 +20,10 @@ ADMM and OSEM:
 .. code-block:: python
 
     import cupy as cp
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     working_grid = Volume3DGeometry(shape=(64, 288, 288))
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=working_grid,
         detector_padding=16,

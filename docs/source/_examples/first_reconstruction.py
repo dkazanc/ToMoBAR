@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.direct import DirectReconstructor
 
 # A known sample in (z, y, x) order, with unit voxel and detector spacing.
 size = 48
@@ -22,7 +22,9 @@ scan = Parallel3DGeometry.tomography(
 )
 grid = Volume3DGeometry(shape=phantom.shape)
 
-with RecToolsDIR(projection_geometry=scan, volume_geometry=grid, device_index=0) as rec:
+with DirectReconstructor(
+    projection_geometry=scan, volume_geometry=grid, device_index=0
+) as rec:
     projections = rec.forward(phantom)  # (detY, angles, detX)
     reconstructed = cp.asnumpy(
         rec.FBP(projections, filter_type="RAM-LAK", recon_mask_radius=None)

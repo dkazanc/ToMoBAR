@@ -39,7 +39,11 @@ def make_rec(mock, kind, padding=2):
             angles=[0.0, 0.4, 1.0, 2.0, 3.0], detector_shape=(3, 7)
         )
         grid = Volume3DGeometry((2, 4, 6))
-    cls = mock.iterative.RecToolsIR if kind == "iterative" else mock.direct.RecToolsDIR
+    cls = (
+        mock.iterative.IterativeReconstructor
+        if kind == "iterative"
+        else mock.direct.DirectReconstructor
+    )
     options = dict(num_subsets=2, output_shape=(1, 2, 4)) if kind == "iterative" else {}
     return cls(
         projection_geometry=scan,
@@ -154,7 +158,7 @@ def test_2d_filter_settings_survive(mock_reconstruction):
 
 
 def test_cuda_replacement_matches_fresh_reconstructor(gpu):
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     grid = Volume3DGeometry((4, 6, 8))
     original = Parallel3DGeometry(
@@ -169,7 +173,7 @@ def test_cuda_replacement_matches_fresh_reconstructor(gpu):
     rng = np.random.default_rng(42)
     x = rng.uniform(size=grid.shape).astype(np.float32)
     b = rng.uniform(size=original.projection_shape).astype(np.float32)
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=original,
         volume_geometry=grid,
         num_subsets=2,
@@ -180,7 +184,7 @@ def test_cuda_replacement_matches_fresh_reconstructor(gpu):
         old = rec.Atools
         rec.replace_geometry(updated)
         assert not old._projector_handles
-        with RecToolsIR(
+        with IterativeReconstructor(
             projection_geometry=updated,
             volume_geometry=grid,
             num_subsets=2,
@@ -275,7 +279,7 @@ def test_failed_operator_install_leaves_current_geometry_usable(
 
 @pytest.mark.parametrize("method", ["FISTA", "OSEM"])
 def test_cuda_subset_continuation_uses_replacement_operator(gpu, method):
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 9, endpoint=False), detector_shape=(3, 12)
@@ -285,7 +289,7 @@ def test_cuda_subset_continuation_uses_replacement_operator(gpu, method):
         np.random.default_rng(7).uniform(0.1, 1, scan.projection_shape),
         dtype=gpu.float32,
     )
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         num_subsets=3,
@@ -303,7 +307,7 @@ def test_cuda_subset_continuation_uses_replacement_operator(gpu, method):
         with pytest.raises(RuntimeError, match="closed"):
             old_operator.forward(image)
         rec.run(state, iterations=2)
-        with RecToolsIR(
+        with IterativeReconstructor(
             projection_geometry=changed,
             volume_geometry=grid,
             num_subsets=3,

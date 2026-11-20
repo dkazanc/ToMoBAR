@@ -5,7 +5,7 @@ These examples assume an open iterative reconstructor ``rectools`` and prepared 
 
     from tomobar.options import DataFidelity, Regularisation
 
-``RecToolsIR.align`` alternates reconstruction, full-view reprojection and
+``IterativeReconstructor.align`` alternates reconstruction, full-view reprojection and
 subpixel translation registration, following the reconstruction/reprojection
 strategy of Gürsoy et al. (2017), DOI: ``10.1038/s41598-017-12141-9`` and
 TomoPy's ``align_seq`` / ``align_joint`` implementations::

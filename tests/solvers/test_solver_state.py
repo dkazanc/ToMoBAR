@@ -128,12 +128,12 @@ def test_admm_scaling_does_not_modify_original_regularisation(cpu_rec):
 def test_cuda_continuation(method, gpu):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 9, endpoint=False), detector_shape=(4, 12)
     )
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((4, 8, 8))
     ) as rec:
         x = cp.zeros((4, 8, 8), dtype=cp.float32)
@@ -278,14 +278,14 @@ def test_fista_recomputes_tv_scaling_after_geometry_restart(two_pixel_rec):
 def test_cuda_fista_first_step_matches_scaled_tv_prox(gpu, method):
     cp = gpu
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
     from tomobar._regularisers.proximal import prox_regul
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 5, endpoint=False), detector_shape=(3, 8)
     )
     grid = Volume3DGeometry((3, 6, 6))
-    with RecToolsIR(projection_geometry=scan, volume_geometry=grid) as rec:
+    with IterativeReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
         phantom = cp.zeros(grid.shape, dtype=cp.float32)
         phantom[:, 2:4, 2:4] = 1
         data = rec.forward(phantom)
@@ -392,11 +392,11 @@ def test_cuda_fista_constrained_tv_matches_analytic_solution(
     gpu, monkeypatch, strength, expected, half
 ):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     cp = gpu
     scan = Parallel3DGeometry(angles=[0, 1], detector_shape=(2, 2))
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((2, 2, 2))
     ) as rec:
         # Identity projection isolates the constrained TV proximal step while
@@ -433,8 +433,8 @@ def test_public_solver_image_rejects_foreign_state(mock_reconstruction):
         volume_geometry=Volume3DGeometry((1, 2, 2)),
     )
     with (
-        mock_reconstruction.iterative.RecToolsIR(**options) as first,
-        mock_reconstruction.iterative.RecToolsIR(**options) as second,
+        mock_reconstruction.iterative.IterativeReconstructor(**options) as first,
+        mock_reconstruction.iterative.IterativeReconstructor(**options) as second,
     ):
         state = first.initialise_solver(
             "FISTA", np.ones((1, 2, 3), dtype=np.float32), lipschitz_constant=1

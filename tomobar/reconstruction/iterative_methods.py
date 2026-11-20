@@ -1,4 +1,4 @@
-"""Public iterative solver methods mixed into RecToolsIR."""
+"""Public iterative solver methods mixed into IterativeReconstructor."""
 
 from __future__ import annotations
 

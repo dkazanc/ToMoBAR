@@ -11,7 +11,7 @@ from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 def test_fourier_reconstruction_ignores_stale_grid_memory(
     gpu, monkeypatch, center_size, stale_value
 ):
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 47, endpoint=False),
@@ -22,7 +22,7 @@ def test_fourier_reconstruction_ignores_stale_grid_memory(
         np.random.default_rng(42).random(scan.projection_shape, dtype=np.float32)
     )
     original_empty = gpu.empty
-    with RecToolsDIR(projection_geometry=scan, volume_geometry=volume) as rec:
+    with DirectReconstructor(projection_geometry=scan, volume_geometry=volume) as rec:
         grid_shape = rec.plan_fourier().workspaces["grid"].shape
 
         def allocator_with_grid_contents(value):

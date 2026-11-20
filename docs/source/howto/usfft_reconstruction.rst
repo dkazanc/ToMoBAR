@@ -18,9 +18,9 @@ for USFFT before data preparation, both in one-shot calls and through
 
 For Landweber choose a step size from the full-data norm estimate, for example::
 
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         backend="usfft",

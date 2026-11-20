@@ -28,8 +28,8 @@ def test_public_objects_flow_to_wrapper_and_padding_preserves_volume(
     )
     volume = Volume3DGeometry(shape=(2, 4, 6))
     cls = {
-        "direct": direct.RecToolsDIR,
-        "iterative": iterative.RecToolsIR,
+        "direct": direct.DirectReconstructor,
+        "iterative": iterative.IterativeReconstructor,
     }[kind]
     with cls(
         projection_geometry=scan, volume_geometry=volume, detector_padding=padding
@@ -71,7 +71,7 @@ def test_numpy_direct_full_and_uneven_subsets_share_handles_between_operations(
     iterative = mock_reconstruction.iterative
     scan = Parallel3DGeometry(angles=[1.4, 0.3, -0.5, 0.0, 0.7], detector_shape=(2, 7))
     volume = Volume3DGeometry(shape=(3, 4, 6))
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=scan, volume_geometry=volume, num_subsets=2
     ) as rec:
         for subset, views in ((None, 5), (1, 2), (0, 3), (1, 2), (None, 5)):
@@ -123,8 +123,8 @@ def test_public_constructors_reject_removed_dimension_arguments(
     direct = mock_reconstruction.direct
     iterative = mock_reconstruction.iterative
     cls = {
-        "direct": direct.RecToolsDIR,
-        "iterative": iterative.RecToolsIR,
+        "direct": direct.DirectReconstructor,
+        "iterative": iterative.IterativeReconstructor,
     }[kind]
     with pytest.raises(TypeError, match="DetectorsDimH"):
         cls(
@@ -215,7 +215,7 @@ def test_admm_keeps_volume_sized_warm_start_when_detector_padding_is_enabled(
     grid = Volume3DGeometry(shape=(2, 4, 6))
     warm_start = np.arange(np.prod(grid.shape), dtype=np.float32).reshape(grid.shape)
     data = np.ones((3, 3, 7), dtype=np.float32)
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         detector_padding=2,
@@ -250,7 +250,7 @@ def test_output_shape_is_validated_before_binding(mock_reconstruction, shape, er
     backend = mock_reconstruction.backend
     iterative = mock_reconstruction.iterative
     with pytest.raises(error, match="output_shape"):
-        iterative.RecToolsIR(
+        iterative.IterativeReconstructor(
             projection_geometry=Parallel3DGeometry(angles=[0.0], detector_shape=(3, 7)),
             volume_geometry=Volume3DGeometry(shape=(3, 8, 10)),
             output_shape=shape,
@@ -265,7 +265,7 @@ def test_output_crop_indices_storage_and_working_operators(
     iterative = mock_reconstruction.iterative
     grid = Volume3DGeometry(shape=(4, 8, 10))
     volume = np.arange(np.prod(grid.shape), dtype=np.float32).reshape(grid.shape)
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=[0.0, 0.5], detector_shape=(3, 7)
         ),
@@ -342,7 +342,7 @@ def test_iterative_algorithms_only_require_projection_operations(
         iterative, "create_projection_backend", lambda **kwargs: projector
     )
     data = np.ones(scan.projection_shape, dtype=np.float32)
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         detector_padding=2,
@@ -379,8 +379,8 @@ def test_gpu_only_constructors_reject_old_device_api(
     direct = mock_reconstruction.direct
     iterative = mock_reconstruction.iterative
     classes = {
-        "direct": direct.RecToolsDIR,
-        "iterative": iterative.RecToolsIR,
+        "direct": direct.DirectReconstructor,
+        "iterative": iterative.IterativeReconstructor,
         "wrapper2d": backend.tools2d.AstraTools2D,
         "wrapper3d": backend.tools3d.AstraTools3D,
     }

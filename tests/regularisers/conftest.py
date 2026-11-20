@@ -74,7 +74,7 @@ def observe_kernels(monkeypatch, gpu):
 def identity_rec(gpu, monkeypatch):
     """Real GPU solver and proximal dispatch with an identity linear operator."""
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(angles=[0, 1.57], detector_shape=(1, 2))
 
@@ -88,7 +88,7 @@ def identity_rec(gpu, monkeypatch):
         monkeypatch.setattr(type(rec.operator), "forward", identity)
         monkeypatch.setattr(type(rec.operator), "backproject", identity)
 
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry((1, 2, 2)),
         backend="astra",

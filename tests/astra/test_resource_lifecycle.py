@@ -814,7 +814,7 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
     def test_iterative_constructor_keeps_detector_shifts_and_cor_separate(self):
         module = self.load_iterative_module()
         shifts = np.array([[1.0, 2.0], [-3.0, 4.0]])
-        rec = module.RecToolsIR(
+        rec = module.IterativeReconstructor(
             projection_geometry=Parallel3DGeometry(
                 angles=[0.0, 0.5],
                 detector_shape=(3, 5),
@@ -830,7 +830,7 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
 
     def test_iterative_constructor_builds_padded_geometry(self):
         module = self.load_iterative_module()
-        rec = module.RecToolsIR(
+        rec = module.IterativeReconstructor(
             projection_geometry=Parallel3DGeometry(
                 angles=[0.0, 0.5], detector_shape=(3, 5), centre_of_rotation=0.75
             ),

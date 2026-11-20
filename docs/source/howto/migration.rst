@@ -18,9 +18,9 @@ Canonical imports
    * - Historical import
      - Current import
    * - ``tomobar.methodsDIR.RecToolsDIR`` or ``tomobar.methodsDIR_CuPy.RecToolsDIRCuPy``
-     - ``tomobar.reconstruction.direct.RecToolsDIR``
+     - ``tomobar.reconstruction.direct.DirectReconstructor``
    * - ``tomobar.methodsIR.RecToolsIR`` or ``tomobar.methodsIR_CuPy.RecToolsIRCuPy``
-     - ``tomobar.reconstruction.iterative.RecToolsIR``
+     - ``tomobar.reconstruction.iterative.IterativeReconstructor``
    * - ``tomobar.operators.ProjectionOperator``
      - ``tomobar.projectors.operator.ProjectionOperator``
    * - ``tomobar.solver_state.SolverState``
@@ -29,6 +29,11 @@ Canonical imports
      - ``tomobar.preprocessing``
    * - ``tomobar.supp.suppTools`` mask/crop helpers
      - ``tomobar.postprocessing``
+
+The reconstruction classes are named ``DirectReconstructor`` and
+``IterativeReconstructor`` in all current imports and calls. The former class
+names have been removed, including from the ``reconstruction.direct`` and
+``reconstruction.iterative`` modules; no compatibility aliases are provided.
 
 Reconstruction classes and the shared operator are the public entry points.
 ``tomobar.projectors._astra`` and ``tomobar.projectors._usfft`` are private
@@ -53,7 +58,7 @@ for data in ``(detector rows, views, detector columns)`` order:
 
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.options import DataFidelity, Regularisation
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=angles_rad,
@@ -61,7 +66,7 @@ for data in ``(detector rows, views, detector columns)`` order:
         centre_of_rotation=centre_offset,
     )
     grid = Volume3DGeometry((data.shape[0], reconstruction_width, reconstruction_width))
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         detector_padding=0,

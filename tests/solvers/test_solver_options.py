@@ -87,7 +87,7 @@ def test_unused_options_fail_before_preparing_arrays(
             from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
             rec = stack.enter_context(
-                mock_reconstruction.iterative.RecToolsIR(
+                mock_reconstruction.iterative.IterativeReconstructor(
                     projection_geometry=Parallel3DGeometry(
                         angles=[0, 1], detector_shape=(1, 3)
                     ),
@@ -150,7 +150,9 @@ def test_public_signatures_match_option_schema_and_defaults(
     mock_reconstruction, method
 ):
     parameters = dict(
-        signature(getattr(mock_reconstruction.iterative.RecToolsIR, method)).parameters
+        signature(
+            getattr(mock_reconstruction.iterative.IterativeReconstructor, method)
+        ).parameters
     )
     for name in (
         "self",

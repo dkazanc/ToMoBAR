@@ -10,7 +10,7 @@ pytest.importorskip("astra")
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.options import DataFidelity, Regularisation
 
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 from tomobar.preprocessing import normaliser
 
 pytestmark = pytest.mark.usefixtures("gpu")
@@ -33,7 +33,7 @@ def make_iterative_reconstructor():
         output_shape=None,
         centre_of_rotation=0.0,
     ):
-        return RecToolsIR(
+        return IterativeReconstructor(
             projection_geometry=Parallel3DGeometry(
                 angles=angles,
                 detector_shape=detector_shape,

@@ -52,7 +52,9 @@ def test_volume_zyx_bounds_and_odd_detector_pixel_edges(plotting):
         centre_of_rotation=0.5,
     )
     before = scan.to_vectors()
-    figure, ax = plot_geometry(scan, Volume3DGeometry((2, 4, 6)))
+    figure, ax = plot_geometry(
+        scan, Volume3DGeometry((2, 4, 6)), detector_position="reference"
+    )
     figure.canvas.draw()
     np.testing.assert_allclose(
         plotting.detectors[0][0],
@@ -86,12 +88,14 @@ def test_detector_corners_follow_rigid_transform_for_laminography(plotting):
         centre_of_rotation=0.25,
     )
     grid = Volume3DGeometry((3, 5, 7))
-    plot_geometry(scan, grid, view_indices=[1])
+    plot_geometry(scan, grid, view_indices=[1], detector_position="reference")
     original = plotting.detectors[-1][0]
     rotation = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
     translation = np.array([2, -3, 1])
     moved = scan.transformed(rotation=rotation, translation=translation)
-    figure, _ = plot_geometry(moved, grid, view_indices=[1])
+    figure, _ = plot_geometry(
+        moved, grid, view_indices=[1], detector_position="reference"
+    )
     figure.canvas.draw()
     np.testing.assert_allclose(
         plotting.detectors[-1][0], original @ rotation.T + translation
@@ -126,8 +130,10 @@ def test_ray_direction_equal_scaling_and_existing_axes(plotting, monkeypatch):
     assert np.all(np.array(points) <= limits[:, 1])
     assert [text.get_text() for text in ax.get_legend().get_texts()] == [
         "Volume",
-        "View 1",
-        "View 0",
+        "View 1: detector & beam",
+        "View 0: detector & beam",
+        "Rotation axis",
+        "Acquisition rotation →",
     ]
     figure.canvas.draw()
 
@@ -137,9 +143,11 @@ def test_default_views_are_a_small_even_selection(plotting, count, expected):
     scan = Parallel3DGeometry(angles=np.arange(count), detector_shape=(2, 4))
     figure, ax = plot_geometry(scan, Volume3DGeometry((2, 4, 6)))
     figure.canvas.draw()
-    assert [text.get_text() for text in ax.get_legend().get_texts()][1:] == [
-        f"View {index}" for index in expected
-    ]
+    assert [
+        text.get_text()
+        for text in ax.get_legend().get_texts()
+        if text.get_text().startswith("View ")
+    ] == [f"View {index}: detector & beam" for index in expected]
 
 
 @pytest.mark.parametrize(
@@ -326,3 +334,107 @@ def test_rotation_symbol_is_attached_to_axis_without_an_inset(plotting, rotation
     for elevation, azimuth in [(5, 10), (30, -55), (90, 0)]:
         ax.view_init(elev=elevation, azim=azimuth)
         figure.canvas.draw()
+
+
+@pytest.mark.parametrize("kind", ["tomography", "laminography", "vectors"])
+@pytest.mark.parametrize(
+    "angles,has_arc",
+    [
+        ([0, 0.3, 0.6], True),
+        ([0, -0.3, -0.6], True),
+        ([0], False),
+        ([0, 0.3, 0], False),
+    ],
+)
+def test_sample_rotation_annotations_follow_known_trajectory(
+    plotting, monkeypatch, kind, angles, has_arc
+):
+    kwargs = dict(angles=angles, detector_shape=(3, 7))
+    scan = (
+        Parallel3DGeometry.laminography(
+            **kwargs, tilt_angle=0.8, rotation_axis=(1, 1, 1)
+        )
+        if kind == "laminography"
+        else Parallel3DGeometry.tomography(**kwargs)
+    )
+    if kind == "vectors":
+        scan = Parallel3DGeometry.from_vectors(
+            vectors=scan.to_vectors(), detector_shape=(3, 7)
+        )
+    from tomobar import visualisation
+
+    rotation_symbol = Mock(wraps=visualisation._add_rotation_symbol)
+    monkeypatch.setattr(visualisation, "_add_rotation_symbol", rotation_symbol)
+    before = scan.to_vectors().copy()
+    figure, ax = plot_geometry(scan, Volume3DGeometry((2, 5, 7)), view_indices=[0])
+    labels = [text.get_text() for text in ax.texts]
+    assert "Beam 0 →" in labels and "Detector 0" in labels
+    assert ("Rotation axis" in labels) == (kind != "vectors")
+    symbols = [
+        artist
+        for artist in ax.artists
+        if artist.get_label() == "Rotation arrow at axis tip"
+    ]
+    assert bool(symbols) == (has_arc and kind != "vectors")
+    if symbols:
+        # Positive scan angles rotate the acquisition positively about +axis;
+        # selecting a single displayed view must not erase scan direction.
+        assert rotation_symbol.call_args.args[3] == np.sign(angles[-1] - angles[0])
+    if kind == "laminography":
+        axis_line = ax.lines[-1]
+        endpoints = np.array(axis_line.get_data_3d()).T
+        direction = endpoints[1] - endpoints[0]
+        np.testing.assert_allclose(
+            direction / np.linalg.norm(direction), np.ones(3) / np.sqrt(3)
+        )
+    figure.canvas.draw()
+    np.testing.assert_array_equal(scan.to_vectors(), before)
+
+
+@pytest.mark.parametrize("kind", ["tomography", "laminography", "oblique"])
+def test_downstream_detectors_clear_volume_and_meet_arrow_tips(
+    plotting, monkeypatch, kind
+):
+    kwargs = dict(
+        angles=[0, 0.7],
+        detector_shape=(3, 7),
+        detector_shifts=[[1, 2], [-1, 0.5]],
+        centre_of_rotation=0.25,
+    )
+    scan = (
+        Parallel3DGeometry.laminography(**kwargs, tilt_angle=0.8)
+        if kind == "laminography"
+        else Parallel3DGeometry.tomography(**kwargs)
+    )
+    if kind == "oblique":
+        vectors = scan.to_vectors()
+        vectors[:, 6:9] += 0.3 * vectors[:, :3]
+        scan = Parallel3DGeometry.from_vectors(vectors=vectors, detector_shape=(3, 7))
+    before = scan.to_vectors().copy()
+    grid = Volume3DGeometry((3, 5, 7))
+    fig = plotting.plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+    arrows = Mock(wraps=ax.quiver)
+    monkeypatch.setattr(ax, "quiver", arrows)
+    plot_geometry(scan, grid, ax=ax)
+    volume_edges = next(v for v in plotting.volumes if v.shape == (12, 2, 3))
+    for detector, call, vector in zip(
+        plotting.detectors, arrows.call_args_list, before
+    ):
+        corners = detector[0]
+        direction = vector[:3] / np.linalg.norm(vector[:3])
+        tip = np.array(call.args[:3]) + call.kwargs["length"] * np.array(call.args[3:])
+        np.testing.assert_allclose(tip, corners.mean(axis=0), atol=1e-14)
+        assert np.min(corners @ direction) > np.max(volume_edges @ direction)
+        np.testing.assert_allclose(corners[1] - corners[0], 7 * vector[6:9], atol=1e-14)
+        np.testing.assert_allclose(
+            corners[3] - corners[0], 3 * vector[9:12], atol=1e-14
+        )
+    np.testing.assert_array_equal(scan.to_vectors(), before)
+    fig.canvas.draw()
+
+
+def test_invalid_detector_position_is_rejected():
+    scan = Parallel3DGeometry.tomography(angles=[0], detector_shape=(3, 7))
+    with pytest.raises(ValueError, match="detector_position"):
+        plot_geometry(scan, Volume3DGeometry((3, 5, 7)), detector_position="unknown")

@@ -93,7 +93,7 @@ def test_package_dependency_boundaries():
     [
         (
             "tomobar.projectors._usfft.backend",
-            "from ...reconstruction.direct import RecToolsDIR",
+            "from ...reconstruction.direct import DirectReconstructor",
         ),
         ("tomobar._solvers.admm", "from tomobar.projectors import _astra"),
         ("tomobar._solvers.iterative", "import astra"),

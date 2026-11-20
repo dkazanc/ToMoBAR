@@ -1,6 +1,6 @@
 """Public inspection state for iterative reconstruction continuation.
 
-Construct states with RecToolsIR.initialise_solver(). Execution, geometry
+Construct states with IterativeReconstructor.initialise_solver(). Execution, geometry
 restarts and history recording belong to the private continuation engine.
 Importing this module does not load that engine, ASTRA or CuPy.
 """
@@ -32,7 +32,7 @@ class SolverState:
     Public metadata and array references are read-only. Only the continuation
     engine updates counters, geometry version, stopping status and image binding.
     Energy sample indices are independent list snapshots. Slots reject unknown
-    attributes. Construct states through RecToolsIR.initialise_solver().
+    attributes. Construct states through IterativeReconstructor.initialise_solver().
 
     Array inspection remains shallow: treat contents as read-only while
     continuing. Use solver_image() to obtain an independent output.

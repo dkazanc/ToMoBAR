@@ -309,7 +309,7 @@ def test_gpu_solvers_match_eager_subsets_for_uneven_views(
             lipschitz_constant=100.0,
             weights=weights if fidelity in ("PWLS", "SWLS") else None,
         )
-    with iterative.RecToolsIR(
+    with iterative.IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         num_subsets=3,

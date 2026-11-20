@@ -1,7 +1,7 @@
 """Reconstruction class for direct reconstruction methods (2D/3D).
 
-* :func:`RecToolsDIR.forward` and :func:`RecToolsDIR.backproject` Forward/Backward 2D/3D projection (ASTRA-Toolbox)
-* :func:`RecToolsDIR.FBP` Filtered Back Projection 2D/3D (ASTRA with the custom built filter).
+* :func:`DirectReconstructor.forward` and :func:`DirectReconstructor.backproject` Forward/Backward 2D/3D projection (ASTRA-Toolbox)
+* :func:`DirectReconstructor.FBP` Filtered Back Projection 2D/3D (ASTRA with the custom built filter).
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from tomobar.reconstruction.fourier_plan import (
 from tomobar.reconstruction.fourier_execution import FourierExecutor
 
 
-class RecToolsDIR(GeometryReconstruction):
+class DirectReconstructor(GeometryReconstruction):
     """Direct reconstruction from explicit 2D or 3D acquisition geometry.
 
     Keyword Args:

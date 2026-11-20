@@ -1,4 +1,4 @@
-"""Continuation-state methods mixed into RecToolsIR."""
+"""Continuation-state methods mixed into IterativeReconstructor."""
 
 from __future__ import annotations
 

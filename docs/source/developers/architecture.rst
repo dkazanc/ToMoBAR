@@ -9,8 +9,8 @@ Application imports use the defining modules directly::
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
     from tomobar.options import Regularisation
     from tomobar.projectors.operator import ProjectionOperator
-    from tomobar.reconstruction.direct import RecToolsDIR
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.direct import DirectReconstructor
+    from tomobar.reconstruction.iterative import IterativeReconstructor
     from tomobar.reconstruction.state import SolverState
 
 ``preprocessing``, ``postprocessing``, ``alignment``, ``energy``,
@@ -309,7 +309,7 @@ engine and numerical updates. The contracts cover geometry versions, subsets,
 device selection, input preparation, norm estimation and projection
 operations with optional output buffers. They import no CUDA implementation;
 concrete hosts need no protocol inheritance or runtime checks.
-``typings/solver_contracts.py`` checks that ``RecToolsIR`` and
+``typings/solver_contracts.py`` checks that ``IterativeReconstructor`` and
 ``ProjectionOperator`` satisfy these contracts as part of the configured
 Pyright checks.
 

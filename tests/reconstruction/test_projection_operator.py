@@ -258,7 +258,7 @@ def test_rejects_mismatched_geometry_and_invalid_device(operator_backend, dim):
 @pytest.mark.parametrize("dim", [2, 3])
 @pytest.mark.parametrize("library", ["numpy", "cupy"])
 def test_cuda_operator_matches_reconstruction_api_and_reuses_buffers(gpu, dim, library):
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
     from tomobar.projectors.operator import ProjectionOperator
 
     xp = np if library == "numpy" else gpu
@@ -269,7 +269,7 @@ def test_cuda_operator_matches_reconstruction_api_and_reuses_buffers(gpu, dim, l
         ..., ::-1
     ]
     original_image, original_measured = image.copy(), measured.copy()
-    with RecToolsDIR(projection_geometry=scan, volume_geometry=grid) as rec:
+    with DirectReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
         expected_forward = rec.forward(image)
         expected_backward = rec.backproject(measured)
     with ProjectionOperator(projection_geometry=scan, volume_geometry=grid) as operator:
@@ -301,7 +301,7 @@ def test_cuda_operator_matches_reconstruction_api_and_reuses_buffers(gpu, dim, l
 
 
 def test_cuda_operator_preserves_general_vector_geometry(gpu):
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
     from tomobar.projectors.operator import ProjectionOperator
 
     scan = Parallel3DGeometry.laminography(
@@ -315,7 +315,7 @@ def test_cuda_operator_preserves_general_vector_geometry(gpu):
         assert operator.projection_geometry is scan
         projected = operator.forward(data)
         backward = operator.backproject(projected)
-        with RecToolsDIR(projection_geometry=scan, volume_geometry=grid) as rec:
+        with DirectReconstructor(projection_geometry=scan, volume_geometry=grid) as rec:
             gpu.testing.assert_allclose(
                 projected, rec.forward(data), rtol=1e-6, atol=1e-6
             )

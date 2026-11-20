@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+Refreshed shared GitHub Actions, added workflow validation with actionlint and
+included Matplotlib in CPU CI coverage. Conda publishing now installs Miniforge
+and dedicated build tools explicitly, builds the triggering commit, and uses
+activated tools. Publication triggers are unchanged.
+
+Fixed documentation CI environment setup on hosted runners without preinstalled
+Conda by explicitly installing Miniforge with setup-miniconda v4.
+
+Geometry plots now separate detector planes from the volume by default and
+terminate beam arrows at their displayed centres. Distances are schematic;
+``detector_position="reference"`` restores reference-plane inspection without
+changing acquisition geometry. Refreshed the geometry notebook figures.
+
+Geometry visualisations label beam directions and detectors in both frames.
+Sample-frame tomography and laminography now show their known rotation axis
+and an acquisition-rotation arc; laboratory plots show sample rotation with a
+fixed instrument. Refreshed the geometry demo and notebook figures.
+
+Renamed the public reconstruction classes to `DirectReconstructor` and
+`IterativeReconstructor` throughout the package, tests, demos, notebooks and
+documentation. This is a hard API migration: the former class names are removed
+and no compatibility aliases are provided.
+
 Renamed the iterative reconstructor subset-count keyword and property to
 `num_subsets` throughout the package, tests and examples. The previous name is
 removed; subset selection and solver behaviour are unchanged.
@@ -22,8 +45,8 @@ Added developer architecture documentation and tests for CPU-safe metadata,
 public-state/engine separation and projector/solver dependency boundaries.
 
 Reconstruction and projection operators now use public package names:
-`tomobar.reconstruction.direct.RecToolsDIR`,
-`tomobar.reconstruction.iterative.RecToolsIR`, and
+`tomobar.reconstruction.direct.DirectReconstructor`,
+`tomobar.reconstruction.iterative.IterativeReconstructor`, and
 `tomobar.projectors.operator.ProjectionOperator`. No aliases for the former
 `_reconstruction` or `_projectors` packages are provided. ASTRA and USFFT
 implementations are private sibling packages, `projectors._astra` and

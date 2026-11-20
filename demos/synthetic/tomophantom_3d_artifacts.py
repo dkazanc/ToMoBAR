@@ -127,9 +127,9 @@ projData3D_norm_cp = cp.asarray(projData3D_norm, order="C")
 input_data_labels = ["detY", "angles", "detX"]
 # %%
 # initialise tomobar DIRECT reconstruction class
-from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.direct import DirectReconstructor
 
-with RecToolsDIR(
+with DirectReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
@@ -173,9 +173,9 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with FISTA-PWLS-OS-TV method using tomobar")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # initialise tomobar ITERATIVE reconstruction class
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),
@@ -225,9 +225,9 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing with ADMM-PWLS-TV method using tomobar")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad, detector_shape=(Vert_det, Horiz_det), centre_of_rotation=0.0
     ),

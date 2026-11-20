@@ -13,7 +13,7 @@ of the detector dimensions.
 
     import numpy as np
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry.tomography(
         angles=np.linspace(0, np.pi, 180, endpoint=False),
@@ -23,7 +23,7 @@ of the detector dimensions.
     )
     grid = Volume3DGeometry(shape=(48, 192, 224))
 
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         detector_padding=16,

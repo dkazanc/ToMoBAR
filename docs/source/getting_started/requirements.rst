@@ -29,7 +29,7 @@ Reconstruction and projection operators require a CUDA-capable NVIDIA GPU and
 compatible GPU libraries. NumPy input arrays do not select a CPU reconstruction
 backend. Geometry, settings and NumPy preprocessing do not require GPU execution.
 
-The reconstruction classes use ASTRA by default. ``RecToolsIR`` and
+The reconstruction classes use ASTRA by default. ``IterativeReconstructor`` and
 ``ProjectionOperator`` also expose ``backend="usfft"`` for supported angle-based
 tomography. That choice does not remove the package's declared ASTRA or CuPy
 dependencies. See :doc:`../concepts/backends` for method and geometry restrictions.

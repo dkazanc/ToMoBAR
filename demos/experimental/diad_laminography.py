@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 import cupy as cp
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 from tomobar.visualisation import plot_geometry
-from tomobar.reconstruction.direct import RecToolsDIR
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.direct import DirectReconstructor
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
 # %%
 # Set data location and reconstruction parameters here.
@@ -193,14 +193,14 @@ plt.show()
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("%%%%%%%%%%%% Reconstructing laminography with FBP %%%%%%%%%%%")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-with RecToolsDIR(
+with DirectReconstructor(
     projection_geometry=projection_geometry,
     detector_padding=125,
     volume_geometry=reconstruction_grid,
     device_index=device_index,
-) as RecToolsCP:
+) as direct_reconstructor:
     tic = timeit.default_timer()
-    FBPrec = RecToolsCP.FBP(
+    FBPrec = direct_reconstructor.FBP(
         data_norm,
         filter_type="RAM-LAK",
         input_axes=data_labels3D,
@@ -219,15 +219,15 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 # the acquired detector width without FBP's artificial edge padding.
 # This thin preview grid assumes all attenuation lies inside the slab;
 # increase number_of_slices when material outside it contributes to the data.
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=projection_geometry,
     volume_geometry=reconstruction_grid,
     detector_padding=0,
     device_index=device_index,
     backend="astra",
-) as RecToolsCGLS:
+) as iterative_reconstructor:
     tic = timeit.default_timer()
-    cgls_gpu = RecToolsCGLS.CGLS(
+    cgls_gpu = iterative_reconstructor.CGLS(
         data_norm,
         input_axes=data_labels3D,
         iterations=cgls_iterations,

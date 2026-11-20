@@ -33,14 +33,14 @@ def test_gpu_ramlak_matches_direct_linear_convolution(gpu, width):
 @pytest.mark.parametrize("padding", [0, 2])
 def test_public_ramlak_aliases_axes_and_array_libraries(gpu, width, padding):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, width)
     )
     data = np.random.default_rng(7).random(scan.projection_shape).astype(np.float32)
     axes = ("detY", "angles", "detX")
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry((3, 6, 6)),
         detector_padding=padding,
@@ -74,18 +74,18 @@ def test_ramlak_scale_matches_astra_2d_fbp(gpu):
         Volume2DGeometry,
         Volume3DGeometry,
     )
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     angles = np.linspace(0, np.pi, 51, endpoint=False)
     y, x = np.mgrid[-16:16, -16:16] + 0.5
     image = np.exp(-(x * x + y * y) / 50).astype(np.float32)
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(angles=angles, detector_shape=(48,)),
         volume_geometry=Volume2DGeometry((32, 32)),
     ) as rec2d:
         projections = rec2d.forward(image)
         expected = rec2d.FBP(projections, filter_type="ram-lak")
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel3DGeometry(angles=angles, detector_shape=(3, 48)),
         volume_geometry=Volume3DGeometry((3, 32, 32)),
     ) as rec3d:
@@ -117,7 +117,7 @@ def test_invalid_ramlak_cutoff_fails_before_preparation(
 ):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
-    with mock_reconstruction.direct.RecToolsDIR(
+    with mock_reconstruction.direct.DirectReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=[0, 0.5, 1], detector_shape=(3, 8)
         ),

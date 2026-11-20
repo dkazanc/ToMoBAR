@@ -16,7 +16,7 @@ from tomobar.geometry import (
     Volume3DGeometry,
 )
 
-from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.direct import DirectReconstructor
 from tomobar.preprocessing import normaliser
 
 pytestmark = pytest.mark.usefixtures("gpu")
@@ -30,7 +30,7 @@ def test_backproj2d(data, angles):
     data2D = data[:, 60, :]
     N_size = detX
 
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(
             angles=angles, detector_shape=(detX,), centre_of_rotation=0.0
         ),
@@ -50,7 +50,7 @@ def test_forwproj2d(data, angles):
     N_size = detX
     phantom = np.float32(np.ones((N_size, N_size)))
 
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(
             angles=angles, detector_shape=(detX,), centre_of_rotation=0.0
         ),
@@ -71,7 +71,7 @@ def test_fbp2d(data, angles):
     data2D = data[:, 60, :]
     N_size = detX
 
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(
             angles=angles, detector_shape=(detX,), centre_of_rotation=0.0
         ),
@@ -91,7 +91,7 @@ def test_fbp2d_pad(data, angles):
     data2D = data[:, 60, :]
     N_size = detX
 
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(
             angles=angles, detector_shape=(detX,), centre_of_rotation=0.0
         ),
@@ -117,7 +117,7 @@ def test_fbp2d_astra_gpu(data, angles, filter_type, filter_d):
     data2D = data[:, 60, :]
     N_size = detX
 
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(
             angles=angles, detector_shape=(detX,), centre_of_rotation=0.0
         ),
@@ -142,7 +142,7 @@ def test_fbp2d_recon_circ_mask(data, angles):
     data2D = data[:, 60, :]
     N_size = detX
 
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(
             angles=angles, detector_shape=(detX,), centre_of_rotation=0.0
         ),
@@ -168,7 +168,7 @@ def test_fbp2d_normalise(angles, raw_data, flats, darks):
     detX = np.shape(normalised)[2]
     data2D = normalised[:, 60, :]
     N_size = detX
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel2DGeometry(
             angles=angles, detector_shape=(detX,), centre_of_rotation=0.0
         ),
@@ -187,7 +187,7 @@ def test_backproj3d(data, angles):
     detX = np.shape(data)[2]
     detY = np.shape(data)[1]
     N_size = detX
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
@@ -205,7 +205,7 @@ def test_backproj3d_pad(data, angles):
     detX = np.shape(data)[2]
     detY = np.shape(data)[1]
     N_size = detX
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
@@ -224,7 +224,7 @@ def test_fbp3d_1(data, angles):
     detX = np.shape(data)[2]
     detY = np.shape(data)[1]
     N_size = detX
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
@@ -247,7 +247,7 @@ def test_fbp3d_1_pad(data, angles):
     detX = np.shape(data)[2]
     detY = np.shape(data)[1]
     N_size = detX
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),
@@ -272,7 +272,7 @@ def test_fbp3d_normalisation(angles, raw_data, flats, darks):
     detX = np.shape(normalised)[2]
     detY = np.shape(normalised)[1]
     N_size = detX
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=Parallel3DGeometry(
             angles=angles, detector_shape=(detY, detX), centre_of_rotation=0.0
         ),

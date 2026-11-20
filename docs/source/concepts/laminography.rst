@@ -12,7 +12,7 @@ beam and rotation axis can be constructed as follows::
 
     import numpy as np
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry.laminography(
         angles=np.linspace(0, 2 * np.pi, 180, endpoint=False),
@@ -20,7 +20,7 @@ beam and rotation axis can be constructed as follows::
         tilt_angle=np.deg2rad(60),
         rotation_axis=(0, 0, 1),
     )
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry(shape=(128, 256, 256)),
     ) as rec:
@@ -62,7 +62,7 @@ incorporated once. The returned geometry uses explicit vectors. Use the returned
 calls; changing geometry during a running solver is not supported.
 
 Forward/backprojection and iterative reconstruction accept general parallel
-vectors. ``RecToolsDIR.FBP()`` also accepts scans created with
+vectors. ``DirectReconstructor.FBP()`` also accepts scans created with
 ``Parallel3DGeometry.laminography()`` using either ``filter_type="RAM-LAK"``
 or ``filter_type="SINC"``. For tilted scans, supply at least three unique
 views uniformly spaced over a full turn. At a beam-to-axis angle of 90 degrees,

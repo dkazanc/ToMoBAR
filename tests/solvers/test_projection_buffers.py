@@ -87,12 +87,12 @@ def test_invalid_output_is_rejected_before_projector_creation(gpu, library, inva
 def test_native_scratch_is_private_reused_and_rebuilt_after_geometry_change(
     gpu, method
 ):
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, 9)
     )
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry((3, 6, 6)),
         num_subsets=3 if method in ("FISTA", "OSEM") else 1,
@@ -120,12 +120,12 @@ def test_native_scratch_is_private_reused_and_rebuilt_after_geometry_change(
 
 def test_operator_diagnostics_preserve_paused_admm_gradient(gpu):
     from tests.helpers import operator_reference as reference
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, 9)
     )
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 6, 6))
     ) as rec:
         data = rec.forward(gpu.ones((3, 6, 6), dtype=gpu.float32))

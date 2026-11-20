@@ -165,12 +165,12 @@ def test_small_grids_and_other_radii_keep_global_scatter(gpu, n, radius):
 @pytest.mark.parametrize("method,subsets", [("CGLS", 1), ("FISTA", 3)])
 def test_tiled_solver_continuation_and_geometry_reset(gpu, method, subsets):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 33, endpoint=False), detector_shape=(1, 256)
     )
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry((1, 256, 256)),
         backend="usfft",

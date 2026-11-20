@@ -77,10 +77,10 @@ unsupported.
 Reconstructor-owned operators
 -----------------------------
 
-``RecToolsIR`` and ``RecToolsDIR`` expose their current operator through the
+``IterativeReconstructor`` and ``DirectReconstructor`` expose their current operator through the
 read-only ``rec.operator`` property. It shares the existing backend and cached
 projectors, and describes ``rec.padded_projection_geometry`` with the full
-working volume. ``RecToolsIR`` uses ``num_subsets`` for its subset count. Input
+working volume. ``IterativeReconstructor`` uses ``num_subsets`` for its subset count. Input
 preparation, detector edge padding, public output cropping and masks remain
 outside the operator.
 

@@ -52,7 +52,7 @@ def test_public_fbp_preserves_cache_and_cleanup_preserves_output(
     gpu, fft_cache, library, filter_type
 ):
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 7, endpoint=False), detector_shape=(3, 9)
@@ -62,7 +62,7 @@ def test_public_fbp_preserves_cache_and_cleanup_preserves_output(
     )
     data = host_data if library == "numpy" else gpu.asarray(host_data)
     unrelated_keys = {key for key, _ in fft_cache}
-    with RecToolsDIR(
+    with DirectReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 6, 6))
     ) as rec:
         expected = rec.FBP(data, filter_type=filter_type)
@@ -104,7 +104,7 @@ def test_invalid_cleanup_option_fails_before_data_preparation(
     from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
     scan = Parallel3DGeometry(angles=[0, 0.5, 1], detector_shape=(3, 8))
-    with mock_reconstruction.direct.RecToolsDIR(
+    with mock_reconstruction.direct.DirectReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((3, 6, 6))
     ) as rec:
 
@@ -119,7 +119,7 @@ def test_invalid_cleanup_option_fails_before_data_preparation(
 def test_2d_fbp_rejects_3d_cleanup_option(mock_reconstruction):
     from tomobar.geometry import Parallel2DGeometry, Volume2DGeometry
 
-    with mock_reconstruction.direct.RecToolsDIR(
+    with mock_reconstruction.direct.DirectReconstructor(
         projection_geometry=Parallel2DGeometry(angles=[0, 0.5, 1], detector_shape=(8,)),
         volume_geometry=Volume2DGeometry((6, 6)),
     ) as rec:

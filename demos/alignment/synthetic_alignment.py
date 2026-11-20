@@ -14,7 +14,7 @@ import numpy as np
 import cupy as cp
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
 # %% Load the misaligned projections and known image shifts
 print("Loading misaligned synthetic projection data")
@@ -46,7 +46,7 @@ plt.show()
 
 # %% Reconstruction without alignment
 print("Reconstructing misaligned data with SIRT")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(Vert_det, Horiz_det),
@@ -73,7 +73,7 @@ with RecToolsIR(
 # No exact shifts or initial image are supplied. The method estimates both
 # horizontal and vertical detector offsets from the measured projections.
 print("Estimating shifts by reconstruction and reprojection")
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(Vert_det, Horiz_det),

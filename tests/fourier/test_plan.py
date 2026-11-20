@@ -142,7 +142,7 @@ def test_incompatible_dimensions_rejected(shape, output):
 def test_public_planning_and_validation_need_no_gpu(mock_reconstruction):
     direct = mock_reconstruction.direct
     native = np.zeros((2, 3, 4), dtype=np.float32)
-    rec = direct.RecToolsDIR.__new__(direct.RecToolsDIR)
+    rec = direct.DirectReconstructor.__new__(direct.DirectReconstructor)
     scan = Parallel3DGeometry(angles=np.arange(3), detector_shape=(2, 4))
     rec._init_device(0)
     rec._init_geometry(scan, Volume3DGeometry((2, 4, 4)), 0)
@@ -161,7 +161,7 @@ def test_public_planning_and_validation_need_no_gpu(mock_reconstruction):
 
 @pytest.mark.parametrize("rows,width", [(4, 64), (3, 65), (5, 100)])
 def test_typed_and_legacy_execution_share_plan(gpu, rows, width):
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
 
     scan, volume = geometries(rows=rows, width=width, output=width - 2)
     data = gpu.asarray(
@@ -175,7 +175,7 @@ def test_typed_and_legacy_execution_share_plan(gpu, rows, width):
         filter_proj_chunk_count=3,
         padding=2,
     )
-    with RecToolsDIR(projection_geometry=scan, volume_geometry=volume) as rec:
+    with DirectReconstructor(projection_geometry=scan, volume_geometry=volume) as rec:
         actual = rec.FOURIER_INV(data, options=FourierOptions(**settings))
         expected = rec.FOURIER_INV(data, **settings)
         assert actual.shape == volume.shape
@@ -184,11 +184,11 @@ def test_typed_and_legacy_execution_share_plan(gpu, rows, width):
 
 def test_estimator_does_not_load_interpolation_kernels(gpu):
     from tomobar.reconstruction.fourier_execution import FourierExecutor
-    from tomobar.reconstruction.direct import RecToolsDIR
+    from tomobar.reconstruction.direct import DirectReconstructor
     from tomobar.reconstruction.memory import DeviceMemStack
 
     scan, volume = geometries(rows=3, width=100, output=97)
-    with RecToolsDIR(projection_geometry=scan, volume_geometry=volume) as rec:
+    with DirectReconstructor(projection_geometry=scan, volume_geometry=volume) as rec:
         with patch.object(
             FourierExecutor, "_kernels", side_effect=AssertionError("CUDA kernels")
         ):

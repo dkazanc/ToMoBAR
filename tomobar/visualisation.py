@@ -7,7 +7,12 @@ import numpy as np
 
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
 
-from tomobar._visualisation_laboratory import _plot_laboratory
+from tomobar._visualisation_laboratory import (
+    _add_rotation_symbol,
+    _laboratory_transforms,
+    _plot_laboratory,
+    _sample_rotation_arc,
+)
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -23,6 +28,7 @@ def plot_geometry(
     view_indices: Sequence[int] | None = None,
     ax: "Axes | None" = None,
     frame: str = "sample",
+    detector_position: str = "downstream",
 ) -> "tuple[Figure, Axes]":
     """Plot a 3D parallel acquisition and volume in XYZ coordinates.
 
@@ -38,13 +44,18 @@ def plot_geometry(
             acquisition rotating. "laboratory" keeps the beam and detector
             orientation fixed and rotates the tilted sample. Laboratory mode
             requires tomography or an untransformed laminography() trajectory.
-            The detector is displayed downstream at a schematic distance;
-            neither geometry nor projection data are modified. A curved arrow
+            Neither geometry nor projection data are modified. A curved arrow
             shows sample rotation inferred from acquisition order (opposite to
             acquisition-frame angles). The arc is a schematic symbol attached
             to the axis tip, kept readable at edge-on observer angles.
             Single-view or reversing trajectories
             have no single rotation direction and omit this arrow.
+        detector_position (str): "downstream" (default) separates the displayed
+            detectors from the volume along the beam, at schematic distances,
+            with beam arrows ending at detector centres. "reference" displays
+            the supplied reference planes, which can intersect the volume.
+            Pixel bases, detector shifts and centre-of-rotation corrections
+            are preserved in either display mode.
         view_indices (sequence[int] or None): Distinct zero-based views in the
             requested display order. Default None selects up to three evenly
             spaced acquisition indices. Empty, negative and invalid indices
@@ -64,10 +75,16 @@ def plot_geometry(
         oblique pixel basis vectors. Arrows show each central ray's direction;
         their finite display lengths do not represent source distances.
 
-        In sample mode detectors are drawn at their supplied reference planes. In parallel
-        geometry these planes may intersect the volume; they are not moved to
-        an artificial source/detector distance. A rotation axis cannot in
-        general be inferred from vector geometry, so only XYZ axes are labelled.
+        Downstream detector placement is for display only and does not represent
+        a physical source-to-detector distance in parallel geometry. Use
+        detector_position="reference" to inspect the original detector planes.
+        Known tomography and laminography
+        trajectories show their rotation axis and an acquisition-rotation arc
+        (opposite to sample rotation in the laboratory frame). Direction follows
+        the full acquisition order, independently of selected display views.
+        Stationary or reversing trajectories omit the arc. Arbitrary vector
+        geometry has no inferred rotation axis. Beam and detector labels identify
+        each displayed view in both frames.
     """
     if not isinstance(projection_geometry, Parallel3DGeometry):
         raise TypeError("projection_geometry must be a Parallel3DGeometry")
@@ -81,6 +98,8 @@ def plot_geometry(
         raise ValueError(
             "laboratory frame requires tomography or a laminography() trajectory"
         )
+    if detector_position not in ("downstream", "reference"):
+        raise ValueError("detector_position must be 'downstream' or 'reference'")
     count = projection_geometry.view_count
     if view_indices is None:
         indices = np.linspace(0, count - 1, min(3, count), dtype=int)
@@ -117,7 +136,7 @@ def plot_geometry(
 
     if frame == "laboratory":
         return _plot_laboratory(
-            projection_geometry, volume_geometry, indices, figure, ax
+            projection_geometry, volume_geometry, indices, figure, ax, detector_position
         )
 
     half_size = np.asarray(volume_geometry.shape[::-1], dtype=float) / 2
@@ -131,7 +150,6 @@ def plot_geometry(
     ax.add_collection3d(Line3DCollection(edges, colors="black", linewidths=1.5))
     legend = [Line2D([], [], color="black", label="Volume")]
     bounds = [corners]
-    ray_length = float(2 * np.linalg.norm(half_size))
     rows, columns = projection_geometry.detector_shape
     # to_vectors applies shifts and CoR once, in the supplied detector basis.
     vectors = projection_geometry.to_vectors()[indices]
@@ -146,6 +164,28 @@ def plot_geometry(
                 centre - horizontal + vertical,
             ]
         )
+        # Parallel detector reference planes need no physical distance. Move
+        # only their display downstream, leaving a gap beyond every volume
+        # corner, including when detector pixel bases are oblique to the ray.
+        direction = ray / np.max(np.abs(ray))
+        direction /= np.linalg.norm(direction)
+        scale = max(
+            float(max(volume_geometry.shape)),
+            2 * np.linalg.norm(horizontal),
+            2 * np.linalg.norm(vertical),
+        )
+        start = centre - 0.8 * scale * direction
+        if detector_position == "downstream":
+            distance = max(
+                0.0,
+                np.max(corners @ direction)
+                + 0.2 * scale
+                - np.min(detector @ direction),
+            )
+            centre = centre + distance * direction
+            detector = detector + distance * direction
+        end = centre
+        ray_length = float(np.linalg.norm(end - start))
         colour = plt.get_cmap("tab10")(position % 10)
         ax.add_collection3d(
             Poly3DCollection(
@@ -155,17 +195,40 @@ def plot_geometry(
                 alpha=0.2,
             )
         )
-        # Scale before normalising so very large or small vector magnitudes
-        # do not overflow or underflow while choosing the display direction.
-        direction = ray / np.max(np.abs(ray))
-        direction /= np.linalg.norm(direction)
-        start = centre - ray_length * direction / 2
-        end = centre + ray_length * direction / 2
         ax.quiver(
             *start, *direction, length=ray_length, color=colour, arrow_length_ratio=0.08
         )
-        legend.append(Line2D([], [], color=colour, label=f"View {index}"))
+        legend.append(
+            Line2D([], [], color=colour, label=f"View {index}: detector & beam")
+        )
+        ax.text(*start, f"Beam {index} →", color=colour, fontsize="small")
+        ax.text(*detector[1], f"Detector {index}", color=colour, fontsize="small")
         bounds.extend((detector, np.asarray([start, end])))
+
+    if (
+        projection_geometry.angles is not None
+        or projection_geometry._laminography is not None
+    ):
+        rotations, lab_axis = _laboratory_transforms(projection_geometry, indices[:1])
+        axis = rotations[0].T @ lab_axis
+        scale = float(max(volume_geometry.shape + projection_geometry.detector_shape))
+        axis_ends = np.array([-0.6 * scale * axis, 0.6 * scale * axis])
+        ax.plot(*axis_ends.T, "k--", linewidth=1.5)
+        axis_label = 1.2 * axis_ends[1]
+        ax.text(*axis_label, "Rotation axis", fontsize="small")
+        bounds.extend((axis_ends, axis_label[None, :]))
+        legend.append(
+            Line2D([], [], color="black", linestyle="--", label="Rotation axis")
+        )
+        arc = _sample_rotation_arc(projection_geometry, np.eye(3), axis, scale)
+        if arc is not None:
+            radial = arc - 0.35 * scale * axis
+            # Acquisition rotates around the fixed sample in this frame.
+            sign = -np.sign(np.dot(np.cross(radial[0], radial[1]), axis))
+            _add_rotation_symbol(ax, axis_ends[1], axis, sign)
+            legend.append(
+                Line2D([], [], color="crimson", label="Acquisition rotation →")
+            )
 
     points = np.concatenate(bounds)
     centre = (points.min(axis=0) + points.max(axis=0)) / 2
@@ -177,6 +240,13 @@ def plot_geometry(
     ax.set_xlabel("X (voxel units)")
     ax.set_ylabel("Y (voxel units)")
     ax.set_zlabel("Z (voxel units)")
-    ax.set_title("Volume, detector planes and central ray directions")
-    ax.legend(handles=legend, loc="upper left")
+    ax.set_title(
+        "Volume, detectors and beam directions"
+        + (
+            "\nDetector distances schematic"
+            if detector_position == "downstream"
+            else "\nDetector reference planes"
+        )
+    )
+    ax.legend(handles=legend, loc="upper left", fontsize="small")
     return figure, ax

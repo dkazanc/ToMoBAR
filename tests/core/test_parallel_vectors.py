@@ -100,9 +100,9 @@ def test_reject_invalid_tilt_angle(tilt_angle):
 @pytest.mark.parametrize("kind", ["direct", "iterative"])
 def test_public_vector_geometry(mock_reconstruction, kind):
     cls = (
-        mock_reconstruction.direct.RecToolsDIR
+        mock_reconstruction.direct.DirectReconstructor
         if kind == "direct"
-        else mock_reconstruction.iterative.RecToolsIR
+        else mock_reconstruction.iterative.IterativeReconstructor
     )
     kwargs = dict(num_subsets=2) if kind == "iterative" else {}
     with cls(

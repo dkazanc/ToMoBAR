@@ -1,7 +1,7 @@
 ASTRA and USFFT backends
 ========================
 
-``ProjectionOperator`` (2D/3D) and ``RecToolsIR`` (3D) accept
+``ProjectionOperator`` (2D/3D) and ``IterativeReconstructor`` (3D) accept
 ``backend="astra"`` (the default) or ``backend="usfft"``. ASTRA supports the
 flexible acquisition geometries described in :doc:`laminography`, including detector shifts,
 explicit vectors and laminography. USFFT supports standard, unit-spaced,
@@ -52,7 +52,7 @@ backward detector cropping.
 Geometry replacement preserves the selected backend and checks its restrictions
 before closing the previous operator. USFFT can replace angles and scalar CoR,
 but cannot replace its geometry with shifted or vector geometry. Shift-based
-``RecToolsIR.align()`` requires ``backend="astra"`` and rejects USFFT before
-processing data. Analytical ``RecToolsDIR.FOURIER_INV()`` likewise permits scalar
+``IterativeReconstructor.align()`` requires ``backend="astra"`` and rejects USFFT before
+processing data. Analytical ``DirectReconstructor.FOURIER_INV()`` likewise permits scalar
 CoR corrections but rejects detector shifts, vectors and laminography; the
 ASTRA-based direct operations retain their geometry support.

@@ -6,7 +6,7 @@ Projection arrays use ``(angles, detX)`` in 2D and
 ``(Z, Y, X)``. Geometry vectors use physical XYZ coordinates, so vector
 coordinates and array axis order are different conventions.
 
-``RecToolsDIR`` accepts both NumPy and CuPy arrays for ``forward``,
+``DirectReconstructor`` accepts both NumPy and CuPy arrays for ``forward``,
 ``backproject`` and ``FBP``; results use the input array library. All three
 methods default to ``(detY, angles, detX)`` in 3D, with ``input_axes`` or
 ``output_axes`` available for other layouts. Array type does not change the

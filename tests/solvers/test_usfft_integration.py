@@ -12,14 +12,14 @@ from tests.helpers.usfft_reference import direct_fourier_projection
 
 
 def make_rec(n=8, rows=1, *, subsets=1, cor=0, padding=0, crop=False):
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     scan = Parallel3DGeometry(
         angles=np.linspace(0, np.pi, 17, endpoint=False),
         detector_shape=(rows, n + 1),
         centre_of_rotation=cor,
     )
-    return RecToolsIR(
+    return IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry((rows, n, n)),
         num_subsets=subsets,

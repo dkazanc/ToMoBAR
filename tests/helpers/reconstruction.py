@@ -358,7 +358,7 @@ class ResourceHarness(_Harness):
                         )
 
     def make_iterative(self, module, n_views, count):
-        rec = module.RecToolsIR(
+        rec = module.IterativeReconstructor(
             projection_geometry=Parallel3DGeometry(
                 angles=np.arange(float(n_views)), detector_shape=(1, 2)
             ),
@@ -464,7 +464,7 @@ class DirectHarness(_Harness):
                     self.direct_module = load_module(
                         "_axis_test_dir", "reconstruction/direct.py"
                     )
-        self.classes = (self.direct_module.RecToolsDIR,)
+        self.classes = (self.direct_module.DirectReconstructor,)
 
     def reconstructor(self, cls, native, dim=3):
         rec = cls.__new__(cls)

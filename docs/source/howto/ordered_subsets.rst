@@ -3,14 +3,14 @@ Configure ordered subsets
 
 The code snippets use a projection geometry ``scan``, a working-volume geometry ``grid`` and projection data ``projections``. See :doc:`configure_geometry` for geometry construction and :doc:`../concepts/array_axes` for array layout.
 
-``RecToolsIR`` also accepts ``num_subsets`` for interleaved ordered subsets:
+``IterativeReconstructor`` also accepts ``num_subsets`` for interleaved ordered subsets:
 
 .. code-block:: python
 
     import cupy as cp
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=grid,
         device_index=0,

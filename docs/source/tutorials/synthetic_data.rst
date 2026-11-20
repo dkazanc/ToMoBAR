@@ -10,14 +10,14 @@ the others do not.
    :maxdepth: 1
 
    synthetic_3d
+   synthetic_artifacts
    regularised_reconstruction
    synthetic_laminography
-   synthetic_artifacts
 
 Download notebooks
 ------------------
 
 * :download:`Synthetic 3D reconstruction <synthetic_3d.ipynb>`
+* :download:`Synthetic (TomoPhantom) data with noise and artefacts <synthetic_artifacts.ipynb>`
 * :download:`Regularised reconstruction <regularised_reconstruction.ipynb>`
 * :download:`Synthetic laminography <synthetic_laminography.ipynb>`
-* :download:`Noise and artefact correction <synthetic_artifacts.ipynb>`

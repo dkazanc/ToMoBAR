@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from tomobar.options import Regularisation
 from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
 # %% Load the XRF projections and measured rotation angles
 print("Loading the Fe-Ka XRF dataset")
@@ -67,7 +67,7 @@ regularisation = None
 # Regularisation(
 #    method="PD_TV", strength=0.003, iterations=100, half_precision=True
 # )
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
@@ -121,7 +121,7 @@ osem_iterations = (
     len(alignment.convergence) * reconstruction_iterations
     + final_reconstruction_iterations
 )
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),
@@ -206,7 +206,7 @@ regularisation = Regularisation(
     method="PD_TV", strength=0.03, iterations=100, half_precision=True
 )
 
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad,
         detector_shape=(detectorVert, detectorHoriz),

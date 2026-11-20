@@ -233,7 +233,7 @@ def test_cuda_archive_joint_alignment(
     gpu, data_shifted, data_shifted_cupy, synth_data_shifts, use_cupy
 ):
     cp = gpu
-    from tomobar.reconstruction.iterative import RecToolsIR
+    from tomobar.reconstruction.iterative import IterativeReconstructor
 
     supplied = data_shifted_cupy if use_cupy else data_shifted
     original = data_shifted.copy()
@@ -242,7 +242,7 @@ def test_cuda_archive_joint_alignment(
         angles=np.deg2rad(np.linspace(0.0, 179.9, views, dtype=np.float32)),
         detector_shape=(128, 181),
     )
-    with RecToolsIR(
+    with IterativeReconstructor(
         projection_geometry=scan, volume_geometry=Volume3DGeometry((128, 128, 128))
     ) as rec:
         result = rec.align(
@@ -618,7 +618,7 @@ def test_public_alignment_with_axes_weights_padding_and_output_crop(
         lipschitz_constant=3.0,
         nonnegativity=False,
     )
-    with module.RecToolsIR(
+    with module.IterativeReconstructor(
         projection_geometry=scan,
         volume_geometry=Volume3DGeometry(initial.shape),
         output_shape=(1, 2, 4),

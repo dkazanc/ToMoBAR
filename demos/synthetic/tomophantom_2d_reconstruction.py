@@ -97,9 +97,9 @@ from tomobar.geometry import (
     Volume2DGeometry,
     Volume3DGeometry,
 )
-from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.direct import DirectReconstructor
 
-with RecToolsDIR(
+with DirectReconstructor(
     projection_geometry=Parallel2DGeometry(
         angles=angles_rad, detector_shape=(P,), centre_of_rotation=0.0
     ),
@@ -134,9 +134,9 @@ plt.colorbar(ticks=[0, 0.5, 2], orientation="vertical")
 plt.title("FBP reconstruction differences")
 # %%
 # One can correct shifts by providing correct shift values
-from tomobar.reconstruction.direct import RecToolsDIR
+from tomobar.reconstruction.direct import DirectReconstructor
 
-with RecToolsDIR(
+with DirectReconstructor(
     projection_geometry=Parallel2DGeometry(
         angles=angles_rad, detector_shape=(P,), detector_shifts=-shifts
     ),
@@ -156,9 +156,9 @@ sino_artifacts_cp = cp.asarray(sino_artifacts, order="C")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print("Reconstructing using FISTA method (tomobar)")
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-from tomobar.reconstruction.iterative import RecToolsIR
+from tomobar.reconstruction.iterative import IterativeReconstructor
 
-with RecToolsIR(
+with IterativeReconstructor(
     projection_geometry=Parallel3DGeometry(
         angles=angles_rad, detector_shape=(1, P), centre_of_rotation=0.0
     ),

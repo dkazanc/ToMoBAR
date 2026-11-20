@@ -97,8 +97,8 @@ def test_solver_state_class_uses_canonical_metadata():
 @pytest.mark.parametrize(
     "module,classname",
     [
-        ("reconstruction.direct", "RecToolsDIR"),
-        ("reconstruction.iterative", "RecToolsIR"),
+        ("reconstruction.direct", "DirectReconstructor"),
+        ("reconstruction.iterative", "IterativeReconstructor"),
         ("projectors.operator", "ProjectionOperator"),
     ],
 )
