@@ -18,6 +18,11 @@ notebook outputs and includes the tools to run the CPU geometry tutorial.
 It does not include CuPy or ASTRA and cannot run reconstruction notebooks.
 Documentation builds do not execute notebook cells or require a GPU.
 
+The ``docs/source/api/*.rst`` reference pages are maintained source files and
+must be committed alongside API changes. A local build can include untracked
+pages that are absent from a clean CI checkout; check ``git status`` when adding
+or moving API modules.
+
 GitHub Actions installs Miniforge explicitly before creating this environment;
 it does not rely on Conda being preinstalled on the hosted runner. The workflow
 builds with warnings treated as errors and uploads the validated HTML artifact.
