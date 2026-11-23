@@ -312,7 +312,7 @@ class CPUReferenceReconstructor:
         pass
 
     def _prepare_inputs(self, p, **kw):
-        return p, None
+        return p.copy(), None
 
     def _initial_volume(self, initial, ones=False):
         if initial is not None:

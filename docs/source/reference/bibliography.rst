@@ -140,6 +140,11 @@ in the current API.
 Geometry and alignment
 ----------------------
 
+.. [NIKITIN2024] V. Nikitin et al. (2024).
+   `Laminography as a tool for imaging large-size samples with high resolution
+   <https://doi.org/10.1107/S1600577524002923>`_.
+   *Journal of Synchrotron Radiation*, 31, 851–866.
+
 .. [HELFEN2007] L. Helfen et al. (2007).
    `Synchrotron-radiation computed laminography for high-resolution
    three-dimensional imaging of flat devices <https://doi.org/10.1002/pssa.200775676>`_.

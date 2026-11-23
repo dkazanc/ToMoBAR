@@ -101,7 +101,7 @@ class CPURec:
 
     def _prepare_inputs(self, p, weights=None, **kw):
         self.preparations += 1
-        return p, weights
+        return p.copy(), None if weights is None else weights.copy()
 
     def _initial_volume(self, initial, *, ones=False):
         return (

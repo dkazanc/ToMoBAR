@@ -92,6 +92,11 @@ and a new fixed operator is installed. Obtain ``rec.operator`` again for the
 new geometry. Failed validation or replacement construction leaves the current operator
 usable and its geometry version unchanged.
 
+The legacy ``rec.Atools`` alias is also read-only. It borrows the same backend
+as ``rec.operator``; assigning a replacement raises ``AttributeError``. Use
+``replace_geometry()`` for managed replacement, and use ``rec.operator`` for
+projection calls. The alias does not transfer backend cleanup ownership.
+
 For a complete example, run ``demos/geometry/projection_operator.py``. Raw
 backprojection is unfiltered; use FBP or an iterative method for reconstruction.
 See :doc:`../developers/execution` for resource ownership and

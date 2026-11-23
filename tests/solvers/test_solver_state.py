@@ -94,6 +94,24 @@ def test_owns_data_and_reuses_preparation_and_norm(cpu_rec):
         state.options["rho"] = 5
 
 
+def test_state_adopts_owned_prepared_arrays(cpu_rec, monkeypatch):
+    data = np.full(cpu_rec.shape, 3.0, dtype=np.float32)
+    weights = np.ones_like(data)
+    owned_data, owned_weights = data.copy(), weights.copy()
+    monkeypatch.setattr(
+        cpu_rec, "_prepare_inputs", lambda *args, **kwargs: (owned_data, owned_weights)
+    )
+    state = cpu_rec.initialise_solver(
+        "FISTA", data, fidelity=DataFidelity("PWLS"), weights=weights
+    )
+    assert state.projections is owned_data
+    assert state.weights is owned_weights
+    data[:] = 99
+    weights[:] = 99
+    np.testing.assert_array_equal(state.projections, 3)
+    np.testing.assert_array_equal(state.weights, 1)
+
+
 def test_owner_closed_validation_and_initial_cgls_convergence(cpu_rec):
     rec = cpu_rec
     state = rec.initialise_solver("CGLS", np.zeros(rec.shape, dtype=np.float32))

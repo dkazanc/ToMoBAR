@@ -484,12 +484,13 @@ class DirectHarness(_Harness):
             volume = Volume2DGeometry(shape=(native.shape[-1], native.shape[-1]))
         rec._init_device(0)
         rec._init_geometry(scan, volume, 0)
-        rec.Atools = SimpleNamespace(
+        rec._projection_backend = SimpleNamespace(
             close=Mock(),
             forward=Mock(return_value=native),
-            backproject=Mock(side_effect=lambda data: data),
+            backproject=Mock(side_effect=lambda data, **kwargs: data),
             _fbp=Mock(side_effect=lambda data: data),
             detectors_x_pad=0,
         )
+        rec._init_operator(self.direct_module.ProjectionOperator)
         self._cleanup.callback(rec.close)
         return rec

@@ -71,7 +71,11 @@ class SolverReconstructor(Protocol):
         input_axes: tuple[str, ...] | list[str] | None = None,
         fidelity: DataFidelity = DataFidelity(),
     ) -> tuple[Array, Array | None]:
-        """Prepare projections and normalised weights on the padded grid."""
+        """Return owned projections and normalised weights on the padded grid.
+
+        Both arrays must be independent of caller storage; the state adopts
+        them directly without copying again.
+        """
         ...
 
     def _initial_volume(self, initial: Array | None, *, ones: bool = False) -> Array:

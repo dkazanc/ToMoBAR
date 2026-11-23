@@ -103,7 +103,7 @@ class DirectReconstructor(GeometryReconstruction):
         )
         axes = _resolve_data_axes(output_axes, native_axes)
         self._ensure_open()
-        projected = self.Atools.forward(data)
+        projected = self.operator.forward(data)
         projected = self._crop_projection(projected)
         return _transpose_data_axes(
             projected, source_axes=native_axes, target_axes=axes
@@ -136,7 +136,7 @@ class DirectReconstructor(GeometryReconstruction):
             array_module=cp,
             input_axes=input_axes,
         )
-        return self.Atools.backproject(data)
+        return self.operator.backproject(data)
 
     @_on_device(cp)
     def FBP(
@@ -245,11 +245,12 @@ class DirectReconstructor(GeometryReconstruction):
         )
         if isinstance(geometry, Parallel2DGeometry):
             # ASTRA's algorithm/data API takes host storage, unlike direct_BP.
-            self.Atools.fbp_filter_type = selected_filter
-            self.Atools.fbp_filter_parameter = filter_parameter
-            self.Atools.fbp_filter_d = filter_d
+            backend = self._projection_backend
+            backend.fbp_filter_type = selected_filter
+            backend.fbp_filter_parameter = filter_parameter
+            backend.fbp_filter_d = filter_d
             host_data = cp.asnumpy(data) if cupyrun else data
-            reconstruction = self.Atools._fbp(
+            reconstruction = backend._fbp(
                 np.ascontiguousarray(host_data, dtype=np.float32)
             )
             if cupyrun:
@@ -271,7 +272,7 @@ class DirectReconstructor(GeometryReconstruction):
             del data
             if clear_gpu_cache:
                 _clear_gpu_cache(cp)
-            reconstruction = self.Atools.backproject(filtered)
+            reconstruction = self.operator.backproject(filtered)
             if not cupyrun:
                 reconstruction = cp.asnumpy(reconstruction)
         return postprocess_reconstruction(

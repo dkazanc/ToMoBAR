@@ -144,7 +144,7 @@ with h5py.File(data_path, "r") as data_file:
     )
     gain[~valid_gain] = 1.0
 
-    # Normalise transmission and convert to absorption, following the CIL demo.
+    # Normalise transmission and convert to absorption
     data_norm = np.empty((detectorVert, len(angles), N_size), dtype=np.float32)
     for j, i in enumerate(np.flatnonzero(image_key == 0)):
         transmission = (read_binned_frame(dataset, i) - dark) / gain
@@ -222,7 +222,7 @@ print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 with IterativeReconstructor(
     projection_geometry=projection_geometry,
     volume_geometry=reconstruction_grid,
-    detector_padding=0,
+    detector_padding=125,
     device_index=device_index,
     backend="astra",
 ) as iterative_reconstructor:

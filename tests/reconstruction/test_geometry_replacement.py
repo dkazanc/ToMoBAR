@@ -224,6 +224,9 @@ def test_reconstructor_owns_one_padded_operator_per_geometry(
     assert operator.subset_count == (2 if kind == "iterative" else 1)
     with pytest.raises(AttributeError):
         rec.operator = None
+    with pytest.raises(AttributeError):
+        rec.Atools = None
+    assert rec.Atools is operator._backend
     operator.forward(image)
     calls = mock_reconstruction.backend.astra.create_projector.call_count
     changed = replace(rec.projection_geometry, centre_of_rotation=0.75)
@@ -253,6 +256,37 @@ def test_reconstructor_owns_one_padded_operator_per_geometry(
         current.forward(image)
     with pytest.raises(RuntimeError, match="closed"):
         _ = rec.operator
+
+
+@pytest.mark.parametrize("kind", ["2d", "direct"])
+def test_direct_projections_use_current_owned_operator(mock_reconstruction, kind):
+    with make_rec(mock_reconstruction, kind) as rec:
+        image = np.ones(rec.volume_geometry.shape, np.float32)
+        data = np.ones(rec.projection_geometry.projection_shape, np.float32)
+        padded = np.ones(rec.padded_projection_geometry.projection_shape, np.float32)
+        for offset in (0.0, 0.75):
+            if offset:
+                rec.replace_geometry(
+                    replace(rec.projection_geometry, centre_of_rotation=offset)
+                )
+            operator = rec.operator
+            with (
+                patch.object(
+                    type(operator), "forward", autospec=True, return_value=padded
+                ) as forward,
+                patch.object(
+                    type(operator), "backproject", autospec=True, return_value=image
+                ) as backproject,
+            ):
+                np.testing.assert_array_equal(rec.forward(image), data)
+                np.testing.assert_array_equal(rec.backproject(data), image)
+            forward.assert_called_once_with(operator, image)
+            assert backproject.call_count == 1
+            assert backproject.call_args.args[0] is operator
+            assert (
+                backproject.call_args.args[1].shape
+                == rec.padded_projection_geometry.projection_shape
+            )
 
 
 @pytest.mark.parametrize("kind", ["2d", "direct", "iterative"])

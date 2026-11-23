@@ -63,6 +63,12 @@ count. FISTA and OSEM support subsets; ADMM uses full data. Iterative images
 are CuPy arrays; convert with ``cupy.asnumpy`` for CPU consumers.
 See :doc:`configure_geometry`, :doc:`configure_solvers` and :doc:`regularisation`.
 
+``rec.Atools`` remains available for reading the owned backend, but can no
+longer be assigned. Replace ``rec.Atools = ...`` integrations with
+``rec.replace_geometry(scan)`` when updating acquisition geometry. Use
+``rec.operator`` for projection calls; see :doc:`../reference/projection_operators`
+for ownership and replacement rules.
+
 Backend and numerical compatibility
 -----------------------------------
 

@@ -1,12 +1,13 @@
 """Exercise production indexing above 32-bit limits without huge allocations."""
 
 import ctypes
+from contextlib import nullcontext
 from pathlib import Path
 import re
 import shutil
 import subprocess
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
@@ -14,6 +15,51 @@ import pytest
 from tests.helpers.reconstruction import load_module, stub_module
 
 KERNELS = Path(__file__).resolve().parents[2] / "tomobar/cuda_kernels"
+
+
+@pytest.fixture
+def sb_wrapper(monkeypatch):
+    pytest.importorskip("cupy")
+    from tomobar import regularisers
+
+    # Supply already-validated array metadata instead of allocating huge volumes.
+    # Storage validation and packing have separate input-contract coverage.
+    monkeypatch.setattr(regularisers, "_validate_tv_input", lambda data, gpu_id: gpu_id)
+    monkeypatch.setattr(
+        regularisers, "_prepare_input", lambda data, method: (data, False, 0)
+    )
+    monkeypatch.setattr(
+        regularisers,
+        "cp",
+        SimpleNamespace(cuda=SimpleNamespace(Device=lambda index: nullcontext())),
+    )
+    run = Mock(return_value=object())
+    monkeypatch.setattr(regularisers._sb_tv, "run", run)
+    return regularisers.SB_TV_cupy, run
+
+
+@pytest.mark.parametrize("shape", [(500, 2448, 2448), (2, 50000, 50000), (2048,) * 3])
+@pytest.mark.parametrize("half", [False, True])
+def test_public_split_bregman_accepts_large_element_counts(sb_wrapper, shape, half):
+    wrapper, run = sb_wrapper
+    data = SimpleNamespace(shape=shape, size=int(np.prod(shape)))
+    assert data.size > np.iinfo(np.int32).max
+    result = wrapper(data, iterations=1, half_precision=half)
+    assert result is run.return_value
+    run.assert_called_once_with(
+        data, strength=0.001, iterations=1, methodTV=0, nonneg=0, half_precision=half
+    )
+
+
+@pytest.mark.parametrize("axis", range(3))
+def test_public_split_bregman_rejects_axes_exceeding_kernel_int(sb_wrapper, axis):
+    wrapper, run = sb_wrapper
+    shape = [2, 3, 4]
+    shape[axis] = int(np.iinfo(np.int32).max) + 1
+    data = SimpleNamespace(shape=tuple(shape), size=int(np.prod(shape)))
+    with pytest.raises(ValueError, match="axis.*32-bit"):
+        wrapper(data, iterations=1)
+    run.assert_not_called()
 
 
 @pytest.fixture(scope="module")

@@ -28,16 +28,13 @@ class GeometryReconstruction:
 
     @property
     def Atools(self) -> ProjectionBackend:
-        """Legacy alias for the owned backend; use operator for projection calls.
+        """Read-only legacy alias; use operator for projection calls.
 
-        Retained for existing ASTRA direct-method integrations. Backend ownership
-        and replacement use _projection_backend, regardless of implementation.
+        Retained for existing ASTRA direct-method integrations. This borrows the
+        backend; the reconstructor owns cleanup. Use replace_geometry() for
+        managed backend replacement and query this property again afterwards.
         """
         return self._projection_backend
-
-    @Atools.setter
-    def Atools(self, backend: ProjectionBackend) -> None:
-        self._projection_backend = backend
 
     def _init_geometry(self, projection_geometry, volume_geometry, detector_padding):
         if isinstance(projection_geometry, Parallel3DGeometry):
@@ -242,6 +239,7 @@ class GeometryReconstruction:
         target_axes=None,
         pad_detector=True,
         name="data",
+        own=False,
     ):
         """Prepare acquired columns for one projection consumer."""
         self._ensure_open()
@@ -266,6 +264,7 @@ class GeometryReconstruction:
             allow_single_row=allow_single_row,
             target_axes=target_axes,
             name=name,
+            own=own,
         )
 
     def _crop_projection(self, data):

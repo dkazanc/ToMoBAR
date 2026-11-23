@@ -175,6 +175,8 @@ def SB_TV_cupy(
     Half precision stores only split and Bregman fields in float16; image
     buffers and calculations remain float32. Nonnegativity projects each
     image sweep. Iterations are fixed; no residual stopping rule is used.
+    Element counts and flattened indices are 64-bit; individual axis lengths
+    must still fit the kernels' signed 32-bit dimension arguments.
     """
     from tomobar.options import _standalone_regularisation
 
@@ -191,8 +193,10 @@ def SB_TV_cupy(
     gpu_id = _validate_tv_input(data, gpu_id)
     with cp.cuda.Device(int(gpu_id)):
         data, is2d, axis = _prepare_input(data, "SB_TV")
-        if data.size > 2147483647:
-            raise ValueError("SB_TV input exceeds the 32-bit kernel index range")
+        if max(data.shape) > 2147483647:
+            raise ValueError(
+                "SB_TV input axis exceeds the signed 32-bit dimension range"
+            )
         if strength == 0:
             result = cp.maximum(data, 0) if nonneg else data.copy()
             return _restore_shape(result, is2d, axis)

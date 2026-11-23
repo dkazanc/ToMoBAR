@@ -153,7 +153,11 @@ class IterativeReconstructor(
         input_axes: tuple[str, ...] | list[str] | None = None,
         fidelity: DataFidelity = DataFidelity(),
     ):
-        """Prepare acquired projections and optional weights exactly once."""
+        """Return owned projections and normalised weights for a solver state.
+
+        Upload, packing and padding allocations are adopted directly. Caller
+        storage is copied only when preparation would otherwise borrow it.
+        """
         if not isinstance(fidelity, DataFidelity):
             raise TypeError("fidelity must be a DataFidelity instance")
         weighted = fidelity.method in ("PWLS", "SWLS")
@@ -169,6 +173,7 @@ class IterativeReconstructor(
             pack=True,
             allow_single_row=True,
             name="projections",
+            own=True,
         )
         if weighted:
             weights = self._prepare_projection(
@@ -179,14 +184,15 @@ class IterativeReconstructor(
                 pack=True,
                 allow_single_row=True,
                 name="weights",
+                own=True,
             )
             if not bool(cp.all(cp.isfinite(weights))) or bool(cp.any(weights < 0)):
                 raise ValueError("weights must be finite and nonnegative")
             maximum = float(weights.max())
             if maximum == 0:
                 raise ValueError("weights must contain at least one positive value")
-            # Allocate our own normalised weights; zero weights exclude rays.
-            weights = weights / maximum
+            # Storage is already ours; normalise without another allocation.
+            weights /= maximum
         return projections, weights
 
     def _initial_volume(self, initial, *, ones=False):
@@ -202,7 +208,8 @@ class IterativeReconstructor(
             name="initial",
             gpu=True,
             pack=True,
-        ).copy()
+            own=True,
+        )
 
     @_on_device(cp)
     def forward(

@@ -1,11 +1,15 @@
 """Shared preparation: allocation boundaries, axes and caller-owned storage."""
 
 from itertools import permutations
+from contextlib import nullcontext
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 from tomobar._arrays.prepare import prepare_array, prepare_projection
+from tests.helpers.reconstruction import MockGPUArray
 
 
 def test_numpy_storage_reuse_and_deferred_packing():
@@ -21,9 +25,65 @@ def test_numpy_storage_reuse_and_deferred_packing():
     np.testing.assert_array_equal(packed, view)
 
 
+@pytest.mark.parametrize("view", [False, True])
+def test_owned_preparation_copies_borrowed_storage(view):
+    original = np.arange(30, dtype=np.float32).reshape(2, 3, 5)
+    data = original.swapaxes(0, 1) if view else original
+    prepared = prepare_array(
+        data, shape=data.shape, device_index=0, array_module=np, own=True
+    )
+    assert not np.shares_memory(prepared, original)
+    np.testing.assert_array_equal(prepared, data)
+    original[:] = -1
+    assert np.all(prepared >= 0)
+
+
+@pytest.mark.parametrize("allocation", ["packing", "dtype", "padding"])
+def test_owned_projection_reuses_newly_allocated_storage(allocation):
+    data = np.arange(30, dtype=np.float32).reshape(2, 3, 5)
+    axes = None
+    if allocation == "packing":
+        data = data.swapaxes(0, 1)
+        axes = ("angles", "detY", "detX")
+        # Request the supplied layout so packing actually allocates.
+        target_axes = axes
+    else:
+        target_axes = None
+    if allocation == "dtype":
+        data = data.astype(np.float64)
+    packed = []
+    ascontiguousarray = np.ascontiguousarray
+
+    def capture(*args, **kwargs):
+        result = ascontiguousarray(*args, **kwargs)
+        packed.append(result)
+        return result
+
+    with (
+        patch.object(np, "pad", wraps=np.pad) as pad,
+        patch.object(np, "ascontiguousarray", side_effect=capture),
+    ):
+        prepared = prepare_projection(
+            data,
+            shape=(2, 3, 5),
+            device_index=0,
+            array_module=np,
+            input_axes=axes,
+            target_axes=target_axes,
+            padding=2 if allocation == "padding" else 0,
+            pack=True,
+            own=True,
+        )
+    assert not np.shares_memory(prepared, data)
+    # The final packing call returns the owned allocation, without another copy.
+    assert prepared is packed[-1]
+    assert pad.call_count == int(allocation == "padding")
+
+
 @pytest.mark.essential
 @pytest.mark.parametrize("padding", [0, 2])
-def test_numpy_axes_and_padding_without_input_mutation(padding):
+@pytest.mark.parametrize("own", [False, True])
+def test_numpy_axes_and_padding_without_input_mutation(padding, own):
     axes = ("detY", "angles", "detX")
     data = np.arange(30, dtype=np.float64).reshape(2, 3, 5)
     expected = np.pad(data, ((0, 0), (0, 0), (padding, padding)), mode="edge")
@@ -36,10 +96,13 @@ def test_numpy_axes_and_padding_without_input_mutation(padding):
             array_module=np,
             input_axes=order,
             padding=padding,
+            own=own,
         )
         np.testing.assert_array_equal(prepared, expected)
-        if not padding:
+        if not padding and not own:
             assert np.shares_memory(prepared, supplied)
+        else:
+            assert not np.shares_memory(prepared, supplied)
         np.testing.assert_array_equal(data, np.arange(30).reshape(2, 3, 5))
 
 
@@ -50,10 +113,96 @@ def test_single_detector_row_and_invalid_shapes():
     prepared = prepare_projection(data, allow_single_row=True, **options)
     assert prepared.shape == (1, 3, 5)
     assert np.shares_memory(prepared, data)
+    owned = prepare_projection(data, allow_single_row=True, own=True, **options)
+    assert not np.shares_memory(owned, data)
+    np.testing.assert_array_equal(owned, prepared)
     with pytest.raises(ValueError):
         prepare_projection(data, **options)
     with pytest.raises(TypeError, match="array"):
         prepare_projection([[1]], **options)
+
+
+@pytest.mark.parametrize("prepare", [prepare_array, prepare_projection])
+def test_owned_host_upload_is_not_copied_again(prepare):
+    data = np.ones((2, 3, 5), dtype=np.float32)
+    uploaded = MockGPUArray(data.copy())
+    backend = SimpleNamespace(
+        ndarray=MockGPUArray,
+        float32=np.float32,
+        asarray=lambda *args, **kwargs: uploaded,
+        ascontiguousarray=lambda array, **kwargs: array,
+        cuda=SimpleNamespace(Device=lambda index: nullcontext()),
+    )
+    prepared = prepare(
+        data,
+        shape=data.shape,
+        device_index=0,
+        array_module=backend,
+        gpu=True,
+        pack=True,
+        own=True,
+    )
+    assert prepared is uploaded
+
+
+@pytest.mark.parametrize("padding", [0, 2])
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_solver_owns_prepared_inputs_without_recopies(
+    mock_reconstruction, padding, dtype
+):
+    from tomobar.geometry import Parallel3DGeometry, Volume3DGeometry
+    from tomobar.options import DataFidelity
+
+    iterative = mock_reconstruction.iterative
+    scan = Parallel3DGeometry(angles=[0.0, 0.5, 1.0], detector_shape=(2, 5))
+    grid = Volume3DGeometry((2, 3, 5))
+    data = np.full(scan.projection_shape, 3.0, dtype=dtype)
+    weights = np.full_like(data, 2.0)
+    initial = np.full(grid.shape, 4.0, dtype=dtype)
+    uploads = []
+
+    def upload(*args, **kwargs):
+        result = np.asarray(*args, **kwargs)
+        uploads.append(result)
+        return result
+
+    with iterative.IterativeReconstructor(
+        projection_geometry=scan,
+        volume_geometry=grid,
+        detector_padding=padding,
+    ) as rec:
+        prepared = []
+        prepare = rec._prepare_inputs
+
+        def capture(*args, **kwargs):
+            result = prepare(*args, **kwargs)
+            prepared.append(result)
+            return result
+
+        with (
+            patch.object(rec, "_prepare_inputs", side_effect=capture),
+            patch.object(iterative.cp, "asarray", side_effect=upload),
+        ):
+            state = rec.initialise_solver(
+                "FISTA",
+                data,
+                weights=weights,
+                fidelity=DataFidelity("PWLS"),
+                initial=initial,
+                lipschitz_constant=1.0,
+            )
+        assert state.projections is prepared[0][0]
+        assert state.weights is prepared[0][1]
+        assert not np.shares_memory(state.image, initial)
+        if dtype == np.float64:
+            assert state.image is uploads[-1]  # Adopt the converted warm start.
+        if not padding and dtype == np.float64:
+            assert state.projections is uploads[0]
+            assert state.weights is uploads[1]  # Normalised in place.
+        data[:] = weights[:] = initial[:] = 99
+        np.testing.assert_array_equal(state.projections, 3)
+        np.testing.assert_array_equal(state.weights, 1)
+        np.testing.assert_array_equal(state.image, 4)
 
 
 def test_gpu_storage_and_filter_layout_reuse(gpu, monkeypatch):
@@ -125,8 +274,8 @@ def test_iterative_projection_weights_and_settings_reuse(gpu, padding):
             first_weights, (expected + 1) / (expected + 1).max()
         )
         cp.testing.assert_array_equal(second_weights, first_weights)
-        if not padding:
-            assert first.data.ptr == data.data.ptr
+        assert not cp.may_share_memory(first, data)
+        assert not cp.may_share_memory(first, second)
         assert fidelity.method == "PWLS"
         cp.testing.assert_array_equal(supplied, original)
         cp.testing.assert_array_equal(weights, original + 1)

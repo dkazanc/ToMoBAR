@@ -63,6 +63,16 @@ rebuilds geometry-dependent work and records histories. This direction avoids a
 state/engine import cycle. Construct states through ``initialise_solver()``;
 live states and GPU resources are not portable checkpoints.
 
+Input ownership is established during preparation. ``prepare_array()`` and
+``prepare_projection()`` accept ``own=True`` to guarantee storage independent of
+the supplied array. Upload, dtype conversion, packing and padding allocations
+are reused; axis views and compatible borrowed arrays are copied when needed.
+The solver host's ``_prepare_inputs()`` returns owned projections and weights,
+and ``_initial_volume()`` returns an owned image. The continuation engine adopts
+these arrays directly. Weights are normalised in place only after preparation
+has established ownership. Default preparation for projection-only consumers
+continues to reuse suitable caller storage.
+
 Proximal dispatch in ``_regularisers/proximal.py`` receives an image,
 regularisation settings and an explicit device index. It does not receive a
 reconstructor. Public standalone regulariser functions remain in

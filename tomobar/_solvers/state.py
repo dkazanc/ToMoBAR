@@ -82,9 +82,8 @@ def initialise(
     data, prepared_weights = rec._prepare_inputs(
         projections, weights=weights, input_axes=input_axes, fidelity=fidelity
     )
-    # Own the data: caller edits cannot silently change a paused objective.
-    data = data.copy()
-    prepared_weights = None if prepared_weights is None else prepared_weights.copy()
+    # Preparation guarantees ownership, including newly uploaded/packed storage.
+    # Adopt it directly: caller edits cannot change a paused objective.
     image = rec._initial_volume(initial, ones=method in ("SIRT", "OSEM"))
     state = SolverState(
         _owner=weakref.ref(rec),
