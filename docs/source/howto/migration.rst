@@ -59,7 +59,8 @@ Replace parameter dictionaries with solver keywords and settings objects::
         image = rec.FISTA(projections, iterations=20)
 
 Use ``detector_padding`` for horizontal padding and ``num_subsets`` for subset
-count. FISTA and OSEM support subsets; ADMM uses full data. Iterative images
+count. FISTA and OSEM support subsets; ADMM always uses all views with either
+a linearised or CG data solve. Iterative images
 are CuPy arrays; convert with ``cupy.asnumpy`` for CPU consumers.
 See :doc:`configure_geometry`, :doc:`configure_solvers` and :doc:`regularisation`.
 

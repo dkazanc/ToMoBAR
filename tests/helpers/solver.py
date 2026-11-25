@@ -30,7 +30,8 @@ def gradient(
     if weights is not None:
         residual = weights * residual
         if fidelity == "SWLS":
-            residual -= weights * (residual.sum(axis=1) / weight_sum)[:, None, :]
+            correction = residual.sum(axis=1) / weight_sum
+            residual -= weights * correction[:, None, :]
     return rec.operator.backproject(
         residual, subset_index=subset if use_os else None, out=out
     )

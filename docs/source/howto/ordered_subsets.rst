@@ -16,7 +16,7 @@ Set ``num_subsets`` when constructing a FISTA or OSEM reconstructor. Using
 Each outer iteration visits all interleaved subsets in acquisition order.
 ``None`` or 1 uses all views. Subset counts must not exceed the number of views.
 
-Landweber, SIRT and CGLS require one subset. ADMM always uses the full data,
+Landweber, SIRT and CGLS require one subset. ADMM always uses all views,
 regardless of ``num_subsets``. Ordered-subset FISTA does not have the convergence
 guarantee of full-data FISTA; compare both image quality and run time.
 

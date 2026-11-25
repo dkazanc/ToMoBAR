@@ -132,10 +132,9 @@ class SolverState:
     def residuals(self) -> dict[str, NDArray[np.float64 | np.int64]] | None:
         """Sampled ADMM diagnostics as independent NumPy arrays.
 
-        Dual is rho*||x_new-x_old||. Stationarity is ||grad f(z)+rho*u||;
-        checking it also guards against premature stopping of the inexact
-        data update. cg_iterations records the inner steps used (zero for the
-        linearised solver). Thresholds are NaN when optional stopping is disabled.
+        Dual is rho*||x_new-x_old||; stationarity is ||grad f(z)+rho*u||.
+        cg_iterations records inner steps per outer iteration (zero for
+        linearised solves). Thresholds are NaN when optional stopping is disabled.
         Histories span geometry changes, identified by iteration/version.
         Diagnostics.residual_interval sets sampling; None leaves empty arrays.
         """

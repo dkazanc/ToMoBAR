@@ -40,8 +40,8 @@ ADMM data solves
 Boyd et al. [Boyd2011]_ give the ADMM formulation and residual-based stopping
 background. The following describes ToMoBAR's data-solve choices.
 
-``num_subsets`` does not change ADMM's update sequence or objective. Its SWLS
-correction uses all views. With the default ``data_solver="linearised"``, the
+ADMM always uses all views; ``num_subsets`` does not change its update sequence or objective.
+Its SWLS correction uses all views. With the default ``data_solver="linearised"``, the
 automatic Lipschitz estimate uses the full operator. If supplying a constant
 explicitly, obtain it with ``rec.powermethod(full_data=True)``.
 ADMM defaults to 400 iterations.
@@ -61,6 +61,7 @@ norm. Zero disables relative stopping; an exactly zero residual still stops.
 These inner controls are separate from the outer ADMM stopping tolerances.
 CG uses no power-method estimate; ``lipschitz_constant`` is used only by the
 linearised solver.
+
 
 
 ADMM stopping and diagnostics

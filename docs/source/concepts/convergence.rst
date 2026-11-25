@@ -11,8 +11,9 @@ alone. Defaults are starting points for your data.
 
 FISTA and OSEM can visit interleaved subsets within each outer iteration.
 Subsets can improve early progress, but ordered-subset FISTA does not inherit
-the convergence guarantee of full-data FISTA. ADMM always uses all data;
+the convergence guarantee of full-data FISTA. ADMM always uses all views.
 Landweber, SIRT and CGLS require one subset. See :doc:`../howto/ordered_subsets`.
+
 
 Strength and step selection
 ---------------------------
@@ -34,7 +35,7 @@ monotonically. It describes the full working-grid image before output masking
 and cropping. Sampling adds projection work; use :class:`~tomobar.options.Diagnostics`
 to control its frequency. See :doc:`../howto/monitor_energy`.
 
-ADMM can stop using residual tolerances; the accuracy of its inner data and
+Full-data ADMM can stop using residual tolerances; the accuracy of its inner data and
 regulariser solves can limit attainable tolerances. A small alignment shift
 update measures stability of that update, rather than absolute alignment
 accuracy. Inspect images and task-specific diagnostics as well as stopping flags.

@@ -26,7 +26,7 @@ Detailed capabilities
   supported 3D scans.
 * Reconstruct 3D data iteratively with Landweber, SIRT, CGLS, FISTA, ADMM and OSEM.
 * Configure LS, PWLS and SWLS data fidelities for FISTA and ADMM. FISTA supports
-  ordered subsets; ADMM uses full-data updates.
+  ordered subsets; ADMM always uses all views.
 * Apply native Total Variation penalties: PD-TV, split-Bregman TV, fast-gradient projection TV,
   TGV and nonlinear diffusion regularisation. See
   :class:`tomobar.options.Regularisation` for method-specific settings.

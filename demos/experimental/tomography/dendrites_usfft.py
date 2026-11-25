@@ -36,9 +36,10 @@ centre_of_rotation = (
 cp.cuda.Device(device_index).use()
 
 # Load bundled data relative to this script, regardless of the working folder.
-data_path = Path(__file__).resolve().parents[2] / "tests/test_data/DendrRawData.npz"
+data_path = Path(__file__).resolve().parents[3] / "tests/test_data/DendrRawData.npz"
 with np.load(data_path, allow_pickle=False) as data_npz:
     dataRaw = data_npz["arr_0"]
+    angles = data_npz["arr_1"]
     flats = data_npz["arr_2"]
     darks = data_npz["arr_3"]
 
@@ -79,10 +80,10 @@ with IterativeReconstructor(
     detector_padding=padding_value,
     device_index=device_index,
     backend="usfft",
-) as RectoolsCuPy:
+) as Reconstructor:
     cp.cuda.get_current_stream().synchronize()
     tic = timeit.default_timer()
-    Rec_CGLS = RectoolsCuPy.CGLS(
+    Rec_CGLS = Reconstructor.CGLS(
         data_norm_cupy,
         input_axes=data_labels3D,
         iterations=iterations,
@@ -109,10 +110,10 @@ with IterativeReconstructor(
     device_index=device_index,
     backend="usfft",
     num_subsets=6,
-) as RectoolsCuPy:
+) as Reconstructor:
     cp.cuda.get_current_stream().synchronize()
     tic = timeit.default_timer()
-    RecFISTA_os_tv = RectoolsCuPy.FISTA(
+    RecFISTA_os_tv = Reconstructor.FISTA(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="PWLS"),
@@ -145,10 +146,10 @@ with IterativeReconstructor(
     device_index=device_index,
     backend="usfft",
     num_subsets=6,
-) as RectoolsCuPy:
+) as Reconstructor:
     cp.cuda.get_current_stream().synchronize()
     tic = timeit.default_timer()
-    RecFISTA_os_swls_tv = RectoolsCuPy.FISTA(
+    RecFISTA_os_swls_tv = Reconstructor.FISTA(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="SWLS", beta_swls=1.0),
@@ -180,10 +181,10 @@ with IterativeReconstructor(
     detector_padding=padding_value,
     device_index=device_index,
     backend="usfft",
-) as RectoolsCuPy:
+) as Reconstructor:
     cp.cuda.get_current_stream().synchronize()
     tic = timeit.default_timer()
-    RecADMM_pwls_tv = RectoolsCuPy.ADMM(
+    RecADMM_pwls_tv = Reconstructor.ADMM(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="PWLS"),
@@ -219,10 +220,10 @@ with IterativeReconstructor(
     detector_padding=padding_value,
     device_index=device_index,
     backend="usfft",
-) as RectoolsCuPy:
+) as Reconstructor:
     cp.cuda.get_current_stream().synchronize()
     tic = timeit.default_timer()
-    RecADMM_swls_tv = RectoolsCuPy.ADMM(
+    RecADMM_swls_tv = Reconstructor.ADMM(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="SWLS", beta_swls=1.0),

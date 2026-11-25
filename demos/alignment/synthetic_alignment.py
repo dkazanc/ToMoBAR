@@ -54,9 +54,9 @@ with IterativeReconstructor(
     ),
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
-) as RectoolsCuPy:
+) as Reconstructor:
     tic = timeit.default_timer()
-    RecSIRT = RectoolsCuPy.SIRT(
+    RecSIRT = Reconstructor.SIRT(
         projData3D_cupy,
         input_axes=input_data_labels,
         nonnegativity=True,
@@ -81,9 +81,9 @@ with IterativeReconstructor(
     ),
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
-) as RectoolsCuPy:
+) as Reconstructor:
     tic = timeit.default_timer()
-    alignment = RectoolsCuPy.align(
+    alignment = Reconstructor.align(
         projData3D_cupy,
         iterations=50,  # Maximum number of alignment cycles.
         reconstruction_method="SIRT",

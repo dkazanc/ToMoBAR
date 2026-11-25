@@ -21,7 +21,7 @@ from tomobar.reconstruction.iterative import IterativeReconstructor
 from tomobar.reconstruction.direct import DirectReconstructor
 
 # Load bundled data relative to this script, regardless of the working folder.
-data_path = Path(__file__).resolve().parents[2] / "tests/test_data/DendrRawData.npz"
+data_path = Path(__file__).resolve().parents[3] / "tests/test_data/DendrRawData.npz"
 with np.load(data_path, allow_pickle=False) as data_npz:
     dataRaw = data_npz["arr_0"]
     angles = data_npz["arr_1"]
@@ -102,14 +102,14 @@ with IterativeReconstructor(
     output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
     device_index=0,
-) as RectoolsCuPy:
+) as Reconstructor:
     print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
     print("%%%%%%%%%%%%Reconstructing with CGLS method %%%%%%%%%%%%%%%%")
     print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
     cp.cuda.get_current_stream().synchronize()
     tic = timeit.default_timer()
     # RUN CGLS METHOD:
-    Rec_CGLS = RectoolsCuPy.CGLS(
+    Rec_CGLS = Reconstructor.CGLS(
         data_norm_cupy, input_axes=data_labels3D, iterations=20, recon_mask_radius=2.0
     )
     cp.cuda.get_current_stream().synchronize()
@@ -135,23 +135,23 @@ with IterativeReconstructor(
     detector_padding=padding_value,
     device_index=0,
     num_subsets=6,
-) as RectoolsCuPy:
+) as Reconstructor:
     tic = timeit.default_timer()
 
     # RUN THE FISTA METHOD:
-    RecFISTA_os_tv = RectoolsCuPy.FISTA(
+    RecFISTA_os_tv = Reconstructor.FISTA(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="PWLS"),
         weights=data_raw_cupy,
         regularisation=Regularisation(
-            method="PD_TV", strength=0.1, iterations=50, half_precision=True
+            method="PD_TV", strength=0.01, iterations=50, half_precision=True
         ),
         iterations=20,
         recon_mask_radius=2.0,
     )
     toc = timeit.default_timer()
-    warm_start_scan = RectoolsCuPy.projection_geometry
+    warm_start_scan = Reconstructor.projection_geometry
 Run_time = toc - tic
 print("FISTA OS-TV reconstruction done in {} seconds".format(Run_time))
 
@@ -175,17 +175,17 @@ with IterativeReconstructor(
     detector_padding=padding_value,
     device_index=0,
     num_subsets=6,
-) as RectoolsCuPy:
+) as Reconstructor:
     tic = timeit.default_timer()
 
     # RUN THE FISTA METHOD:
-    RecFISTA_os_swls_tv = RectoolsCuPy.FISTA(
+    RecFISTA_os_swls_tv = Reconstructor.FISTA(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="SWLS", beta_swls=1.0),
         weights=data_raw_cupy,
         regularisation=Regularisation(
-            method="PD_TV", strength=0.1, iterations=50, half_precision=True
+            method="PD_TV", strength=0.01, iterations=50, half_precision=True
         ),
         iterations=20,
         recon_mask_radius=2.0,
@@ -214,11 +214,10 @@ with IterativeReconstructor(
     output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
     device_index=0,
-    num_subsets=12,
-) as RectoolsCuPy:
+) as Reconstructor:
     # RUN THE ADMM-TV METHOD:
     tic = timeit.default_timer()
-    RecADMM_tv = RectoolsCuPy.ADMM(
+    RecADMM_tv = Reconstructor.ADMM(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="PWLS"),
@@ -228,9 +227,9 @@ with IterativeReconstructor(
         cg_iterations=5,
         relaxation=1.7,
         regularisation=Regularisation(
-            method="SB_TV", strength=0.015, iterations=50, half_precision=True
+            method="SB_TV", strength=0.005, iterations=50, half_precision=True
         ),
-        iterations=20,
+        iterations=10,
         recon_mask_radius=2.0,
     )
     toc = timeit.default_timer()
@@ -239,7 +238,7 @@ print("ADMM-TV (SB) reconstruction done in {} seconds".format(Run_time))
 
 fig = plt.figure()
 plt.imshow(cp.asnumpy((RecADMM_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
-plt.title("ADMM TV (SB) reconstruction")
+plt.title("Full-data ADMM PWLS TV (SB) reconstruction")
 plt.show()
 # fig.savefig('dendr_ADMM.png', dpi=200)
 # %%
@@ -256,24 +255,23 @@ with IterativeReconstructor(
     output_shape=reconstruction_grid.shape,
     detector_padding=padding_value,
     device_index=0,
-    num_subsets=12,
-) as RectoolsCuPy:
+) as Reconstructor:
     # RUN THE ADMM-TV METHOD:
     tic = timeit.default_timer()
-    RecADMM_tv = RectoolsCuPy.ADMM(
+    RecADMM_tv = Reconstructor.ADMM(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="SWLS", beta_swls=1.0),
         weights=data_raw_cupy,
         initial=None,
-        rho=0.9,
+        rho=1.9,
         data_solver="cg",
         cg_iterations=5,
         relaxation=1.7,
         regularisation=Regularisation(
-            method="SB_TV", strength=0.015, iterations=50, half_precision=True
+            method="SB_TV", strength=0.05, iterations=50, half_precision=True
         ),
-        iterations=20,
+        iterations=10,
         recon_mask_radius=2.0,
     )
     toc = timeit.default_timer()
@@ -282,6 +280,5 @@ print("ADMM-TV (SB) reconstruction done in {} seconds".format(Run_time))
 
 fig = plt.figure()
 plt.imshow(cp.asnumpy((RecADMM_tv[3, :, :])), vmin=0, vmax=0.003, cmap="gray")
-plt.title("ADMM TV (SB) reconstruction")
+plt.title("Full-data ADMM SWLS TV (SB) reconstruction")
 plt.show()
-# %%

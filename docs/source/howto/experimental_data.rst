@@ -25,7 +25,7 @@ then run it from the repository root with ToMoBAR installed:
      - ``demos/experimental/diad_laminography.py``
      - Configured NeXus path
    * - APS leaf laminography (FBP)
-     - ``demos/experimental/aps_leaf_laminography.py``
+     - ``demos/experimental/laminography/aps_leaf_laminography.py``
      - ``leaf_lam_20deg_roi1_417.h5`` (TomoBank 00100)
    * - I12 ring artefacts
      - ``demos/experimental/i12_ring_artifacts.py``
@@ -55,7 +55,7 @@ The `Camera caffe experiment (TomoBank 00100)
 contains a full-turn leaf scan from APS 2-BM. For the laminography method and
 calibration workflow, see [NIKITIN2024]_. Run a binned FBP preview::
 
-    python demos/experimental/aps_leaf_laminography.py
+    python demos/experimental/laminography/aps_leaf_laminography.py
 
 Defaults use 8x8 detector averaging, 64 central sample-Z slices and a nominal
 20-degree axis tilt from vertical (ToMoBAR beam-to-axis angle: 70 degrees).

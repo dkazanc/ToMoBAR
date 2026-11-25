@@ -89,16 +89,11 @@ def test_tv_solution_is_independent_of_rho_and_relaxation(
 
 @pytest.mark.parametrize("data_solver", ["linearised", "cg"])
 @pytest.mark.parametrize("fidelity", ["LS", "PWLS", "SWLS"])
-@pytest.mark.parametrize("subsets", [1, 2, 3])
 @pytest.mark.parametrize("strength", [0.0, 0.1])
-def test_full_objective_solution_does_not_depend_on_subsets(
-    two_pixel_rec, fidelity, subsets, strength, data_solver
-):
+def test_full_objective_solution(two_pixel_rec, fidelity, strength, data_solver):
     rec = two_pixel_rec
-    rec.num_subsets = subsets
 
-    # Five views intentionally split unevenly. Only the full-data operator is
-    # used by ADMM, regardless of this reconstructor's subset configuration.
+    # Five views contribute to the same full-data objective.
     def forward(image, *, subset_index=None, **kwargs):
         assert not subset_index is not None
         return np.repeat(image, 5, axis=1)

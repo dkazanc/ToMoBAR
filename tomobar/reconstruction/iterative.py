@@ -59,8 +59,8 @@ class IterativeReconstructor(
             unit-pixel line-integral scaling, without angular normalisation.
         num_subsets (int or None): Interleaved ordered-subset count, default None
             for one subset (all views). Must be positive and no greater than the
-            view count. Landweber, SIRT and CGLS require None or 1; ADMM always uses
-            full data; FISTA and OSEM can iterate over multiple subsets.
+            view count. Landweber, SIRT and CGLS require None or 1. ADMM uses
+            all views; FISTA and OSEM can iterate over multiple subsets.
 
     Notes:
         Masks are applied on the working grid before the output crop. Forward

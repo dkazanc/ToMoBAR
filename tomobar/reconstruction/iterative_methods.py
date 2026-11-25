@@ -398,17 +398,17 @@ class _IterativeMethods:
                 weights exclude rays.
             lipschitz_constant (float or None):
                 Positive unweighted operator-norm-squared estimate. Default None estimates
-                it with powermethod(); for ADMM this uses full_data=True. Used only by the
-                linearised data solver in ADMM.
+                it with powermethod(full_data=True). Used only by the linearised
+                data solver in ADMM.
             rho (float):
                 Positive ADMM penalty parameter, default 1.0. Proximal regularisation
                 strength is divided by rho.
             data_solver (str):
                 Default "linearised" takes one data-gradient step; "cg" approximately
-                solves the quadratic data subproblem with conjugate gradients.
+                solves the full quadratic data subproblem with conjugate gradients.
             cg_iterations (int):
-                Positive maximum inner CG iterations, default 5. Used only when
-                data_solver="cg".
+                Positive maximum inner CG iterations per data solve, default 5.
+                Used only when data_solver="cg".
             cg_tolerance (float):
                 Inner CG residual tolerance relative to its initial norm, in [0, 1),
                 default 1e-4. Zero disables relative stopping. Used only when
@@ -445,13 +445,14 @@ class _IterativeMethods:
                 output_shape. With return_energy=True, returns (image, energy_history).
 
         Notes:
-            Each iteration performs one data update, a relaxed constrained proximal
-            update, and one dual update. num_subsets does not change the objective or
-            update sequence: ADMM uses full projections, including global SWLS sums.
-            The CG data solver starts from the previous data image and requires no
-            operator-norm estimate.
+            Each iteration performs one full-data solve, a relaxed constrained
+            proximal update and one dual update. ADMM always uses all views,
+            independently of the reconstructor's num_subsets setting. LS, PWLS
+            and SWLS support linearised or CG data solves. CG starts from the
+            previous data image and requires no operator-norm estimate. SWLS
+            eliminates its stripe variable across all views in both solvers.
 
-            PD-TV reuses its dual fields between iterations (two full-volume arrays
+            PD-TV reuses its dual fields between outer proximal updates (two full-volume arrays
             in 2D, three in 3D, at the selected TV precision). These fields reset when
             the geometry changes; inner TV iterations control proximal accuracy.
             Use initialise_solver()/run() to inspect state.residuals (primal, dual and

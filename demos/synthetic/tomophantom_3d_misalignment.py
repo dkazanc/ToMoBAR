@@ -165,18 +165,18 @@ with IterativeReconstructor(
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
     num_subsets=6,
-) as RectoolsCuPy:
-    lc = RectoolsCuPy.powermethod()  # calculate Lipschitz constant (run once)
+) as Reconstructor:
+    lc = Reconstructor.powermethod()  # calculate Lipschitz constant (run once)
 
     # RUN THE FISTA METHOD:
     tic = timeit.default_timer()
-    RecFISTA_os_tv = RectoolsCuPy.FISTA(
+    RecFISTA_os_tv = Reconstructor.FISTA(
         projData3D_analyt_cupy,
         input_axes=input_data_labels,
         fidelity=DataFidelity(method="LS"),
         lipschitz_constant=lc,
         regularisation=Regularisation(
-            method="PD_TV", strength=0.06, iterations=50, half_precision=True
+            method="PD_TV", strength=0.4, iterations=50, half_precision=True
         ),
         iterations=25,
         recon_mask_radius=2.0,
@@ -221,10 +221,10 @@ with IterativeReconstructor(
     volume_geometry=Volume3DGeometry(shape=(Vert_det, N_size, N_size)),
     device_index=0,
     num_subsets=1,
-) as RectoolsCuPy:
+) as Reconstructor:
     # RUN THE ADMM METHOD:
     tic = timeit.default_timer()
-    RecADMM_tv = RectoolsCuPy.ADMM(
+    RecADMM_tv = Reconstructor.ADMM(
         projData3D_analyt_cupy,
         input_axes=input_data_labels,
         fidelity=DataFidelity(method="LS"),

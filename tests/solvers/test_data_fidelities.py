@@ -34,7 +34,8 @@ def test_gpu_residual_reuses_forward_storage_and_bounds_peak_allocations(
         expected = residual * weights
     elif fidelity == "SWLS":
         product = residual * weights
-        expected = product - (1 / total * cp.sum(product, axis=1))[:, None, :] * weights
+        numerator = cp.sum(product, axis=1)
+        expected = product - (numerator / total)[:, None, :] * weights
     else:
         expected = residual
 

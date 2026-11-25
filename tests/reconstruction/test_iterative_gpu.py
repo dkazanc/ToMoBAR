@@ -822,7 +822,7 @@ ADMM_TEST_IDS = ["no-regularization", "ROF_TV", "PD_TV"]
 @pytest.mark.parametrize("data_solver", ["linearised", "cg"])
 @pytest.mark.parametrize("regularisation", ADMM_TEST_CASES, ids=ADMM_TEST_IDS)
 @pytest.mark.parametrize("fidelity", ["LS", "PWLS", "SWLS"])
-def test_admm_full_objective_with_subset_configuration(
+def test_admm_full_objective_decreases(
     data_cupy,
     raw_data_cupy,
     angles,
@@ -832,7 +832,7 @@ def test_admm_full_objective_with_subset_configuration(
     ensure_clean_memory,
     make_iterative_reconstructor,
 ):
-    """Real CUDA projectors/TV kernels preserve the same full-data iteration."""
+    """Full-data solvers and TV kernels decrease the recorded objective."""
     detector_rows, detector_width = data_cupy.shape[1:]
     weights = None if fidelity == "LS" else raw_data_cupy
     options = dict(
@@ -851,15 +851,8 @@ def test_admm_full_objective_with_subset_configuration(
         detector_shape=(detector_rows, detector_width),
         volume_shape=(detector_rows, detector_width, detector_width),
     )
-    with make_iterative_reconstructor(**geometry, subsets=3) as rec:
-        lipschitz = rec.powermethod(full_data=True)
-        image, energy = rec.ADMM(data_cupy, lipschitz_constant=lipschitz, **options)
-    with make_iterative_reconstructor(**geometry, subsets=1) as rec:
-        expected_image, expected_energy = rec.ADMM(
-            data_cupy, lipschitz_constant=lipschitz, **options
-        )
-    cp.testing.assert_allclose(image, expected_image, rtol=3e-6, atol=1e-7)
-    np.testing.assert_allclose(energy, expected_energy, rtol=3e-6)
+    with make_iterative_reconstructor(**geometry) as rec:
+        image, energy = rec.ADMM(data_cupy, **options)
     assert np.isfinite(energy).all()
     assert energy[-1] < energy[0]
     assert bool(cp.all(cp.isfinite(image)))
@@ -869,7 +862,7 @@ def test_admm_full_objective_with_subset_configuration(
 
 
 @pytest.mark.usefixtures("gpu")
-def test_admm_os_pwls_warmstart_pad_cp_3d(
+def test_admm_pwls_warmstart_pad_cp_3d(
     data_cupy, raw_data, angles, ensure_clean_memory, make_iterative_reconstructor
 ):
     detector_width = cp.shape(data_cupy)[2]
@@ -888,7 +881,6 @@ def test_admm_os_pwls_warmstart_pad_cp_3d(
         ),
         output_shape=(detector_rows, reconstruction_size, reconstruction_size),
         detector_padding=pad_value,
-        subsets=24,
     ) as reconstructor:
         initialisation_dummy = cp.zeros(
             reconstructor.volume_geometry.shape, dtype=cp.float32

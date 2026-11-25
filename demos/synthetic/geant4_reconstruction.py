@@ -80,10 +80,10 @@ with IterativeReconstructor(
     ),
     device_index=0,
     num_subsets=1,
-) as RectoolsCuPy:
+) as Reconstructor:
     # RUN THE ADMM-TV METHOD:
     tic = timeit.default_timer()
-    RecADMM_tv = RectoolsCuPy.ADMM(
+    RecADMM_tv = Reconstructor.ADMM(
         data_norm_cupy,
         input_axes=data_labels3D,
         fidelity=DataFidelity(method="PWLS"),

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+ADMM now always uses the full dataset. Removed experimental subset-based ADMM
+variants and their options, while retaining LS/PWLS/SWLS, linearised/CG solves,
+regularisation and residual stopping. FISTA and OSEM retain subset support.
+
 Refreshed shared GitHub Actions, added workflow validation with actionlint and
 included Matplotlib in CPU CI coverage. Conda publishing now installs Miniforge
 and dedicated build tools explicitly, builds the triggering commit, and uses

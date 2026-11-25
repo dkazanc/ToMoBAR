@@ -77,6 +77,7 @@ def _admm_cg_data_step(rec: SolverReconstructor, state: SolverState, *, xp, grad
     options, work = require_options(state._options, ADMMOptions), cast(
         ADMMWork, state._work
     )
+
     rho = options.rho
     image = work.z.copy()
     residual = -(work.gradient + rho * (image - state.image + work.u))
@@ -111,6 +112,26 @@ def _admm_cg_data_step(rec: SolverReconstructor, state: SolverState, *, xp, grad
         direction += residual
         residual_squared = next_squared
     return image, options.cg_iterations
+
+
+def _proximal_step(rec, state, image, regularisation, *, xp, proximal):
+    """Apply the already-scaled regulariser and nonnegativity constraint."""
+    options = require_options(state._options, ADMMOptions)
+    work = cast(ADMMWork, state._work)
+    if regularisation is not None:
+        tv_options = {}
+        if regularisation.method == "PD_TV" and regularisation.strength > 0:
+            tv_options["dual_state"] = work.tv_dual
+        image = proximal(
+            image,
+            regularisation,
+            device_index=rec.device_index,
+            nonnegativity=options.nonnegativity,
+            **tv_options,
+        )
+    if options.nonnegativity:
+        xp.maximum(image, 0, out=image)
+    return image
 
 
 def step(
@@ -158,20 +179,7 @@ def step(
     dual = work.u.astype(dtype, copy=False)
     image = work.next_image.astype(dtype, copy=False)
     admm_proximal_input(data_image, previous_image, dual, relaxation, out=image)
-    if regularisation is not None:
-        tv_options = {}
-        if regularisation.method == "PD_TV" and regularisation.strength > 0:
-            tv_options["dual_state"] = work.tv_dual
-        image = proximal(
-            image,
-            regularisation,
-            device_index=rec.device_index,
-            nonnegativity=options.nonnegativity,
-            **tv_options,
-        )
-    if options.nonnegativity:
-        # Also enforce the constraint with no TV, zero strength, or ROF-TV.
-        xp.maximum(image, 0, out=image)
+    image = _proximal_step(rec, state, image, regularisation, xp=xp, proximal=proximal)
     admm_dual_step(dual, data_image, previous_image, image, relaxation, out=dual)
 
     def norm(value):

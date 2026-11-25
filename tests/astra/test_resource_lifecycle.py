@@ -666,10 +666,13 @@ class TestAstraResourceLifecycle(unittest.TestCase, ResourceHarness):
             self.assertEqual(len(wrapper.subset_indices), expected)
             wrapper.close()
 
-    def test_fista_admm_subset_data_and_weights_stay_aligned(self):
+    def test_fista_subset_and_admm_full_data_weights_stay_aligned(self):
         module = self.load_iterative_module()
         for method in ("FISTA", "ADMM"):
-            for n_views, count in ((1, 1), (4, 4), (5, 2), (7, 3)):
+            configurations = (
+                ((7, 3),) if method == "ADMM" else ((1, 1), (4, 4), (5, 2), (7, 3))
+            )
+            for n_views, count in configurations:
                 for fidelity in ("LS", "PWLS", "SWLS"):
                     with self.subTest(
                         method=method, n_views=n_views, count=count, fidelity=fidelity

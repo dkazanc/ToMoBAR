@@ -11,8 +11,8 @@ updates without managing continuation counters or energy history.
 
 Retained work uses conventional algorithm notation: CGLS r/d are the projection
 residual/search direction, FISTA t/X_t are momentum/extrapolated image, and ADMM
-z/u are the data variable/scaled dual. Typed work objects retain these names;
-keys remain stable for callers inspecting SolverState.algorithm_state.
+z/u are the full-data image/scaled dual. Typed work objects expose these
+algorithm variables for inspection.
 """
 
 from __future__ import annotations

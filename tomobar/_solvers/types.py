@@ -63,7 +63,7 @@ class FISTAWork:
 
 @dataclass(eq=False, slots=True)
 class ADMMWork:
-    """Data image z, scaled dual u, and retained gradient/proximal scratch."""
+    """Full-data ADMM image, scaled dual and reusable gradient/proximal work."""
 
     buffers: ProjectionBuffers
     z: Array
