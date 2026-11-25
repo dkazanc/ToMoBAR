@@ -1,5 +1,91 @@
 # Change Log
 
+## Unreleased
+
+ADMM now always uses the full dataset. Removed experimental subset-based ADMM
+variants and their options, while retaining LS/PWLS/SWLS, linearised/CG solves,
+regularisation and residual stopping. FISTA and OSEM retain subset support.
+
+Refreshed shared GitHub Actions, added workflow validation with actionlint and
+included Matplotlib in CPU CI coverage. Conda publishing now installs Miniforge
+and dedicated build tools explicitly, builds the triggering commit, and uses
+activated tools. Publication triggers are unchanged.
+
+Fixed documentation CI environment setup on hosted runners without preinstalled
+Conda by explicitly installing Miniforge with setup-miniconda v4.
+
+Geometry plots now separate detector planes from the volume by default and
+terminate beam arrows at their displayed centres. Distances are schematic;
+``detector_position="reference"`` restores reference-plane inspection without
+changing acquisition geometry. Refreshed the geometry notebook figures.
+
+Geometry visualisations label beam directions and detectors in both frames.
+Sample-frame tomography and laminography now show their known rotation axis
+and an acquisition-rotation arc; laboratory plots show sample rotation with a
+fixed instrument. Refreshed the geometry demo and notebook figures.
+
+Renamed the public reconstruction classes to `DirectReconstructor` and
+`IterativeReconstructor` throughout the package, tests, demos, notebooks and
+documentation. This is a hard API migration: the former class names are removed
+and no compatibility aliases are provided.
+
+Renamed the iterative reconstructor subset-count keyword and property to
+`num_subsets` throughout the package, tests and examples. The previous name is
+removed; subset selection and solver behaviour are unchanged.
+
+Use 64-bit voxel coordinates, flattened indices and slice offsets throughout
+ROF-TV, PD-TV, SB-TV, FGP-TV, TGV and NDF CUDA kernels. Fix multiplication-order
+overflow in ROF slice offsets and 32-bit indexing in all Split Bregman stages.
+Split Bregman now passes its total element count explicitly as an int64 scalar.
+Added regression probes above signed/unsigned 32-bit limits without allocating
+full-sized volumes. Per-axis dimensions, mode flags and small component counters
+retain their existing integer contracts.
+
+Moved the public `SolverState` definition to `tomobar.reconstruction.state`;
+continuation execution remains in `_solvers/state.py`. CUDA compilation,
+lookup and cache management now live in `tomobar.cuda_kernels.loader`, leaving
+the package initializer CPU-safe. All callers use the defining modules directly.
+Added developer architecture documentation and tests for CPU-safe metadata,
+public-state/engine separation and projector/solver dependency boundaries.
+
+Reconstruction and projection operators now use public package names:
+`tomobar.reconstruction.direct.DirectReconstructor`,
+`tomobar.reconstruction.iterative.IterativeReconstructor`, and
+`tomobar.projectors.operator.ProjectionOperator`. No aliases for the former
+`_reconstruction` or `_projectors` packages are provided. ASTRA and USFFT
+implementations are private sibling packages, `projectors._astra` and
+`projectors._usfft`; USFFT separates numerical execution from geometry adaptation.
+
+Shared scalar validation now lives in `_validation`, independently of public
+option classes. Solver-facing proximal dispatch lives in `_regularisers.proximal`
+and takes explicit image/settings/device arguments instead of a reconstructor.
+Public standalone regulariser functions remain in `tomobar.regularisers`.
+
+Removed historical import shims and the `tomobar.supp` package. Import
+reconstructors from `tomobar.reconstruction.direct` and
+`tomobar.reconstruction.iterative`, the projection operator from
+`tomobar.projectors.operator`, and solver state from `tomobar.reconstruction.state`.
+Other former aliases (`fourier`, `fourier_plan`, `data_fidelities` and
+`reconstruction_geometry`) likewise use their canonical implementation modules.
+ASTRA implementations live under `tomobar.projectors._astra`.
+
+Shared array handling lives in `_arrays`, solver buffers/subsets/updates in
+`_solvers`, and memory estimation in `reconstruction.memory`. Use
+`tomobar.preprocessing` and `tomobar.postprocessing` directly instead of
+`suppTools`. Internal reconstruction output processing uses the explicit
+`postprocess_reconstruction` helper; `check_kwargs` has been removed.
+
+Updated imports in tests, demos and documentation. Historical documentation URLs
+remain migration pages, but Python import aliases are no longer provided.
+NumPy preprocessing no longer imports CuPy, and dynamic flat-field dependencies
+load only when requested. Fixed default and keyword-order handling for dynamic
+normalisation options.
+
+## v.2026.4.0.0
+
+Replaced GPULink and experimental calls with public DLPack methods (only available in ASTRA toolbox version 2.5). Pinning ASTRA toolbox to 2.5 or newer.
+Various minor fixes and patches.
+
 ## v.2026.3.1.0
 
 Stripe Weighted Least Squares (SWLS) [method](http://ieeexplore.ieee.org/document/7967846/) added to the list of data fidelities. Demo with dendrites (RealData.py) demonstrates the benefit of using such method.
@@ -21,7 +107,7 @@ Changes:
 * Dependency on [Regularisation Toolkit](https://github.com/TomographicImaging/CCPi-Regularisation-Toolk) is dropped.
 * Significant refactoring of the `RecToolsIRCuPy` class.
 * Breaking change that removes `datafidelity` from the class and one can control data fidelities from the `_data_` dictionary given as `_data_["data_fidelity"]`.
-* `OS_number` added to `RecToolsIRCuPy` class as it is a geometry related parameter.
+* `num_subsets` added to `RecToolsIRCuPy` class as it is a geometry related parameter.
 * Ordered Subsets Expectation Maximization (OSEM) and MLEM added in `RecToolsIRCuPy` for emission-type data.
 * Upgrade of dependencies to CuPy 14.* and numpy 2.4.
 
@@ -58,6 +144,6 @@ to the previous version and potentially a magnitude faster compared to FISTA in 
 ## v.2025.08
 
 ### Changed
-- $\sf\color{red}Breaking$ $\sf\color{red}changes!$ The API for initializing geometry in both direct and iterative methods (the `RecTools` class) has been updated. A new parameter, `DetectorsDimH_pad`, has been [introduced](https://dkazanc.github.io/ToMoBAR/api/tomobar.methodsDIR.html) to control edge padding along the detector's horizontal dimension. This parameter can help reduce circular/arc [artifacts](https://dkazanc.github.io/ToMoBAR/tutorials/real_data_recon.html) in reconstructions, such as saturated circles or arcs. See updated [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/Demos/Python).
+- $\sf\color{red}Breaking$ $\sf\color{red}changes!$ The API for initializing geometry in both direct and iterative methods (the `RecTools` class) has been updated. A new parameter, `DetectorsDimH_pad`, has been [introduced](https://dkazanc.github.io/ToMoBAR/api/tomobar.methodsDIR.html) to control edge padding along the detector's horizontal dimension. This parameter can help reduce circular/arc [artifacts](https://dkazanc.github.io/ToMoBAR/tutorials/real_data_recon.html) in reconstructions, such as saturated circles or arcs. See updated [Tutorials](https://dkazanc.github.io/ToMoBAR/tutorials/direct_recon.html) and [Demos](https://github.com/dkazanc/ToMoBAR/tree/master/demos/Python).
 - Log-Polar method (`FOURIER_INV` in `RecToolsDIRCuPy`) has been further accelerated and it is significantly faster FBP.
 

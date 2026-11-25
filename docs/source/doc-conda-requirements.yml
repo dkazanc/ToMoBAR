@@ -2,15 +2,22 @@ name: tomobar-docs
 channels:
   - conda-forge
 dependencies:
-  - python>=3.10
+  - python=3.12
+  # Build the documentation and render saved notebook outputs without CUDA.
+  - numpy>=2
   - scipy
   - sphinx
   - sphinx-book-theme
   - nbsphinx
   - pandoc
   - jinja2
-  - sphinx-design
+  - sphinx-design>=0.8
   - sphinx-copybutton
   - pyyaml
   - ipython
   - ghp-import
+  # Edit notebooks and execute the CPU geometry example in this environment.
+  # Reconstruction notebooks use a separate working ToMoBAR CUDA environment.
+  - jupyterlab
+  - ipykernel
+  - matplotlib

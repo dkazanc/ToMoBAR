@@ -61,7 +61,7 @@ __device__ __forceinline__ float normalize_difference(float nominator, float den
 }
 
 /*********************2D case****************************/
-__device__ __forceinline__ long long calculate_index(long i, long j, int dimX)
+__device__ __forceinline__ long long calculate_index(long long i, long long j, int dimX)
 {
     return static_cast<long long>(i) + dimX * static_cast<long long>(j);
 }
@@ -69,18 +69,18 @@ __device__ __forceinline__ long long calculate_index(long i, long j, int dimX)
 template <typename T>
 __device__ __forceinline__ void divergence_kernel_2D_impl(float *Update_in, T *D1, T *D2, int dimX, int dimY)
 {
-    const long i = blockDim.x * blockIdx.x + threadIdx.x;
-    const long j = blockDim.y * blockIdx.y + threadIdx.y;
+    const long long i = static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const long long j = static_cast<long long>(blockIdx.y) * blockDim.y + threadIdx.y;
 
     if (i >= dimX || j >= dimY)
         return;
 
-    long long i1 = i == (dimX - 1) ? i - 1 : i + 1;
-    long long i2 = i == 0 ? i + 1 : i - 1;
-    long long j1 = j == (dimY - 1) ? j - 1 : j + 1;
-    long long j2 = j == 0 ? j + 1 : j - 1;
+    const long long i1 = i == (dimX - 1) ? i - 1 : i + 1;
+    const long long i2 = i == 0 ? i + 1 : i - 1;
+    const long long j1 = j == (dimY - 1) ? j - 1 : j + 1;
+    const long long j2 = j == 0 ? j + 1 : j - 1;
 
-    long long index = calculate_index(i, j, dimX);
+    const long long index = calculate_index(i, j, dimX);
 
     float U_in = Update_in[index];
     float U_in_i2 = Update_in[calculate_index(i2, j, dimX)];
@@ -116,19 +116,19 @@ extern "C" __global__ void divergence_kernel_2D_float(float *Update_in, float *D
 template <typename T>
 __device__ __forceinline__ void TV_kernel_2D_impl(float *Update_in, float *Update_out, float *Input, T *D1, T *D2, float lambdaPar, float tau, int dimX, int dimY)
 {
-    const long i = blockDim.x * blockIdx.x + threadIdx.x;
-    const long j = blockDim.y * blockIdx.y + threadIdx.y;
+    const long long i = static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const long long j = static_cast<long long>(blockIdx.y) * blockDim.y + threadIdx.y;
 
     if (i >= dimX || j >= dimY)
         return;
 
-    long long index = calculate_index(i, j, dimX);
+    const long long index = calculate_index(i, j, dimX);
     float I = Input[index];
     float U_in = Update_in[index];
 
     /* symmetric boundary conditions (Neuman) */
-    long long i2 = i == 0 ? i + 1 : i - 1;
-    long long j2 = j == 0 ? j + 1 : j - 1;
+    const long long i2 = i == 0 ? i + 1 : i - 1;
+    const long long j2 = j == 0 ? j + 1 : j - 1;
 
     /*divergence components */
     float dv1 = read_as_float<T>(D1, index) - read_as_float<T>(D1, calculate_index(i, j2, dimX));
@@ -148,29 +148,29 @@ extern "C" __global__ void TV_kernel_2D_float(float *Update_in, float *Update_ou
 }
 
 /*********************3D case****************************/
-__device__ __forceinline__ long long calculate_index(long i, long j, long k, int dimX, int dimY)
+__device__ __forceinline__ long long calculate_index(long long i, long long j, long long k, int dimX, int dimY)
 {
-    return static_cast<long long>(i) + dimX * static_cast<long long>(j) + dimX * dimY * static_cast<long long>(k);
+    return static_cast<long long>(i) + dimX * static_cast<long long>(j) + static_cast<long long>(dimX) * dimY * k;
 }
 
 template <typename T>
 __device__ __forceinline__ void divergence_kernel_3D_impl(float *Update_in, T *D1, T *D2, T *D3, int dimX, int dimY, int dimZ)
 {
-    const long i = blockDim.x * blockIdx.x + threadIdx.x;
-    const long j = blockDim.y * blockIdx.y + threadIdx.y;
-    const long k = blockDim.z * blockIdx.z + threadIdx.z;
+    const long long i = static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const long long j = static_cast<long long>(blockIdx.y) * blockDim.y + threadIdx.y;
+    const long long k = static_cast<long long>(blockIdx.z) * blockDim.z + threadIdx.z;
 
     if (i >= dimX || j >= dimY || k >= dimZ)
         return;
 
-    long long i1 = i == (dimX - 1) ? i - 1 : i + 1;
-    long long i2 = i == 0 ? i + 1 : i - 1;
-    long long j1 = j == (dimY - 1) ? j - 1 : j + 1;
-    long long j2 = j == 0 ? j + 1 : j - 1;
-    long long k1 = k == (dimZ - 1) ? k - 1 : k + 1;
-    long long k2 = k == 0 ? k + 1 : k - 1;
+    const long long i1 = i == (dimX - 1) ? i - 1 : i + 1;
+    const long long i2 = i == 0 ? i + 1 : i - 1;
+    const long long j1 = j == (dimY - 1) ? j - 1 : j + 1;
+    const long long j2 = j == 0 ? j + 1 : j - 1;
+    const long long k1 = k == (dimZ - 1) ? k - 1 : k + 1;
+    const long long k2 = k == 0 ? k + 1 : k - 1;
 
-    long long index = calculate_index(i, j, k, dimX, dimY);
+    const long long index = calculate_index(i, j, k, dimX, dimY);
 
     float U_in = Update_in[index];
     float U_in_i2 = Update_in[calculate_index(i2, j, k, dimX, dimY)];
@@ -213,21 +213,21 @@ extern "C" __global__ void divergence_kernel_3D_float(float *Update_in, float *D
 template <typename T>
 __device__ __forceinline__ void TV_kernel_3D_impl(float *Update_in, float *Update_out, float *Input, T *D1, T *D2, T *D3, float lambdaPar, float tau, int dimX, int dimY, int dimZ)
 {
-    const long i = blockDim.x * blockIdx.x + threadIdx.x;
-    const long j = blockDim.y * blockIdx.y + threadIdx.y;
-    const long k = blockDim.z * blockIdx.z + threadIdx.z;
+    const long long i = static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const long long j = static_cast<long long>(blockIdx.y) * blockDim.y + threadIdx.y;
+    const long long k = static_cast<long long>(blockIdx.z) * blockDim.z + threadIdx.z;
 
     if (i >= dimX || j >= dimY || k >= dimZ)
         return;
 
-    long long index = calculate_index(i, j, k, dimX, dimY);
+    const long long index = calculate_index(i, j, k, dimX, dimY);
     float I = Input[index];
     float U_in = Update_in[index];
 
     /* symmetric boundary conditions (Neuman) */
-    long long i2 = i == 0 ? i + 1 : i - 1;
-    long long j2 = j == 0 ? j + 1 : j - 1;
-    long long k2 = k == 0 ? k + 1 : k - 1;
+    const long long i2 = i == 0 ? i + 1 : i - 1;
+    const long long j2 = j == 0 ? j + 1 : j - 1;
+    const long long k2 = k == 0 ? k + 1 : k - 1;
 
     /*divergence components */
     float dv1 = read_as_float<T>(D1, index) - read_as_float<T>(D1, calculate_index(i, j2, k, dimX, dimY));

@@ -1,492 +1,269 @@
 #include <cuda_fp16.h>
 
-/*
-Raw CUDA Kernels for Primal-Dual Total Variation regularisation model
-*/
+/* Chambolle-Pock TV proximal step with forward differences and zero boundary
+   flux. Primal and previous-primal images remain separate: extrapolation is
+   used only for the dual update. A fused kernel recomputes neighbouring dual
+   updates from read-only buffers, avoiding races between CUDA threads. */
 
-template <bool nonneg>
-__device__ float clamp_to_zero(float value)
+template <typename T>
+__device__ float read_as_float(const T *array, long long index)
 {
+    return array[index];
 }
 
 template <>
-__device__ float clamp_to_zero<false>(float value)
+__device__ float read_as_float<__half>(const __half *array, long long index)
 {
-  return value;
-}
-
-template <>
-__device__ float clamp_to_zero<true>(float value)
-{
-  return value < 0.0f ? 0.0f : value;
+    return __half2float(array[index]);
 }
 
 template <typename T>
-__device__ float read_as_float(T *P, long long index)
+__device__ void write_float(T *array, long long index, float value)
 {
+    array[index] = value;
 }
 
 template <>
-__device__ float read_as_float<float>(float *P, long long index)
+__device__ void write_float<__half>(__half *array, long long index, float value)
 {
-  return P[index];
+    array[index] = __float2half(value);
 }
 
-template <>
-__device__ float read_as_float<__half>(__half *P, long long index)
+__device__ float extrapolated_value(const float *current, const float *previous,
+                                    long long index, float theta)
 {
-  return __half2float(P[index]);
+    return current[index] + theta * (current[index] - previous[index]);
 }
 
-template <typename T>
-__device__ void write_float(T *P, long long index, float value)
+template <typename T, bool anisotropic, bool is3d>
+__device__ void updated_dual(const float *current, const float *previous,
+                             const T *p1, const T *p2, const T *p3,
+                             long long index, long long x, long long y, long long z,
+                             int dimX, int dimY, int dimZ,
+                             float sigma, float theta, float *result)
 {
+    const long long zStride = static_cast<long long>(dimX) * dimY;
+    const float center = extrapolated_value(current, previous, index, theta);
+    // No outgoing derivative/flux on the final voxel of an axis. Set the dual
+    // component to zero before projecting onto the isotropic/anisotropic ball.
+    result[0] = x + 1 < dimX
+        ? read_as_float(p1, index) + sigma * (extrapolated_value(current, previous, index + 1, theta) - center)
+        : 0.0f;
+    result[1] = y + 1 < dimY
+        ? read_as_float(p2, index) + sigma * (extrapolated_value(current, previous, index + dimX, theta) - center)
+        : 0.0f;
+    result[2] = 0.0f;
+    if (is3d && z + 1 < dimZ)
+        result[2] = read_as_float(p3, index) + sigma * (extrapolated_value(current, previous, index + zStride, theta) - center);
+
+    if (anisotropic) {
+        for (int axis = 0; axis < 3; ++axis)
+            result[axis] /= fmaxf(1.0f, fabsf(result[axis]));
+    } else {
+        const float scale = fmaxf(1.0f, sqrtf(result[0]*result[0] + result[1]*result[1] + result[2]*result[2]));
+        for (int axis = 0; axis < 3; ++axis)
+            result[axis] /= scale;
+    }
 }
 
-template <>
-__device__ void write_float<float>(float *P, long long index, float value)
+template <typename T, bool nonneg, bool anisotropic, bool is3d>
+__device__ __forceinline__ void primal_dual_step(
+    const float *input, const float *previous, const float *current, float *output,
+    const T *p1, const T *p2, const T *p3, T *next_p1, T *next_p2, T *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-  P[index] = value;
+    const long long x = static_cast<long long>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const long long y = static_cast<long long>(blockIdx.y) * blockDim.y + threadIdx.y;
+    const long long z = is3d ? static_cast<long long>(blockIdx.z) * blockDim.z + threadIdx.z : 0;
+    if (x >= dimX || y >= dimY || z >= dimZ)
+        return;
+    const long long zStride = static_cast<long long>(dimX) * dimY;
+    const long long index = x + static_cast<long long>(dimX) * y + zStride * z;
+    float local[3], neighbour[3];
+    updated_dual<T, anisotropic, is3d>(current, previous, p1, p2, p3, index, x, y, z,
+                                      dimX, dimY, dimZ, sigma, theta, local);
+    float divergence = local[0] + local[1] + local[2];
+    if (x > 0) {
+        updated_dual<T, anisotropic, is3d>(current, previous, p1, p2, p3, index - 1, x - 1, y, z,
+                                          dimX, dimY, dimZ, sigma, theta, neighbour);
+        divergence -= neighbour[0];
+    }
+    if (y > 0) {
+        updated_dual<T, anisotropic, is3d>(current, previous, p1, p2, p3, index - dimX, x, y - 1, z,
+                                          dimX, dimY, dimZ, sigma, theta, neighbour);
+        divergence -= neighbour[1];
+    }
+    if (is3d && z > 0) {
+        updated_dual<T, anisotropic, is3d>(current, previous, p1, p2, p3, index - zStride, x, y, z - 1,
+                                          dimX, dimY, dimZ, sigma, theta, neighbour);
+        divergence -= neighbour[2];
+    }
+    float value = (current[index] + tau * divergence + lt * input[index]) / (1.0f + lt);
+    if (nonneg)
+        value = fmaxf(value, 0.0f);
+    output[index] = value;  // Return the feasible primal image, not extrapolation.
+    write_float(next_p1, index, local[0]);
+    write_float(next_p2, index, local[1]);
+    if (is3d)
+        write_float(next_p3, index, local[2]);
 }
 
-template <>
-__device__ void write_float<__half>(__half *P, long long index, float value)
+extern "C" __global__ void primal_dual_for_total_variation_2D_float(
+    float *input, float *previous, float *current, float *output,
+    float *p1, float *p2, float *next_p1, float *next_p2,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
-  P[index] = __float2half(value);
+    primal_dual_step<float, false, false, false>(
+        input, previous, current, output, p1, p2, nullptr, next_p1, next_p2, nullptr,
+        sigma, tau, lt, theta, dimX, dimY, 1);
 }
 
-/************************************************/
-/*****************3D modules*********************/
-/************************************************/
-template <bool methodTV>
-__device__ void Proj_funcPD3D(float *P1, float *P2, float *P3)
+extern "C" __global__ void primal_dual_for_total_variation_2D_float_methodTV(
+    float *input, float *previous, float *current, float *output,
+    float *p1, float *p2, float *next_p1, float *next_p2,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
+    primal_dual_step<float, false, true, false>(
+        input, previous, current, output, p1, p2, nullptr, next_p1, next_p2, nullptr,
+        sigma, tau, lt, theta, dimX, dimY, 1);
 }
 
-template <>
-__device__ void Proj_funcPD3D<false>(float *P1, float *P2, float *P3)
+extern "C" __global__ void primal_dual_for_total_variation_2D_float_nonneg(
+    float *input, float *previous, float *current, float *output,
+    float *p1, float *p2, float *next_p1, float *next_p2,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
-  float denom = *P1 * *P1 + *P2 * *P2 + *P3 * *P3;
-  if (denom > 1.0f)
-  {
-    float sq_denom = 1.0f / sqrtf(denom);
-    *P1 *= sq_denom;
-    *P2 *= sq_denom;
-    *P3 *= sq_denom;
-  }
+    primal_dual_step<float, true, false, false>(
+        input, previous, current, output, p1, p2, nullptr, next_p1, next_p2, nullptr,
+        sigma, tau, lt, theta, dimX, dimY, 1);
 }
 
-template <>
-__device__ void Proj_funcPD3D<true>(float *P1, float *P2, float *P3)
+extern "C" __global__ void primal_dual_for_total_variation_2D_float_nonneg_methodTV(
+    float *input, float *previous, float *current, float *output,
+    float *p1, float *p2, float *next_p1, float *next_p2,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
-  float val1 = fabs(*P1);
-  float val2 = fabs(*P2);
-  float val3 = fabs(*P3);
-
-  if (val1 < 1.0f)
-  {
-    val1 = 1.0f;
-  }
-
-  if (val2 < 1.0f)
-  {
-    val2 = 1.0f;
-  }
-
-  if (val3 < 1.0f)
-  {
-    val3 = 1.0f;
-  }
-
-  *P1 /= val1;
-  *P2 /= val2;
-  *P3 /= val3;
+    primal_dual_step<float, true, true, false>(
+        input, previous, current, output, p1, p2, nullptr, next_p1, next_p2, nullptr,
+        sigma, tau, lt, theta, dimX, dimY, 1);
 }
 
-template <bool methodTV>
-__device__ void dualPD3D(float *U, float *P1, float *P2, float *P3, float sigma)
+extern "C" __global__ void primal_dual_for_total_variation_2D_half(
+    float *input, float *previous, float *current, float *output,
+    __half *p1, __half *p2, __half *next_p1, __half *next_p2,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
-  *P1 += sigma * (U[1] - U[0]);
-  *P2 += sigma * (U[2] - U[0]);
-  *P3 += sigma * (U[3] - U[0]);
-
-  Proj_funcPD3D<methodTV>(P1, P2, P3);
+    primal_dual_step<__half, false, false, false>(
+        input, previous, current, output, p1, p2, nullptr, next_p1, next_p2, nullptr,
+        sigma, tau, lt, theta, dimX, dimY, 1);
 }
 
-__device__ float DivProj3D(float Input, float U_in, float P1, float P2, float P3, float P1_prev_x, float P2_prev_y, float P3_prev_z, float tau, float lt)
+extern "C" __global__ void primal_dual_for_total_variation_2D_half_methodTV(
+    float *input, float *previous, float *current, float *output,
+    __half *p1, __half *p2, __half *next_p1, __half *next_p2,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
-  float P_v1 = -(P1 - P1_prev_x);
-  float P_v2 = -(P2 - P2_prev_y);
-  float P_v3 = -(P3 - P3_prev_z);
-  float div_var = P_v1 + P_v2 + P_v3;
-  return (U_in - tau * div_var + lt * Input) / (1.0f + lt);
+    primal_dual_step<__half, false, true, false>(
+        input, previous, current, output, p1, p2, nullptr, next_p1, next_p2, nullptr,
+        sigma, tau, lt, theta, dimX, dimY, 1);
 }
 
-template <typename T, bool nonneg, bool methodTV>
-__device__ __forceinline__ void primal_dual_for_total_variation_3D_impl(float *Input, float *U_in, float *U_out, T *P1_in, T *P2_in, T *P3_in, T *P1_out, T *P2_out, T *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_2D_half_nonneg(
+    float *input, float *previous, float *current, float *output,
+    __half *p1, __half *p2, __half *next_p1, __half *next_p2,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
-  // calculate each thread global index
-  const long xIndex = blockIdx.x * blockDim.x + threadIdx.x;
-  const long yIndex = blockIdx.y * blockDim.y + threadIdx.y;
-  const long zIndex = blockIdx.z * blockDim.z + threadIdx.z;
-
-  if (xIndex >= dimX || yIndex >= dimY || zIndex >= dimZ)
-  {
-    return;
-  }
-
-  long long xStride = 1;
-  long long yStride = dimX;
-  long long zStride = dimX * dimY;
-
-  long long index = static_cast<long long>(xIndex) + yStride * static_cast<long long>(yIndex) + zStride * static_cast<long long>(zIndex);
-  long long index_prev_x = index - xStride;
-  long long index_prev_y = index - yStride;
-  long long index_prev_z = index - zStride;
-
-  float P1_prev_x = 0.0f;
-  float P2_prev_x = 0.0f;
-  float P3_prev_x = 0.0f;
-  float U_prev_x = 0.0f;
-
-  float P1_prev_y = 0.0f;
-  float P2_prev_y = 0.0f;
-  float P3_prev_y = 0.0f;
-  float U_prev_y = 0.0f;
-
-  float P1_prev_z = 0.0f;
-  float P2_prev_z = 0.0f;
-  float P3_prev_z = 0.0f;
-  float U_prev_z = 0.0f;
-
-  float U_prev_x_prev_y = 0.0;
-  float U_prev_x_prev_z = 0.0f;
-  float U_prev_y_prev_z = 0.0f;
-
-  float P1 = read_as_float<T>(P1_in, index);
-  float P2 = read_as_float<T>(P2_in, index);
-  float P3 = read_as_float<T>(P3_in, index);
-  float U = U_in[index];
-  float Input_value = Input[index];
-
-  if (xIndex > 0)
-  {
-    P1_prev_x = read_as_float<T>(P1_in, index_prev_x);
-    P2_prev_x = read_as_float<T>(P2_in, index_prev_x);
-    P3_prev_x = read_as_float<T>(P3_in, index_prev_x);
-    U_prev_x = U_in[index_prev_x];
-  }
-
-  if (yIndex > 0)
-  {
-    P1_prev_y = read_as_float<T>(P1_in, index_prev_y);
-    P2_prev_y = read_as_float<T>(P2_in, index_prev_y);
-    P3_prev_y = read_as_float<T>(P3_in, index_prev_y);
-    U_prev_y = U_in[index_prev_y];
-  }
-
-  if (zIndex > 0)
-  {
-    P1_prev_z = read_as_float<T>(P1_in, index_prev_z);
-    P2_prev_z = read_as_float<T>(P2_in, index_prev_z);
-    P3_prev_z = read_as_float<T>(P3_in, index_prev_z);
-    U_prev_z = U_in[index_prev_z];
-  }
-
-  bool last_x = xIndex == dimX - 1;
-  bool last_y = yIndex == dimY - 1;
-  bool last_z = zIndex == dimZ - 1;
-
-  if (((xIndex > 0) && last_y) || ((yIndex > 0) && last_x))
-  {
-    U_prev_x_prev_y = U_in[index - xStride - yStride];
-  }
-
-  if (((xIndex > 0) && last_z) || ((zIndex > 0) && last_x))
-  {
-    U_prev_x_prev_z = U_in[index - xStride - zStride];
-  }
-
-  if (((yIndex > 0) && last_z) || ((zIndex > 0) && last_y))
-  {
-    U_prev_y_prev_z = U_in[index - yStride - zStride];
-  }
-
-  {
-    float U_values[4] = {
-        U,
-        last_x ? U_prev_x : U_in[index + xStride],
-        last_y ? U_prev_y : U_in[index + yStride],
-        last_z ? U_prev_z : U_in[index + zStride]};
-    dualPD3D<methodTV>(U_values, &P1, &P2, &P3, sigma);
-  }
-
-  if (xIndex > 0)
-  {
-    float U_values[4] = {
-        U_prev_x,
-        U,
-        last_y ? U_prev_x_prev_y : U_in[index - xStride + yStride],
-        last_z ? U_prev_x_prev_z : U_in[index - xStride + zStride]};
-    dualPD3D<methodTV>(U_values, &P1_prev_x, &P2_prev_x, &P3_prev_x, sigma);
-  }
-
-  if (yIndex > 0)
-  {
-    float U_values[4] = {
-        U_prev_y,
-        last_x ? U_prev_x_prev_y : U_in[index + xStride - yStride],
-        U,
-        last_z ? U_prev_y_prev_z : U_in[index - yStride + zStride]};
-    dualPD3D<methodTV>(U_values, &P1_prev_y, &P2_prev_y, &P3_prev_y, sigma);
-  }
-
-  if (zIndex > 0)
-  {
-    float U_values[4] = {
-        U_prev_z,
-        last_x ? U_prev_x_prev_z : U_in[index + xStride - zStride],
-        last_y ? U_prev_y_prev_z : U_in[index + yStride - zStride],
-        U};
-    dualPD3D<methodTV>(U_values, &P1_prev_z, &P2_prev_z, &P3_prev_z, sigma);
-  }
-
-  U = clamp_to_zero<nonneg>(U);
-  float new_U = DivProj3D(Input_value, U, P1, P2, P3, P1_prev_x, P2_prev_y, P3_prev_z, tau, lt);
-  U_out[index] = new_U + theta * (new_U - U);
-
-  write_float<T>(P1_out, index, P1);
-  write_float<T>(P2_out, index, P2);
-  write_float<T>(P3_out, index, P3);
+    primal_dual_step<__half, true, false, false>(
+        input, previous, current, output, p1, p2, nullptr, next_p1, next_p2, nullptr,
+        sigma, tau, lt, theta, dimX, dimY, 1);
 }
 
-extern "C" __global__ void primal_dual_for_total_variation_3D_half(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_2D_half_nonneg_methodTV(
+    float *input, float *previous, float *current, float *output,
+    __half *p1, __half *p2, __half *next_p1, __half *next_p2,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY)
 {
-  primal_dual_for_total_variation_3D_impl<__half, false, false>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+    primal_dual_step<__half, true, true, false>(
+        input, previous, current, output, p1, p2, nullptr, next_p1, next_p2, nullptr,
+        sigma, tau, lt, theta, dimX, dimY, 1);
 }
 
-extern "C" __global__ void primal_dual_for_total_variation_3D_half_nonneg(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_3D_float(
+    float *input, float *previous, float *current, float *output,
+    float *p1, float *p2, float *p3, float *next_p1, float *next_p2, float *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-  primal_dual_for_total_variation_3D_impl<__half, true, false>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+    primal_dual_step<float, false, false, true>(
+        input, previous, current, output, p1, p2, p3, next_p1, next_p2, next_p3,
+        sigma, tau, lt, theta, dimX, dimY, dimZ);
 }
 
-extern "C" __global__ void primal_dual_for_total_variation_3D_half_methodTV(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_3D_float_methodTV(
+    float *input, float *previous, float *current, float *output,
+    float *p1, float *p2, float *p3, float *next_p1, float *next_p2, float *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-  primal_dual_for_total_variation_3D_impl<__half, false, true>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+    primal_dual_step<float, false, true, true>(
+        input, previous, current, output, p1, p2, p3, next_p1, next_p2, next_p3,
+        sigma, tau, lt, theta, dimX, dimY, dimZ);
 }
 
-extern "C" __global__ void primal_dual_for_total_variation_3D_half_nonneg_methodTV(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P3_in, __half *P1_out, __half *P2_out, __half *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_3D_float_nonneg(
+    float *input, float *previous, float *current, float *output,
+    float *p1, float *p2, float *p3, float *next_p1, float *next_p2, float *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-  primal_dual_for_total_variation_3D_impl<__half, true, true>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+    primal_dual_step<float, true, false, true>(
+        input, previous, current, output, p1, p2, p3, next_p1, next_p2, next_p3,
+        sigma, tau, lt, theta, dimX, dimY, dimZ);
 }
 
-extern "C" __global__ void primal_dual_for_total_variation_3D_float(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_3D_float_nonneg_methodTV(
+    float *input, float *previous, float *current, float *output,
+    float *p1, float *p2, float *p3, float *next_p1, float *next_p2, float *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-  primal_dual_for_total_variation_3D_impl<float, false, false>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+    primal_dual_step<float, true, true, true>(
+        input, previous, current, output, p1, p2, p3, next_p1, next_p2, next_p3,
+        sigma, tau, lt, theta, dimX, dimY, dimZ);
 }
 
-extern "C" __global__ void primal_dual_for_total_variation_3D_float_nonneg(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_3D_half(
+    float *input, float *previous, float *current, float *output,
+    __half *p1, __half *p2, __half *p3, __half *next_p1, __half *next_p2, __half *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-  primal_dual_for_total_variation_3D_impl<float, true, false>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+    primal_dual_step<__half, false, false, true>(
+        input, previous, current, output, p1, p2, p3, next_p1, next_p2, next_p3,
+        sigma, tau, lt, theta, dimX, dimY, dimZ);
 }
 
-extern "C" __global__ void primal_dual_for_total_variation_3D_float_methodTV(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_3D_half_methodTV(
+    float *input, float *previous, float *current, float *output,
+    __half *p1, __half *p2, __half *p3, __half *next_p1, __half *next_p2, __half *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-  primal_dual_for_total_variation_3D_impl<float, false, true>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+    primal_dual_step<__half, false, true, true>(
+        input, previous, current, output, p1, p2, p3, next_p1, next_p2, next_p3,
+        sigma, tau, lt, theta, dimX, dimY, dimZ);
 }
 
-extern "C" __global__ void primal_dual_for_total_variation_3D_float_nonneg_methodTV(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P3_in, float *P1_out, float *P2_out, float *P3_out, float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
+extern "C" __global__ void primal_dual_for_total_variation_3D_half_nonneg(
+    float *input, float *previous, float *current, float *output,
+    __half *p1, __half *p2, __half *p3, __half *next_p1, __half *next_p2, __half *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-  primal_dual_for_total_variation_3D_impl<float, true, true>(Input, U_in, U_out, P1_in, P2_in, P3_in, P1_out, P2_out, P3_out, sigma, tau, lt, theta, dimX, dimY, dimZ);
+    primal_dual_step<__half, true, false, true>(
+        input, previous, current, output, p1, p2, p3, next_p1, next_p2, next_p3,
+        sigma, tau, lt, theta, dimX, dimY, dimZ);
 }
 
-/************************************************/
-/*****************2D modules*********************/
-/************************************************/
-template <bool methodTV>
-__device__ void Proj_funcPD2D(float *P1, float *P2)
+extern "C" __global__ void primal_dual_for_total_variation_3D_half_nonneg_methodTV(
+    float *input, float *previous, float *current, float *output,
+    __half *p1, __half *p2, __half *p3, __half *next_p1, __half *next_p2, __half *next_p3,
+    float sigma, float tau, float lt, float theta, int dimX, int dimY, int dimZ)
 {
-}
-
-template <>
-__device__ void Proj_funcPD2D<false>(float *P1, float *P2)
-{
-  float denom = *P1 * *P1 + *P2 * *P2;
-  if (denom > 1.0f)
-  {
-    float sq_denom = 1.0f / sqrtf(denom);
-    *P1 *= sq_denom;
-    *P2 *= sq_denom;
-  }
-}
-
-template <>
-__device__ void Proj_funcPD2D<true>(float *P1, float *P2)
-{
-  float val1 = fabs(*P1);
-  float val2 = fabs(*P2);
-
-  if (val1 < 1.0f)
-  {
-    val1 = 1.0f;
-  }
-
-  if (val2 < 1.0f)
-  {
-    val2 = 1.0f;
-  }
-
-  *P1 /= val1;
-  *P2 /= val2;
-}
-
-template <bool methodTV>
-__device__ void dualPD2D(float *U, float *P1, float *P2, float sigma)
-{
-  *P1 += sigma * (U[1] - U[0]);
-  *P2 += sigma * (U[2] - U[0]);
-
-  Proj_funcPD2D<methodTV>(P1, P2);
-}
-
-__device__ float DivProj2D(float Input, float U_in, float P1, float P2, float P1_prev_x, float P2_prev_y, float tau, float lt)
-{
-  float P_v1 = -(P1 - P1_prev_x);
-  float P_v2 = -(P2 - P2_prev_y);
-  float div_var = P_v1 + P_v2;
-  return (U_in - tau * div_var + lt * Input) / (1.0f + lt);
-}
-
-template <typename T, bool nonneg, bool methodTV>
-__device__ __forceinline__ void primal_dual_for_total_variation_2D_impl(float *Input, float *U_in, float *U_out, T *P1_in, T *P2_in, T *P1_out, T *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  // calculate each thread global index
-  const long xIndex = blockIdx.x * blockDim.x + threadIdx.x;
-  const long yIndex = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (xIndex >= dimX || yIndex >= dimY)
-  {
-    return;
-  }
-
-  long long xStride = 1;
-  long long yStride = dimX;
-
-  long long index = static_cast<long long>(xIndex) + yStride * static_cast<long long>(yIndex);
-  long long index_prev_x = index - xStride;
-  long long index_prev_y = index - yStride;
-
-  float P1_prev_x = 0.0f;
-  float P2_prev_x = 0.0f;
-  float U_prev_x = 0.0f;
-
-  float P1_prev_y = 0.0f;
-  float P2_prev_y = 0.0f;
-  float U_prev_y = 0.0f;
-
-  float U_prev_x_prev_y = 0.0;
-
-  float P1 = read_as_float<T>(P1_in, index);
-  float P2 = read_as_float<T>(P2_in, index);
-  float U = U_in[index];
-  float Input_value = Input[index];
-
-  if (xIndex > 0)
-  {
-    P1_prev_x = read_as_float<T>(P1_in, index_prev_x);
-    P2_prev_x = read_as_float<T>(P2_in, index_prev_x);
-    U_prev_x = U_in[index_prev_x];
-  }
-
-  if (yIndex > 0)
-  {
-    P1_prev_y = read_as_float<T>(P1_in, index_prev_y);
-    P2_prev_y = read_as_float<T>(P2_in, index_prev_y);
-    U_prev_y = U_in[index_prev_y];
-  }
-
-  bool last_x = xIndex == dimX - 1;
-  bool last_y = yIndex == dimY - 1;
-
-  if (((xIndex > 0) && last_y) || ((yIndex > 0) && last_x))
-  {
-    U_prev_x_prev_y = U_in[index - xStride - yStride];
-  }
-
-  {
-    float U_values[3] = {
-        U,
-        last_x ? U_prev_x : U_in[index + xStride],
-        last_y ? U_prev_y : U_in[index + yStride],
-    };
-
-    dualPD2D<methodTV>(U_values, &P1, &P2, sigma);
-  }
-
-  if (xIndex > 0)
-  {
-    float U_values[3] = {
-        U_prev_x,
-        U,
-        last_y ? U_prev_x_prev_y : U_in[index - xStride + yStride],
-    };
-    dualPD2D<methodTV>(U_values, &P1_prev_x, &P2_prev_x, sigma);
-  }
-
-  if (yIndex > 0)
-  {
-    float U_values[3] = {
-        U_prev_y,
-        last_x ? U_prev_x_prev_y : U_in[index + xStride - yStride],
-        U,
-    };
-    dualPD2D<methodTV>(U_values, &P1_prev_y, &P2_prev_y, sigma);
-  }
-
-  U = clamp_to_zero<nonneg>(U);
-  float new_U = DivProj2D(Input_value, U, P1, P2, P1_prev_x, P2_prev_y, tau, lt);
-  U_out[index] = new_U + theta * (new_U - U);
-
-  write_float<T>(P1_out, index, P1);
-  write_float<T>(P2_out, index, P2);
-}
-
-extern "C" __global__ void primal_dual_for_total_variation_2D_half(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  primal_dual_for_total_variation_2D_impl<__half, false, false>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
-}
-
-extern "C" __global__ void primal_dual_for_total_variation_2D_half_nonneg(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  primal_dual_for_total_variation_2D_impl<__half, true, false>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
-}
-
-extern "C" __global__ void primal_dual_for_total_variation_2D_half_methodTV(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  primal_dual_for_total_variation_2D_impl<__half, false, true>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
-}
-
-extern "C" __global__ void primal_dual_for_total_variation_2D_half_nonneg_methodTV(float *Input, float *U_in, float *U_out, __half *P1_in, __half *P2_in, __half *P1_out, __half *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  primal_dual_for_total_variation_2D_impl<__half, true, true>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
-}
-
-extern "C" __global__ void primal_dual_for_total_variation_2D_float(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P1_out, float *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  primal_dual_for_total_variation_2D_impl<float, false, false>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
-}
-
-extern "C" __global__ void primal_dual_for_total_variation_2D_float_nonneg(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P1_out, float *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  primal_dual_for_total_variation_2D_impl<float, true, false>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
-}
-
-extern "C" __global__ void primal_dual_for_total_variation_2D_float_methodTV(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P1_out, float *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  primal_dual_for_total_variation_2D_impl<float, false, true>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
-}
-
-extern "C" __global__ void primal_dual_for_total_variation_2D_float_nonneg_methodTV(float *Input, float *U_in, float *U_out, float *P1_in, float *P2_in, float *P1_out, float *P2_out, float sigma, float tau, float lt, float theta, int dimX, int dimY)
-{
-  primal_dual_for_total_variation_2D_impl<float, true, true>(Input, U_in, U_out, P1_in, P2_in, P1_out, P2_out, sigma, tau, lt, theta, dimX, dimY);
+    primal_dual_step<__half, true, true, true>(
+        input, previous, current, output, p1, p2, p3, next_p1, next_p2, next_p3,
+        sigma, tau, lt, theta, dimX, dimY, dimZ);
 }
